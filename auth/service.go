@@ -102,23 +102,25 @@ type Service interface {
 var _ Service = (*service)(nil)
 
 type service struct {
-	keys         KeyRepository
-	groups       GroupRepository
-	idProvider   mainflux.IDProvider
-	ulidProvider mainflux.IDProvider
-	agent        PolicyAgent
-	tokenizer    Tokenizer
+	keys          KeyRepository
+	groups        GroupRepository
+	idProvider    mainflux.IDProvider
+	ulidProvider  mainflux.IDProvider
+	agent         PolicyAgent
+	tokenizer     Tokenizer
+	loginDuration time.Duration
 }
 
 // New instantiates the auth service implementation.
-func New(keys KeyRepository, groups GroupRepository, idp mainflux.IDProvider, tokenizer Tokenizer, policyAgent PolicyAgent) Service {
+func New(keys KeyRepository, groups GroupRepository, idp mainflux.IDProvider, tokenizer Tokenizer, policyAgent PolicyAgent, duration time.Duration) Service {
 	return &service{
-		tokenizer:    tokenizer,
-		keys:         keys,
-		groups:       groups,
-		idProvider:   idp,
-		ulidProvider: ulid.New(),
-		agent:        policyAgent,
+		tokenizer:     tokenizer,
+		keys:          keys,
+		groups:        groups,
+		idProvider:    idp,
+		ulidProvider:  ulid.New(),
+		agent:         policyAgent,
+		loginDuration: duration,
 	}
 }
 
@@ -130,9 +132,9 @@ func (svc service) Issue(ctx context.Context, token string, key Key) (Key, strin
 	case APIKey:
 		return svc.userKey(ctx, token, key)
 	case RecoveryKey:
-		return svc.tmpKey(recoveryDuration, key)
+		return svc.tmpKey(svc.loginDuration, key)
 	default:
-		return svc.tmpKey(loginDuration, key)
+		return svc.tmpKey(svc.loginDuration, key)
 	}
 }
 
