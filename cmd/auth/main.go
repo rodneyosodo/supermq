@@ -75,7 +75,7 @@ const (
 	envKetoHost      = "MF_KETO_HOST"
 	envKetoWritePort = "MF_KETO_WRITE_REMOTE_PORT"
 	envKetoReadPort  = "MF_KETO_READ_REMOTE_PORT"
-	envLoginDuration = "MF_AUTH_LOGIN_DURATION"
+	envLoginDuration = "MF_AUTH_LOGIN_TOKEN_DURATION"
 )
 
 type config struct {
