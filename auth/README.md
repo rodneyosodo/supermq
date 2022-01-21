@@ -72,7 +72,7 @@ default values.
 | MF_AUTH_SERVER_CERT           | Path to server certificate in pem format                                 |               |
 | MF_AUTH_SERVER_KEY            | Path to server key in pem format                                         |               |
 | MF_AUTH_SECRET                | String used for signing tokens                                           | auth          |
-| MF_AUTH_LOGIN_TOKEN_DURATION  | Time in minutes for the login token to last                              | 50            |
+| MF_AUTH_LOGIN_TOKEN_DURATION  | Time in minutes for the login token to last                              | 600           |
 | MF_JAEGER_URL                 | Jaeger server URL                                                        | localhost:6831|
 
 ## Deployment
