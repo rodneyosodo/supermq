@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -54,7 +53,7 @@ const (
 	defKetoHost      = "mainflux-keto"
 	defKetoWritePort = "4467"
 	defKetoReadPort  = "4466"
-	defLoginDuration = "50"
+	defLoginDuration = "600m"
 
 	envLogLevel      = "MF_AUTH_LOG_LEVEL"
 	envDBHost        = "MF_AUTH_DB_HOST"
@@ -147,12 +146,10 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	lduration := mainflux.Env(envLoginDuration, defLoginDuration)
-	duration, err := strconv.Atoi(lduration)
+	loginDuration, err := time.ParseDuration(mainflux.Env(envLoginDuration, defLoginDuration))
 	if err != nil {
 		log.Fatal(err)
 	}
-	loginDuration := time.Duration(duration) * time.Minute
 
 	return config{
 		logLevel:      mainflux.Env(envLogLevel, defLogLevel),
