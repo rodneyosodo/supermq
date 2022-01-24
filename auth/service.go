@@ -131,7 +131,7 @@ func (svc service) Issue(ctx context.Context, token string, key Key) (Key, strin
 	case APIKey:
 		return svc.userKey(ctx, token, key)
 	case RecoveryKey:
-		return svc.tmpKey(svc.loginDuration, key)
+		return svc.tmpKey(recoveryDuration, key)
 	default:
 		return svc.tmpKey(svc.loginDuration, key)
 	}
