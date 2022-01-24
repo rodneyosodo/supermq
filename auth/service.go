@@ -14,9 +14,6 @@ import (
 )
 
 const (
-	loginDuration    = 10 * time.Hour
-	recoveryDuration = 5 * time.Minute
-
 	thingsGroupType = "things"
 
 	authoritiesObject = "authorities"
