@@ -72,7 +72,7 @@ default values.
 | MF_AUTH_SERVER_CERT           | Path to server certificate in pem format                                 |                |
 | MF_AUTH_SERVER_KEY            | Path to server key in pem format                                         |                |
 | MF_AUTH_SECRET                | String used for signing tokens                                           | auth           |
-| MF_AUTH_LOGIN_TOKEN_DURATION  | Time in minutes for the login token to last of type time.duration        | 600m           |
+| MF_AUTH_LOGIN_TOKEN_DURATION  | Time in hours  for the login token to last of type time.duration         | 10h            |
 | MF_JAEGER_URL                 | Jaeger server URL                                                        | localhost:6831 |
 
 ## Deployment
@@ -96,7 +96,7 @@ make auth
 make install
 
 # set the environment variables and run the service
-MF_AUTH_LOG_LEVEL=[Service log level] MF_AUTH_DB_HOST=[Database host address] MF_AUTH_DB_PORT=[Database host port] MF_AUTH_DB_USER=[Database user] MF_AUTH_DB_PASS=[Database password] MF_AUTH_DB=[Name of the database used by the service] MF_AUTH_DB_SSL_MODE=[SSL mode to connect to the database with] MF_AUTH_DB_SSL_CERT=[Path to the PEM encoded certificate file] MF_AUTH_DB_SSL_KEY=[Path to the PEM encoded key file] MF_AUTH_DB_SSL_ROOT_CERT=[Path to the PEM encoded root certificate file] MF_AUTH_HTTP_PORT=[Service HTTP port] MF_AUTH_GRPC_PORT=[Service gRPC port] MF_AUTH_SECRET=[String used for signing tokens] MF_AUTH_SERVER_CERT=[Path to server certificate] MF_AUTH_SERVER_KEY=[Path to server key] MF_JAEGER_URL=[Jaeger server URL] MF_AUTH_LOGIN_TOKEN_DURATION=[Time in minutes for the login token to last of type time.duration] $GOBIN/mainflux-auth
+MF_AUTH_LOG_LEVEL=[Service log level] MF_AUTH_DB_HOST=[Database host address] MF_AUTH_DB_PORT=[Database host port] MF_AUTH_DB_USER=[Database user] MF_AUTH_DB_PASS=[Database password] MF_AUTH_DB=[Name of the database used by the service] MF_AUTH_DB_SSL_MODE=[SSL mode to connect to the database with] MF_AUTH_DB_SSL_CERT=[Path to the PEM encoded certificate file] MF_AUTH_DB_SSL_KEY=[Path to the PEM encoded key file] MF_AUTH_DB_SSL_ROOT_CERT=[Path to the PEM encoded root certificate file] MF_AUTH_HTTP_PORT=[Service HTTP port] MF_AUTH_GRPC_PORT=[Service gRPC port] MF_AUTH_SECRET=[String used for signing tokens] MF_AUTH_SERVER_CERT=[Path to server certificate] MF_AUTH_SERVER_KEY=[Path to server key] MF_JAEGER_URL=[Jaeger server URL] MF_AUTH_LOGIN_TOKEN_DURATION=[Time in hours for the login token to last of type time.duration] $GOBIN/mainflux-auth
 ```
 
 If `MF_EMAIL_TEMPLATE` doesn't point to any file service will function but password reset functionality will not work.

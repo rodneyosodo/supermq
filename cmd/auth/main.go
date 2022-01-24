@@ -53,7 +53,7 @@ const (
 	defKetoHost      = "mainflux-keto"
 	defKetoWritePort = "4467"
 	defKetoReadPort  = "4466"
-	defLoginDuration = "600m"
+	defLoginDuration = "10h"
 
 	envLogLevel      = "MF_AUTH_LOG_LEVEL"
 	envDBHost        = "MF_AUTH_DB_HOST"
