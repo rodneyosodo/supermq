@@ -15,8 +15,7 @@ import (
 
 const (
 	recoveryDuration = 5 * time.Minute
-
-	thingsGroupType = "things"
+	thingsGroupType  = "things"
 
 	authoritiesObject = "authorities"
 	memberRelation    = "member"

@@ -37,8 +37,7 @@ const (
 
 	authoritiesObj = "authorities"
 	memberRelation = "member"
-
-	loginDuration = 30 * time.Minute
+	loginDuration  = 30 * time.Minute
 )
 
 var svc auth.Service
