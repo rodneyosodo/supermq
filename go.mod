@@ -33,6 +33,7 @@ require (
 	github.com/pelletier/go-toml v1.9.4
 	github.com/plgd-dev/go-coap/v2 v2.4.1-0.20210517130748-95c37ac8e1fa
 	github.com/prometheus/client_golang v1.11.0
+	github.com/rabbitmq/amqp091-go v1.3.0
 	github.com/rubenv/sql-migrate v1.0.0
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/viper v1.10.1
