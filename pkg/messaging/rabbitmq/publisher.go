@@ -6,26 +6,22 @@ package rabbitmq
 import (
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"google.golang.org/protobuf/proto"
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
 
 var (
-	queueName        = "mainflux-queue"
+	queueName        = "mainflux-mqtt"
 	queueDurability  = false
-	queueDelete      = false
-	queueExclusivity = false
-	queueWait        = false
 	mandatory        = false
-	immediate        = false
 )
 
 type publisher struct {
-	connection *amqp.Connection
-	channel    *amqp.Channel
+	connection amqp.Connection
+	channel    amqp.Channel
 }
 
 // Publisher wraps messaging Publisher exposing
@@ -37,43 +33,52 @@ type Publisher interface {
 
 // NewPublisher returns RabbitMQ message Publisher.
 func NewPublisher(url string) (Publisher, error) {
-	endpoint := fmt.Sprintf("amqp://%s", url)
-	conn, err := amqp.Dial(endpoint)
+	conn, err := amqp.Dial(url)
 	if err != nil {
-		return nil, err
+		errMessage := fmt.Sprintf("cannot (re)dial: %v: %q", err, address)
+		return nil, errMessage
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
-		return nil, err
+		errMessage := fmt.Sprintf("cannot create channel: %v", err)
+		return nil, errMessage
 	}
 	ret := &publisher{
 		connection: conn,
 		channel:    ch,
 	}
 
-	return ret, nil
-}
-
 func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 	data, err := proto.Marshal(&msg)
+		return err
+	}
+
+	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
+	if msg.Subtopic != "" {
+		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
+	}
+	queue, err := pub.channel.QueueDeclare(
+		queueName,
+		queueDurability,
+		queueDelete,
+		queueExclusivity,
+		queueWait,
+		nil,
+	)
 	if err != nil {
 		return err
 	}
-	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
-	if err := pub.channel.ExchangeDeclare(subject, ExchangeKind, true, false, false, false, nil); err != nil {
-		return err
-	}
-
 	err = pub.channel.Publish(
 		subject,
-		RoutingKey,
+		queue.Name,
 		mandatory,
 		immediate,
 		amqp.Publishing{
 			Headers:     amqp.Table{},
 			ContentType: "text/plain",
 			Priority:    2,
+			UserId:      "mainflux_amqp",
 			AppId:       "mainflux",
 			Body:        []byte(data),
 		})

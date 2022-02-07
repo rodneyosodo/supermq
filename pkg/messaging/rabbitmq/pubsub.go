@@ -6,27 +6,21 @@ package rabbitmq
 import (
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
-	log "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 // SubjectAllChannels represents subject to subscribe for all the channels.
 const (
-	ChansPrefix        = "channels"
+	chansPrefix        = "channels"
 	SubjectAllChannels = "channels.>"
-	RoutingKey         = "application specific routing key for fancy topologies"
-	Exchange           = "mainflux"
-	ExchangeKind       = "fanout"
-	QueueName          = "mainflux"
-	QueueDurability    = false
-	QueueDelete        = false
-	QueueExclusivity   = true
-	QueueWait          = false
-	ConsumerTag        = "mainflux-consumer"
+	routingKey         = "application specific routing key for fancy topologies"
+	exchange           = "mainflux"
+	exchangeKind       = "fanout"
 )
 
 var (
@@ -49,27 +43,38 @@ type pubsub struct {
 	logger        log.Logger
 	mu            sync.Mutex
 	queue         amqp.Queue
-	channel       *amqp.Channel
-	subscriptions map[string]bool
-	done          chan error
+	channel       amqp.Channel
+	subscriptions map[string]*amqp.Queue
+}
+
+// Queue captures the queue values
+type Queue struct {
+	name        string
+	durability  bool
+	delete      bool
+	exclusivity bool
+	wait        bool
 }
 
 // NewPubSub returns RabbitMQ message publisher/subscriber.
-func NewPubSub(url string, logger log.Logger) (PubSub, error) {
-	endpoint := fmt.Sprintf("amqp://%s", url)
-	conn, err := amqp.Dial(endpoint)
+func NewPubSub(url, q Queue, logger log.Logger) (PubSub, error) {
+	conn, err := amqp.Dial(url)
 	if err != nil {
-		return nil, err
+		errMessage := fmt.Sprintf("cannot (re)dial: %v: %q", err, address)
+		return nil, errMessage
 	}
+	defer conn.Close()
 
 	ch, err := conn.Channel()
 	if err != nil {
-		return nil, err
+		errMessage := fmt.Sprintf("cannot create channel: %v", err)
+		return nil, errMessage
 	}
+	defer ch.Close()
 
-	queue, err := ch.QueueDeclare(QueueName, QueueDurability, QueueDelete, QueueExclusivity, QueueWait, nil)
+	queue, err := ch.QueueDeclare(q.name, q.durability, q.delete, q.exclusivity, q.wait, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	ret := &pubsub{
 		conn:          conn,
@@ -77,7 +82,6 @@ func NewPubSub(url string, logger log.Logger) (PubSub, error) {
 		channel:       ch,
 		logger:        logger,
 		subscriptions: make(map[string]bool),
-		done:          make(chan error),
 	}
 	return ret, nil
 }
@@ -87,19 +91,21 @@ func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
 	if err != nil {
 		return err
 	}
-	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
-	if err := ps.channel.ExchangeDeclare(subject, ExchangeKind, true, false, false, false, nil); err != nil {
-		return err
+
+	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
+	if msg.Subtopic != "" {
+		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 	}
 	err = ps.channel.Publish(
 		subject,
-		RoutingKey,
-		mandatory,
-		immediate,
+		ps.queue.Name,
+		false,
+		false,
 		amqp.Publishing{
 			Headers:     amqp.Table{},
 			ContentType: "text/plain",
 			Priority:    2,
+			UserId:      "mainflux_amqp",
 			AppId:       "mainflux",
 			Body:        []byte(data),
 		})
@@ -121,21 +127,18 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 		return errAlreadySubscribed
 	}
 
-	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
+	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
+	if msg.Subtopic != "" {
+		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
+	}
 
-	if err := ps.channel.ExchangeDeclare(subject, ExchangeKind, true, false, false, false, nil); err != nil {
+	if err = ps.channel.ExchangeDeclare(subject, exchangeKind, true, false, false, false, nil); err != nil {
 		return err
 	}
 
-	if err := ps.channel.QueueBind(ps.queue.Name, RoutingKey, subject, false, nil); err != nil {
+	if err := ps.channel.QueueBind(ps.queue.Name, routingKey, exchange, false, nil); err != nil {
 		return err
 	}
-	msgs, err := ps.channel.Consume(ps.queue.Name, "", false, false, false, false, nil)
-	if err != nil {
-		return err
-	}
-	go ps.handle(msgs, ps.done, handler)
-
 	ps.subscriptions[topic] = true
 
 	return nil
@@ -148,12 +151,12 @@ func (ps *pubsub) Unsubscribe(topic string) error {
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
-	_, ok := ps.subscriptions[topic]
+	sub, ok := ps.subscriptions[topic]
 	if !ok {
 		return errNotSubscribed
 	}
-	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
-	if err := ps.channel.QueueBind(ps.queue.Name, RoutingKey, subject, false, nil); err != nil {
+
+	if err := ps.channel.QueueBind(ps.queue.Name, routingKey, exchange, nil); err != nil {
 		return err
 	}
 
@@ -163,20 +166,4 @@ func (ps *pubsub) Unsubscribe(topic string) error {
 
 func (ps *pubsub) Close() {
 	ps.conn.Close()
-}
-
-func (ps *pubsub) handle(deliveries <-chan amqp.Delivery, done chan error, h messaging.MessageHandler) {
-	for d := range deliveries {
-		ps.logger.Info(string(d.Body))
-		var msg messaging.Message
-		if err := proto.Unmarshal(d.Body, &msg); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
-			return
-		}
-		if err := h(msg); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
-		}
-		d.Ack(false)
-	}
-	done <- nil
 }
