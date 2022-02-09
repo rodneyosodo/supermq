@@ -6,9 +6,9 @@ package rabbitmq
 import (
 	"fmt"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"google.golang.org/protobuf/proto"
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
@@ -20,8 +20,8 @@ var (
 )
 
 type publisher struct {
-	connection amqp.Connection
-	channel    amqp.Channel
+	connection *amqp.Connection
+	channel    *amqp.Channel
 }
 
 // Publisher wraps messaging Publisher exposing
@@ -33,16 +33,16 @@ type Publisher interface {
 
 // NewPublisher returns RabbitMQ message Publisher.
 func NewPublisher(url string) (Publisher, error) {
-	conn, err := amqp.Dial(url)
+	endpoint := fmt.Sprintf("amqp://%s", url)
+	conn, err := amqp.Dial(endpoint)
+
 	if err != nil {
-		errMessage := fmt.Sprintf("cannot (re)dial: %v: %q", err, address)
-		return nil, errMessage
+		return nil, err
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
-		errMessage := fmt.Sprintf("cannot create channel: %v", err)
-		return nil, errMessage
+		return nil, err
 	}
 	ret := &publisher{
 		connection: conn,
@@ -54,9 +54,9 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 		return err
 	}
 
-	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
+	subject := fmt.Sprintf("%s.%s.%s", exchange, chansPrefix, topic)
 	if msg.Subtopic != "" {
-		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
+		subject = fmt.Sprintf("%s.%s.%s", exchange, subject, msg.Subtopic)
 	}
 	queue, err := pub.channel.QueueDeclare(
 		queueName,

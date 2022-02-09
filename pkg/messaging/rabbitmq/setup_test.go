@@ -22,6 +22,8 @@ var (
 	pubsub    messaging.PubSub
 )
 
+var queue = rabbitmq.MainfluxQueue{Name: "test", Durability: false, Delete: false, Exclusivity: false, Wait: false}
+
 func TestMain(m *testing.M) {
 	pool, err := dockertest.NewPool("")
 	if err != nil {
@@ -47,7 +49,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf(err.Error())
 	}
 	if err := pool.Retry(func() error {
-		pubsub, err = rabbitmq.NewPubSub(address, logger)
+		pubsub, err = rabbitmq.NewPubSub(address, queue, logger)
 		return err
 	}); err != nil {
 		log.Fatalf("Could not connect to docker: %s", err)
