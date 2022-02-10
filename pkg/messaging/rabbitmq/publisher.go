@@ -14,7 +14,7 @@ import (
 var _ messaging.Publisher = (*publisher)(nil)
 
 var (
-	queueName        = "mainflux-mqtt"
+	queueName        = "mainflux-queue"
 	queueDurability  = false
 	mandatory        = false
 )
@@ -35,7 +35,7 @@ type Publisher interface {
 func NewPublisher(url string) (Publisher, error) {
 	endpoint := fmt.Sprintf("amqp://%s", url)
 	conn, err := amqp.Dial(endpoint)
-
+	// defer conn.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -44,6 +44,7 @@ func NewPublisher(url string) (Publisher, error) {
 	if err != nil {
 		return nil, err
 	}
+	// defer ch.Close()
 	ret := &publisher{
 		connection: conn,
 		channel:    ch,
@@ -53,34 +54,24 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 	data, err := proto.Marshal(&msg)
 		return err
 	}
-
-	subject := fmt.Sprintf("%s.%s.%s", exchange, chansPrefix, topic)
-	if msg.Subtopic != "" {
-		subject = fmt.Sprintf("%s.%s.%s", exchange, subject, msg.Subtopic)
-	}
-	queue, err := pub.channel.QueueDeclare(
-		queueName,
-		queueDurability,
-		queueDelete,
-		queueExclusivity,
-		queueWait,
-		nil,
-	)
-	if err != nil {
+	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
+	fmt.Println(subject)
+	if err := pub.channel.ExchangeDeclare(subject, ExchangeKind, true, false, false, false, nil); err != nil {
 		return err
 	}
+
 	err = pub.channel.Publish(
 		subject,
-		queue.Name,
+		RoutingKey,
 		mandatory,
 		immediate,
 		amqp.Publishing{
 			Headers:     amqp.Table{},
 			ContentType: "text/plain",
 			Priority:    2,
-			UserId:      "mainflux_amqp",
-			AppId:       "mainflux",
-			Body:        []byte(data),
+			// UserId:      "mainflux_amqp",
+			AppId: "mainflux",
+			Body:  []byte(data),
 		})
 
 	if err != nil {

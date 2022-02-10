@@ -76,6 +76,9 @@ func TestPubsub(t *testing.T) {
 		err = pubsub.Publish(topic, expectedMsg)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
+		// err = pubsub.ReadMessages(topic)
+		// require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
 		// msgs, err := pubsub.channel.Consume(pubsub.Queue.Name, fmt.Sprintf("%s.%s", chansPrefix, topic), true, false, false, false, nil)
 		// receivedMsg := <-msgChan
 		// assert.Equal(t, expectedMsg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
