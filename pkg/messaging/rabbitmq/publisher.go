@@ -63,7 +63,6 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 		return err
 	}
 	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
-	fmt.Println(subject)
 	if err := pub.channel.ExchangeDeclare(subject, ExchangeKind, true, false, false, false, nil); err != nil {
 		return err
 	}
