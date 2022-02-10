@@ -5,34 +5,36 @@ package rabbitmq_test
 
 import (
 	"fmt"
+	"log"
 	"testing"
 
 	// "github.com/stretchr/testify/assert"
 
 	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/mainflux/mainflux/pkg/messaging/rabbitmq"
+	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	topic        = "topic"
-	chansPrefix  = "channels"
-	channel      = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
-	subtopic     = "engine"
-	routingKey   = "routinngkey"
-	exchange     = "mainflux"
-	exchangeKind = "fanout"
-)
+func TestPublisher(t *testing.T) {
+	pool, err := dockertest.NewPool("")
+	if err != nil {
+		log.Fatalf("Could not connect to docker: %s", err)
+	}
 
-var (
-	msgChan = make(chan messaging.Message)
-	data    = []byte("payload")
-)
+	container, err := pool.Run("rabbitmq", "3.9.10", []string{})
+	if err != nil {
+		log.Fatalf("Could not start container: %s", err)
+	}
+	handleInterrupt(pool, container)
 
-func TestPubsub(t *testing.T) {
-	err := pubsub.Subscribe(fmt.Sprintf("%s.%s", chansPrefix, topic), handler)
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	err = pubsub.Subscribe(fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic), handler)
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	address := fmt.Sprintf("%s:%s", "localhost", container.GetPort("5672/tcp"))
+	if err := pool.Retry(func() error {
+		publisher, err = rabbitmq.NewPublisher(address)
+		return err
+	}); err != nil {
+		log.Fatalf("Could not connect to docker: %s", err)
+	}
 
 	cases := []struct {
 		desc     string
@@ -72,21 +74,12 @@ func TestPubsub(t *testing.T) {
 			Subtopic: tc.subtopic,
 			Payload:  tc.payload,
 		}
+		err := publisher.Publish(topic, expectedMsg)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		err = pubsub.Publish(topic, expectedMsg)
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-		// err = pubsub.ReadMessages(topic)
-		// require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-		// msgs, err := pubsub.channel.Consume(pubsub.Queue.Name, fmt.Sprintf("%s.%s", chansPrefix, topic), true, false, false, false, nil)
+		// msgs, err := publisher.channel.Consume(pubsub.Queue.Name, fmt.Sprintf("%s.%s", chansPrefix, topic), true, false, false, false, nil)
+		// msgChan := <-msgs
 		// receivedMsg := <-msgChan
 		// assert.Equal(t, expectedMsg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
 	}
-}
-
-func handler(msg messaging.Message) error {
-	msgChan <- msg
-	return nil
 }
