@@ -4,12 +4,12 @@
 package rabbitmq_test
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
-	// "github.com/stretchr/testify/assert"
-
 	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,15 +29,67 @@ var (
 )
 
 func TestPubsub(t *testing.T) {
-	err := pubsub.Subscribe(fmt.Sprintf("%s.%s", chansPrefix, topic), handler)
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	err = pubsub.Subscribe(fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic), handler)
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	err = pubsub.Unsubscribe(fmt.Sprintf("%s.%s", chansPrefix, topic))
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	err = pubsub.Unsubscribe(fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic))
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	pubsubcases := []struct {
+		desc         string
+		topic        string
+		errorMessage error
+		pubsub       bool //true for publish and false for subscribe
+	}{
+		{
+			desc:         "Susbcribe to a topic",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			errorMessage: nil,
+			pubsub:       false,
+		},
+		{
+			desc:         "Susbcribe to an already subscribed topic",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			errorMessage: errors.New("already subscribed to topic"),
+			pubsub:       false,
+		},
+		{
+			desc:         "Susbcribe to a topic with a sub topic",
+			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
+			errorMessage: nil,
+			pubsub:       false,
+		},
+		{
+			desc:         "Susbcribe to an already subscribed topic with a sub topic",
+			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
+			errorMessage: errors.New("already subscribed to topic"),
+			pubsub:       false,
+		},
+		{
+			desc:         "Susbcribe to an empty topic",
+			topic:        "",
+			errorMessage: errors.New("empty topic"),
+			pubsub:       false,
+		},
+		{
+			desc:         "Unsusbcribe to an empty topic",
+			topic:        "",
+			errorMessage: errors.New("empty topic"),
+			pubsub:       true,
+		},
+		{
+			desc:         "Unsusbcribe to a topic",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			errorMessage: nil,
+			pubsub:       true,
+		},
+		{
+			desc:         "Unsusbcribe to an already unsubscribed topic",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			errorMessage: errors.New("not subscribed"),
+			pubsub:       true,
+		},
+		{
+			desc:         "Unsusbcribe to a topic with a subtopic",
+			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
+			errorMessage: nil,
+			pubsub:       true,
+		},
+	}
 
 	cases := []struct {
 		desc     string
@@ -70,25 +122,37 @@ func TestPubsub(t *testing.T) {
 			subtopic: subtopic,
 		},
 	}
-
+	for _, pc := range pubsubcases {
+		if pc.pubsub == false {
+			err := pubsub.Subscribe(pc.topic, handler)
+			if pc.errorMessage == nil {
+				require.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", pc.desc, err))
+			} else {
+				assert.Equal(t, err, pc.errorMessage)
+			}
+		} else {
+			err := pubsub.Unsubscribe(pc.topic)
+			if pc.errorMessage == nil {
+				require.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", pc.desc, err))
+			} else {
+				assert.Equal(t, err, pc.errorMessage)
+			}
+		}
+	}
 	for _, tc := range cases {
 		expectedMsg := messaging.Message{
 			Channel:  tc.channel,
 			Subtopic: tc.subtopic,
 			Payload:  tc.payload,
 		}
+
+		err := pubsub.Publish(topic, expectedMsg)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		err = pubsub.Publish(topic, expectedMsg)
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-		// err = pubsub.ReadMessages(topic)
-		// require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-		// msgs, err := pubsub.channel.Consume(pubsub.Queue.Name, fmt.Sprintf("%s.%s", chansPrefix, topic), true, false, false, false, nil)
-		// receivedMsg := <-msgChan
-		// assert.Equal(t, expectedMsg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
+		receivedMsg := <-msgChan
+		assert.Equal(t, expectedMsg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
 	}
+
 }
 
 func handler(msg messaging.Message) error {
