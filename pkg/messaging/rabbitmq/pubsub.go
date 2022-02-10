@@ -85,7 +85,6 @@ func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
 		return err
 	}
 	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
-	fmt.Println(subject)
 	if err := ps.channel.ExchangeDeclare(subject, ExchangeKind, true, false, false, false, nil); err != nil {
 		return err
 	}
@@ -110,11 +109,6 @@ func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
 	return nil
 }
 
-// nh := ps.natsHandler(handler)
-
-// if ps.queue != "" {
-// 	sub, err := ps.conn.QueueSubscribe(topic, ps.queue, nh)
-
 func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) error {
 	if topic == "" {
 		return errEmptyTopic
@@ -126,7 +120,6 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 	}
 
 	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
-	fmt.Println(subject)
 
 	if err := ps.channel.ExchangeDeclare(subject, ExchangeKind, true, false, false, false, nil); err != nil {
 		return err
@@ -152,7 +145,6 @@ func (ps *pubsub) Unsubscribe(topic string) error {
 		return errNotSubscribed
 	}
 	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
-	fmt.Println(subject)
 	if err := ps.channel.QueueBind(ps.queue.Name, RoutingKey, subject, false, nil); err != nil {
 		return err
 	}
@@ -161,30 +153,29 @@ func (ps *pubsub) Unsubscribe(topic string) error {
 	return nil
 }
 
-func (ps *pubsub) ReadMessages(topic string) error {
-	if topic == "" {
-		return errEmptyTopic
-	}
-	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
-	fmt.Println(subject)
+// func (ps *pubsub) ReadMessages(topic string) error {
+// 	if topic == "" {
+// 		return errEmptyTopic
+// 	}
+// 	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
 
-	msgs, err := ps.channel.Consume(ps.queue.Name, "", true, false, false, false, nil)
-	if err != nil {
-		return err
-	}
+// 	msgs, err := ps.channel.Consume(ps.queue.Name, "", true, false, false, false, nil)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	forever := make(chan bool)
+// 	forever := make(chan bool)
 
-	go func() {
-		for d := range msgs {
-			fmt.Println(fmt.Sprintf(" [x] %s", d.Body))
-		}
-	}()
+// 	go func() {
+// 		for d := range msgs {
+// 			fmt.Println(fmt.Sprintf(" [x] %s", d.Body))
+// 		}
+// 	}()
 
-	fmt.Println(" [*] Waiting for logs. To exit press CTRL+C")
-	<-forever
-	return nil
-}
+// 	fmt.Println(" [*] Waiting for logs. To exit press CTRL+C")
+// 	<-forever
+// 	return nil
+// }
 func (ps *pubsub) Close() {
 	ps.conn.Close()
 }
