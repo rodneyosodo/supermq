@@ -39,7 +39,6 @@ type Publisher interface {
 func NewPublisher(url string) (Publisher, error) {
 	endpoint := fmt.Sprintf("amqp://%s", url)
 	conn, err := amqp.Dial(endpoint)
-	// defer conn.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +47,6 @@ func NewPublisher(url string) (Publisher, error) {
 	if err != nil {
 		return nil, err
 	}
-	// defer ch.Close()
 	ret := &publisher{
 		connection: conn,
 		channel:    ch,
@@ -76,9 +74,8 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 			Headers:     amqp.Table{},
 			ContentType: "text/plain",
 			Priority:    2,
-			// UserId:      "mainflux_amqp",
-			AppId: "mainflux",
-			Body:  []byte(data),
+			AppId:       "mainflux",
+			Body:        []byte(data),
 		})
 
 	if err != nil {

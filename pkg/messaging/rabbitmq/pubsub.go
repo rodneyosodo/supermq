@@ -26,6 +26,7 @@ const (
 	QueueDelete        = false
 	QueueExclusivity   = true
 	QueueWait          = false
+	ConsumerTag        = "mainflux-consumer"
 )
 
 var (
@@ -50,6 +51,7 @@ type pubsub struct {
 	queue         amqp.Queue
 	channel       *amqp.Channel
 	subscriptions map[string]bool
+	done          chan error
 }
 
 // NewPubSub returns RabbitMQ message publisher/subscriber.
@@ -75,6 +77,7 @@ func NewPubSub(url string, logger log.Logger) (PubSub, error) {
 		channel:       ch,
 		logger:        logger,
 		subscriptions: make(map[string]bool),
+		done:          make(chan error),
 	}
 	return ret, nil
 }
@@ -97,9 +100,8 @@ func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
 			Headers:     amqp.Table{},
 			ContentType: "text/plain",
 			Priority:    2,
-			// UserId:      "mainflux_amqp",
-			AppId: "mainflux",
-			Body:  []byte(data),
+			AppId:       "mainflux",
+			Body:        []byte(data),
 		})
 
 	if err != nil {
@@ -128,6 +130,12 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 	if err := ps.channel.QueueBind(ps.queue.Name, RoutingKey, subject, false, nil); err != nil {
 		return err
 	}
+	msgs, err := ps.channel.Consume(ps.queue.Name, "", false, false, false, false, nil)
+	if err != nil {
+		return err
+	}
+	go ps.handle(msgs, ps.done, handler)
+
 	ps.subscriptions[topic] = true
 
 	return nil
@@ -153,29 +161,22 @@ func (ps *pubsub) Unsubscribe(topic string) error {
 	return nil
 }
 
-// func (ps *pubsub) ReadMessages(topic string) error {
-// 	if topic == "" {
-// 		return errEmptyTopic
-// 	}
-// 	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
-
-// 	msgs, err := ps.channel.Consume(ps.queue.Name, "", true, false, false, false, nil)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	forever := make(chan bool)
-
-// 	go func() {
-// 		for d := range msgs {
-// 			fmt.Println(fmt.Sprintf(" [x] %s", d.Body))
-// 		}
-// 	}()
-
-// 	fmt.Println(" [*] Waiting for logs. To exit press CTRL+C")
-// 	<-forever
-// 	return nil
-// }
 func (ps *pubsub) Close() {
 	ps.conn.Close()
+}
+
+func (ps *pubsub) handle(deliveries <-chan amqp.Delivery, done chan error, h messaging.MessageHandler) {
+	for d := range deliveries {
+		ps.logger.Info(string(d.Body))
+		var msg messaging.Message
+		if err := proto.Unmarshal(d.Body, &msg); err != nil {
+			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
+			return
+		}
+		if err := h(msg); err != nil {
+			ps.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
+		}
+		d.Ack(false)
+	}
+	done <- nil
 }
