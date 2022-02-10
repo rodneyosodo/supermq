@@ -34,6 +34,11 @@ func TestPubsub(t *testing.T) {
 	err = pubsub.Subscribe(fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic), handler)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
+	err = pubsub.Unsubscribe(fmt.Sprintf("%s.%s", chansPrefix, topic))
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	err = pubsub.Unsubscribe(fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic))
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
 	cases := []struct {
 		desc     string
 		channel  string
