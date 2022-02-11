@@ -145,7 +145,7 @@ func TestPubsub(t *testing.T) {
 			Subtopic: tc.subtopic,
 			Payload:  tc.payload,
 		}
-
+		_ = pubsub.Subscribe(topic, handler)
 		err := pubsub.Publish(topic, expectedMsg)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 

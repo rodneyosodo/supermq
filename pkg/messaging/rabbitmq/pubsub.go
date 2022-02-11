@@ -22,7 +22,7 @@ const (
 	Exchange           = "mainflux"
 	ExchangeKind       = "fanout"
 	QueueName          = "mainflux"
-	QueueDurability    = false
+	QueueDurability    = true
 	QueueDelete        = false
 	QueueExclusivity   = true
 	QueueWait          = false
@@ -51,7 +51,7 @@ type pubsub struct {
 	queue         amqp.Queue
 	channel       *amqp.Channel
 	subscriptions map[string]bool
-	done          chan error
+	done          chan bool
 }
 
 // NewPubSub returns RabbitMQ message publisher/subscriber.
@@ -77,7 +77,7 @@ func NewPubSub(url string, logger log.Logger) (PubSub, error) {
 		channel:       ch,
 		logger:        logger,
 		subscriptions: make(map[string]bool),
-		done:          make(chan error),
+		done: make(chan bool),
 	}
 	return ret, nil
 }
@@ -165,9 +165,8 @@ func (ps *pubsub) Close() {
 	ps.conn.Close()
 }
 
-func (ps *pubsub) handle(deliveries <-chan amqp.Delivery, done chan error, h messaging.MessageHandler) {
+func (ps *pubsub) handle(deliveries <-chan amqp.Delivery, done chan bool, h messaging.MessageHandler) {
 	for d := range deliveries {
-		ps.logger.Info(string(d.Body))
 		var msg messaging.Message
 		if err := proto.Unmarshal(d.Body, &msg); err != nil {
 			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
@@ -176,7 +175,6 @@ func (ps *pubsub) handle(deliveries <-chan amqp.Delivery, done chan error, h mes
 		if err := h(msg); err != nil {
 			ps.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
 		}
-		d.Ack(false)
 	}
-	done <- nil
+	<- done 
 }
