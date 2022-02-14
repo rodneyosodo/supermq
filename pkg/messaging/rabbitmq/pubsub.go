@@ -77,7 +77,7 @@ func NewPubSub(url string, logger log.Logger) (PubSub, error) {
 		channel:       ch,
 		logger:        logger,
 		subscriptions: make(map[string]bool),
-		done: make(chan bool),
+		done:          make(chan bool),
 	}
 	return ret, nil
 }
@@ -134,7 +134,13 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 	if err != nil {
 		return err
 	}
-	go ps.handle(msgs, ps.done, handler)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		ps.handle(msgs, handler)
+		wg.Done()
+	}()
 
 	ps.subscriptions[topic] = true
 
@@ -165,7 +171,7 @@ func (ps *pubsub) Close() {
 	ps.conn.Close()
 }
 
-func (ps *pubsub) handle(deliveries <-chan amqp.Delivery, done chan bool, h messaging.MessageHandler) {
+func (ps *pubsub) handle(deliveries <-chan amqp.Delivery, h messaging.MessageHandler) {
 	for d := range deliveries {
 		var msg messaging.Message
 		if err := proto.Unmarshal(d.Body, &msg); err != nil {
@@ -176,5 +182,4 @@ func (ps *pubsub) handle(deliveries <-chan amqp.Delivery, done chan bool, h mess
 			ps.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
 		}
 	}
-	<- done 
 }
