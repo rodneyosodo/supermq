@@ -14,13 +14,10 @@ import (
 )
 
 const (
-	topic        = "topic"
-	chansPrefix  = "channels"
-	channel      = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
-	subtopic     = "engine"
-	routingKey   = "routinngkey"
-	exchange     = "mainflux"
-	exchangeKind = "fanout"
+	topic       = "topic"
+	chansPrefix = "channels"
+	channel     = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
+	subtopic    = "engine"
 )
 
 var (
@@ -86,6 +83,60 @@ func TestPubsub(t *testing.T) {
 		{
 			desc:         "Unsusbcribe to a topic with a subtopic",
 			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
+			errorMessage: nil,
+			pubsub:       true,
+		},
+		{
+			desc:         "Doubling Susbcribe to a topic",
+			topic:        "increaseTopic",
+			errorMessage: nil,
+			pubsub:       false,
+		},
+		{
+			desc:         "Doubling Susbcribe to an already subscribed topic",
+			topic:        "increaseTopic",
+			errorMessage: errors.New("already subscribed to topic"),
+			pubsub:       false,
+		},
+		{
+			desc:         "Doubling Susbcribe to a topic with a sub topic",
+			topic:        "secondTopic",
+			errorMessage: nil,
+			pubsub:       false,
+		},
+		{
+			desc:         "Doubling Susbcribe to an already subscribed topic with a sub topic",
+			topic:        "secondTopic",
+			errorMessage: errors.New("already subscribed to topic"),
+			pubsub:       false,
+		},
+		{
+			desc:         "Doubling Susbcribe to an empty topic",
+			topic:        "",
+			errorMessage: errors.New("empty topic"),
+			pubsub:       false,
+		},
+		{
+			desc:         "Doubling Unsusbcribe to an empty topic",
+			topic:        "",
+			errorMessage: errors.New("empty topic"),
+			pubsub:       true,
+		},
+		{
+			desc:         "Doubling Unsusbcribe to a topic",
+			topic:        "increaseTopic",
+			errorMessage: nil,
+			pubsub:       true,
+		},
+		{
+			desc:         "Doubling Unsusbcribe to an already unsubscribed topic",
+			topic:        "increaseTopic",
+			errorMessage: errors.New("not subscribed"),
+			pubsub:       true,
+		},
+		{
+			desc:         "Doubling Unsusbcribe to a topic with a subtopic",
+			topic:        "secondTopic",
 			errorMessage: nil,
 			pubsub:       true,
 		},

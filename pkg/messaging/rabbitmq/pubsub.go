@@ -134,7 +134,6 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 	if err != nil {
 		return err
 	}
-
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
@@ -159,7 +158,7 @@ func (ps *pubsub) Unsubscribe(topic string) error {
 		return errNotSubscribed
 	}
 	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
-	if err := ps.channel.QueueBind(ps.queue.Name, RoutingKey, subject, false, nil); err != nil {
+	if err := ps.channel.QueueUnbind(ps.queue.Name, RoutingKey, subject, nil); err != nil {
 		return err
 	}
 
