@@ -24,9 +24,11 @@ const (
 	QueueName          = "mainflux"
 	QueueDurability    = true
 	QueueDelete        = false
-	QueueExclusivity   = true
+	QueueExclusivity   = false
 	QueueWait          = false
 	ConsumerTag        = "mainflux-consumer"
+	Mandatory          = false
+	Immediate          = false
 )
 
 var (
@@ -61,12 +63,10 @@ func NewPubSub(url string, logger log.Logger) (PubSub, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	ch, err := conn.Channel()
 	if err != nil {
 		return nil, err
 	}
-
 	queue, err := ch.QueueDeclare(QueueName, QueueDurability, QueueDelete, QueueExclusivity, QueueWait, nil)
 	if err != nil {
 		return nil, err
@@ -83,6 +83,9 @@ func NewPubSub(url string, logger log.Logger) (PubSub, error) {
 }
 
 func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
+	if topic == "" {
+		return errEmptyTopic
+	}
 	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err
@@ -94,8 +97,8 @@ func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
 	err = ps.channel.Publish(
 		subject,
 		RoutingKey,
-		mandatory,
-		immediate,
+		Mandatory,
+		Immediate,
 		amqp.Publishing{
 			Headers:     amqp.Table{},
 			ContentType: "text/plain",
@@ -130,10 +133,11 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 	if err := ps.channel.QueueBind(ps.queue.Name, RoutingKey, subject, false, nil); err != nil {
 		return err
 	}
-	msgs, err := ps.channel.Consume(ps.queue.Name, "", false, false, false, false, nil)
+	msgs, err := ps.channel.Consume(ps.queue.Name, "", true, false, false, false, nil)
 	if err != nil {
 		return err
 	}
+
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
@@ -153,8 +157,7 @@ func (ps *pubsub) Unsubscribe(topic string) error {
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
-	_, ok := ps.subscriptions[topic]
-	if !ok {
+	if _, ok := ps.subscriptions[topic]; !ok {
 		return errNotSubscribed
 	}
 	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
