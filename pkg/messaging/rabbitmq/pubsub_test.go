@@ -196,6 +196,7 @@ func TestPubsub(t *testing.T) {
 			Subtopic: tc.subtopic,
 			Payload:  tc.payload,
 		}
+		fmt.Println(tc.desc)
 		_ = pubsub.Subscribe(topic, handler)
 		err := pubsub.Publish(topic, expectedMsg)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -203,10 +204,29 @@ func TestPubsub(t *testing.T) {
 		receivedMsg := <-msgChan
 		assert.Equal(t, expectedMsg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
 	}
+	fmt.Println("Unsubscribe")
+
+	expectedMsg := messaging.Message{
+		Channel:  channel,
+		Subtopic: "demo",
+		Payload:  data,
+	}
+	_ = pubsub.Subscribe(topic, handler)
+
+	fmt.Println("Publish 1")
+	_ = pubsub.Publish(topic, expectedMsg)
+
+	_ = pubsub.Unsubscribe(topic)
+
+	fmt.Println("Publish 2")
+	_ = pubsub.Publish(topic, expectedMsg)
+	fmt.Println("Publish 3")
+	_ = pubsub.Publish(topic, expectedMsg)
 
 }
 
 func handler(msg messaging.Message) error {
+	fmt.Printf("Message published: %s\n", string(msg.Payload))
 	msgChan <- msg
 	return nil
 }
