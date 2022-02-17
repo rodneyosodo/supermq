@@ -49,7 +49,6 @@ type PubSub interface {
 type pubsub struct {
 	conn          *amqp.Connection
 	logger        log.Logger
-	mu            sync.Mutex
 	queue         amqp.Queue
 	channel       *amqp.Channel
 	subscriptions map[string]bool
@@ -118,8 +117,6 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 	if topic == "" {
 		return errEmptyTopic
 	}
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
 	if _, ok := ps.subscriptions[topic]; ok {
 		return errAlreadySubscribed
 	}
@@ -151,11 +148,10 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 }
 
 func (ps *pubsub) Unsubscribe(topic string) error {
+	defer ps.channel.Cancel("", false)
 	if topic == "" {
 		return errEmptyTopic
 	}
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
 
 	if _, ok := ps.subscriptions[topic]; !ok {
 		return errNotSubscribed
