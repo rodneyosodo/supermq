@@ -62,7 +62,7 @@ const (
 	defThingsAuthTimeout = "1s"
 	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
-	// Nats
+	// RabbitMQ
 	defRabbitURL = "guest:guest@localhost:5672/"
 	envRabbitURL = "MF_RABBITMQ_URL"
 	// Jaeger
@@ -160,7 +160,7 @@ func main() {
 
 	fwd := mqtt.NewForwarder(rabbitmq.SubjectAllChannels, logger)
 	if err := fwd.Forward(nps, mpub); err != nil {
-		logger.Error(fmt.Sprintf("Failed to forward NATS messages: %s", err))
+		logger.Error(fmt.Sprintf("Failed to forward RABBITMQ messages: %s", err))
 		os.Exit(1)
 	}
 

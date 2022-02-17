@@ -22,7 +22,7 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	pubsub, err := rabbitmq.NewPubSub("guest:guest@localhost:5672/", logger)
+	pubsub, err := rabbitmq.NewPubSub("guest:guest@localhost:5672/", "Pub1", logger)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}

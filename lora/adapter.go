@@ -117,7 +117,7 @@ func (as *adapterService) Publish(ctx context.Context, m Message) error {
 		payload = []byte(jo)
 	}
 
-	// Publish on Mainflux NATS broker
+	// Publish on Mainflux RabbitMQ broker
 	msg := messaging.Message{
 		Publisher: thingID,
 		Protocol:  protocol,

@@ -30,7 +30,7 @@ var (
 	errParseConfFile = errors.New("unable to parse configuration file")
 )
 
-// Start method starts consuming messages received from NATS.
+// Start method starts consuming messages received from RabbitMQ.
 // This method transforms messages to SenML format before
 // using MessageRepository to store them.
 func Start(sub messaging.Subscriber, consumer Consumer, configPath string, logger logger.Logger) error {
