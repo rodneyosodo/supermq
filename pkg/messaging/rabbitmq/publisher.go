@@ -13,16 +13,6 @@ import (
 
 var _ messaging.Publisher = (*publisher)(nil)
 
-var (
-	queueName        = "mainflux-queue"
-	queueDurability  = false
-	queueDelete      = false
-	queueExclusivity = false
-	queueWait        = false
-	mandatory        = false
-	immediate        = false
-)
-
 type publisher struct {
 	connection *amqp.Connection
 	channel    *amqp.Channel
@@ -68,8 +58,8 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 	err = pub.channel.Publish(
 		subject,
 		RoutingKey,
-		mandatory,
-		immediate,
+		Mandatory,
+		Immediate,
 		amqp.Publishing{
 			Headers:     amqp.Table{},
 			ContentType: "text/plain",

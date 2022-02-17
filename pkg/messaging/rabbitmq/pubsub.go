@@ -27,6 +27,8 @@ const (
 	QueueExclusivity   = false
 	QueueWait          = false
 	ConsumerTag        = "mainflux-consumer"
+	Mandatory          = false
+	Immediate          = false
 )
 
 var (
@@ -47,7 +49,6 @@ type PubSub interface {
 type pubsub struct {
 	conn          *amqp.Connection
 	logger        log.Logger
-	mu            sync.Mutex
 	queue         amqp.Queue
 	channel       *amqp.Channel
 	subscriptions map[string]bool
@@ -81,6 +82,9 @@ func NewPubSub(url string, logger log.Logger) (PubSub, error) {
 }
 
 func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
+	if topic == "" {
+		return errEmptyTopic
+	}
 	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err
@@ -92,8 +96,8 @@ func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
 	err = ps.channel.Publish(
 		subject,
 		RoutingKey,
-		mandatory,
-		immediate,
+		Mandatory,
+		Immediate,
 		amqp.Publishing{
 			Headers:     amqp.Table{},
 			ContentType: "text/plain",
@@ -113,8 +117,6 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 	if topic == "" {
 		return errEmptyTopic
 	}
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
 	if _, ok := ps.subscriptions[topic]; ok {
 		return errAlreadySubscribed
 	}
@@ -146,13 +148,10 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 }
 
 func (ps *pubsub) Unsubscribe(topic string) error {
-	// defer ps.channel.Close()
-
+	defer ps.channel.Cancel("", false)
 	if topic == "" {
 		return errEmptyTopic
 	}
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
 
 	if _, ok := ps.subscriptions[topic]; !ok {
 		return errNotSubscribed
