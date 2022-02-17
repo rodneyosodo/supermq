@@ -27,7 +27,7 @@ default values.
 | MF_TWINS_CLIENT_TLS        | Flag that indicates if TLS should be turned on                       | false                 |
 | MF_TWINS_CA_CERTS          | Path to trusted CAs in PEM format                                    |                       |
 | MF_TWINS_CHANNEL_ID        | NATS notifications channel ID                                        |                       |
-| MF_NATS_URL                | Mainflux NATS broker URL                                             | nats://localhost:4222 |
+| MF_RABBITMQ_URL                | Mainflux NATS broker URL                                             | guest:guest@localhost:5672/ |
 | MF_AUTH_GRPC_URL           | Auth service gRPC URL                                                | localhost:8181        |
 | MF_AUTH_GRPC_TIMEOUT       | Auth service gRPC request timeout in seconds                         | 1s                    |
 | MF_TWINS_CACHE_URL         | Cache database URL                                                   | localhost:6379        |
@@ -68,7 +68,7 @@ MF_THINGS_STANDALONE_TOKEN=[User token for standalone mode that should be passed
 MF_TWINS_CLIENT_TLS: [Flag that indicates if TLS should be turned on] \
 MF_TWINS_CA_CERTS: [Path to trusted CAs in PEM format] \
 MF_TWINS_CHANNEL_ID: [NATS notifications channel ID] \
-MF_NATS_URL: [Mainflux NATS broker URL] \
+MF_RABBITMQ_URL: [Mainflux NATS broker URL] \
 MF_AUTH_GRPC_URL: [Auth service gRPC URL] \
 MF_AUTH_GRPC_TIMEOUT: [Auth service gRPC request timeout in seconds] \
 $GOBIN/mainflux-twins

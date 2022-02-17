@@ -10,7 +10,7 @@ default values.
 
 | Variable                             | Description                                     | Default                |
 | -----------------------------------  | ----------------------------------------------- | ---------------------- |
-| MF_NATS_URL                          | NATS instance URL                               | nats://localhost:4222  |
+| MF_RABBITMQ_URL                          | NATS instance URL                               | guest:guest@localhost:5672/  |
 | MF_TIMESCALE_WRITER_LOG_LEVEL        | Service log level                               | error                  |
 | MF_TIMESCALE_WRITER_PORT             | Service HTTP port                               | 9104                   |
 | MF_TIMESCALE_WRITER_DB_HOST          | Timescale DB host                               | timescale              |
@@ -43,7 +43,7 @@ make timescale-writer
 make install
 
 # Set the environment variables and run the service
-MF_NATS_URL=[NATS instance URL] \
+MF_RABBITMQ_URL=[NATS instance URL] \
 MF_TIMESCALE_WRITER_LOG_LEVEL=[Service log level] \
 MF_TIMESCALE_WRITER_PORT=[Service HTTP port] \
 MF_TIMESCALE_WRITER_DB_HOST=[Timescale host] \

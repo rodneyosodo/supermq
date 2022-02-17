@@ -22,7 +22,7 @@ import (
 	"github.com/mainflux/mainflux/lora/api"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/mqtt"
-	"github.com/mainflux/mainflux/pkg/messaging/nats"
+	"github.com/mainflux/mainflux/pkg/messaging/rabbitmq"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/mainflux/mainflux/lora/redis"
@@ -34,7 +34,7 @@ const (
 	defHTTPPort       = "8180"
 	defLoraMsgURL     = "tcp://localhost:1883"
 	defSubTimeout     = "30s" // 30 seconds
-	defNatsURL        = "nats://localhost:4222"
+	defRabbitURL      = "guest:guest@localhost:5672/"
 	defESURL          = "localhost:6379"
 	defESPass         = ""
 	defESDB           = "0"
@@ -46,7 +46,7 @@ const (
 	envHTTPPort       = "MF_LORA_ADAPTER_HTTP_PORT"
 	envLoraMsgURL     = "MF_LORA_ADAPTER_MESSAGES_URL"
 	envSubTimeout     = "MF_LORA_ADAPTER_SUBSCRIBER_TIMEOUT"
-	envNatsURL        = "MF_NATS_URL"
+	envRabbitURL      = "MF_RABBITMQ_URL"
 	envLogLevel       = "MF_LORA_ADAPTER_LOG_LEVEL"
 	envESURL          = "MF_THINGS_ES_URL"
 	envESPass         = "MF_THINGS_ES_PASS"
@@ -66,7 +66,7 @@ const (
 type config struct {
 	httpPort       string
 	loraMsgURL     string
-	natsURL        string
+	rabbitURL      string
 	subTimeout     time.Duration
 	logLevel       string
 	esURL          string
@@ -92,9 +92,9 @@ func main() {
 	esConn := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
 	defer esConn.Close()
 
-	pub, err := nats.NewPublisher(cfg.natsURL)
+	pub, err := rabbitmq.NewPublisher(cfg.rabbitURL)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to NATS: %s", err))
+		logger.Error(fmt.Sprintf("Failed to connect to RABBITMQ: %s", err))
 		os.Exit(1)
 	}
 	defer pub.Close()
@@ -154,7 +154,7 @@ func loadConfig() config {
 		httpPort:       mainflux.Env(envHTTPPort, defHTTPPort),
 		loraMsgURL:     mainflux.Env(envLoraMsgURL, defLoraMsgURL),
 		subTimeout:     mqttTimeout,
-		natsURL:        mainflux.Env(envNatsURL, defNatsURL),
+		rabbitURL:      mainflux.Env(envRabbitURL, defRabbitURL),
 		logLevel:       mainflux.Env(envLogLevel, defLogLevel),
 		esURL:          mainflux.Env(envESURL, defESURL),
 		esPass:         mainflux.Env(envESPass, defESPass),

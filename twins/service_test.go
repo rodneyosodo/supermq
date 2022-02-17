@@ -22,7 +22,7 @@ const (
 	token      = "token"
 	wrongToken = "wrong-token"
 	email      = "user@example.com"
-	natsURL    = "nats://localhost:4222"
+	rabbitURL  = "guest:guest@localhost:5672/"
 	numRecs    = 100
 )
 

@@ -22,7 +22,7 @@ default values.
 | MF_MQTT_ADAPTER_WS_TARGET_PORT           | MQTT broker port for MQTT over WS                      | 8080                  |
 | MF_MQTT_ADAPTER_WS_TARGET_PATH           | MQTT broker MQTT over WS path                          | /mqtt                 |
 | MF_MQTT_ADAPTER_FORWARDER_TIMEOUT        | MQTT forwarder for multiprotocol communication timeout | 30s                   |
-| MF_NATS_URL                              | NATS broker URL                                        | nats://127.0.0.1:4222 |
+| MF_RABBITMQ_URL                              | NATS broker URL                                        | nats://127.0.0.1:4222 |
 | MF_THINGS_AUTH_GRPC_URL                  | Things gRPC endpoint URL                               | localhost:8181        |
 | MF_THINGS_AUTH_GRPC_TIMEOUT              | Timeout in seconds for Things service gRPC calls       | 1s                    |
 | MF_JAEGER_URL                            | URL of Jaeger tracing service                          | ""                    |
@@ -66,7 +66,7 @@ MF_MQTT_ADAPTER_WS_TARGET_HOST=[MQTT broker for MQTT over WS host] \
 MF_MQTT_ADAPTER_WS_TARGET_PORT=[MQTT broker for MQTT over WS port]] \
 MF_MQTT_ADAPTER_WS_TARGET_PATH=[MQTT adapter WS path] \
 MF_MQTT_ADAPTER_FORWARDER_TIMEOUT=[MQTT forwarder for multiprotocol support timeout] \
-MF_NATS_URL=[NATS instance URL] \
+MF_RABBITMQ_URL=[NATS instance URL] \
 MF_THINGS_AUTH_GRPC_URL=[Things service Auth gRPC URL] \
 MF_THINGS_AUTH_GRPC_TIMEOUT=[Things service Auth gRPC request timeout in seconds] \
 MF_JAEGER_URL=[Jaeger service URL] \

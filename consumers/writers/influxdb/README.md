@@ -10,7 +10,7 @@ default values.
 
 | Variable                      | Description                                                             | Default                |
 | ----------------------------- | ----------------------------------------------------------------------- | ---------------------- |
-| MF_NATS_URL                   | NATS instance URL                                                       | nats://localhost:4222  |
+| MF_RABBITMQ_URL                   | NATS instance URL                                                       | guest:guest@localhost:5672/  |
 | MF_INFLUX_WRITER_LOG_LEVEL    | Log level for InfluxDB writer (debug, info, warn, error)                | error                  |
 | MF_INFLUX_WRITER_PORT         | Service HTTP port                                                       | 8180                   |
 | MF_INFLUX_WRITER_DB_HOST      | InfluxDB host                                                           | localhost              |
@@ -39,7 +39,7 @@ make influxdb
 make install
 
 # Set the environment variables and run the service
-MF_NATS_URL=[NATS instance URL] \
+MF_RABBITMQ_URL=[NATS instance URL] \
 MF_INFLUX_WRITER_LOG_LEVEL=[Influx writer log level] \
 MF_INFLUX_WRITER_PORT=[Service HTTP port] \
 MF_INFLUXDB_DB=[InfluxDB database name] \

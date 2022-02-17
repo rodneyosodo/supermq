@@ -12,7 +12,7 @@ default values.
 | --------------------------- | --------------------------------------------------- | --------------------- |
 | MF_HTTP_ADAPTER_LOG_LEVEL   | Log level for the HTTP Adapter                      | error                 |
 | MF_HTTP_ADAPTER_PORT        | Service HTTP port                                   | 8180                  |
-| MF_NATS_URL                 | NATS instance URL                                   | nats://localhost:4222 |
+| MF_RABBITMQ_URL                 | NATS instance URL                                   | guest:guest@localhost:5672/ |
 | MF_HTTP_ADAPTER_CLIENT_TLS  | Flag that indicates if TLS should be turned on      | false                 |
 | MF_HTTP_ADAPTER_CA_CERTS    | Path to trusted CAs in PEM format                   |                       |
 | MF_JAEGER_URL               | Jaeger server URL                                   | localhost:6831        |
@@ -39,7 +39,7 @@ make http
 make install
 
 # set the environment variables and run the service
-MF_NATS_URL=[NATS instance URL] \
+MF_RABBITMQ_URL=[NATS instance URL] \
 MF_HTTP_ADAPTER_LOG_LEVEL=[HTTP Adapter Log Level] \
 MF_HTTP_ADAPTER_PORT=[Service HTTP port] \
 MF_HTTP_ADAPTER_CA_CERTS=[Path to trusted CAs in PEM format] \

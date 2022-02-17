@@ -27,7 +27,7 @@ import (
 	"github.com/mainflux/mainflux/consumers/notifiers/tracing"
 	"github.com/mainflux/mainflux/internal/email"
 	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/messaging/nats"
+	"github.com/mainflux/mainflux/pkg/messaging/rabbitmq"
 	"github.com/mainflux/mainflux/pkg/ulid"
 	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -53,7 +53,7 @@ const (
 	defServerKey     = ""
 	defFrom          = ""
 	defJaegerURL     = ""
-	defNatsURL       = "nats://localhost:4222"
+	defRabbitURL     = "guest:guest@localhost:5672/"
 
 	defEmailHost        = "localhost"
 	defEmailPort        = "25"
@@ -84,7 +84,7 @@ const (
 	envServerKey     = "MF_SMTP_NOTIFIER_SERVER_KEY"
 	envFrom          = "MF_SMTP_NOTIFIER_FROM_ADDR"
 	envJaegerURL     = "MF_JAEGER_URL"
-	envNatsURL       = "MF_NATS_URL"
+	envRabbitURL     = "MF_RABBITMQ_URL"
 
 	envEmailHost        = "MF_EMAIL_HOST"
 	envEmailPort        = "MF_EMAIL_PORT"
@@ -101,7 +101,7 @@ const (
 )
 
 type config struct {
-	natsURL     string
+	rabbitURL   string
 	configPath  string
 	logLevel    string
 	dbConfig    postgres.Config
@@ -128,9 +128,9 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	pubSub, err := nats.NewPubSub(cfg.natsURL, "", logger)
+	pubSub, err := rabbitmq.NewPubSub(cfg.rabbitURL, "", logger)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to NATS: %s", err))
+		logger.Error(fmt.Sprintf("Failed to connect to RABBITMQ: %s", err))
 		os.Exit(1)
 	}
 	defer pubSub.Close()
@@ -203,7 +203,7 @@ func loadConfig() config {
 
 	return config{
 		logLevel:    mainflux.Env(envLogLevel, defLogLevel),
-		natsURL:     mainflux.Env(envNatsURL, defNatsURL),
+		rabbitURL:   mainflux.Env(envRabbitURL, defRabbitURL),
 		configPath:  mainflux.Env(envConfigPath, defConfigPath),
 		dbConfig:    dbConfig,
 		emailConf:   emailConf,

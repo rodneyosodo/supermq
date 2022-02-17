@@ -460,14 +460,14 @@ nc, err = nats.Connect(servers,
 // to any server in that mesh when authentication is required.
 // Instead of providing the credentials in the initial URL, you will use
 // new option setters:
-nc, err = nats.Connect("nats://localhost:4222", nats.UserInfo("foo", "bar"))
+nc, err = nats.Connect("guest:guest@localhost:5672/", nats.UserInfo("foo", "bar"))
 
 // For token based authentication:
-nc, err = nats.Connect("nats://localhost:4222", nats.Token("S3cretT0ken"))
+nc, err = nats.Connect("guest:guest@localhost:5672/", nats.Token("S3cretT0ken"))
 
 // You can even pass the two at the same time in case one of the server
 // in the mesh requires token instead of user name and password.
-nc, err = nats.Connect("nats://localhost:4222",
+nc, err = nats.Connect("guest:guest@localhost:5672/",
     nats.UserInfo("foo", "bar"),
     nats.Token("S3cretT0ken"))
 

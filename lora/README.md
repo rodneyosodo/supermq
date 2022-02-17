@@ -15,7 +15,7 @@ default values.
 |----------------------------------|--------------------------------------|-----------------------|
 | MF_LORA_ADAPTER_HTTP_PORT        | Service HTTP port                    | 8180                  |
 | MF_LORA_ADAPTER_LOG_LEVEL        | Service Log level                    | error                 |
-| MF_NATS_URL                      | NATS instance URL                    | nats://localhost:4222 |
+| MF_RABBITMQ_URL                      | NATS instance URL                    | guest:guest@localhost:5672/ |
 | MF_LORA_ADAPTER_MESSAGES_URL     | LoRa Server MQTT broker URL          | tcp://localhost:1883  |
 | MF_LORA_ADAPTER_ROUTE_MAP_URL    | Route-map database URL               | localhost:6379        |
 | MF_LORA_ADAPTER_ROUTE_MAP_PASS   | Route-map database password          |                       |
@@ -46,7 +46,7 @@ make install
 
 # set the environment variables and run the service
 MF_LORA_ADAPTER_LOG_LEVEL=[Lora Adapter Log Level] \
-MF_NATS_URL=[NATS instance URL] \
+MF_RABBITMQ_URL=[NATS instance URL] \
 MF_LORA_ADAPTER_MESSAGES_URL=[LoRa Server mqtt broker URL] \
 MF_LORA_ADAPTER_ROUTE_MAP_URL=[Lora adapter routemap URL] \
 MF_LORA_ADAPTER_ROUTE_MAP_PASS=[Lora adapter routemap password] \

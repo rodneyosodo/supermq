@@ -20,7 +20,7 @@ import (
 	"github.com/mainflux/mainflux/consumers/writers/api"
 	"github.com/mainflux/mainflux/consumers/writers/cassandra"
 	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/messaging/nats"
+	"github.com/mainflux/mainflux/pkg/messaging/rabbitmq"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
@@ -28,7 +28,7 @@ const (
 	svcName = "cassandra-writer"
 	sep     = ","
 
-	defNatsURL    = "nats://localhost:4222"
+	defRabbitURL  = "guest:guest@localhost:5672/"
 	defLogLevel   = "error"
 	defPort       = "8180"
 	defCluster    = "127.0.0.1"
@@ -38,7 +38,7 @@ const (
 	defDBPort     = "9042"
 	defConfigPath = "/config.toml"
 
-	envNatsURL    = "MF_NATS_URL"
+	envRabbitURL  = "MF_RABBITMQT_URL"
 	envLogLevel   = "MF_CASSANDRA_WRITER_LOG_LEVEL"
 	envPort       = "MF_CASSANDRA_WRITER_PORT"
 	envCluster    = "MF_CASSANDRA_WRITER_DB_CLUSTER"
@@ -50,7 +50,7 @@ const (
 )
 
 type config struct {
-	natsURL    string
+	rabbitURL  string
 	logLevel   string
 	port       string
 	configPath string
@@ -65,9 +65,9 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	pubSub, err := nats.NewPubSub(cfg.natsURL, "", logger)
+	pubSub, err := rabbitmq.NewPubSub(cfg.rabbitURL, "", logger)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to NATS: %s", err))
+		logger.Error(fmt.Sprintf("Failed to connect to RabbitMQ: %s", err))
 		os.Exit(1)
 	}
 	defer pubSub.Close()
@@ -110,7 +110,7 @@ func loadConfig() config {
 	}
 
 	return config{
-		natsURL:    mainflux.Env(envNatsURL, defNatsURL),
+		rabbitURL:  mainflux.Env(envRabbitURL, defRabbitURL),
 		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
 		port:       mainflux.Env(envPort, defPort),
 		configPath: mainflux.Env(envConfigPath, defConfigPath),

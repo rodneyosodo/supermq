@@ -22,7 +22,7 @@ import (
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	mqttpub "github.com/mainflux/mainflux/pkg/messaging/mqtt"
-	"github.com/mainflux/mainflux/pkg/messaging/nats"
+	"github.com/mainflux/mainflux/pkg/messaging/rabbitmq"
 	thingsapi "github.com/mainflux/mainflux/things/api/auth/grpc"
 	mp "github.com/mainflux/mproxy/pkg/mqtt"
 	"github.com/mainflux/mproxy/pkg/session"
@@ -63,8 +63,8 @@ const (
 	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 	// Nats
-	defNatsURL = "nats://localhost:4222"
-	envNatsURL = "MF_NATS_URL"
+	defRabbitURL = "guest:guest@localhost:5672/"
+	envRabbitURL = "MF_RABBITMQ_URL"
 	// Jaeger
 	defJaegerURL = ""
 	envJaegerURL = "MF_JAEGER_URL"
@@ -107,7 +107,7 @@ type config struct {
 	thingsURL             string
 	thingsAuthURL         string
 	thingsAuthTimeout     time.Duration
-	natsURL               string
+	rabbitURL             string
 	clientTLS             bool
 	caCerts               string
 	instance              string
@@ -145,9 +145,9 @@ func main() {
 	ec := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
 	defer ec.Close()
 
-	nps, err := nats.NewPubSub(cfg.natsURL, "mqtt", logger)
+	nps, err := rabbitmq.NewPubSub(cfg.rabbitURL, "mqtt", logger)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to NATS: %s", err))
+		logger.Error(fmt.Sprintf("Failed to connect to RABBITMQ: %s", err))
 		os.Exit(1)
 	}
 	defer nps.Close()
@@ -158,15 +158,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	fwd := mqtt.NewForwarder(nats.SubjectAllChannels, logger)
+	fwd := mqtt.NewForwarder(rabbitmq.SubjectAllChannels, logger)
 	if err := fwd.Forward(nps, mpub); err != nil {
 		logger.Error(fmt.Sprintf("Failed to forward NATS messages: %s", err))
 		os.Exit(1)
 	}
 
-	np, err := nats.NewPublisher(cfg.natsURL)
+	np, err := rabbitmq.NewPublisher(cfg.rabbitURL)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to NATS: %s", err))
+		logger.Error(fmt.Sprintf("Failed to connect to RABBITMQ: %s", err))
 		os.Exit(1)
 	}
 	defer np.Close()
@@ -233,7 +233,7 @@ func loadConfig() config {
 		thingsAuthURL:         mainflux.Env(envThingsAuthURL, defThingsAuthURL),
 		thingsAuthTimeout:     authTimeout,
 		thingsURL:             mainflux.Env(envThingsAuthURL, defThingsAuthURL),
-		natsURL:               mainflux.Env(envNatsURL, defNatsURL),
+		rabbitURL:             mainflux.Env(envRabbitURL, defRabbitURL),
 		logLevel:              mainflux.Env(envLogLevel, defLogLevel),
 		clientTLS:             tls,
 		caCerts:               mainflux.Env(envCACerts, defCACerts),
