@@ -9,10 +9,7 @@ package coap
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
-
-	log "github.com/mainflux/mainflux/logger"
 
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/messaging/nats"
@@ -50,12 +47,7 @@ type adapterService struct {
 }
 
 // New instantiates the CoAP adapter implementation.
-func New(auth mainflux.ThingsServiceClient, url string, logger log.Logger) Service {
-	pubsub, err := nats.NewPubSub(url, "coap", logger)
-	if err != nil {
-		logger.Error(err.Error())
-		os.Exit(1)
-	}
+func New(auth mainflux.ThingsServiceClient, pubsub nats.PubSub) Service {
 	as := &adapterService{
 		auth:      auth,
 		pubsub:    pubsub,

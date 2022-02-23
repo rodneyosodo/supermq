@@ -20,6 +20,7 @@ import (
 	"github.com/mainflux/mainflux/coap"
 	"github.com/mainflux/mainflux/coap/api"
 	logger "github.com/mainflux/mainflux/logger"
+	"github.com/mainflux/mainflux/pkg/messaging/nats"
 	thingsapi "github.com/mainflux/mainflux/things/api/auth/grpc"
 	opentracing "github.com/opentracing/opentracing-go"
 	gocoap "github.com/plgd-dev/go-coap/v2"
@@ -76,7 +77,12 @@ func main() {
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsAuthTimeout)
 
-	svc := coap.New(tc, cfg.natsURL, logger)
+	pubsub, err := nats.NewPubSub(cfg.natsURL, "coap", logger)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	svc := coap.New(tc, pubsub)
 
 	svc = api.LoggingMiddleware(svc, logger)
 
