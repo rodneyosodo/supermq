@@ -9,11 +9,13 @@ package coap
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 
-	"github.com/gogo/protobuf/proto"
+	log "github.com/mainflux/mainflux/logger"
+
 	"github.com/mainflux/mainflux/pkg/errors"
-	broker "github.com/nats-io/nats.go"
+	"github.com/mainflux/mainflux/pkg/messaging/nats"
 
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/pkg/messaging"
@@ -42,16 +44,21 @@ var _ Service = (*adapterService)(nil)
 // Observers is a map of maps,
 type adapterService struct {
 	auth      mainflux.ThingsServiceClient
-	conn      *broker.Conn
+	pubsub    nats.PubSub
 	observers map[string]observers
 	obsLock   sync.Mutex
 }
 
 // New instantiates the CoAP adapter implementation.
-func New(auth mainflux.ThingsServiceClient, nc *broker.Conn) Service {
+func New(auth mainflux.ThingsServiceClient, url string, logger log.Logger) Service {
+	pubsub, err := nats.NewPubSub(url, "coap", logger)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
 	as := &adapterService{
 		auth:      auth,
-		conn:      nc,
+		pubsub:    pubsub,
 		observers: make(map[string]observers),
 		obsLock:   sync.Mutex{},
 	}
@@ -70,17 +77,7 @@ func (svc *adapterService) Publish(ctx context.Context, key string, msg messagin
 	}
 	msg.Publisher = thid.GetValue()
 
-	data, err := proto.Marshal(&msg)
-	if err != nil {
-		return err
-	}
-
-	subject := fmt.Sprintf("%s.%s", chansPrefix, msg.Channel)
-	if msg.Subtopic != "" {
-		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
-	}
-
-	return svc.conn.Publish(subject, data)
+	return svc.pubsub.Publish(msg.Channel, msg)
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic string, c Client) error {
@@ -102,7 +99,7 @@ func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic 
 		svc.remove(subject, c.Token())
 	}()
 
-	obs, err := NewObserver(subject, c, svc.conn)
+	obs, err := NewObserver(subject, c, svc.pubsub)
 	if err != nil {
 		c.Cancel()
 		return err
@@ -139,7 +136,7 @@ func (svc *adapterService) put(endpoint, token string, o Observer) error {
 	}
 	// If observer exists, cancel subscription and replace it.
 	if sub, ok := obs[token]; ok {
-		if err := sub.Cancel(); err != nil {
+		if err := sub.Cancel(endpoint); err != nil {
 			return errors.Wrap(ErrUnsubscribe, err)
 		}
 	}
@@ -156,7 +153,7 @@ func (svc *adapterService) remove(endpoint, token string) error {
 		return nil
 	}
 	if current, ok := obs[token]; ok {
-		if err := current.Cancel(); err != nil {
+		if err := current.Cancel(endpoint); err != nil {
 			return errors.Wrap(ErrUnsubscribe, err)
 		}
 	}
