@@ -82,7 +82,7 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	defer pubsub.conn.Close()
+	defer pubsub.Close()
 
 	svc := coap.New(tc, pubsub)
 
