@@ -115,20 +115,20 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, key, chanID, subtopi
 	return svc.remove(subject, token)
 }
 
-func (svc *adapterService) put(endpoint, token string, o Observer) error {
+func (svc *adapterService) put(topic, token string, o Observer) error {
 	svc.obsLock.Lock()
 	defer svc.obsLock.Unlock()
 
-	obs, ok := svc.observers[endpoint]
-	// If there are no observers, create map and assign it to the endpoint.
+	obs, ok := svc.observers[topic]
+	// If there are no observers, create map and assign it to the topic.
 	if !ok {
 		obs = observers{token: o}
-		svc.observers[endpoint] = obs
+		svc.observers[topic] = obs
 		return nil
 	}
 	// If observer exists, cancel subscription and replace it.
 	if sub, ok := obs[token]; ok {
-		if err := sub.Cancel(endpoint); err != nil {
+		if err := sub.Cancel(topic); err != nil {
 			return errors.Wrap(ErrUnsubscribe, err)
 		}
 	}
@@ -136,23 +136,23 @@ func (svc *adapterService) put(endpoint, token string, o Observer) error {
 	return nil
 }
 
-func (svc *adapterService) remove(endpoint, token string) error {
+func (svc *adapterService) remove(topic, token string) error {
 	svc.obsLock.Lock()
 	defer svc.obsLock.Unlock()
 
-	obs, ok := svc.observers[endpoint]
+	obs, ok := svc.observers[topic]
 	if !ok {
 		return nil
 	}
 	if current, ok := obs[token]; ok {
-		if err := current.Cancel(endpoint); err != nil {
+		if err := current.Cancel(topic); err != nil {
 			return errors.Wrap(ErrUnsubscribe, err)
 		}
 	}
 	delete(obs, token)
 	// If there are no observers left for the endpint, remove the map.
 	if len(obs) == 0 {
-		delete(svc.observers, endpoint)
+		delete(svc.observers, topic)
 	}
 	return nil
 }
