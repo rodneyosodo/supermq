@@ -4,8 +4,8 @@
 package coap
 
 import (
-	"github.com/mainflux/mainflux/pkg/messaging/nats"
-	broker "github.com/nats-io/nats.go"
+	"github.com/mainflux/mainflux/pkg/messaging/broker"
+	nats "github.com/nats-io/nats.go"
 )
 
 // Observer represents an internal observer used to handle CoAP observe messages.
@@ -14,7 +14,7 @@ type Observer interface {
 }
 
 // NewObserver returns a new Observer instance.
-func NewObserver(subject string, c Client, pubsub nats.PubSub) (Observer, error) {
+func NewObserver(subject string, c Client, pubsub broker.PubSub) (Observer, error) {
 	err := pubsub.Subscribe(subject, c.SendMessage)
 	if err != nil {
 		return nil, err
@@ -28,11 +28,11 @@ func NewObserver(subject string, c Client, pubsub nats.PubSub) (Observer, error)
 
 type observer struct {
 	client Client
-	pubsub nats.PubSub
+	pubsub broker.PubSub
 }
 
 func (o *observer) Cancel(topic string) error {
-	if err := o.pubsub.Unsubscribe(topic); err != nil && err != broker.ErrConnectionClosed {
+	if err := o.pubsub.Unsubscribe(topic); err != nil && err != nats.ErrConnectionClosed {
 		return err
 	}
 	return o.client.Cancel()

@@ -21,7 +21,7 @@ import (
 	"github.com/mainflux/mainflux/opcua/db"
 	"github.com/mainflux/mainflux/opcua/gopcua"
 	"github.com/mainflux/mainflux/opcua/redis"
-	"github.com/mainflux/mainflux/pkg/messaging/nats"
+	"github.com/mainflux/mainflux/pkg/messaging/broker"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -35,7 +35,7 @@ const (
 	defOPCMode        = ""
 	defOPCCertFile    = ""
 	defOPCKeyFile     = ""
-	defNatsURL        = "nats://localhost:4222"
+	defBrokerURL      = "nats://localhost:4222"
 	defESURL          = "localhost:6379"
 	defESPass         = ""
 	defESDB           = "0"
@@ -51,7 +51,7 @@ const (
 	envOPCMode        = "MF_OPCUA_ADAPTER_MODE"
 	envOPCCertFile    = "MF_OPCUA_ADAPTER_CERT_FILE"
 	envOPCKeyFile     = "MF_OPCUA_ADAPTER_KEY_FILE"
-	envNatsURL        = "MF_NATS_URL"
+	envBrokerURL      = "MF_BROKER_URL"
 	envESURL          = "MF_THINGS_ES_URL"
 	envESPass         = "MF_THINGS_ES_PASS"
 	envESDB           = "MF_THINGS_ES_DB"
@@ -68,7 +68,7 @@ const (
 type config struct {
 	httpPort       string
 	opcuaConfig    opcua.Config
-	natsURL        string
+	brokerURL      string
 	logLevel       string
 	esURL          string
 	esPass         string
@@ -97,9 +97,9 @@ func main() {
 	esConn := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
 	defer esConn.Close()
 
-	pubSub, err := nats.NewPubSub(cfg.natsURL, "", logger)
+	pubSub, err := broker.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to NATS: %s", err))
+		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
 	}
 	defer pubSub.Close()
@@ -154,7 +154,7 @@ func loadConfig() config {
 	return config{
 		httpPort:       mainflux.Env(envHTTPPort, defHTTPPort),
 		opcuaConfig:    oc,
-		natsURL:        mainflux.Env(envNatsURL, defNatsURL),
+		brokerURL:      mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:       mainflux.Env(envLogLevel, defLogLevel),
 		esURL:          mainflux.Env(envESURL, defESURL),
 		esPass:         mainflux.Env(envESPass, defESPass),

@@ -106,6 +106,21 @@ services:
     networks:
       - mainflux-base-net
 
+  rabbitmq:
+    image: rabbitmq:3.7-management
+    container_name: mainflux-rabbitmq
+    restart: on-failure
+    environment:
+      RABBITMQ_ERLANG_COOKIE: ${MF_RABBITMQ_COOKIE}
+      RABBITMQ_DEFAULT_USER: ${MF_RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${MF_RABBITMQ_PASS}
+      RABBITMQ_DEFAULT_VHOST: ${MF_RABBITMQ_VHOST}
+    ports:
+      - ${MF_RABBITMQ_PORT}:${MF_RABBITMQ_PORT}
+      - ${MF_RABBITMQ_HTTP_PORT}:${MF_RABBITMQ_HTTP_PORT}
+    networks:
+      - mainflux-base-net
+
   auth-db:
     image: postgres:13.3-alpine
     container_name: mainflux-auth-db
@@ -280,13 +295,14 @@ services:
       - vernemq
       - things
       - nats
+      - rabbitmq
     restart: on-failure
     environment:
       MF_MQTT_ADAPTER_LOG_LEVEL: ${MF_MQTT_ADAPTER_LOG_LEVEL}
       MF_MQTT_ADAPTER_MQTT_PORT: ${MF_MQTT_ADAPTER_MQTT_PORT}
       MF_MQTT_ADAPTER_WS_PORT: ${MF_MQTT_ADAPTER_WS_PORT}
       MF_MQTT_ADAPTER_ES_URL: es-redis:${MF_REDIS_TCP_PORT}
-      MF_NATS_URL: ${MF_NATS_URL}
+      MF_BROKER_URL: ${MF_BROKER_URL}
       MF_MQTT_ADAPTER_MQTT_TARGET_HOST: vernemq
       MF_MQTT_ADAPTER_MQTT_TARGET_PORT: ${MF_MQTT_BROKER_PORT}
       MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK: http://vernemq:8888/health
@@ -305,11 +321,12 @@ services:
     depends_on:
       - things
       - nats
+      - rabbitmq
     restart: on-failure
     environment:
       MF_HTTP_ADAPTER_LOG_LEVEL: debug
       MF_HTTP_ADAPTER_PORT: ${MF_HTTP_ADAPTER_PORT}
-      MF_NATS_URL: ${MF_NATS_URL}
+      MF_BROKER_URL: ${MF_BROKER_URL}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
@@ -333,11 +350,12 @@ services:
     depends_on:
       - things
       - nats
+      - rabbitmq
     restart: on-failure
     environment:
       MF_COAP_ADAPTER_LOG_LEVEL: ${MF_COAP_ADAPTER_LOG_LEVEL}
       MF_COAP_ADAPTER_PORT: ${MF_COAP_ADAPTER_PORT}
-      MF_NATS_URL: ${MF_NATS_URL}
+      MF_BROKER_URL: ${MF_BROKER_URL}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}

@@ -27,7 +27,7 @@ import (
 	mfsmpp "github.com/mainflux/mainflux/consumers/notifiers/smpp"
 	"github.com/mainflux/mainflux/consumers/notifiers/tracing"
 	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/messaging/nats"
+	"github.com/mainflux/mainflux/pkg/messaging/broker"
 	"github.com/mainflux/mainflux/pkg/ulid"
 	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -53,7 +53,7 @@ const (
 	defServerKey     = ""
 	defFrom          = ""
 	defJaegerURL     = ""
-	defNatsURL       = "nats://localhost:4222"
+	defBrokerURL     = "nats://localhost:4222"
 
 	defSmppAddress    = ""
 	defSmppUsername   = ""
@@ -85,7 +85,7 @@ const (
 	envServerKey     = "MF_SMPP_NOTIFIER_SERVER_KEY"
 	envFrom          = "MF_SMPP_NOTIFIER_SOURCE_ADDR"
 	envJaegerURL     = "MF_JAEGER_URL"
-	envNatsURL       = "MF_NATS_URL"
+	envBrokerURL     = "MF_BROKER_URL"
 
 	envSmppAddress    = "MF_SMPP_ADDRESS"
 	envSmppUsername   = "MF_SMPP_USERNAME"
@@ -103,7 +103,7 @@ const (
 )
 
 type config struct {
-	natsURL     string
+	brokerURL   string
 	configPath  string
 	logLevel    string
 	dbConfig    postgres.Config
@@ -130,9 +130,9 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	pubSub, err := nats.NewPubSub(cfg.natsURL, "", logger)
+	pubSub, err := broker.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to NATS: %s", err))
+		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
 	}
 	defer pubSub.Close()
@@ -223,7 +223,7 @@ func loadConfig() config {
 
 	return config{
 		logLevel:    mainflux.Env(envLogLevel, defLogLevel),
-		natsURL:     mainflux.Env(envNatsURL, defNatsURL),
+		brokerURL:   mainflux.Env(envBrokerURL, defBrokerURL),
 		configPath:  mainflux.Env(envConfigPath, defConfigPath),
 		dbConfig:    dbConfig,
 		smppConf:    smppConf,

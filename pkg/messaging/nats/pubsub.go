@@ -17,9 +17,6 @@ import (
 
 const chansPrefix = "channels"
 
-// SubjectAllChannels represents subject to subscribe for all the channels.
-const SubjectAllChannels = "channels.>"
-
 var (
 	errAlreadySubscribed = errors.New("already subscribed to topic")
 	errNotSubscribed     = errors.New("not subscribed")
