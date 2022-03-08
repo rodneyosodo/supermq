@@ -96,28 +96,12 @@ services:
       - mqtt-adapter
       - http-adapter
 
-  nats:
-    image: nats:2.2.4-alpine
-    container_name: mainflux-nats
-    command: "-c /etc/nats/nats.conf"
+  broker:
+    extends:
+      file: broker/MESSAGE_BROKER_FILE
+      service: broker
+    container_name: mainflux-broker
     restart: on-failure
-    volumes:
-      - ./nats/:/etc/nats
-    networks:
-      - mainflux-base-net
-
-  rabbitmq:
-    image: rabbitmq:3.7-management
-    container_name: mainflux-rabbitmq
-    restart: on-failure
-    environment:
-      RABBITMQ_ERLANG_COOKIE: ${MF_RABBITMQ_COOKIE}
-      RABBITMQ_DEFAULT_USER: ${MF_RABBITMQ_USER}
-      RABBITMQ_DEFAULT_PASS: ${MF_RABBITMQ_PASS}
-      RABBITMQ_DEFAULT_VHOST: ${MF_RABBITMQ_VHOST}
-    ports:
-      - ${MF_RABBITMQ_PORT}:${MF_RABBITMQ_PORT}
-      - ${MF_RABBITMQ_HTTP_PORT}:${MF_RABBITMQ_HTTP_PORT}
     networks:
       - mainflux-base-net
 
@@ -294,8 +278,7 @@ services:
     depends_on:
       - vernemq
       - things
-      - nats
-      - rabbitmq
+      - broker
     restart: on-failure
     environment:
       MF_MQTT_ADAPTER_LOG_LEVEL: ${MF_MQTT_ADAPTER_LOG_LEVEL}
@@ -320,8 +303,7 @@ services:
     container_name: mainflux-http
     depends_on:
       - things
-      - nats
-      - rabbitmq
+      - broker
     restart: on-failure
     environment:
       MF_HTTP_ADAPTER_LOG_LEVEL: debug
@@ -349,8 +331,7 @@ services:
     container_name: mainflux-coap
     depends_on:
       - things
-      - nats
-      - rabbitmq
+      - broker
     restart: on-failure
     environment:
       MF_COAP_ADAPTER_LOG_LEVEL: ${MF_COAP_ADAPTER_LOG_LEVEL}

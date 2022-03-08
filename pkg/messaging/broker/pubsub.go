@@ -4,8 +4,7 @@
 package broker
 
 import (
-	"strings"
-
+	"github.com/mainflux/mainflux"
 	log "github.com/mainflux/mainflux/logger"
 
 	"github.com/mainflux/mainflux/pkg/messaging/nats"
@@ -13,7 +12,7 @@ import (
 )
 
 const (
-	chansPrefix = "channels"
+	// chansPrefix = "channels"
 
 	// SubjectAllChannels represents subject to subscribe for all the channels.
 	SubjectAllChannels = "channels.>"
@@ -24,13 +23,14 @@ type PubSub nats.PubSub
 
 // NewPubSub This aggregates the NewPubSub function for all message brokers
 func NewPubSub(url, queue string, logger log.Logger) (nats.PubSub, error) {
-	if strings.Contains(url, "nats") {
+	brokerSelection := mainflux.Env(envBrokerType, defBrokerType)
+	if brokerSelection == "nats" {
 		pb, err := nats.NewPubSub(url, queue, logger)
 		if err != nil {
 			return nil, err
 		}
 		return pb, nil
-	} else if strings.Contains(url, "rabbitmq") {
+	} else if brokerSelection == "rabbitmq" {
 		pb, err := rabbitmq.NewPubSub(url, queue, logger)
 		if err != nil {
 			return nil, err

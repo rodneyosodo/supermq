@@ -111,4 +111,9 @@ rundev:
 	cd scripts && ./run.sh
 
 run:
+ifeq ("$(MF_BROKER_TYPE)", "nats")
+	sed -i "s,MESSAGE_BROKER_FILE,nats.yml," docker/docker-compose.yml
+else
+	sed -i "s,MESSAGE_BROKER_FILE,rabbitmq.yml," docker/docker-compose.yml
+endif
 	docker-compose -f docker/docker-compose.yml up
