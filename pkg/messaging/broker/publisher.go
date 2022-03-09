@@ -5,7 +5,6 @@ package broker
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/pkg/messaging/nats"
