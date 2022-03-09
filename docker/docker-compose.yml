@@ -98,7 +98,7 @@ services:
 
   broker:
     extends:
-      file: broker/MESSAGE_BROKER_FILE
+      file: broker/nats.yml
       service: broker
     container_name: mainflux-broker
     restart: on-failure
