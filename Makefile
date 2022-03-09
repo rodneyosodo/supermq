@@ -111,9 +111,9 @@ rundev:
 	cd scripts && ./run.sh
 
 run:
-ifeq ("$(MF_BROKER_TYPE)", "nats")
-	sed -i "s,MESSAGE_BROKER_FILE,nats.yml," docker/docker-compose.yml
+ifeq ("$(MF_BROKER_TYPE)", "rabbitmq")
+	grep -q "MESSAGE_BROKER_FILE" docker/docker-compose.yml && sed -i "s,MESSAGE_BROKER_FILE,rabbitmq.yml," docker/docker-compose.yml || sed -i "s,nats.yml,rabbitmq.yml," docker/docker-compose.yml 
 else
-	sed -i "s,MESSAGE_BROKER_FILE,rabbitmq.yml," docker/docker-compose.yml
+	grep -q "MESSAGE_BROKER_FILE" docker/docker-compose.yml && sed -i "s,MESSAGE_BROKER_FILE,nats.yml," docker/docker-compose.yml || sed -i "s,rabbitmq.yml,nats.yml," docker/docker-compose.yml 
 endif
-	docker-compose -f docker/docker-compose.yml up
+	docker-compose -f docker/docker-compose.yml up -d
