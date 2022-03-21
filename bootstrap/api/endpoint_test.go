@@ -23,7 +23,8 @@ import (
 	"github.com/mainflux/mainflux/bootstrap"
 	bsapi "github.com/mainflux/mainflux/bootstrap/api"
 	"github.com/mainflux/mainflux/bootstrap/mocks"
-	"github.com/mainflux/mainflux/internal/httputil"
+	"github.com/mainflux/mainflux/internal/apiutil"
+	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 	mfsdk "github.com/mainflux/mainflux/pkg/sdk/go"
 	"github.com/mainflux/mainflux/things"
@@ -82,12 +83,14 @@ var (
 		CACert:     "newca",
 	}
 
-	bsErrorRes   = toJSON(httputil.ErrorRes{Err: bootstrap.ErrBootstrap.Error()})
-	authnRes     = toJSON(httputil.ErrorRes{Err: errors.ErrAuthentication.Error()})
-	authzRes     = toJSON(httputil.ErrorRes{Err: errors.ErrAuthorization.Error()})
-	malformedRes = toJSON(httputil.ErrorRes{Err: errors.ErrMalformedEntity.Error()})
-	extKeyRes    = toJSON(httputil.ErrorRes{Err: bootstrap.ErrExternalKey.Error()})
-	extSecKeyRes = toJSON(httputil.ErrorRes{Err: bootstrap.ErrExternalKeySecure.Error()})
+	bsErrorRes    = toJSON(apiutil.ErrorRes{Err: bootstrap.ErrBootstrap.Error()})
+	authnRes      = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
+	authzRes      = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthorization.Error()})
+	malformedRes  = toJSON(apiutil.ErrorRes{Err: errors.ErrMalformedEntity.Error()})
+	extKeyRes     = toJSON(apiutil.ErrorRes{Err: bootstrap.ErrExternalKey.Error()})
+	extSecKeyRes  = toJSON(apiutil.ErrorRes{Err: bootstrap.ErrExternalKeySecure.Error()})
+	missingIDRes  = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingID.Error()})
+	missingKeyRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerKey.Error()})
 )
 
 type testRequest struct {
@@ -96,6 +99,7 @@ type testRequest struct {
 	url         string
 	contentType string
 	token       string
+	key         string
 	body        io.Reader
 }
 
@@ -120,7 +124,10 @@ func (tr testRequest) make() (*http.Response, error) {
 	}
 
 	if tr.token != "" {
-		req.Header.Set("Authorization", httputil.BearerPrefix+tr.token)
+		req.Header.Set("Authorization", apiutil.BearerPrefix+tr.token)
+	}
+	if tr.key != "" {
+		req.Header.Set("Authorization", apiutil.ThingPrefix+tr.key)
 	}
 
 	if tr.contentType != "" {
@@ -188,12 +195,14 @@ func newThingsService(auth mainflux.AuthServiceClient) things.Service {
 }
 
 func newThingsServer(svc things.Service) *httptest.Server {
-	mux := thingsapi.MakeHandler(mocktracer.New(), svc)
+	logger := logger.NewMock()
+	mux := thingsapi.MakeHandler(mocktracer.New(), svc, logger)
 	return httptest.NewServer(mux)
 }
 
 func newBootstrapServer(svc bootstrap.Service) *httptest.Server {
-	mux := bsapi.MakeHandler(svc, bootstrap.NewConfigReader(encKey))
+	logger := logger.NewMock()
+	mux := bsapi.MakeHandler(svc, bootstrap.NewConfigReader(encKey), logger)
 	return httptest.NewServer(mux)
 }
 
@@ -1092,7 +1101,7 @@ func TestBootstrap(t *testing.T) {
 			externalID:  "",
 			externalKey: c.ExternalKey,
 			status:      http.StatusBadRequest,
-			res:         malformedRes,
+			res:         missingIDRes,
 			secure:      false,
 		},
 		{
@@ -1108,7 +1117,7 @@ func TestBootstrap(t *testing.T) {
 			externalID:  c.ExternalID,
 			externalKey: "",
 			status:      http.StatusUnauthorized,
-			res:         authnRes,
+			res:         missingKeyRes,
 			secure:      false,
 		},
 		{
@@ -1142,7 +1151,7 @@ func TestBootstrap(t *testing.T) {
 			client: bs.Client(),
 			method: http.MethodGet,
 			url:    fmt.Sprintf("%s/things/bootstrap/%s", bs.URL, tc.externalID),
-			token:  tc.externalKey,
+			key:    tc.externalKey,
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
