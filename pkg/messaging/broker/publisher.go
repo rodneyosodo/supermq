@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"github.com/mainflux/mainflux"
+	"github.com/mainflux/mainflux/pkg/messaging/kafka"
 	"github.com/mainflux/mainflux/pkg/messaging/nats"
 	"github.com/mainflux/mainflux/pkg/messaging/rabbitmq"
 )
@@ -31,6 +32,12 @@ func NewPublisher(url string) (nats.Publisher, error) {
 		return pb, nil
 	} else if brokerSelection == "rabbitmq" {
 		pb, err := rabbitmq.NewPublisher(url)
+		if err != nil {
+			return nil, err
+		}
+		return pb, nil
+	} else if brokerSelection == "kafka" {
+		pb, err := kafka.NewPublisher(url)
 		if err != nil {
 			return nil, err
 		}

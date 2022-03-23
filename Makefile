@@ -115,6 +115,8 @@ ifeq ("$(MF_BROKER_TYPE)", "rabbitmq")
 	sed -i "s,file: broker/.*.yml,file: broker/rabbitmq.yml," docker/docker-compose.yml
 else ifeq ("$(MF_BROKER_TYPE)", "nats")
 	sed -i "s,file: broker/.*.yml,file: broker/nats.yml," docker/docker-compose.yml
+else ifeq ("$(MF_BROKER_TYPE)", "kafka")
+	sed -i "s,file: broker/.*.yml,file: broker/kafka.yml," docker/docker-compose.yml
 else
 	echo "Invalid broker type"; exit 1
 endif

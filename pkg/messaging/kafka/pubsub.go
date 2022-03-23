@@ -69,18 +69,18 @@ func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
 	if err != nil {
 		return err
 	}
-
 	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
-	if msg.Subtopic != "" {
-		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
-	}
-	writer := kafka.Writer{
-		Addr: kafka.TCP(ps.url),
-	}
+	// if msg.Subtopic != "" {
+	// 	subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
+	// }
+	fmt.Println(subject)
+	writer := kafka.NewWriter(kafka.WriterConfig{
+		Brokers: []string{ps.url},
+		Topic:   subject,
+	})
 	defer writer.Close()
 
 	kafkaMsg := kafka.Message{
-		Topic: subject,
 		Value: data,
 	}
 	err = writer.WriteMessages(context.TODO(), kafkaMsg)
@@ -88,7 +88,7 @@ func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
 		time.Sleep(2 * time.Second)
 		return writer.WriteMessages(context.TODO(), kafkaMsg)
 	}
-	return nil
+	return err
 }
 
 func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) error {
@@ -110,14 +110,15 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 		StartOffset: offset,
 	})
 	ps.subscriptions[topic] = reader
-	for {
-		message, err := reader.ReadMessage(context.Background())
-		if err != nil {
-			break
+	go func() {
+		for {
+			message, err := reader.ReadMessage(context.Background())
+			if err != nil {
+				break
+			}
+			ps.handle(message, handler)
 		}
-		ps.handle(message, handler)
-	}
-
+	}()
 	return nil
 }
 
@@ -134,7 +135,6 @@ func (ps *pubsub) Unsubscribe(topic string) error {
 	if err := reader.Close(); err != nil {
 		return err
 	}
-
 	return nil
 }
 

@@ -31,10 +31,11 @@ require (
 	github.com/ory/dockertest/v3 v3.8.1
 	github.com/ory/keto/proto/ory/keto/acl/v1alpha1 v0.0.0-20210616104402-80e043246cf9
 	github.com/pelletier/go-toml v1.9.4
-	github.com/rabbitmq/amqp091-go v1.3.0
 	github.com/plgd-dev/go-coap/v2 v2.5.0
 	github.com/prometheus/client_golang v1.12.1
+	github.com/rabbitmq/amqp091-go v1.3.0
 	github.com/rubenv/sql-migrate v1.1.1
+	github.com/segmentio/kafka-go v0.4.30
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/viper v1.10.1
 	github.com/stretchr/testify v1.7.0
@@ -111,6 +112,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.0 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
+	github.com/pierrec/lz4/v4 v4.1.14 // indirect
 	github.com/pion/dtls/v2 v2.1.2 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/transport v0.13.0 // indirect

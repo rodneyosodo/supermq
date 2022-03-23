@@ -5,7 +5,6 @@ package kafka_test
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/mainflux/mainflux/pkg/messaging"
@@ -52,10 +51,6 @@ func TestPublisher(t *testing.T) {
 			Payload:  tc.payload,
 		}
 		err := publisher.Publish(topic, expectedMsg)
-		// Investigate why it throws and EOF error
-		if strings.Contains(fmt.Sprint(err), "unexpected EOF") {
-			continue
-		}
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	}
 }
