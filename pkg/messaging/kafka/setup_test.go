@@ -10,11 +10,13 @@ import (
 	"os/signal"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/kafka"
 	dockertest "github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v3/docker"
 )
 
 var (
@@ -28,12 +30,28 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
-	container, err := pool.Run("spotify/kafka", "latest", []string{"ADVERTISED_HOST=127.0.0.1", "ADVERTISED_PORT=9092"})
+	container, err := pool.RunWithOptions(&dockertest.RunOptions{
+		Repository: "johnnypark/kafka-zookeeper",
+		Tag:        "latest",
+		Env: []string{
+			"ADVERTISED_HOST=127.0.0.1",
+			"ADVERTISED_PORT=9092",
+		},
+		ExposedPorts: []string{
+			"9092",
+			"2181",
+		},
+	}, func(config *docker.HostConfig) {
+		config.AutoRemove = true
+		config.RestartPolicy = docker.RestartPolicy{
+			Name: "no",
+		}
+	})
 	if err != nil {
 		log.Fatalf("Could not start container: %s", err)
 	}
 	handleInterrupt(pool, container)
-
+	time.Sleep(10 * time.Second)
 	address := fmt.Sprintf("%s:%s", "localhost", container.GetPort("9092/tcp"))
 	if err := pool.Retry(func() error {
 		publisher, err = kafka.NewPublisher(address)

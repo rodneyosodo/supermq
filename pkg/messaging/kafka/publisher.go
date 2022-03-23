@@ -37,7 +37,8 @@ func NewPublisher(url string) (Publisher, error) {
 	ret := &publisher{
 		conn: conn,
 		writer: &kafka.Writer{
-			Addr: kafka.TCP(url),
+			Addr:  kafka.TCP(url),
+			Async: true,
 		},
 	}
 	return ret, nil

@@ -51,7 +51,6 @@ type pubsub struct {
 // NewPubSub returns Kafka message publisher/subscriber.
 func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 	conn, err := kafka.Dial("tcp", url)
-	// conn, err := kafka.DialLeader(context.Background(), "tcp", url, queue, partition)
 	if err != nil {
 		return nil, err
 	}
@@ -73,10 +72,10 @@ func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
 	// if msg.Subtopic != "" {
 	// 	subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 	// }
-	fmt.Println(subject)
 	writer := kafka.NewWriter(kafka.WriterConfig{
 		Brokers: []string{ps.url},
 		Topic:   subject,
+		Async:   true,
 	})
 	defer writer.Close()
 
