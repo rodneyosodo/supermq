@@ -12,8 +12,6 @@ import (
 )
 
 const (
-	// chansPrefix = "channels"
-
 	// SubjectAllChannels represents subject to subscribe for all the channels.
 	SubjectAllChannels = "channels.>"
 )
