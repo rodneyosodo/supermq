@@ -20,9 +20,8 @@ import (
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/lora"
 	"github.com/mainflux/mainflux/lora/api"
-	"github.com/mainflux/mainflux/pkg/messaging"
-	broker "github.com/mainflux/mainflux/pkg/messaging/broker"
 	"github.com/mainflux/mainflux/lora/mqtt"
+	broker "github.com/mainflux/mainflux/pkg/messaging/broker"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/mainflux/mainflux/lora/redis"

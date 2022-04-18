@@ -77,7 +77,7 @@ func main() {
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsAuthTimeout)
 
-	nc, err := broker.Connect(cfg.natsURL)
+	nc, err := broker.Connect(cfg.brokerURL)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
