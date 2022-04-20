@@ -6,7 +6,6 @@ package rabbitmq
 import (
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/gogo/protobuf/proto"
 	log "github.com/mainflux/mainflux/logger"
@@ -51,7 +50,7 @@ type pubsub struct {
 	queue         amqp.Queue
 	channel       *amqp.Channel
 	subscriptions map[string]bool
-	done          chan bool
+	done          chan error
 }
 
 // NewPubSub returns RabbitMQ message publisher/subscriber.
@@ -75,7 +74,7 @@ func NewPubSub(url, queueName string, logger log.Logger) (PubSub, error) {
 		channel:       ch,
 		logger:        logger,
 		subscriptions: make(map[string]bool),
-		done:          make(chan bool),
+		done:          make(chan error),
 	}
 	return ret, nil
 }
@@ -134,13 +133,7 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 		return err
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		ps.handle(msgs, handler)
-		wg.Done()
-	}()
-
+	go ps.handle(msgs, handler)
 	ps.subscriptions[topic] = true
 
 	return nil
@@ -177,6 +170,8 @@ func (ps *pubsub) handle(deliveries <-chan amqp.Delivery, h messaging.MessageHan
 		}
 		if err := h(msg); err != nil {
 			ps.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
+			return
 		}
 	}
+	ps.done <- nil
 }
