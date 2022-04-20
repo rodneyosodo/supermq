@@ -16,18 +16,18 @@ import (
 
 // SubjectAllChannels represents subject to subscribe for all the channels.
 const (
-	ChansPrefix        = "channels"
-	SubjectAllChannels = "channels.>"
-	RoutingKey         = "application specific routing key for fancy topologies"
-	Exchange           = "mainflux"
-	ExchangeKind       = "fanout"
-	QueueDurability    = true
-	QueueDelete        = false
-	QueueExclusivity   = false
-	QueueWait          = false
-	ConsumerTag        = "mainflux-consumer"
-	Mandatory          = false
-	Immediate          = false
+	chansPrefix        = "channels"
+	subjectAllChannels = "channels.>"
+	routingKey         = "application specific routing key for fancy topologies"
+	exchange           = "mainflux"
+	exchangeKind       = "fanout"
+	queueDurability    = true
+	queueDelete        = false
+	queueExclusivity   = false
+	queueWait          = false
+	consumerTag        = "mainflux-consumer"
+	mandatory          = false
+	immediate          = false
 )
 
 var (
@@ -65,7 +65,7 @@ func NewPubSub(url, queueName string, logger log.Logger) (PubSub, error) {
 	if err != nil {
 		return nil, err
 	}
-	queue, err := ch.QueueDeclare(queueName, QueueDurability, QueueDelete, QueueExclusivity, QueueWait, nil)
+	queue, err := ch.QueueDeclare(queueName, queueDurability, queueDelete, queueExclusivity, queueWait, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -88,15 +88,15 @@ func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
 	if err != nil {
 		return err
 	}
-	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
-	if err := ps.channel.ExchangeDeclare(subject, ExchangeKind, true, false, false, false, nil); err != nil {
+	subject := fmt.Sprintf("%s.%s.%s", exchange, chansPrefix, topic)
+	if err := ps.channel.ExchangeDeclare(subject, exchangeKind, true, false, false, false, nil); err != nil {
 		return err
 	}
 	err = ps.channel.Publish(
 		subject,
-		RoutingKey,
-		Mandatory,
-		Immediate,
+		routingKey,
+		mandatory,
+		immediate,
 		amqp.Publishing{
 			Headers:     amqp.Table{},
 			ContentType: "text/plain",
@@ -120,13 +120,13 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 		return errAlreadySubscribed
 	}
 
-	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
+	subject := fmt.Sprintf("%s.%s.%s", exchange, chansPrefix, topic)
 
-	if err := ps.channel.ExchangeDeclare(subject, ExchangeKind, true, false, false, false, nil); err != nil {
+	if err := ps.channel.ExchangeDeclare(subject, exchangeKind, true, false, false, false, nil); err != nil {
 		return err
 	}
 
-	if err := ps.channel.QueueBind(ps.queue.Name, RoutingKey, subject, false, nil); err != nil {
+	if err := ps.channel.QueueBind(ps.queue.Name, routingKey, subject, false, nil); err != nil {
 		return err
 	}
 	msgs, err := ps.channel.Consume(ps.queue.Name, "", true, false, false, false, nil)
@@ -155,8 +155,8 @@ func (ps *pubsub) Unsubscribe(topic string) error {
 	if _, ok := ps.subscriptions[topic]; !ok {
 		return errNotSubscribed
 	}
-	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
-	if err := ps.channel.QueueUnbind(ps.queue.Name, RoutingKey, subject, nil); err != nil {
+	subject := fmt.Sprintf("%s.%s.%s", exchange, chansPrefix, topic)
+	if err := ps.channel.QueueUnbind(ps.queue.Name, routingKey, subject, nil); err != nil {
 		return err
 	}
 
