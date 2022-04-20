@@ -6,6 +6,7 @@ package rabbitmq
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/gogo/protobuf/proto"
 	log "github.com/mainflux/mainflux/logger"
@@ -51,6 +52,7 @@ type pubsub struct {
 	channel       *amqp.Channel
 	subscriptions map[string]bool
 	done          chan error
+	mutex         sync.Mutex
 }
 
 // NewPubSub returns RabbitMQ message publisher/subscriber.
@@ -115,6 +117,8 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 	if topic == "" {
 		return errEmptyTopic
 	}
+	ps.mutex.Lock()
+	defer ps.mutex.Unlock()
 	if _, ok := ps.subscriptions[topic]; ok {
 		return errAlreadySubscribed
 	}
@@ -144,6 +148,8 @@ func (ps *pubsub) Unsubscribe(topic string) error {
 	if topic == "" {
 		return errEmptyTopic
 	}
+	ps.mutex.Lock()
+	defer ps.mutex.Unlock()
 
 	if _, ok := ps.subscriptions[topic]; !ok {
 		return errNotSubscribed
