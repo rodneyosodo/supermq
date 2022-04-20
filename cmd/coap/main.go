@@ -32,7 +32,7 @@ import (
 
 const (
 	defPort              = "5683"
-	defBrokerURL         = "nats://localhost:4222"
+	defNatsURL           = "nats://localhost:4222"
 	defLogLevel          = "error"
 	defClientTLS         = "false"
 	defCACerts           = ""
@@ -41,7 +41,7 @@ const (
 	defThingsAuthTimeout = "1s"
 
 	envPort              = "MF_COAP_ADAPTER_PORT"
-	envBrokerURL         = "MF_BROKER_URL"
+	envNatsURL           = "MF_NATS_URL"
 	envLogLevel          = "MF_COAP_ADAPTER_LOG_LEVEL"
 	envClientTLS         = "MF_COAP_ADAPTER_CLIENT_TLS"
 	envCACerts           = "MF_COAP_ADAPTER_CA_CERTS"
@@ -52,7 +52,7 @@ const (
 
 type config struct {
 	port              string
-	brokerURL         string
+	natsURL           string
 	logLevel          string
 	clientTLS         bool
 	caCerts           string
@@ -77,7 +77,7 @@ func main() {
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsAuthTimeout)
 
-	nc, err := broker.Connect(cfg.brokerURL)
+	nc, err := broker.Connect(cfg.natsURL)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
@@ -130,7 +130,7 @@ func loadConfig() config {
 	}
 
 	return config{
-		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
+		natsURL:           mainflux.Env(envNatsURL, defNatsURL),
 		port:              mainflux.Env(envPort, defPort),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		clientTLS:         tls,

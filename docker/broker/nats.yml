@@ -4,3 +4,5 @@ services:
     command: "-c /etc/nats/nats.conf"
     volumes:
       - ./../nats/:/etc/nats
+    ports:
+      - ${MF_NATS_PORT}:${MF_NATS_PORT}
