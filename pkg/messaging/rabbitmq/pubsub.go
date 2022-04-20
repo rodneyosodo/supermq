@@ -18,7 +18,7 @@ import (
 const (
 	chansPrefix        = "channels"
 	subjectAllChannels = "channels.>"
-	routingKey         = "application specific routing key for fancy topologies"
+	routingKey         = "mainfluxkey"
 	exchange           = "mainflux"
 	exchangeKind       = "fanout"
 	queueDurability    = true
