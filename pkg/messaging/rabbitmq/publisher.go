@@ -50,16 +50,16 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 	if err != nil {
 		return err
 	}
-	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
-	if err := pub.channel.ExchangeDeclare(subject, ExchangeKind, true, false, false, false, nil); err != nil {
+	subject := fmt.Sprintf("%s.%s.%s", exchange, chansPrefix, topic)
+	if err := pub.channel.ExchangeDeclare(subject, exchangeKind, true, false, false, false, nil); err != nil {
 		return err
 	}
 
 	err = pub.channel.Publish(
 		subject,
-		RoutingKey,
-		Mandatory,
-		Immediate,
+		routingKey,
+		mandatory,
+		immediate,
 		amqp.Publishing{
 			Headers:     amqp.Table{},
 			ContentType: "text/plain",
