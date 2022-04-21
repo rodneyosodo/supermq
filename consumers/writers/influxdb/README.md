@@ -39,7 +39,7 @@ make influxdb
 make install
 
 # Set the environment variables and run the service
-MF_BROKER_URL=[Message broker instance URL] \
+MF_NATS_URL=[NATS broker instance URL] \
 MF_INFLUX_WRITER_LOG_LEVEL=[Influx writer log level] \
 MF_INFLUX_WRITER_PORT=[Service HTTP port] \
 MF_INFLUXDB_DB=[InfluxDB database name] \

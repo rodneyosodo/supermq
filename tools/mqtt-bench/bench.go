@@ -142,7 +142,7 @@ func getBytePayload(size int, m message) (handler, error) {
 func makeClient(i int, cfg Config, mfChan mfChannel, mfThing mfThing, start time.Time, caCert []byte, clientCert tls.Certificate) (*Client, error) {
 	c := &Client{
 		ID:         strconv.Itoa(i),
-		BrokerURL:  cfg.MQTT.Broker.URL,
+		natsURL:    cfg.MQTT.Broker.URL,
 		BrokerUser: mfThing.ThingID,
 		BrokerPass: mfThing.ThingKey,
 		MsgTopic:   fmt.Sprintf("channels/%s/messages/%d/test", mfChan.ChannelID, start.UnixNano()),

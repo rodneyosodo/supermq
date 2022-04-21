@@ -20,9 +20,11 @@ import (
 
 const (
 	chansPrefix = "channels"
-	partition   = 0
-	groupID     = "mainflux"
-	offset      = kafka.LastOffset
+	// SubjectAllChannels represents subject to subscribe for all the channels.
+	SubjectAllChannels = "channels.>"
+	partition          = 0
+	groupID            = "mainflux"
+	offset             = kafka.LastOffset
 )
 
 var (

@@ -98,9 +98,9 @@ func main() {
 	esConn := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
 	defer esConn.Close()
 
-	pub, err := broker.NewPublisher(cfg.brokerURL)
+	pub, err := nats.NewPublisher(cfg.natsURL)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
+		logger.Error(fmt.Sprintf("Failed to connect to NATS: %s", err))
 		os.Exit(1)
 	}
 	defer pub.Close()

@@ -25,7 +25,7 @@ default values.
 | MF_SMTP_NOTIFIER_SERVER_CERT      | Path to server cert in pem format                                       |                       |
 | MF_SMTP_NOTIFIER_SERVER_KEY       | Path to server key in pem format                                        |                       |
 | MF_JAEGER_URL                     | Jaeger server URL                                                       | localhost:6831        |
-| MF_BROKER_URL                     | Message broker URL                                                      | nats://127.0.0.1:4222 |
+| MF_NATS_URL                       | NATS broker URL                                                         | nats://127.0.0.1:4222 |
 | MF_EMAIL_HOST                     | Mail server host                                                        | localhost             |
 | MF_EMAIL_PORT                     | Mail server port                                                        | 25                    |
 | MF_EMAIL_USERNAME                 | Mail server username                                                    |                       |

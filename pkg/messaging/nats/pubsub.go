@@ -15,7 +15,11 @@ import (
 	broker "github.com/nats-io/nats.go"
 )
 
-const chansPrefix = "channels"
+const (
+	chansPrefix = "channels"
+	// SubjectAllChannels represents subject to subscribe for all the channels.
+	SubjectAllChannels = "channels.>"
+)
 
 var (
 	errAlreadySubscribed = errors.New("already subscribed to topic")

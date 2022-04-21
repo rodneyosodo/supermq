@@ -18,7 +18,7 @@ import (
 	"github.com/mainflux/mainflux/consumers/writers/api"
 	"github.com/mainflux/mainflux/consumers/writers/mongodb"
 	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/messaging/broker"
+	"github.com/mainflux/mainflux/pkg/messaging/nats"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -28,14 +28,14 @@ const (
 	svcName = "mongodb-writer"
 
 	defLogLevel   = "error"
-	defBrokerURL  = "nats://localhost:4222"
+	defNatsURL    = "nats://localhost:4222"
 	defPort       = "8180"
 	defDB         = "mainflux"
 	defDBHost     = "localhost"
 	defDBPort     = "27017"
 	defConfigPath = "/config.toml"
 
-	envBrokerURL  = "MF_BROKER_URL"
+	envNatsURL    = "MF_NATS_URL"
 	envLogLevel   = "MF_MONGO_WRITER_LOG_LEVEL"
 	envPort       = "MF_MONGO_WRITER_PORT"
 	envDB         = "MF_MONGO_WRITER_DB"
@@ -45,7 +45,7 @@ const (
 )
 
 type config struct {
-	brokerURL  string
+	natsURL    string
 	logLevel   string
 	port       string
 	dbName     string
@@ -62,9 +62,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	pubSub, err := broker.NewPubSub(cfg.brokerURL, "", logger)
+	pubSub, err := nats.NewPubSub(cfg.natsURL, "", logger)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
+		logger.Error(fmt.Sprintf("Failed to connect to NATS: %s", err))
 		os.Exit(1)
 	}
 	defer pubSub.Close()
@@ -103,7 +103,7 @@ func main() {
 
 func loadConfigs() config {
 	return config{
-		brokerURL:  mainflux.Env(envBrokerURL, defBrokerURL),
+		natsURL:    mainflux.Env(envNatsURL, defNatsURL),
 		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
 		port:       mainflux.Env(envPort, defPort),
 		dbName:     mainflux.Env(envDB, defDB),

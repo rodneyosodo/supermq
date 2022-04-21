@@ -10,7 +10,7 @@ default values.
 
 | Variable                     | Description                                                                       | Default                |
 | ---------------------------- | --------------------------------------------------------------------------------- | ---------------------- |
-| MF_BROKER_URL                | Message broker instance URL                                                       | nats://localhost:4222  |
+| MF_NATS_URL                  | NATS broker instance URL                                                          | nats://localhost:4222  |
 | MF_MONGO_WRITER_LOG_LEVEL    | Log level for MongoDB writer                                                      | error                  |
 | MF_MONGO_WRITER_PORT         | Service HTTP port                                                                 | 8180                   |
 | MF_MONGO_WRITER_DB           | Default MongoDB database name                                                     | messages               |
@@ -37,7 +37,7 @@ make mongodb-writer
 make install
 
 # Set the environment variables and run the service
-MF_BROKER_URL=[Message broker instance URL] \
+MF_NATS_URL=[NATS broker instance URL] \
 MF_MONGO_WRITER_LOG_LEVEL=[MongoDB writer log level] \
 MF_MONGO_WRITER_PORT=[Service HTTP port] \
 MF_MONGO_WRITER_DB=[MongoDB database name] \

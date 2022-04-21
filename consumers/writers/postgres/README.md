@@ -10,7 +10,7 @@ default values.
 
 | Variable                            | Description                                                                       | Default                |
 | ----------------------------------- | --------------------------------------------------------------------------------- | ---------------------- |
-| MF_BROKER_URL                       | Message broker instance URL                                                       | nats://localhost:4222  |
+| MF_NATS_URL                         | NATS broker instance URL                                                          | nats://localhost:4222  |
 | MF_POSTGRES_WRITER_LOG_LEVEL        | Service log level                                                                 | error                  |
 | MF_POSTGRES_WRITER_PORT             | Service HTTP port                                                                 | 9104                   |
 | MF_POSTGRES_WRITER_DB_HOST          | Postgres DB host                                                                  | postgres               |
@@ -43,7 +43,7 @@ make postgres-writer
 make install
 
 # Set the environment variables and run the service
-MF_BROKER_URL=[Message broker instance URL] \
+MF_NATS_URL=[NATS broker instance URL] \
 MF_POSTGRES_WRITER_LOG_LEVEL=[Service log level] \
 MF_POSTGRES_WRITER_PORT=[Service HTTP port] \
 MF_POSTGRES_WRITER_DB_HOST=[Postgres host] \

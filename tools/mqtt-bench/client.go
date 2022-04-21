@@ -24,7 +24,7 @@ const pingTimeout = 10000
 // Client - represents mqtt client
 type Client struct {
 	ID         string
-	BrokerURL  string
+	natsURL    string
 	BrokerUser string
 	BrokerPass string
 	MsgTopic   string
@@ -70,7 +70,7 @@ func (c *Client) publish(r chan *runResults) {
 		return
 	}
 	if !c.Quiet {
-		log.Printf("Client %v is connected to the broker %v\n", c.ID, c.BrokerURL)
+		log.Printf("Client %v is connected to the broker %v\n", c.ID, c.natsURL)
 	}
 	wg := sync.WaitGroup{}
 	mu := sync.Mutex{}
@@ -119,7 +119,7 @@ func (c *Client) publish(r chan *runResults) {
 
 func (c *Client) connect() error {
 	opts := mqtt.NewClientOptions().
-		AddBroker(c.BrokerURL).
+		AddBroker(c.natsURL).
 		SetClientID(c.ID).
 		SetCleanSession(false).
 		SetAutoReconnect(false).
@@ -212,7 +212,7 @@ func arr(a []*float64) []float64 {
 
 func (c *Client) connected(client mqtt.Client) {
 	if !c.Quiet {
-		log.Printf("Client %v is connected to the broker %v\n", c.ID, c.BrokerURL)
+		log.Printf("Client %v is connected to the broker %v\n", c.ID, c.natsURL)
 	}
 }
 

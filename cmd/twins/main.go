@@ -21,7 +21,7 @@ import (
 	authapi "github.com/mainflux/mainflux/auth/api/grpc"
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
-	"github.com/mainflux/mainflux/pkg/messaging/broker"
+	"github.com/mainflux/mainflux/pkg/messaging/nats"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	localusers "github.com/mainflux/mainflux/things/standalone"
 	"github.com/mainflux/mainflux/twins"
@@ -57,7 +57,7 @@ const (
 	defClientTLS       = "false"
 	defCACerts         = ""
 	defChannelID       = ""
-	defBrokerURL       = "nats://localhost:4222"
+	defNatsURL         = "nats://localhost:4222"
 	defAuthURL         = "localhost:8181"
 	defAuthTimeout     = "1s"
 
@@ -77,7 +77,7 @@ const (
 	envClientTLS       = "MF_TWINS_CLIENT_TLS"
 	envCACerts         = "MF_TWINS_CA_CERTS"
 	envChannelID       = "MF_TWINS_CHANNEL_ID"
-	envBrokerURL       = "MF_BROKER_URL"
+	envNatsURL         = "MF_NATS_URL"
 	envAuthURL         = "MF_AUTH_GRPC_URL"
 	envAuthTimeout     = "MF_AUTH_GRPC_TIMEOUT"
 )
@@ -97,7 +97,7 @@ type config struct {
 	clientTLS       bool
 	caCerts         string
 	channelID       string
-	brokerURL       string
+	natsURL         string
 
 	authURL     string
 	authTimeout time.Duration
@@ -127,9 +127,9 @@ func main() {
 	defer authCloser.Close()
 	auth, _ := createAuthClient(cfg, authTracer, logger)
 
-	pubSub, err := broker.NewPubSub(cfg.brokerURL, queue, logger)
+	pubSub, err := nats.NewPubSub(cfg.natsURL, queue, logger)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
+		logger.Error(fmt.Sprintf("Failed to connect to NATS: %s", err))
 		os.Exit(1)
 	}
 	defer pubSub.Close()
@@ -183,7 +183,7 @@ func loadConfig() config {
 		clientTLS:       tls,
 		caCerts:         mainflux.Env(envCACerts, defCACerts),
 		channelID:       mainflux.Env(envChannelID, defChannelID),
-		brokerURL:       mainflux.Env(envBrokerURL, defBrokerURL),
+		natsURL:         mainflux.Env(envNatsURL, defNatsURL),
 		authURL:         mainflux.Env(envAuthURL, defAuthURL),
 		authTimeout:     authTimeout,
 	}
@@ -290,7 +290,7 @@ func newService(ps messaging.PubSub, chanID string, users mainflux.AuthServiceCl
 		}, []string{"method"}),
 	)
 
-	err := ps.Subscribe(broker.SubjectAllChannels, func(msg messaging.Message) error {
+	err := ps.Subscribe(nats.SubjectAllChannels, func(msg messaging.Message) error {
 		if msg.Channel == chanID {
 			return nil
 		}
