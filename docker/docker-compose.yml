@@ -96,12 +96,13 @@ services:
       - mqtt-adapter
       - http-adapter
 
-  broker:
-    extends:
-      file: broker/nats.yml
-      service: broker
-    container_name: mainflux-broker
+  nats:
+    image: nats:2.2.4-alpine
+    container_name: mainflux-nats
+    command: "-c /etc/nats/nats.conf"
     restart: on-failure
+    volumes:
+      - ./nats/:/etc/nats
     networks:
       - mainflux-base-net
     ports:
@@ -280,7 +281,7 @@ services:
     depends_on:
       - vernemq
       - things
-      - broker
+      - nats
     restart: on-failure
     environment:
       MF_MQTT_ADAPTER_LOG_LEVEL: ${MF_MQTT_ADAPTER_LOG_LEVEL}
@@ -305,7 +306,7 @@ services:
     container_name: mainflux-http
     depends_on:
       - things
-      - broker
+      - nats
     restart: on-failure
     environment:
       MF_HTTP_ADAPTER_LOG_LEVEL: debug
@@ -333,7 +334,7 @@ services:
     container_name: mainflux-coap
     depends_on:
       - things
-      - broker
+      - nats
     restart: on-failure
     environment:
       MF_COAP_ADAPTER_LOG_LEVEL: ${MF_COAP_ADAPTER_LOG_LEVEL}
