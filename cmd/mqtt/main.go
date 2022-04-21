@@ -62,7 +62,7 @@ const (
 	defThingsAuthTimeout = "1s"
 	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
-	// NATS
+	// Nats
 	defNatsURL = "nats://localhost:4222"
 	envNatsURL = "MF_NATS_URL"
 	// Jaeger

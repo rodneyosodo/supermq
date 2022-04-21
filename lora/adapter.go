@@ -58,7 +58,7 @@ type Service interface {
 	// DisconnectThing removes thingID:channelID route-map
 	DisconnectThing(ctx context.Context, chanID, thingID string) error
 
-	// Publish forwards messages from the LoRa MQTT broker to Mainflux Message Broker
+	// Publish forwards messages from the LoRa MQTT broker to Mainflux NATS broker
 	Publish(ctx context.Context, msg Message) error
 }
 
@@ -81,7 +81,7 @@ func New(publisher messaging.Publisher, thingsRM, channelsRM, connectRM RouteMap
 	}
 }
 
-// Publish forwards messages from Lora MQTT broker to Mainflux Message broker
+// Publish forwards messages from Lora MQTT broker to Mainflux NATS broker
 func (as *adapterService) Publish(ctx context.Context, m Message) error {
 	// Get route map of lora application
 	thingID, err := as.thingsRM.Get(ctx, m.DevEUI)
@@ -117,7 +117,7 @@ func (as *adapterService) Publish(ctx context.Context, m Message) error {
 		payload = []byte(jo)
 	}
 
-	// Publish on Mainflux Message broker
+	// Publish on Mainflux NATS broker
 	msg := messaging.Message{
 		Publisher: thingID,
 		Protocol:  protocol,

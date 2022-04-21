@@ -39,7 +39,7 @@ make influxdb
 make install
 
 # Set the environment variables and run the service
-MF_NATS_URL=[NATS broker instance URL] \
+MF_NATS_URL=[NATS instance URL] \
 MF_INFLUX_WRITER_LOG_LEVEL=[Influx writer log level] \
 MF_INFLUX_WRITER_PORT=[Service HTTP port] \
 MF_INFLUXDB_DB=[InfluxDB database name] \
@@ -47,7 +47,7 @@ MF_INFLUXDB_HOST=[InfluxDB database host] \
 MF_INFLUXDB_PORT=[InfluxDB database port] \
 MF_INFLUXDB_ADMIN_USER=[InfluxDB admin user] \
 MF_INFLUXDB_ADMIN_PASSWORD=[InfluxDB admin password] \
-MF_INFLUX_WRITER_CONFIG_PATH=[Config file path with Message broker subjects list, payload type and content-type] \
+MF_INFLUX_WRITER_CONFIG_PATH=[Config file path with NATS subjects list, payload type and content-type] \
 $GOBIN/mainflux-influxdb
 ```
 
