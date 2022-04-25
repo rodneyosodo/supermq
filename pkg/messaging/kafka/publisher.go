@@ -18,6 +18,7 @@ var _ messaging.Publisher = (*publisher)(nil)
 
 type publisher struct {
 	conn   *kafka.Conn
+	url    string
 	writer *kafka.Writer
 }
 
@@ -36,6 +37,7 @@ func NewPublisher(url string) (Publisher, error) {
 	}
 	ret := &publisher{
 		conn: conn,
+		url:  url,
 		writer: &kafka.Writer{
 			Addr:  kafka.TCP(url),
 			Async: true,
@@ -54,16 +56,24 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 	if msg.Subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 	}
+	writer := kafka.NewWriter(kafka.WriterConfig{
+		Brokers: []string{pub.url},
+		Topic:   subject,
+		Async:   true,
+	})
+	defer writer.Close()
+
 	kafkaMsg := kafka.Message{
-		Topic: subject,
 		Value: data,
 	}
-	err = pub.writer.WriteMessages(context.TODO(), kafkaMsg)
-	if strings.Contains(fmt.Sprint(err), "[5] Leader Not Available:") {
-		time.Sleep(1 * time.Second)
-		return pub.writer.WriteMessages(context.TODO(), kafkaMsg)
+	if err := pub.writer.WriteMessages(context.TODO(), kafkaMsg); err != nil {
+		// Sometime it take time for leader to be elected. If that is so, we retry to publish message
+		if strings.Contains(fmt.Sprint(err), "[5] Leader Not Available:") {
+			time.Sleep(2 * time.Second)
+			return pub.writer.WriteMessages(context.TODO(), kafkaMsg)
+		}
 	}
-	return err
+	return nil
 }
 
 func (pub *publisher) Close() {

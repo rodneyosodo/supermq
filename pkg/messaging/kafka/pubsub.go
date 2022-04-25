@@ -7,9 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
-	"time"
 
 	log "github.com/mainflux/mainflux/logger"
 
@@ -43,6 +41,7 @@ type PubSub interface {
 }
 
 type pubsub struct {
+	publisher     messaging.Publisher
 	conn          *kafka.Conn
 	mu            sync.Mutex
 	subscriptions map[string]*kafka.Reader
@@ -56,7 +55,12 @@ func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 	if err != nil {
 		return nil, err
 	}
+	pub, err := NewPublisher(url)
+	if err != nil {
+		return nil, err
+	}
 	ret := &pubsub{
+		publisher:     pub,
 		url:           url,
 		conn:          conn,
 		subscriptions: make(map[string]*kafka.Reader),
@@ -66,30 +70,13 @@ func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 }
 
 func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
-	data, err := proto.Marshal(&msg)
-	if err != nil {
+	if topic == "" {
+		return errEmptyTopic
+	}
+	if err := ps.publisher.Publish(topic, msg); err != nil {
 		return err
 	}
-	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
-	// if msg.Subtopic != "" {
-	// 	subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
-	// }
-	writer := kafka.NewWriter(kafka.WriterConfig{
-		Brokers: []string{ps.url},
-		Topic:   subject,
-		Async:   true,
-	})
-	defer writer.Close()
-
-	kafkaMsg := kafka.Message{
-		Value: data,
-	}
-	err = writer.WriteMessages(context.TODO(), kafkaMsg)
-	if strings.Contains(fmt.Sprint(err), "[5] Leader Not Available:") {
-		time.Sleep(2 * time.Second)
-		return writer.WriteMessages(context.TODO(), kafkaMsg)
-	}
-	return err
+	return nil
 }
 
 func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) error {
@@ -136,6 +123,7 @@ func (ps *pubsub) Unsubscribe(topic string) error {
 	if err := reader.Close(); err != nil {
 		return err
 	}
+	delete(ps.subscriptions, topic)
 	return nil
 }
 

@@ -16,7 +16,7 @@ import (
 
 const (
 	chansPrefix        = "channels"
-	subjectAllChannels = "channels.>"
+	SubjectAllChannels = "channels.>"
 	routingKey         = "mainfluxkey"
 	exchange           = "mainflux"
 	exchangeKind       = "fanout"
