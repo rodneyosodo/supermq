@@ -14,10 +14,10 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-// SubjectAllChannels represents subject to subscribe for all the channels.
 const (
-	chansPrefix        = "channels"
-	subjectAllChannels = "channels.>"
+	chansPrefix = "channels"
+	// SubjectAllChannels represents subject to subscribe for all the channels.
+	SubjectAllChannels = "channels.>"
 	routingKey         = "mainfluxkey"
 	exchange           = "mainflux"
 	exchangeKind       = "fanout"
