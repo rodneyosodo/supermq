@@ -37,6 +37,7 @@ type PubSub interface {
 }
 
 type pubsub struct {
+	publisher     messaging.Publisher
 	conn          *broker.Conn
 	logger        log.Logger
 	mu            sync.Mutex
@@ -56,7 +57,12 @@ func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 	if err != nil {
 		return nil, err
 	}
+	pub, err := NewPublisher(url)
+	if err != nil {
+		return nil, err
+	}
 	ret := &pubsub{
+		publisher:     pub,
 		conn:          conn,
 		queue:         queue,
 		logger:        logger,
@@ -66,19 +72,9 @@ func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 }
 
 func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
-	data, err := proto.Marshal(&msg)
-	if err != nil {
+	if err := ps.publisher.Publish(topic, msg); err != nil {
 		return err
 	}
-
-	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
-	if msg.Subtopic != "" {
-		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
-	}
-	if err := ps.conn.Publish(subject, data); err != nil {
-		return err
-	}
-
 	return nil
 }
 

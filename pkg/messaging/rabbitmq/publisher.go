@@ -6,7 +6,7 @@ package rabbitmq
 import (
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -14,8 +14,8 @@ import (
 var _ messaging.Publisher = (*publisher)(nil)
 
 type publisher struct {
-	connection *amqp.Connection
-	channel    *amqp.Channel
+	conn *amqp.Connection
+	ch   *amqp.Channel
 }
 
 // Publisher wraps messaging Publisher exposing
@@ -38,8 +38,8 @@ func NewPublisher(url string) (Publisher, error) {
 		return nil, err
 	}
 	ret := &publisher{
-		connection: conn,
-		channel:    ch,
+		conn: conn,
+		ch:   ch,
 	}
 
 	return ret, nil
@@ -50,16 +50,16 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 	if err != nil {
 		return err
 	}
-	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
-	if err := pub.channel.ExchangeDeclare(subject, ExchangeKind, true, false, false, false, nil); err != nil {
+	subject := fmt.Sprintf("%s.%s.%s", exchange, chansPrefix, topic)
+	if err := pub.ch.ExchangeDeclare(subject, exchangeKind, true, false, false, false, nil); err != nil {
 		return err
 	}
 
-	err = pub.channel.Publish(
+	err = pub.ch.Publish(
 		subject,
-		RoutingKey,
-		Mandatory,
-		Immediate,
+		routingKey,
+		mandatory,
+		immediate,
 		amqp.Publishing{
 			Headers:     amqp.Table{},
 			ContentType: "text/plain",
@@ -76,5 +76,5 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 }
 
 func (pub *publisher) Close() {
-	pub.connection.Close()
+	pub.conn.Close()
 }
