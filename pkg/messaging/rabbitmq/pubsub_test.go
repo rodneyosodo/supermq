@@ -142,55 +142,6 @@ func TestPubsub(t *testing.T) {
 		},
 	}
 
-	cases := []struct {
-		desc         string
-		topic        string
-		errorMessage error
-		channel      string
-		subtopic     string
-		payload      []byte
-	}{
-		{
-			desc:         "publish message with nil payload",
-			topic:        topic,
-			errorMessage: nil,
-			payload:      nil,
-		},
-		{
-			desc:         "publish message with string payload",
-			topic:        topic,
-			errorMessage: nil,
-			payload:      data,
-		},
-		{
-			desc:         "publish message with channel",
-			topic:        topic,
-			errorMessage: nil,
-			payload:      data,
-			channel:      channel,
-		},
-		{
-			desc:         "publish message with subtopic",
-			topic:        topic,
-			errorMessage: nil,
-			payload:      data,
-			subtopic:     subtopic,
-		},
-		{
-			desc:         "publish message with channel and subtopic",
-			topic:        topic,
-			errorMessage: nil,
-			payload:      data,
-			channel:      channel,
-			subtopic:     subtopic,
-		},
-		{
-			desc:         "publish message with nil topic",
-			topic:        "",
-			errorMessage: errors.New("empty topic"),
-			payload:      nil,
-		},
-	}
 	for _, pc := range pubsubcases {
 		if pc.pubsub == false {
 			err := pubsub.Subscribe(pc.topic, handler)
@@ -208,29 +159,14 @@ func TestPubsub(t *testing.T) {
 			}
 		}
 	}
-	for _, tc := range cases {
-		expectedMsg := messaging.Message{
-			Channel:  tc.channel,
-			Subtopic: tc.subtopic,
-			Payload:  tc.payload,
-		}
-		_ = pubsub.Subscribe(tc.topic, handler)
-		err := pubsub.Publish(tc.topic, expectedMsg)
-		if tc.errorMessage == nil {
-			require.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s", tc.desc, err))
-			receivedMsg := <-msgChan
-			assert.Equal(t, expectedMsg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
-		} else {
-			assert.Equal(t, err, tc.errorMessage)
-		}
-	}
+
 	expectedMsg := messaging.Message{
 		Channel:  channel,
 		Subtopic: "demo",
 		Payload:  data,
 	}
-	err := pubsub.Unsubscribe(topic)
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	err := pubsub.Publish("", expectedMsg)
+	assert.Equal(t, err, errors.New("empty topic"), fmt.Sprintf("got unexpected error: %s", err))
 	err = pubsub.Publish(topic, expectedMsg)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	err = pubsub.Publish(topic, expectedMsg)
