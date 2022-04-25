@@ -129,7 +129,6 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 }
 
 func (ps *pubsub) Unsubscribe(topic string) error {
-	defer ps.ch.Cancel("", false)
 	if topic == "" {
 		return errEmptyTopic
 	}
