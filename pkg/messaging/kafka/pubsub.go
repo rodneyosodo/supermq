@@ -41,12 +41,10 @@ type PubSub interface {
 }
 
 type pubsub struct {
-	publisher     messaging.Publisher
-	conn          *kafka.Conn
+	publisher
 	mu            sync.Mutex
 	subscriptions map[string]*kafka.Reader
 	logger        log.Logger
-	url           string
 }
 
 // NewPubSub returns Kafka message publisher/subscriber.
@@ -55,28 +53,19 @@ func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 	if err != nil {
 		return nil, err
 	}
-	pub, err := NewPublisher(url)
-	if err != nil {
-		return nil, err
-	}
 	ret := &pubsub{
-		publisher:     pub,
-		url:           url,
-		conn:          conn,
+		publisher: publisher{
+			conn: conn,
+			url:  url,
+			writer: &kafka.Writer{
+				Addr:  kafka.TCP(url),
+				Async: true,
+			},
+		},
 		subscriptions: make(map[string]*kafka.Reader),
 		logger:        logger,
 	}
 	return ret, nil
-}
-
-func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
-	if topic == "" {
-		return errEmptyTopic
-	}
-	if err := ps.publisher.Publish(topic, msg); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) error {
@@ -92,7 +81,7 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
 	groupID := fmt.Sprintf("%s.%s", groupID, topic)
 	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:     []string{ps.url},
+		Brokers:     []string{ps.publisher.url},
 		GroupID:     groupID,
 		Topic:       subject,
 		StartOffset: offset,
