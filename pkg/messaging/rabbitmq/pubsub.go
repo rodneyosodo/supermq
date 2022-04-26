@@ -46,13 +46,10 @@ type PubSub interface {
 }
 
 type pubsub struct {
-	publisher     messaging.Publisher
-	conn          *amqp.Connection
+	publisher
 	logger        log.Logger
 	queue         amqp.Queue
-	ch            *amqp.Channel
 	subscriptions map[string]bool
-	done          chan error
 	mutex         sync.Mutex
 }
 
@@ -71,31 +68,16 @@ func NewPubSub(url, queueName string, logger log.Logger) (PubSub, error) {
 	if err != nil {
 		return nil, err
 	}
-	pub, err := NewPublisher(url)
-	if err != nil {
-		return nil, err
-	}
 	ret := &pubsub{
-		publisher:     pub,
-		conn:          conn,
+		publisher: publisher{
+			conn: conn,
+			ch:   ch,
+		},
 		queue:         queue,
-		ch:            ch,
 		logger:        logger,
 		subscriptions: make(map[string]bool),
-		done:          make(chan error),
 	}
 	return ret, nil
-}
-
-func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
-	if topic == "" {
-		return errEmptyTopic
-	}
-	if err := ps.publisher.Publish(topic, msg); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) error {
@@ -110,14 +92,14 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 
 	subject := fmt.Sprintf("%s.%s.%s", exchange, chansPrefix, topic)
 
-	if err := ps.ch.ExchangeDeclare(subject, exchangeKind, true, false, false, false, nil); err != nil {
+	if err := ps.publisher.ch.ExchangeDeclare(subject, exchangeKind, true, false, false, false, nil); err != nil {
 		return err
 	}
 
-	if err := ps.ch.QueueBind(ps.queue.Name, routingKey, subject, false, nil); err != nil {
+	if err := ps.publisher.ch.QueueBind(ps.queue.Name, routingKey, subject, false, nil); err != nil {
 		return err
 	}
-	msgs, err := ps.ch.Consume(ps.queue.Name, "", true, false, false, false, nil)
+	msgs, err := ps.publisher.ch.Consume(ps.queue.Name, "", true, false, false, false, nil)
 	if err != nil {
 		return err
 	}
@@ -139,16 +121,12 @@ func (ps *pubsub) Unsubscribe(topic string) error {
 		return errNotSubscribed
 	}
 	subject := fmt.Sprintf("%s.%s.%s", exchange, chansPrefix, topic)
-	if err := ps.ch.QueueUnbind(ps.queue.Name, routingKey, subject, nil); err != nil {
+	if err := ps.publisher.ch.QueueUnbind(ps.queue.Name, routingKey, subject, nil); err != nil {
 		return err
 	}
 
 	delete(ps.subscriptions, topic)
 	return nil
-}
-
-func (ps *pubsub) Close() {
-	ps.conn.Close()
 }
 
 func (ps *pubsub) handle(deliveries <-chan amqp.Delivery, h messaging.MessageHandler) {
@@ -163,5 +141,4 @@ func (ps *pubsub) handle(deliveries <-chan amqp.Delivery, h messaging.MessageHan
 			return
 		}
 	}
-	ps.done <- nil
 }
