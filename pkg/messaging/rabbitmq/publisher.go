@@ -43,6 +43,9 @@ func NewPublisher(url string) (Publisher, error) {
 	}
 
 func (pub *publisher) Publish(topic string, msg messaging.Message) error {
+	if topic == "" {
+		return errEmptyTopic
+	}
 	data, err := proto.Marshal(&msg)
 		return err
 	}

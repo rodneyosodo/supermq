@@ -36,8 +36,7 @@ type PubSub interface {
 }
 
 type pubsub struct {
-	publisher     messaging.Publisher
-	conn          *broker.Conn
+	publisher
 	logger        log.Logger
 	mu            sync.Mutex
 	queue         string
@@ -56,25 +55,15 @@ func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 	if err != nil {
 		return nil, err
 	}
-	pub, err := NewPublisher(url)
-	if err != nil {
-		return nil, err
-	}
 	ret := &pubsub{
-		publisher:     pub,
-		conn:          conn,
+		publisher: publisher{
+			conn: conn,
+		},
 		queue:         queue,
 		logger:        logger,
 		subscriptions: make(map[string]*broker.Subscription),
 	}
 	return ret, nil
-}
-
-func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
-	if err := ps.publisher.Publish(topic, msg); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) error {
@@ -89,14 +78,14 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 	nh := ps.natsHandler(handler)
 
 	if ps.queue != "" {
-		sub, err := ps.conn.QueueSubscribe(topic, ps.queue, nh)
+		sub, err := ps.publisher.conn.QueueSubscribe(topic, ps.queue, nh)
 		if err != nil {
 			return err
 		}
 		ps.subscriptions[topic] = sub
 		return nil
 	}
-	sub, err := ps.conn.Subscribe(topic, nh)
+	sub, err := ps.publisher.conn.Subscribe(topic, nh)
 	if err != nil {
 		return err
 	}
@@ -122,10 +111,6 @@ func (ps *pubsub) Unsubscribe(topic string) error {
 
 	delete(ps.subscriptions, topic)
 	return nil
-}
-
-func (ps *pubsub) Close() {
-	ps.conn.Close()
 }
 
 func (ps *pubsub) natsHandler(h messaging.MessageHandler) broker.MsgHandler {
