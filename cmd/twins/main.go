@@ -39,7 +39,8 @@ import (
 )
 
 const (
-	queue = "twins"
+	svcName = "twins"
+	queue   = "twins"
 
 	defLogLevel        = "error"
 	defHTTPPort        = "8180"
@@ -134,7 +135,7 @@ func main() {
 	}
 	defer pubSub.Close()
 
-	svc := newService(pubSub, cfg.channelID, auth, dbTracer, db, cacheTracer, cacheClient, logger)
+	svc := newService(svcName, pubSub, cfg.channelID, auth, dbTracer, db, cacheTracer, cacheClient, logger)
 
 	tracer, closer := initJaeger("twins", cfg.jaegerURL, logger)
 	defer closer.Close()
@@ -261,7 +262,7 @@ func connectToRedis(cacheURL, cachePass, cacheDB string, logger logger.Logger) *
 	})
 }
 
-func newService(ps messaging.PubSub, chanID string, users mainflux.AuthServiceClient, dbTracer opentracing.Tracer, db *mongo.Database, cacheTracer opentracing.Tracer, cacheClient *redis.Client, logger logger.Logger) twins.Service {
+func newService(id string, ps messaging.PubSub, chanID string, users mainflux.AuthServiceClient, dbTracer opentracing.Tracer, db *mongo.Database, cacheTracer opentracing.Tracer, cacheClient *redis.Client, logger logger.Logger) twins.Service {
 	twinRepo := twmongodb.NewTwinRepository(db)
 	twinRepo = tracing.TwinRepositoryMiddleware(dbTracer, twinRepo)
 
@@ -290,7 +291,7 @@ func newService(ps messaging.PubSub, chanID string, users mainflux.AuthServiceCl
 		}, []string{"method"}),
 	)
 
-	err := ps.Subscribe(nats.SubjectAllChannels, func(msg messaging.Message) error {
+	err := ps.Subscribe(id, nats.SubjectAllChannels, func(msg messaging.Message) error {
 		if msg.Channel == chanID {
 			return nil
 		}

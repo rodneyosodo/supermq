@@ -15,11 +15,11 @@ type MessageHandler func(msg Message) error
 // Subscriber specifies message subscription API.
 type Subscriber interface {
 	// Subscribe subscribes to the message stream and consumes messages.
-	Subscribe(topic string, handler MessageHandler) error
+	Subscribe(id, topic string, handler MessageHandler) error
 
 	// Unsubscribe unsubscribes from the message stream and
 	// stops consuming messages.
-	Unsubscribe(topic string) error
+	Unsubscribe(id, topic string) error
 }
 
 // PubSub  represents aggregation interface for publisher and subscriber.

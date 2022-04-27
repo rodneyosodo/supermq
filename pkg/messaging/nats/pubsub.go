@@ -24,6 +24,7 @@ var (
 	errAlreadySubscribed = errors.New("already subscribed to topic")
 	errNotSubscribed     = errors.New("not subscribed")
 	errEmptyTopic        = errors.New("empty topic")
+	errEmptyID           = errors.New("empty ID")
 )
 
 var _ messaging.PubSub = (*pubsub)(nil)
@@ -40,7 +41,7 @@ type pubsub struct {
 	logger        log.Logger
 	mu            sync.Mutex
 	queue         string
-	subscriptions map[string]*broker.Subscription
+	subscriptions map[string]map[string]*broker.Subscription
 }
 
 // NewPubSub returns NATS message publisher/subscriber.
@@ -59,7 +60,7 @@ func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 		conn:          conn,
 		queue:         queue,
 		logger:        logger,
-		subscriptions: make(map[string]*broker.Subscription),
+		subscriptions: make(map[string]map[string]*broker.Subscription),
 	}
 	return ret, nil
 }
@@ -81,13 +82,22 @@ func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
 	return nil
 }
 
-func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) error {
+func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) error {
+	if id == "" {
+		return errEmptyID
+	}
 	if topic == "" {
 		return errEmptyTopic
 	}
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
-	if _, ok := ps.subscriptions[topic]; ok {
+	// If there are no subscription, create an empty map assigned to the topic.
+	subscription, ok := ps.subscriptions[topic]
+	if !ok {
+		subscription = map[string]*broker.Subscription{}
+	}
+	// If subscription exists return already subscribed.
+	if _, ok := subscription[id]; ok {
 		return errAlreadySubscribed
 	}
 	nh := ps.natsHandler(handler)
@@ -97,34 +107,42 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 		if err != nil {
 			return err
 		}
-		ps.subscriptions[topic] = sub
+		subscription[id] = sub
 		return nil
 	}
 	sub, err := ps.conn.Subscribe(topic, nh)
 	if err != nil {
 		return err
 	}
-	ps.subscriptions[topic] = sub
+	subscription[id] = sub
 	return nil
 }
 
-func (ps *pubsub) Unsubscribe(topic string) error {
+func (ps *pubsub) Unsubscribe(id, topic string) error {
+	if id == "" {
+		return errEmptyID
+	}
 	if topic == "" {
 		return errEmptyTopic
 	}
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
-	sub, ok := ps.subscriptions[topic]
+	subscriptions, ok := ps.subscriptions[topic]
 	if !ok {
 		return errNotSubscribed
 	}
-
-	if err := sub.Unsubscribe(); err != nil {
-		return err
+	if current, ok := subscriptions[id]; ok {
+		if err := current.Unsubscribe(); err != nil {
+			return err
+		}
 	}
 
-	delete(ps.subscriptions, topic)
+	delete(subscriptions, id)
+	// If there are no observers left for the endpint, remove the map.
+	if len(subscriptions) == 0 {
+		delete(ps.subscriptions, topic)
+	}
 	return nil
 }
 

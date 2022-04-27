@@ -20,7 +20,7 @@ const (
 type Forwarder interface {
 	// Forward subscribes to the Subscriber and
 	// publishes messages using provided Publisher.
-	Forward(sub messaging.Subscriber, pub messaging.Publisher) error
+	Forward(id string, sub messaging.Subscriber, pub messaging.Publisher) error
 }
 
 type forwarder struct {
@@ -36,8 +36,8 @@ func NewForwarder(topic string, logger log.Logger) Forwarder {
 	}
 }
 
-func (f forwarder) Forward(sub messaging.Subscriber, pub messaging.Publisher) error {
-	return sub.Subscribe(f.topic, f.handle(pub))
+func (f forwarder) Forward(id string, sub messaging.Subscriber, pub messaging.Publisher) error {
+	return sub.Subscribe(id, f.topic, f.handle(pub))
 }
 
 func (f forwarder) handle(pub messaging.Publisher) messaging.MessageHandler {

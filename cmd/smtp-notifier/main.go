@@ -37,6 +37,7 @@ import (
 )
 
 const (
+	svcName          = "smtp-notifier"
 	defLogLevel      = "error"
 	defDBHost        = "localhost"
 	defDBPort        = "5432"
@@ -152,7 +153,7 @@ func main() {
 	svc := newService(db, dbTracer, auth, cfg, logger)
 	errs := make(chan error, 2)
 
-	if err = consumers.Start(pubSub, svc, cfg.configPath, logger); err != nil {
+	if err = consumers.Start(svcName, pubSub, svc, cfg.configPath, logger); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Postgres writer: %s", err))
 	}
 

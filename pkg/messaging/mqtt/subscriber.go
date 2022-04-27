@@ -18,14 +18,19 @@ import (
 var (
 	errSubscribeTimeout   = errors.New("failed to subscribe due to timeout reached")
 	errUnsubscribeTimeout = errors.New("failed to unsubscribe due to timeout reached")
+	errAlreadySubscribed  = errors.New("already subscribed to topic")
+	errNotSubscribed      = errors.New("not subscribed")
+	errEmptyTopic         = errors.New("empty topic")
+	errEmptyID            = errors.New("empty ID")
 )
 
 var _ messaging.Subscriber = (*subscriber)(nil)
 
 type subscriber struct {
-	client  mqtt.Client
-	timeout time.Duration
-	logger  log.Logger
+	client        mqtt.Client
+	timeout       time.Duration
+	logger        log.Logger
+	subscriptions map[string]map[string]mqtt.Token
 }
 
 // NewSubscriber returns a new MQTT message subscriber.
@@ -36,14 +41,30 @@ func NewSubscriber(address string, timeout time.Duration, logger log.Logger) (me
 	}
 
 	ret := subscriber{
-		client:  client,
-		timeout: timeout,
-		logger:  logger,
+		client:        client,
+		timeout:       timeout,
+		logger:        logger,
+		subscriptions: make(map[string]map[string]mqtt.Token),
 	}
 	return ret, nil
 }
 
-func (sub subscriber) Subscribe(topic string, handler messaging.MessageHandler) error {
+func (sub subscriber) Subscribe(id, topic string, handler messaging.MessageHandler) error {
+	if id == "" {
+		return errEmptyID
+	}
+	if topic == "" {
+		return errEmptyTopic
+	}
+	if sub.subscriptions == nil {
+		sub.subscriptions = make(map[string]map[string]mqtt.Token)
+	}
+	if _, ok := sub.subscriptions[topic]; !ok {
+		sub.subscriptions[topic] = map[string]mqtt.Token{}
+	}
+	if _, ok := sub.subscriptions[topic][id]; ok {
+		return errAlreadySubscribed
+	}
 	token := sub.client.Subscribe(topic, qos, sub.mqttHandler(handler))
 	if token.Error() != nil {
 		return token.Error()
@@ -52,20 +73,31 @@ func (sub subscriber) Subscribe(topic string, handler messaging.MessageHandler) 
 	if !ok {
 		return errSubscribeTimeout
 	}
-
+	sub.subscriptions[topic][id] = token
 	return token.Error()
 }
 
-func (sub subscriber) Unsubscribe(topic string) error {
+func (sub subscriber) Unsubscribe(id, topic string) error {
+	if id == "" {
+		return errEmptyID
+	}
+	if topic == "" {
+		return errEmptyTopic
+	}
+	_, ok := sub.subscriptions[topic][id]
+	if !ok {
+		return errNotSubscribed
+	}
 	token := sub.client.Unsubscribe(topic)
 	if token.Error() != nil {
 		return token.Error()
 	}
 
-	ok := token.WaitTimeout(sub.timeout)
+	ok = token.WaitTimeout(sub.timeout)
 	if !ok {
 		return errUnsubscribeTimeout
 	}
+	delete(sub.subscriptions[topic], id)
 
 	return token.Error()
 }

@@ -26,8 +26,6 @@ type Client interface {
 	Done() <-chan struct{}
 }
 
-type observers map[string]Observer
-
 // ErrOption indicates an error when adding an option.
 var ErrOption = errors.New("unable to set option")
 
