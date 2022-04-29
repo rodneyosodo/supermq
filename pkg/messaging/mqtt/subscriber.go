@@ -109,7 +109,7 @@ func (sub subscriber) mqttHandler(h messaging.MessageHandler) mqtt.MessageHandle
 			sub.logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
 			return
 		}
-		if err := h(msg); err != nil {
+		if err := h.Handle(msg); err != nil {
 			sub.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
 		}
 	}

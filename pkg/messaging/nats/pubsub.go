@@ -36,12 +36,17 @@ type PubSub interface {
 	Close()
 }
 
+type subscription struct {
+	*broker.Subscription
+	cancel func() error
+}
+
 type pubsub struct {
 	conn          *broker.Conn
 	logger        log.Logger
 	mu            sync.Mutex
 	queue         string
-	subscriptions map[string]map[string]*broker.Subscription
+	subscriptions map[string]map[string]subscription
 }
 
 // NewPubSub returns NATS message publisher/subscriber.
@@ -60,7 +65,7 @@ func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 		conn:          conn,
 		queue:         queue,
 		logger:        logger,
-		subscriptions: make(map[string]map[string]*broker.Subscription),
+		subscriptions: make(map[string]map[string]subscription),
 	}
 	return ret, nil
 }
@@ -92,12 +97,12 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 	// If there are no subscription, create an empty map assigned to the topic.
-	subscription, ok := ps.subscriptions[topic]
+	s, ok := ps.subscriptions[topic]
 	if !ok {
-		subscription = map[string]*broker.Subscription{}
+		s = make(map[string]subscription)
 	}
 	// If subscription exists return already subscribed.
-	if _, ok := subscription[id]; ok {
+	if _, ok := s[id]; ok {
 		return errAlreadySubscribed
 	}
 	nh := ps.natsHandler(handler)
@@ -107,14 +112,20 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 		if err != nil {
 			return err
 		}
-		subscription[id] = sub
+		s[id] = subscription{
+			Subscription: sub,
+			cancel:       handler.Cancel,
+		}
 		return nil
 	}
 	sub, err := ps.conn.Subscribe(topic, nh)
 	if err != nil {
 		return err
 	}
-	subscription[id] = sub
+	s[id] = subscription{
+		Subscription: sub,
+		cancel:       handler.Cancel,
+	}
 	return nil
 }
 
@@ -133,6 +144,11 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 		return errNotSubscribed
 	}
 	if current, ok := subscriptions[id]; ok {
+		if current.cancel != nil {
+			if err := current.cancel(); err != nil {
+				return err
+			}
+		}
 		if err := current.Unsubscribe(); err != nil {
 			return err
 		}
@@ -157,7 +173,7 @@ func (ps *pubsub) natsHandler(h messaging.MessageHandler) broker.MsgHandler {
 			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
 			return
 		}
-		if err := h(msg); err != nil {
+		if err := h.Handle(msg); err != nil {
 			ps.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
 		}
 	}

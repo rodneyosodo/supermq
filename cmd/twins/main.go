@@ -290,8 +290,17 @@ func newService(id string, ps messaging.PubSub, chanID string, users mainflux.Au
 			Help:      "Total duration of requests in microseconds.",
 		}, []string{"method"}),
 	)
+	err := ps.Subscribe(id, nats.SubjectAllChannels, handle(logger, chanID, svc))
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
 
-	err := ps.Subscribe(id, nats.SubjectAllChannels, func(msg messaging.Message) error {
+	return svc
+}
+
+func handle(logger logger.Logger, chanID string, svc twins.Service) handlerFunc {
+	return func(msg messaging.Message) error {
 		if msg.Channel == chanID {
 			return nil
 		}
@@ -302,13 +311,17 @@ func newService(id string, ps messaging.PubSub, chanID string, users mainflux.Au
 		}
 
 		return nil
-	})
-	if err != nil {
-		logger.Error(err.Error())
-		os.Exit(1)
 	}
+}
 
-	return svc
+type handlerFunc func(msg messaging.Message) error
+
+func (h handlerFunc) Handle(msg messaging.Message) error {
+	return h(msg)
+}
+
+func (h handlerFunc) Cancel() error {
+	return nil
 }
 
 func startHTTPServer(handler http.Handler, port string, cfg config, logger logger.Logger, errs chan error) {
