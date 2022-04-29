@@ -82,7 +82,7 @@ func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic 
 	if subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, subtopic)
 	}
-	return svc.pubsub.Subscribe(c.Token(), subject, c.SendMessage)
+	return svc.pubsub.Subscribe(c.Token(), subject, c)
 }
 
 func (svc *adapterService) Unsubscribe(ctx context.Context, key, chanID, subtopic, token string) error {

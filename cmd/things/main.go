@@ -124,7 +124,6 @@ type config struct {
 
 func main() {
 	cfg := loadConfig()
-
 	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
 		log.Fatalf(err.Error())

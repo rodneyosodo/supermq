@@ -42,14 +42,14 @@ func Start(id string, sub messaging.Subscriber, consumer Consumer, configPath st
 	transformer := makeTransformer(cfg.TransformerCfg, logger)
 
 	for _, subject := range cfg.SubscriberCfg.Subjects {
-		if err := sub.Subscribe(id, subject, handler(transformer, consumer)); err != nil {
+		if err := sub.Subscribe(id, subject, handle(transformer, consumer)); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func handler(t transformers.Transformer, c Consumer) messaging.MessageHandler {
+func handle(t transformers.Transformer, c Consumer) handleFunc {
 	return func(msg messaging.Message) error {
 		m := interface{}(msg)
 		var err error
@@ -61,6 +61,17 @@ func handler(t transformers.Transformer, c Consumer) messaging.MessageHandler {
 		}
 		return c.Consume(m)
 	}
+}
+
+type handleFunc func(msg messaging.Message) error
+
+func (h handleFunc) Handle(msg messaging.Message) error {
+	return h(msg)
+
+}
+
+func (h handleFunc) Cancel() error {
+	return nil
 }
 
 type subscriberConfig struct {
