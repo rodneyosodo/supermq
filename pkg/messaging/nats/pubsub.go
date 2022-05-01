@@ -146,19 +146,19 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 		return errNotSubscribed
 	}
 	// Check topic ID
-	current, ok := s[id]
-	if !ok {
+	if _, ok := s[id]; !ok {
 		return errNotSubscribed
 	}
-	if current.cancel != nil {
-		if err := current.cancel(); err != nil {
+	if current, ok := s[id]; ok {
+		if current.cancel != nil {
+			if err := current.cancel(); err != nil {
+				return err
+			}
+		}
+		if err := current.Unsubscribe(); err != nil {
 			return err
 		}
 	}
-	if err := current.Unsubscribe(); err != nil {
-		return err
-	}
-
 	delete(s, id)
 	if len(s) == 0 {
 		delete(ps.subscriptions, topic)
