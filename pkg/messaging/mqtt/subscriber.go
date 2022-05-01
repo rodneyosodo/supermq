@@ -56,24 +56,23 @@ func (sub subscriber) Subscribe(id, topic string, handler messaging.MessageHandl
 	if topic == "" {
 		return errEmptyTopic
 	}
-	if sub.subscriptions == nil {
-		sub.subscriptions = make(map[string]map[string]mqtt.Token)
+	s, ok := sub.subscriptions[topic]
+	if !ok {
+		s = make(map[string]mqtt.Token)
 	}
-	if _, ok := sub.subscriptions[topic]; !ok {
-		sub.subscriptions[topic] = map[string]mqtt.Token{}
-	}
-	if _, ok := sub.subscriptions[topic][id]; ok {
+	if _, ok := s[id]; ok {
 		return errAlreadySubscribed
 	}
 	token := sub.client.Subscribe(topic, qos, sub.mqttHandler(handler))
 	if token.Error() != nil {
 		return token.Error()
 	}
-	ok := token.WaitTimeout(sub.timeout)
+	ok = token.WaitTimeout(sub.timeout)
 	if !ok {
 		return errSubscribeTimeout
 	}
-	sub.subscriptions[topic][id] = token
+	s[id] = token
+	sub.subscriptions[topic] = s
 	return token.Error()
 }
 
@@ -84,8 +83,11 @@ func (sub subscriber) Unsubscribe(id, topic string) error {
 	if topic == "" {
 		return errEmptyTopic
 	}
-	_, ok := sub.subscriptions[topic][id]
+	s, ok := sub.subscriptions[topic]
 	if !ok {
+		return errNotSubscribed
+	}
+	if _, ok := s[id]; !ok {
 		return errNotSubscribed
 	}
 	token := sub.client.Unsubscribe(topic)
@@ -97,8 +99,12 @@ func (sub subscriber) Unsubscribe(id, topic string) error {
 	if !ok {
 		return errUnsubscribeTimeout
 	}
-	delete(sub.subscriptions[topic], id)
-
+	delete(s, id)
+	if len(s) == 0 {
+		delete(sub.subscriptions, topic)
+	} else {
+		sub.subscriptions[topic] = s
+	}
 	return token.Error()
 }
 

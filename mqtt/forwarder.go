@@ -40,26 +40,6 @@ func (f forwarder) Forward(id string, sub messaging.Subscriber, pub messaging.Pu
 	return sub.Subscribe(id, f.topic, handle(pub, f.logger))
 }
 
-// func (f forwarder) handle(pub messaging.Publisher) messaging.MessageHandler {
-// 	return func(msg messaging.Message) error {
-// 		if msg.Protocol == protocol {
-// 			return nil
-// 		}
-// 		// Use concatenation instead of fmt.Sprintf for the
-// 		// sake of simplicity and performance.
-// 		topic := channels + "/" + msg.Channel + "/" + messages
-// 		if msg.Subtopic != "" {
-// 			topic += "/" + strings.ReplaceAll(msg.Subtopic, ".", "/")
-// 		}
-// 		go func() {
-// 			if err := pub.Publish(topic, msg); err != nil {
-// 				f.logger.Warn(fmt.Sprintf("Failed to forward message: %s", err))
-// 			}
-// 		}()
-// 		return nil
-// 	}
-// }
-
 func handle(pub messaging.Publisher, logger log.Logger) handleFunc {
 	return func(msg messaging.Message) error {
 		if msg.Protocol == protocol {
