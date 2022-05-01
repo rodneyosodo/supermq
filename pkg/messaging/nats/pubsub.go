@@ -126,6 +126,7 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 		Subscription: sub,
 		cancel:       handler.Cancel,
 	}
+	ps.subscriptions[topic] = s
 	return nil
 }
 
@@ -139,25 +140,30 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
-	subscriptions, ok := ps.subscriptions[topic]
+	// Check topic
+	s, ok := ps.subscriptions[topic]
 	if !ok {
 		return errNotSubscribed
 	}
-	if current, ok := subscriptions[id]; ok {
-		if current.cancel != nil {
-			if err := current.cancel(); err != nil {
-				return err
-			}
-		}
-		if err := current.Unsubscribe(); err != nil {
+	// Check topic ID
+	current, ok := s[id]
+	if !ok {
+		return errNotSubscribed
+	}
+	if current.cancel != nil {
+		if err := current.cancel(); err != nil {
 			return err
 		}
 	}
+	if err := current.Unsubscribe(); err != nil {
+		return err
+	}
 
-	delete(subscriptions, id)
-	// If there are no observers left for the endpint, remove the map.
-	if len(subscriptions) == 0 {
+	delete(s, id)
+	if len(s) == 0 {
 		delete(ps.subscriptions, topic)
+	} else {
+		ps.subscriptions[topic] = s
 	}
 	return nil
 }

@@ -10,10 +10,6 @@ type Publisher interface {
 }
 
 // MessageHandler represents Message handler for Subscriber.
-// type MessageHandler func(msg Message) error
-
-// type Cancel func() error
-
 type MessageHandler interface {
 	// Handle handles messages passed by underlying implementation.
 	Handle(msg Message) error
