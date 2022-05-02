@@ -96,14 +96,16 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 	}
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
-	// If there are no subscription, create an empty map assigned to the topic.
+	// Check topic
 	s, ok := ps.subscriptions[topic]
-	if !ok {
+	if ok {
+		// Check topic ID
+		if _, ok := s[id]; ok {
+			return errAlreadySubscribed
+		}
+	} else {
 		s = make(map[string]subscription)
-	}
-	// If subscription exists return already subscribed.
-	if _, ok := s[id]; ok {
-		return errAlreadySubscribed
+		ps.subscriptions[topic] = s
 	}
 	nh := ps.natsHandler(handler)
 
@@ -126,7 +128,6 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 		Subscription: sub,
 		cancel:       handler.Cancel,
 	}
-	ps.subscriptions[topic] = s
 	return nil
 }
 
@@ -142,28 +143,27 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 
 	// Check topic
 	s, ok := ps.subscriptions[topic]
-	if !ok {
-		return errNotSubscribed
-	}
-	// Check topic ID
-	if _, ok := s[id]; !ok {
-		return errNotSubscribed
-	}
-	if current, ok := s[id]; ok {
-		if current.cancel != nil {
-			if err := current.cancel(); err != nil {
+	if ok {
+		// Check topic ID
+		current, ok := s[id]
+		if !ok {
+			return errNotSubscribed
+		} else {
+			if current.cancel != nil {
+				if err := current.cancel(); err != nil {
+					return err
+				}
+			}
+			if err := current.Unsubscribe(); err != nil {
 				return err
 			}
 		}
-		if err := current.Unsubscribe(); err != nil {
-			return err
-		}
+	} else {
+		return errNotSubscribed
 	}
 	delete(s, id)
 	if len(s) == 0 {
 		delete(ps.subscriptions, topic)
-	} else {
-		ps.subscriptions[topic] = s
 	}
 	return nil
 }
