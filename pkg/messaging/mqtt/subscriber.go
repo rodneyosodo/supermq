@@ -27,24 +27,19 @@ var (
 var _ messaging.Subscriber = (*subscriber)(nil)
 
 type subscriber struct {
-	client        mqtt.Client
+	address       string
 	timeout       time.Duration
 	logger        log.Logger
-	subscriptions map[string]map[string]mqtt.Token
+	subscriptions map[string]map[string]mqtt.Client
 }
 
 // NewSubscriber returns a new MQTT message subscriber.
 func NewSubscriber(address string, timeout time.Duration, logger log.Logger) (messaging.Subscriber, error) {
-	client, err := newClient(address, timeout)
-	if err != nil {
-		return nil, err
-	}
-
 	ret := subscriber{
-		client:        client,
+		address:       address,
 		timeout:       timeout,
 		logger:        logger,
-		subscriptions: make(map[string]map[string]mqtt.Token),
+		subscriptions: make(map[string]map[string]mqtt.Client),
 	}
 	return ret, nil
 }
@@ -56,23 +51,31 @@ func (sub subscriber) Subscribe(id, topic string, handler messaging.MessageHandl
 	if topic == "" {
 		return errEmptyTopic
 	}
+	// Check topic
 	s, ok := sub.subscriptions[topic]
-	if !ok {
-		s = make(map[string]mqtt.Token)
+	if ok {
+		// Check client ID
+		if _, ok := s[id]; ok {
+			return errAlreadySubscribed
+		}
+	} else {
+		opts := mqtt.NewClientOptions().SetUsername(username).AddBroker(sub.address)
+		client := mqtt.NewClient(opts)
+		token := client.Connect()
+		if token.Error() != nil {
+			return token.Error()
+		}
+		s[id] = client
+		sub.subscriptions[topic] = s
 	}
-	if _, ok := s[id]; ok {
-		return errAlreadySubscribed
-	}
-	token := sub.client.Subscribe(topic, qos, sub.mqttHandler(handler))
+	client := sub.subscriptions[topic][id]
+	token := client.Subscribe(topic, qos, sub.mqttHandler(handler))
 	if token.Error() != nil {
 		return token.Error()
 	}
-	ok = token.WaitTimeout(sub.timeout)
-	if !ok {
+	if ok := token.WaitTimeout(sub.timeout); !ok {
 		return errSubscribeTimeout
 	}
-	s[id] = token
-	sub.subscriptions[topic] = s
 	return token.Error()
 }
 
@@ -83,14 +86,19 @@ func (sub subscriber) Unsubscribe(id, topic string) error {
 	if topic == "" {
 		return errEmptyTopic
 	}
+	// Check topic
 	s, ok := sub.subscriptions[topic]
-	if !ok {
+	if ok {
+		// Check topic ID
+		_, ok := s[id]
+		if !ok {
+			return errNotSubscribed
+		}
+	} else {
 		return errNotSubscribed
 	}
-	if _, ok := s[id]; !ok {
-		return errNotSubscribed
-	}
-	token := sub.client.Unsubscribe(topic)
+	client := sub.subscriptions[topic][id]
+	token := client.Unsubscribe(topic)
 	if token.Error() != nil {
 		return token.Error()
 	}
@@ -99,12 +107,7 @@ func (sub subscriber) Unsubscribe(id, topic string) error {
 	if !ok {
 		return errUnsubscribeTimeout
 	}
-	delete(s, id)
-	if len(s) == 0 {
-		delete(sub.subscriptions, topic)
-	} else {
-		sub.subscriptions[topic] = s
-	}
+	delete(sub.subscriptions, id)
 	return token.Error()
 }
 
