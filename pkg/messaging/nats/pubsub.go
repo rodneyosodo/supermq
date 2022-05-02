@@ -143,25 +143,21 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	defer ps.mu.Unlock()
 	// Check topic
 	s, ok := ps.subscriptions[topic]
-	switch ok {
-	case true:
-		// Check topic ID
-		current, ok := s[id]
-		switch ok {
-		case true:
-			if current.cancel != nil {
-				if err := current.cancel(); err != nil {
-					return err
-				}
-			}
-			if err := current.Unsubscribe(); err != nil {
-				return err
-			}
-		default:
-			return errNotSubscribed
-		}
-	default:
+	if !ok {
 		return errNotSubscribed
+	}
+	// Check topic ID
+	current, ok := s[id]
+	if !ok {
+		return errNotSubscribed
+	}
+	if current.cancel != nil {
+		if err := current.cancel(); err != nil {
+			return err
+		}
+	}
+	if err := current.Unsubscribe(); err != nil {
+		return err
 	}
 	delete(s, id)
 	if len(s) == 0 {
