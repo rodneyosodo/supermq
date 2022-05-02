@@ -5,6 +5,7 @@ package mqtt
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -34,12 +35,7 @@ type subscription struct {
 
 // contains checks if a topic is present
 func (sub subscription) contains(topic string) bool {
-	for _, v := range sub.topics {
-		if v == topic {
-			return true
-		}
-	}
-	return false
+	return sub.indexOf(topic) != -1
 }
 
 // Finds the index of an item in the topics
@@ -68,6 +64,7 @@ type subscriber struct {
 	timeout       time.Duration
 	logger        log.Logger
 	subscriptions map[string]subscription
+	mu            *sync.RWMutex
 }
 
 // NewSubscriber returns a new MQTT message subscriber.
@@ -88,6 +85,8 @@ func (sub subscriber) Subscribe(id, topic string, handler messaging.MessageHandl
 	if topic == "" {
 		return errEmptyTopic
 	}
+	sub.mu.Lock()
+	defer sub.mu.Unlock()
 	// Check client ID
 	s, ok := sub.subscriptions[id]
 	if !ok {
@@ -124,6 +123,8 @@ func (sub subscriber) Unsubscribe(id, topic string) error {
 	if topic == "" {
 		return errEmptyTopic
 	}
+	sub.mu.Lock()
+	defer sub.mu.Unlock()
 	// Check client ID
 	s, ok := sub.subscriptions[id]
 	switch ok {
