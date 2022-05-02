@@ -16,21 +16,58 @@ import (
 )
 
 var (
-	errSubscribeTimeout   = errors.New("failed to subscribe due to timeout reached")
-	errUnsubscribeTimeout = errors.New("failed to unsubscribe due to timeout reached")
-	errAlreadySubscribed  = errors.New("already subscribed to topic")
-	errNotSubscribed      = errors.New("not subscribed")
-	errEmptyTopic         = errors.New("empty topic")
-	errEmptyID            = errors.New("empty ID")
+	errSubscribeTimeout       = errors.New("failed to subscribe due to timeout reached")
+	errUnsubscribeTimeout     = errors.New("failed to unsubscribe due to timeout reached")
+	errUnsubscribeDeleteTopic = errors.New("failed to unsubscribe due to deletion of topic")
+	errAlreadySubscribed      = errors.New("already subscribed to topic")
+	errNotSubscribed          = errors.New("not subscribed")
+	errEmptyTopic             = errors.New("empty topic")
+	errEmptyID                = errors.New("empty ID")
 )
 
 var _ messaging.Subscriber = (*subscriber)(nil)
+
+type subscription struct {
+	client mqtt.Client
+	topics []string
+}
+
+// contains checks if a topic is present
+func (sub subscription) contains(topic string) bool {
+	for _, v := range sub.topics {
+		if v == topic {
+			return true
+		}
+	}
+	return false
+}
+
+// Finds the index of an item in the topics
+func (sub subscription) indexOf(element string) int {
+	for k, v := range sub.topics {
+		if element == v {
+			return k
+		}
+	}
+	return -1
+}
+
+// Deletes a topic from the slice
+func (sub subscription) delete(topic string) bool {
+	index := sub.indexOf(topic)
+	if index == -1 {
+		return false
+	}
+	copy(sub.topics[index:], sub.topics[index+1:])
+	sub.topics[len(sub.topics)-1] = ""
+	return true
+}
 
 type subscriber struct {
 	address       string
 	timeout       time.Duration
 	logger        log.Logger
-	subscriptions map[string]map[string]mqtt.Client
+	subscriptions map[string]subscription
 }
 
 // NewSubscriber returns a new MQTT message subscriber.
@@ -39,7 +76,7 @@ func NewSubscriber(address string, timeout time.Duration, logger log.Logger) (me
 		address:       address,
 		timeout:       timeout,
 		logger:        logger,
-		subscriptions: make(map[string]map[string]mqtt.Client),
+		subscriptions: make(map[string]subscription),
 	}
 	return ret, nil
 }
@@ -51,22 +88,26 @@ func (sub subscriber) Subscribe(id, topic string, handler messaging.MessageHandl
 	if topic == "" {
 		return errEmptyTopic
 	}
-	// Check topic
-	s, ok := sub.subscriptions[topic]
-	if ok {
-		// Check client ID
-		if _, ok := s[id]; ok {
-			return errAlreadySubscribed
+	// Check client ID
+	s, ok := sub.subscriptions[id]
+	if !ok {
+		opts := mqtt.NewClientOptions().SetUsername(username).AddBroker(sub.address)
+		client := mqtt.NewClient(opts)
+		token := client.Connect()
+		if token.Error() != nil {
+			return token.Error()
+		}
+		s = subscription{
+			client: client,
+			topics: []string{topic},
 		}
 	}
-	opts := mqtt.NewClientOptions().SetUsername(username).AddBroker(sub.address)
-	client := mqtt.NewClient(opts)
-	token := client.Connect()
-	if token.Error() != nil {
-		return token.Error()
+	// Check topic
+	ok = s.contains(topic)
+	if ok {
+		return errAlreadySubscribed
 	}
-	sub.subscriptions[topic][id] = client
-	token = client.Subscribe(topic, qos, sub.mqttHandler(handler))
+	token := s.client.Subscribe(topic, qos, sub.mqttHandler(handler))
 	if token.Error() != nil {
 		return token.Error()
 	}
@@ -83,19 +124,18 @@ func (sub subscriber) Unsubscribe(id, topic string) error {
 	if topic == "" {
 		return errEmptyTopic
 	}
-	// Check topic
-	s, ok := sub.subscriptions[topic]
+	// Check client ID
+	s, ok := sub.subscriptions[id]
 	switch ok {
 	case true:
-		// Check client ID
-		if _, ok := s[id]; !ok {
+		// Check topic
+		if ok := s.contains(topic); !ok {
 			return errNotSubscribed
 		}
 	default:
 		return errNotSubscribed
 	}
-	client := sub.subscriptions[topic][id]
-	token := client.Unsubscribe(topic)
+	token := s.client.Unsubscribe(topic)
 	if token.Error() != nil {
 		return token.Error()
 	}
@@ -104,9 +144,11 @@ func (sub subscriber) Unsubscribe(id, topic string) error {
 	if !ok {
 		return errUnsubscribeTimeout
 	}
-	delete(s, id)
-	if len(s) == 0 {
-		delete(sub.subscriptions, topic)
+	if ok := s.delete(topic); !ok {
+		return errUnsubscribeDeleteTopic
+	}
+	if len(s.topics) == 0 {
+		delete(sub.subscriptions, id)
 	}
 	return token.Error()
 }
