@@ -77,7 +77,7 @@ func main() {
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsAuthTimeout)
 
-	nps, err := nats.NewPubSub(cfg.natsURL, "coap", logger)
+	nps, err := nats.NewPubSub(cfg.natsURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to NATS: %s", err))
 		os.Exit(1)
