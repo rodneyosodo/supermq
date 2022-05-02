@@ -53,20 +53,20 @@ func (sub subscriber) Subscribe(id, topic string, handler messaging.MessageHandl
 	}
 	// Check topic
 	s, ok := sub.subscriptions[topic]
-	if ok {
+	switch ok {
+	case true:
 		// Check client ID
 		if _, ok := s[id]; ok {
 			return errAlreadySubscribed
 		}
-	} else {
+	default:
 		opts := mqtt.NewClientOptions().SetUsername(username).AddBroker(sub.address)
 		client := mqtt.NewClient(opts)
 		token := client.Connect()
 		if token.Error() != nil {
 			return token.Error()
 		}
-		s[id] = client
-		sub.subscriptions[topic] = s
+		sub.subscriptions[topic][id] = client
 	}
 	client := sub.subscriptions[topic][id]
 	token := client.Subscribe(topic, qos, sub.mqttHandler(handler))
@@ -88,13 +88,13 @@ func (sub subscriber) Unsubscribe(id, topic string) error {
 	}
 	// Check topic
 	s, ok := sub.subscriptions[topic]
-	if ok {
-		// Check topic ID
-		_, ok := s[id]
-		if !ok {
+	switch ok {
+	case true:
+		// Check client ID
+		if _, ok := s[id]; !ok {
 			return errNotSubscribed
 		}
-	} else {
+	default:
 		return errNotSubscribed
 	}
 	client := sub.subscriptions[topic][id]
@@ -107,7 +107,10 @@ func (sub subscriber) Unsubscribe(id, topic string) error {
 	if !ok {
 		return errUnsubscribeTimeout
 	}
-	delete(sub.subscriptions, id)
+	delete(s, id)
+	if len(s) == 0 {
+		delete(sub.subscriptions, topic)
+	}
 	return token.Error()
 }
 

@@ -98,12 +98,13 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 	defer ps.mu.Unlock()
 	// Check topic
 	s, ok := ps.subscriptions[topic]
-	if ok {
+	switch ok {
+	case true:
 		// Check topic ID
 		if _, ok := s[id]; ok {
 			return errAlreadySubscribed
 		}
-	} else {
+	default:
 		s = make(map[string]subscription)
 		ps.subscriptions[topic] = s
 	}
@@ -140,15 +141,14 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	}
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
-
 	// Check topic
 	s, ok := ps.subscriptions[topic]
-	if ok {
+	switch ok {
+	case true:
 		// Check topic ID
 		current, ok := s[id]
-		if !ok {
-			return errNotSubscribed
-		} else {
+		switch ok {
+		case true:
 			if current.cancel != nil {
 				if err := current.cancel(); err != nil {
 					return err
@@ -157,8 +157,10 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 			if err := current.Unsubscribe(); err != nil {
 				return err
 			}
+		default:
+			return errNotSubscribed
 		}
-	} else {
+	default:
 		return errNotSubscribed
 	}
 	delete(s, id)
