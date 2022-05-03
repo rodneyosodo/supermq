@@ -33,32 +33,6 @@ type subscription struct {
 	topics []string
 }
 
-// contains checks if a topic is present
-func (sub subscription) contains(topic string) bool {
-	return sub.indexOf(topic) != -1
-}
-
-// Finds the index of an item in the topics
-func (sub subscription) indexOf(element string) int {
-	for k, v := range sub.topics {
-		if element == v {
-			return k
-		}
-	}
-	return -1
-}
-
-// Deletes a topic from the slice
-func (sub subscription) delete(topic string) bool {
-	index := sub.indexOf(topic)
-	if index == -1 {
-		return false
-	}
-	copy(sub.topics[index:], sub.topics[index+1:])
-	sub.topics[len(sub.topics)-1] = ""
-	return true
-}
-
 type subscriber struct {
 	address       string
 	timeout       time.Duration
@@ -97,7 +71,7 @@ func (sub subscriber) Subscribe(id, topic string, handler messaging.MessageHandl
 		}
 		s.topics = append(s.topics, topic)
 	default:
-		opts := mqtt.NewClientOptions().SetUsername(username).AddBroker(sub.address)
+		opts := mqtt.NewClientOptions().SetUsername(username).AddBroker(sub.address).SetClientID(id)
 		client := mqtt.NewClient(opts)
 		token := client.Connect()
 		if token.Error() != nil {
@@ -167,4 +141,30 @@ func (sub subscriber) mqttHandler(h messaging.MessageHandler) mqtt.MessageHandle
 			sub.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
 		}
 	}
+}
+
+// contains checks if a topic is present
+func (sub subscription) contains(topic string) bool {
+	return sub.indexOf(topic) != -1
+}
+
+// Finds the index of an item in the topics
+func (sub subscription) indexOf(element string) int {
+	for k, v := range sub.topics {
+		if element == v {
+			return k
+		}
+	}
+	return -1
+}
+
+// Deletes a topic from the slice
+func (sub subscription) delete(topic string) bool {
+	index := sub.indexOf(topic)
+	if index == -1 {
+		return false
+	}
+	copy(sub.topics[index:], sub.topics[index+1:])
+	sub.topics[len(sub.topics)-1] = ""
+	return true
 }
