@@ -46,7 +46,7 @@ type PubSub interface {
 }
 
 type pubsub struct {
-	publisher
+	publisher     publisher
 	logger        log.Logger
 	queue         amqp.Queue
 	subscriptions map[string]bool
@@ -78,6 +78,13 @@ func NewPubSub(url, queueName string, logger log.Logger) (PubSub, error) {
 		subscriptions: make(map[string]bool),
 	}
 	return ret, nil
+}
+
+func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
+	if err := ps.publisher.Publish(topic, msg); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) error {
@@ -127,6 +134,10 @@ func (ps *pubsub) Unsubscribe(topic string) error {
 
 	delete(ps.subscriptions, topic)
 	return nil
+}
+
+func (ps *pubsub) Close() {
+	ps.publisher.conn.Close()
 }
 
 func (ps *pubsub) handle(deliveries <-chan amqp.Delivery, h messaging.MessageHandler) {
