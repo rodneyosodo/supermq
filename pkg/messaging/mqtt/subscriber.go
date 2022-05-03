@@ -89,7 +89,14 @@ func (sub subscriber) Subscribe(id, topic string, handler messaging.MessageHandl
 	defer sub.mu.Unlock()
 	// Check client ID
 	s, ok := sub.subscriptions[id]
-	if !ok {
+	switch ok {
+	case true:
+		// Check topic
+		if ok = s.contains(topic); ok {
+			return errAlreadySubscribed
+		}
+		s.topics = append(s.topics, topic)
+	default:
 		opts := mqtt.NewClientOptions().SetUsername(username).AddBroker(sub.address)
 		client := mqtt.NewClient(opts)
 		token := client.Connect()
@@ -100,11 +107,6 @@ func (sub subscriber) Subscribe(id, topic string, handler messaging.MessageHandl
 			client: client,
 			topics: []string{topic},
 		}
-	}
-	// Check topic
-	ok = s.contains(topic)
-	if ok {
-		return errAlreadySubscribed
 	}
 	token := s.client.Subscribe(topic, qos, sub.mqttHandler(handler))
 	if token.Error() != nil {
