@@ -322,16 +322,6 @@ func handle(logger logger.Logger, chanID string, svc twins.Service) handlerFunc 
 	}
 }
 
-type handlerFunc func(msg messaging.Message) error
-
-func (h handlerFunc) Handle(msg messaging.Message) error {
-	return h(msg)
-}
-
-func (h handlerFunc) Cancel() error {
-	return nil
-}
-
 func startHTTPServer(ctx context.Context, handler http.Handler, port string, cfg config, logger logger.Logger) error {
 	p := fmt.Sprintf(":%s", port)
 	errCh := make(chan error)
@@ -364,4 +354,14 @@ func startHTTPServer(ctx context.Context, handler http.Handler, port string, cfg
 	case err := <-errCh:
 		return err
 	}
+}
+
+type handlerFunc func(msg messaging.Message) error
+
+func (h handlerFunc) Handle(msg messaging.Message) error {
+	return h(msg)
+}
+
+func (h handlerFunc) Cancel() error {
+	return nil
 }
