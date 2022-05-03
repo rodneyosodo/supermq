@@ -36,7 +36,7 @@ type PubSub interface {
 }
 
 type pubsub struct {
-	publisher
+	publisher     publisher
 	logger        log.Logger
 	mu            sync.Mutex
 	queue         string
@@ -64,6 +64,13 @@ func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 		subscriptions: make(map[string]*broker.Subscription),
 	}
 	return ret, nil
+}
+
+func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
+	if err := ps.publisher.Publish(topic, msg); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) error {
@@ -111,6 +118,10 @@ func (ps *pubsub) Unsubscribe(topic string) error {
 
 	delete(ps.subscriptions, topic)
 	return nil
+}
+
+func (ps *pubsub) Close() {
+	ps.publisher.conn.Close()
 }
 
 func (ps *pubsub) natsHandler(h messaging.MessageHandler) broker.MsgHandler {
