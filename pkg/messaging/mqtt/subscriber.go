@@ -164,7 +164,9 @@ func (sub subscription) delete(topic string) bool {
 	if index == -1 {
 		return false
 	}
-	copy(sub.topics[index:], sub.topics[index+1:])
-	sub.topics[len(sub.topics)-1] = ""
+	topics := make([]string, len(sub.topics)-1)
+	copy(topics[:index], sub.topics[:index])
+	copy(topics[index:], sub.topics[index+1:])
+	sub.topics = topics
 	return true
 }
