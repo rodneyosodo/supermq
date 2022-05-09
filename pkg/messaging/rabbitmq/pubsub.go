@@ -34,6 +34,7 @@ var (
 	errAlreadySubscribed = errors.New("already subscribed to topic")
 	errNotSubscribed     = errors.New("not subscribed")
 	errEmptyTopic        = errors.New("empty topic")
+	errEmptyID           = errors.New("empty ID")
 )
 
 var _ messaging.PubSub = (*pubsub)(nil)
@@ -45,12 +46,15 @@ type PubSub interface {
 	Close()
 }
 
+type subscription struct {
+	cancel func() error
+}
 type pubsub struct {
 	publisher     publisher
 	logger        log.Logger
 	queue         amqp.Queue
-	subscriptions map[string]bool
-	mutex         sync.Mutex
+	subscriptions map[string]map[string]subscription
+	mu            sync.Mutex
 }
 
 // NewPubSub returns RabbitMQ message publisher/subscriber.
@@ -75,7 +79,7 @@ func NewPubSub(url, queueName string, logger log.Logger) (PubSub, error) {
 		},
 		queue:         queue,
 		logger:        logger,
-		subscriptions: make(map[string]bool),
+		subscriptions: make(map[string]map[string]subscription),
 	}
 	return ret, nil
 }
@@ -87,14 +91,26 @@ func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
 	return nil
 }
 
-func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) error {
+func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) error {
+	if id == "" {
+		return errEmptyID
+	}
 	if topic == "" {
 		return errEmptyTopic
 	}
-	ps.mutex.Lock()
-	defer ps.mutex.Unlock()
-	if _, ok := ps.subscriptions[topic]; ok {
-		return errAlreadySubscribed
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+	// Check topic
+	s, ok := ps.subscriptions[topic]
+	switch ok {
+	case true:
+		// Check topic ID
+		if _, ok := s[id]; ok {
+			return errAlreadySubscribed
+		}
+	default:
+		s = make(map[string]subscription)
+		ps.subscriptions[topic] = s
 	}
 
 	subject := fmt.Sprintf("%s.%s.%s", exchange, chansPrefix, topic)
@@ -106,33 +122,54 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 	if err := ps.publisher.ch.QueueBind(ps.queue.Name, routingKey, subject, false, nil); err != nil {
 		return err
 	}
-	msgs, err := ps.publisher.ch.Consume(ps.queue.Name, "", true, false, false, false, nil)
+	msgs, err := ps.publisher.ch.Consume(ps.queue.Name, id, true, false, false, false, nil)
 	if err != nil {
 		return err
 	}
 
 	go ps.handle(msgs, handler)
-	ps.subscriptions[topic] = true
+	s[id] = subscription{
+		cancel: handler.Cancel,
+	}
 
 	return nil
 }
 
-func (ps *pubsub) Unsubscribe(topic string) error {
+func (ps *pubsub) Unsubscribe(id, topic string) error {
+	defer ps.publisher.ch.Cancel(id, false)
+	if id == "" {
+		return errEmptyID
+	}
 	if topic == "" {
 		return errEmptyTopic
 	}
-	ps.mutex.Lock()
-	defer ps.mutex.Unlock()
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
 
-	if _, ok := ps.subscriptions[topic]; !ok {
+	// Check topic
+	s, ok := ps.subscriptions[topic]
+	if !ok {
+		return errNotSubscribed
+	}
+	// Check topic ID
+	current, ok := s[id]
+	if !ok {
 		return errNotSubscribed
 	}
 	subject := fmt.Sprintf("%s.%s.%s", exchange, chansPrefix, topic)
 	if err := ps.publisher.ch.QueueUnbind(ps.queue.Name, routingKey, subject, nil); err != nil {
 		return err
 	}
+	if current.cancel != nil {
+		if err := current.cancel(); err != nil {
+			return err
+		}
+	}
 
-	delete(ps.subscriptions, topic)
+	delete(s, id)
+	if len(s) == 0 {
+		delete(ps.subscriptions, topic)
+	}
 	return nil
 }
 
@@ -147,7 +184,7 @@ func (ps *pubsub) handle(deliveries <-chan amqp.Delivery, h messaging.MessageHan
 			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
 			return
 		}
-		if err := h(msg); err != nil {
+		if err := h.Handle(msg); err != nil {
 			ps.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
 			return
 		}
