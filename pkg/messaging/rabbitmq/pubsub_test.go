@@ -26,132 +26,138 @@ var (
 )
 
 func TestPubsub(t *testing.T) {
-	pubsubcases := []struct {
+	// Test Subscribe and Unsubscribe
+	subcases := []struct {
 		desc         string
 		topic        string
+		topicID      string
 		errorMessage error
-		pubsub       bool //true for publish and false for subscribe
+		pubsub       bool //true for subscribe and false for unsubscribe
 	}{
 		{
-			desc:         "Susbcribe to a topic",
+			desc:         "Susbcribe to a topic with an ID",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
-			errorMessage: nil,
-			pubsub:       false,
-		},
-		{
-			desc:         "Susbcribe to an already subscribed topic",
-			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
-			errorMessage: errors.New("already subscribed to topic"),
-			pubsub:       false,
-		},
-		{
-			desc:         "Susbcribe to a topic with a subtopic",
-			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
-			errorMessage: nil,
-			pubsub:       false,
-		},
-		{
-			desc:         "Susbcribe to an already subscribed topic with a subtopic",
-			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
-			errorMessage: errors.New("already subscribed to topic"),
-			pubsub:       false,
-		},
-		{
-			desc:         "Susbcribe to an empty topic",
-			topic:        "",
-			errorMessage: errors.New("empty topic"),
-			pubsub:       false,
-		},
-		{
-			desc:         "Unsubscribe to an empty topic",
-			topic:        "",
-			errorMessage: errors.New("empty topic"),
-			pubsub:       true,
-		},
-		{
-			desc:         "Unsubscribe to a topic",
-			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "topicid1",
 			errorMessage: nil,
 			pubsub:       true,
 		},
 		{
-			desc:         "Unsubscribe to an already unsubscribed topic",
+			desc:         "Susbcribe to the same topic with a different ID",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "topicid2",
+			errorMessage: nil,
+			pubsub:       true,
+		},
+		{
+			desc:         "Susbcribe to an already subscribed topic with an ID",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "topicid1",
+			errorMessage: errors.New("already subscribed to topic"),
+			pubsub:       true,
+		},
+		{
+			desc:         "Unsubscribe to a topic with an ID",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "topicid1",
+			errorMessage: nil,
+			pubsub:       false,
+		},
+		{
+			desc:         "Unsubscribe to a non-existent topic with an ID",
+			topic:        "h",
+			topicID:      "topicid1",
 			errorMessage: errors.New("not subscribed"),
-			pubsub:       true,
+			pubsub:       false,
 		},
 		{
-			desc:         "Unsubscribe to a topic with a subtopic",
-			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
-			errorMessage: nil,
-			pubsub:       true,
-		},
-		{
-			desc:         "Doubling Susbcribe to a topic",
-			topic:        "increaseTopic",
+			desc:         "Unsubscribe to the same topic with a different ID",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "topicid2",
 			errorMessage: nil,
 			pubsub:       false,
 		},
 		{
-			desc:         "Doubling Susbcribe to an already subscribed topic",
-			topic:        "increaseTopic",
-			errorMessage: errors.New("already subscribed to topic"),
-			pubsub:       false,
-		},
-		{
-			desc:         "Doubling Susbcribe to a topic with a subtopic",
-			topic:        "secondTopic",
-			errorMessage: nil,
-			pubsub:       false,
-		},
-		{
-			desc:         "Doubling Susbcribe to an already subscribed topic with a subtopic",
-			topic:        "secondTopic",
-			errorMessage: errors.New("already subscribed to topic"),
-			pubsub:       false,
-		},
-		{
-			desc:         "Doubling Susbcribe to an empty topic",
-			topic:        "",
-			errorMessage: errors.New("empty topic"),
-			pubsub:       false,
-		},
-		{
-			desc:         "Doubling Unsubscribe to an empty topic",
-			topic:        "",
-			errorMessage: errors.New("empty topic"),
-			pubsub:       true,
-		},
-		{
-			desc:         "Doubling Unsubscribe to a topic",
-			topic:        "increaseTopic",
-			errorMessage: nil,
-			pubsub:       true,
-		},
-		{
-			desc:         "Doubling Unsubscribe to an already unsubscribed topic",
-			topic:        "increaseTopic",
+			desc:         "Unsubscribe to the same topic with a different ID not subscribed",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "topicid3",
 			errorMessage: errors.New("not subscribed"),
+			pubsub:       false,
+		},
+		{
+			desc:         "Unsubscribe to an already unsubscribed topic with an ID",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "topicid1",
+			errorMessage: errors.New("not subscribed"),
+			pubsub:       false,
+		},
+		{
+			desc:         "Susbcribe to a topic with a subtopic with an ID",
+			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
+			topicID:      "topicid1",
+			errorMessage: nil,
 			pubsub:       true,
 		},
 		{
-			desc:         "Doubling Unsubscribe to a topic with a subtopic",
-			topic:        "secondTopic",
-			errorMessage: nil,
+			desc:         "Susbcribe to an already subscribed topic with a subtopic with an ID",
+			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
+			topicID:      "topicid1",
+			errorMessage: errors.New("already subscribed to topic"),
 			pubsub:       true,
+		},
+		{
+			desc:         "Unsubscribe to a topic with a subtopic with an ID",
+			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
+			topicID:      "topicid1",
+			errorMessage: nil,
+			pubsub:       false,
+		},
+		{
+			desc:         "Unsubscribe to an already unsubscribed topic with a subtopic with an ID",
+			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
+			topicID:      "topicid1",
+			errorMessage: errors.New("not subscribed"),
+			pubsub:       false,
+		},
+		{
+			desc:         "Susbcribe to an empty topic with an ID",
+			topic:        "",
+			topicID:      "topicid1",
+			errorMessage: errors.New("empty topic"),
+			pubsub:       true,
+		},
+		{
+			desc:         "Unsubscribe to an empty topic with an ID",
+			topic:        "",
+			topicID:      "topicid1",
+			errorMessage: errors.New("empty topic"),
+			pubsub:       false,
+		},
+		{
+			desc:         "Susbcribe to a topic with empty id",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "",
+			errorMessage: errors.New("empty ID"),
+			pubsub:       true,
+		},
+		{
+			desc:         "Unsubscribe to a topic with empty id",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "",
+			errorMessage: errors.New("empty ID"),
+			pubsub:       false,
 		},
 	}
 
-	for _, pc := range pubsubcases {
-		if pc.pubsub == false {
-			err := pubsub.Subscribe(pc.topic, handler)
+	for _, pc := range subcases {
+		if pc.pubsub == true {
+			err := pubsub.Subscribe(pc.topicID, pc.topic, handler{})
 			if pc.errorMessage == nil {
 				require.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", pc.desc, err))
 			} else {
 				assert.Equal(t, err, pc.errorMessage)
 			}
 		} else {
-			err := pubsub.Unsubscribe(pc.topic)
+			err := pubsub.Unsubscribe(pc.topicID, pc.topic)
 			if pc.errorMessage == nil {
 				require.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", pc.desc, err))
 			} else {
@@ -159,21 +165,15 @@ func TestPubsub(t *testing.T) {
 			}
 		}
 	}
-
-	expectedMsg := messaging.Message{
-		Channel:  channel,
-		Subtopic: "demo",
-		Payload:  data,
-	}
-	err := pubsub.Publish("", expectedMsg)
-	assert.Equal(t, err, errors.New("empty topic"), fmt.Sprintf("got unexpected error: %s", err))
-	err = pubsub.Publish(topic, expectedMsg)
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	err = pubsub.Publish(topic, expectedMsg)
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 }
 
-func handler(msg messaging.Message) error {
+type handler struct{}
+
+func (h handler) Handle(msg messaging.Message) error {
 	msgChan <- msg
+	return nil
+}
+
+func (h handler) Cancel() error {
 	return nil
 }
