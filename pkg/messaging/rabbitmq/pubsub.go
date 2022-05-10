@@ -106,7 +106,7 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 		ps.subscriptions[topic] = s
 	}
 
-	subject := fmt.Sprintf("%s.%s.%s", exchange, chansPrefix, topic)
+	subject := fmt.Sprintf("%s.%s", exchange, topic)
 
 	if err := ps.ch.ExchangeDeclare(subject, exchangeKind, true, false, false, false, nil); err != nil {
 		return err
@@ -149,7 +149,7 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	if !ok {
 		return errNotSubscribed
 	}
-	subject := fmt.Sprintf("%s.%s.%s", exchange, chansPrefix, topic)
+	subject := fmt.Sprintf("%s.%s", exchange, topic)
 	if err := ps.ch.QueueUnbind(ps.queue.Name, routingKey, subject, nil); err != nil {
 		return err
 	}
