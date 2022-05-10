@@ -50,7 +50,7 @@ type subscription struct {
 	cancel func() error
 }
 type pubsub struct {
-	publisher     publisher
+	publisher
 	logger        log.Logger
 	queue         amqp.Queue
 	subscriptions map[string]map[string]subscription
@@ -84,13 +84,6 @@ func NewPubSub(url, queueName string, logger log.Logger) (PubSub, error) {
 	return ret, nil
 }
 
-func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
-	if err := ps.publisher.Publish(topic, msg); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) error {
 	if id == "" {
 		return errEmptyID
@@ -115,14 +108,14 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 
 	subject := fmt.Sprintf("%s.%s.%s", exchange, chansPrefix, topic)
 
-	if err := ps.publisher.ch.ExchangeDeclare(subject, exchangeKind, true, false, false, false, nil); err != nil {
+	if err := ps.ch.ExchangeDeclare(subject, exchangeKind, true, false, false, false, nil); err != nil {
 		return err
 	}
 
-	if err := ps.publisher.ch.QueueBind(ps.queue.Name, routingKey, subject, false, nil); err != nil {
+	if err := ps.ch.QueueBind(ps.queue.Name, routingKey, subject, false, nil); err != nil {
 		return err
 	}
-	msgs, err := ps.publisher.ch.Consume(ps.queue.Name, id, true, false, false, false, nil)
+	msgs, err := ps.ch.Consume(ps.queue.Name, id, true, false, false, false, nil)
 	if err != nil {
 		return err
 	}
@@ -136,7 +129,7 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 }
 
 func (ps *pubsub) Unsubscribe(id, topic string) error {
-	defer ps.publisher.ch.Cancel(id, false)
+	defer ps.ch.Cancel(id, false)
 	if id == "" {
 		return errEmptyID
 	}
@@ -157,7 +150,7 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 		return errNotSubscribed
 	}
 	subject := fmt.Sprintf("%s.%s.%s", exchange, chansPrefix, topic)
-	if err := ps.publisher.ch.QueueUnbind(ps.queue.Name, routingKey, subject, nil); err != nil {
+	if err := ps.ch.QueueUnbind(ps.queue.Name, routingKey, subject, nil); err != nil {
 		return err
 	}
 	if current.cancel != nil {
@@ -171,10 +164,6 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 		delete(ps.subscriptions, topic)
 	}
 	return nil
-}
-
-func (ps *pubsub) Close() {
-	ps.publisher.conn.Close()
 }
 
 func (ps *pubsub) handle(deliveries <-chan amqp.Delivery, h messaging.MessageHandler) {
