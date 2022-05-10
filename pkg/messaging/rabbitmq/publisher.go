@@ -65,7 +65,7 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 		immediate,
 		amqp.Publishing{
 			Headers:     amqp.Table{},
-			ContentType: "text/plain",
+			ContentType: "application/octet-stream",
 			Priority:    2,
 			AppId:       "mainflux",
 			Body:        []byte(data),
