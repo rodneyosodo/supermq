@@ -73,23 +73,6 @@ func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 	return ret, nil
 }
 
-func (ps *pubsub) Publish(topic string, msg messaging.Message) error {
-	data, err := proto.Marshal(&msg)
-	if err != nil {
-		return err
-	}
-
-	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
-	if msg.Subtopic != "" {
-		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
-	}
-	if err := ps.conn.Publish(subject, data); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) error {
 	if id == "" {
 		return errEmptyID
@@ -114,7 +97,7 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 	nh := ps.natsHandler(handler)
 
 	if ps.queue != "" {
-		sub, err := ps.publisher.conn.QueueSubscribe(topic, ps.queue, nh)
+		sub, err := ps.conn.QueueSubscribe(topic, ps.queue, nh)
 		if err != nil {
 			return err
 		}
@@ -124,7 +107,7 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 		}
 		return nil
 	}
-	sub, err := ps.publisher.conn.Subscribe(topic, nh)
+	sub, err := ps.conn.Subscribe(topic, nh)
 	if err != nil {
 		return err
 	}

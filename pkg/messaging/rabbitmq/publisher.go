@@ -54,6 +54,9 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 		return err
 	}
 	subject := fmt.Sprintf("%s.%s.%s", exchange, chansPrefix, topic)
+	if msg.Subtopic != "" {
+		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
+	}
 	if err := pub.ch.ExchangeDeclare(subject, exchangeKind, true, false, false, false, nil); err != nil {
 		return err
 	}
@@ -65,7 +68,7 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 		immediate,
 		amqp.Publishing{
 			Headers:     amqp.Table{},
-			ContentType: "text/plain",
+			ContentType: "application/octet-stream",
 			Priority:    2,
 			AppId:       "mainflux",
 			Body:        []byte(data),
