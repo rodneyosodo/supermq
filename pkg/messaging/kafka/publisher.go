@@ -68,6 +68,7 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 
 	kafkaMsg := kafka.Message{
 		Value: data,
+		Topic: subject,
 	}
 	if err := pub.writer.WriteMessages(context.TODO(), kafkaMsg); err != nil {
 		// Sometime it take time for leader to be elected. If that is so, we retry to publish message

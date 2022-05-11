@@ -29,6 +29,7 @@ var (
 	errAlreadySubscribed = errors.New("already subscribed to topic")
 	errNotSubscribed     = errors.New("not subscribed")
 	errEmptyTopic        = errors.New("empty topic")
+	errEmptyID           = errors.New("empty ID")
 )
 
 var _ messaging.PubSub = (*pubsub)(nil)
@@ -40,11 +41,15 @@ type PubSub interface {
 	Close()
 }
 
+type subscription struct {
+	*kafka.Reader
+	cancel func() error
+}
 type pubsub struct {
 	publisher
-	mu            sync.Mutex
-	subscriptions map[string]*kafka.Reader
 	logger        log.Logger
+	mu            sync.Mutex
+	subscriptions map[string]map[string]subscription
 }
 
 // NewPubSub returns Kafka message publisher/subscriber.
@@ -62,31 +67,42 @@ func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 				Async: true,
 			},
 		},
-		subscriptions: make(map[string]*kafka.Reader),
+		subscriptions: make(map[string]map[string]subscription),
 		logger:        logger,
 	}
 	return ret, nil
 }
 
-func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) error {
+func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) error {
+	if id == "" {
+		return errEmptyID
+	}
 	if topic == "" {
 		return errEmptyTopic
 	}
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
-	if _, ok := ps.subscriptions[topic]; ok {
-		return errAlreadySubscribed
+	// Check topic
+	s, ok := ps.subscriptions[topic]
+	switch ok {
+	case true:
+		// Check topic ID
+		if _, ok := s[id]; ok {
+			return errAlreadySubscribed
+		}
+	default:
+		s = make(map[string]subscription)
+		ps.subscriptions[topic] = s
 	}
-	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
-	groupID := fmt.Sprintf("%s.%s", groupID, topic)
+
 	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:     []string{ps.publisher.url},
-		GroupID:     groupID,
-		Topic:       subject,
+		Brokers:     []string{ps.url},
+		GroupID:     id,
+		Topic:       topic,
 		StartOffset: offset,
 	})
-	ps.subscriptions[topic] = reader
+
 	go func() {
 		for {
 			message, err := reader.ReadMessage(context.Background())
@@ -96,37 +112,54 @@ func (ps *pubsub) Subscribe(topic string, handler messaging.MessageHandler) erro
 			ps.handle(message, handler)
 		}
 	}()
+	s[id] = subscription{
+		Reader: reader,
+		cancel: handler.Cancel,
+	}
 	return nil
 }
 
-func (ps *pubsub) Unsubscribe(topic string) error {
+func (ps *pubsub) Unsubscribe(id, topic string) error {
+	if id == "" {
+		return errEmptyID
+	}
 	if topic == "" {
 		return errEmptyTopic
 	}
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
-	reader, ok := ps.subscriptions[topic]
+	// Check topic
+	s, ok := ps.subscriptions[topic]
 	if !ok {
 		return errNotSubscribed
+	}
+	// Check topic ID
+	reader, ok := s[id]
+	if !ok {
+		return errNotSubscribed
+	}
+	if reader.cancel != nil {
+		if err := reader.cancel(); err != nil {
+			return err
+		}
 	}
 	if err := reader.Close(); err != nil {
 		return err
 	}
-	delete(ps.subscriptions, topic)
+	delete(s, id)
+	if len(s) == 0 {
+		delete(ps.subscriptions, topic)
+	}
 	return nil
-}
-
-func (ps *pubsub) Close() {
-	ps.conn.Close()
 }
 
 func (ps *pubsub) handle(message kafka.Message, h messaging.MessageHandler) {
 	var msg messaging.Message
 	if err := proto.Unmarshal(message.Value, &msg); err != nil {
 		ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
-		return
 	}
-	if err := h(msg); err != nil {
+	if err := h.Handle(msg); err != nil {
 		ps.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
 	}
+	return
 }
