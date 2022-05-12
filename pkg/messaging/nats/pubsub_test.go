@@ -44,7 +44,7 @@ func TestPubsub(t *testing.T) {
 			desc:         "publish message with nil topic",
 			topic:        "",
 			payload:      nil,
-			errorMessage: errors.New("empty topic"),
+			errorMessage: nats.ErrEmptyTopic,
 		},
 		{
 			desc:         "publish message with nil payload",

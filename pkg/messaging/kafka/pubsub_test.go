@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/mainflux/mainflux/pkg/messaging"
-	kafka "github.com/mainflux/mainflux/pkg/messaging/kafka"
+	"github.com/mainflux/mainflux/pkg/messaging/kafka"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
