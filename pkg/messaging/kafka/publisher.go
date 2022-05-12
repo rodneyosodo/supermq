@@ -17,9 +17,8 @@ import (
 var _ messaging.Publisher = (*publisher)(nil)
 
 type publisher struct {
-	conn   *kafka.Conn
-	url    string
-	writer *kafka.Writer
+	conn *kafka.Conn
+	url  string
 }
 
 // Publisher wraps messaging Publisher exposing
@@ -38,10 +37,6 @@ func NewPublisher(url string) (Publisher, error) {
 	ret := &publisher{
 		conn: conn,
 		url:  url,
-		writer: &kafka.Writer{
-			Addr:  kafka.TCP(url),
-			Async: true,
-		},
 	}
 	return ret, nil
 
@@ -70,11 +65,11 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 		Value: data,
 		Topic: subject,
 	}
-	if err := pub.writer.WriteMessages(context.TODO(), kafkaMsg); err != nil {
+	if err := writer.WriteMessages(context.TODO(), kafkaMsg); err != nil {
 		// Sometime it take time for leader to be elected. If that is so, we retry to publish message
 		if strings.Contains(fmt.Sprint(err), "[5] Leader Not Available:") {
 			time.Sleep(2 * time.Second)
-			return pub.writer.WriteMessages(context.TODO(), kafkaMsg)
+			return writer.WriteMessages(context.TODO(), kafkaMsg)
 		}
 	}
 	return nil

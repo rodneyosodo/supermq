@@ -62,10 +62,6 @@ func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 		publisher: publisher{
 			conn: conn,
 			url:  url,
-			writer: &kafka.Writer{
-				Addr:  kafka.TCP(url),
-				Async: true,
-			},
 		},
 		subscriptions: make(map[string]map[string]subscription),
 		logger:        logger,
@@ -161,5 +157,4 @@ func (ps *pubsub) handle(message kafka.Message, h messaging.MessageHandler) {
 	if err := h.Handle(msg); err != nil {
 		ps.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
 	}
-	return
 }

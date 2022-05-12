@@ -27,6 +27,48 @@ var (
 )
 
 func TestPubsub(t *testing.T) {
+	cases := []struct {
+		desc     string
+		channel  string
+		subtopic string
+		payload  []byte
+	}{
+		{
+			desc:    "publish message with nil payload",
+			payload: nil,
+		},
+		{
+			desc:    "publish message with string payload",
+			payload: data,
+		},
+		{
+			desc:    "publish message with channel",
+			payload: data,
+			channel: channel,
+		},
+		{
+			desc:     "publish message with subtopic",
+			payload:  data,
+			subtopic: subtopic,
+		},
+		{
+			desc:     "publish message with channel and subtopic",
+			payload:  data,
+			channel:  channel,
+			subtopic: subtopic,
+		},
+	}
+
+	for _, tc := range cases {
+		expectedMsg := messaging.Message{
+			Channel:  tc.channel,
+			Subtopic: tc.subtopic,
+			Payload:  tc.payload,
+		}
+		err := publisher.Publish(topic, expectedMsg)
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	}
+
 	// Test Subscribe and Unsubscribe
 	subcases := []struct {
 		desc         string

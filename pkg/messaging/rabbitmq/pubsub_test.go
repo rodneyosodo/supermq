@@ -18,6 +18,8 @@ const (
 	chansPrefix = "channels"
 	channel     = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
 	subtopic    = "engine"
+	topicID     = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
+	topicID2    = "b8213f9eda3b-9b7b1b3f-b1b0-46a8-a717"
 )
 
 var (
@@ -26,6 +28,79 @@ var (
 )
 
 func TestPubsub(t *testing.T) {
+	err := pubsub.Subscribe(topicID, fmt.Sprintf("%s.%s", chansPrefix, topic), handler{})
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	err = pubsub.Subscribe(topicID2, fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic), handler{})
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	cases := []struct {
+		desc         string
+		topic        string
+		channel      string
+		subtopic     string
+		payload      []byte
+		errorMessage error
+	}{
+		{
+			desc:         "publish message with nil topic",
+			topic:        "",
+			payload:      nil,
+			errorMessage: errors.New("empty topic"),
+		},
+		{
+			desc:         "publish message with nil payload",
+			topic:        topic,
+			payload:      nil,
+			errorMessage: nil,
+		},
+		{
+			desc:         "publish message with string payload",
+			topic:        topic,
+			payload:      data,
+			errorMessage: nil,
+		},
+		{
+			desc:         "publish message with channel",
+			topic:        topic,
+			payload:      data,
+			channel:      channel,
+			errorMessage: nil,
+		},
+		{
+			desc:         "publish message with subtopic",
+			topic:        topic,
+			payload:      data,
+			subtopic:     subtopic,
+			errorMessage: nil,
+		},
+		{
+			desc:         "publish message with channel and subtopic",
+			topic:        topic,
+			payload:      data,
+			channel:      channel,
+			subtopic:     subtopic,
+			errorMessage: nil,
+		},
+	}
+
+	for _, tc := range cases {
+		expectedMsg := messaging.Message{
+			Channel:  tc.channel,
+			Subtopic: tc.subtopic,
+			Payload:  tc.payload,
+		}
+		if tc.errorMessage == nil {
+			err = pubsub.Publish(tc.topic, expectedMsg)
+			require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+			receivedMsg := <-msgChan
+			assert.Equal(t, expectedMsg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
+		} else {
+			err = pubsub.Publish(tc.topic, expectedMsg)
+			assert.Equal(t, err, tc.errorMessage)
+		}
+	}
+
 	// Test Subscribe and Unsubscribe
 	subcases := []struct {
 		desc         string
