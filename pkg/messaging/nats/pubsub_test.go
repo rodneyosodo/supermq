@@ -189,7 +189,7 @@ func TestPubsub(t *testing.T) {
 			desc:         "Susbcribe to a topic with empty id",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
 			topicID:      "",
-			errorMessage: errors.New("empty ID"),
+			errorMessage: errors.New("empty id"),
 			pubsub:       true,
 		},
 		{
