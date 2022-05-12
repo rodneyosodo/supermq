@@ -31,10 +31,10 @@ const (
 )
 
 var (
-	errAlreadySubscribed = errors.New("already subscribed to topic")
-	errNotSubscribed     = errors.New("not subscribed")
-	errEmptyTopic        = errors.New("empty topic")
-	errEmptyID           = errors.New("empty id")
+	ErrAlreadySubscribed = errors.New("already subscribed to topic")
+	ErrNotSubscribed     = errors.New("not subscribed")
+	ErrEmptyTopic        = errors.New("empty topic")
+	ErrEmptyID           = errors.New("empty id")
 )
 
 var _ messaging.PubSub = (*pubsub)(nil)
@@ -86,10 +86,10 @@ func NewPubSub(url, queueName string, logger log.Logger) (PubSub, error) {
 
 func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) error {
 	if id == "" {
-		return errEmptyID
+		return ErrEmptyID
 	}
 	if topic == "" {
-		return errEmptyTopic
+		return ErrEmptyTopic
 	}
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
@@ -99,7 +99,7 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 	case true:
 		// Check topic ID
 		if _, ok := s[id]; ok {
-			return errAlreadySubscribed
+			return ErrAlreadySubscribed
 		}
 	default:
 		s = make(map[string]subscription)
@@ -131,10 +131,10 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 func (ps *pubsub) Unsubscribe(id, topic string) error {
 	defer ps.ch.Cancel(id, false)
 	if id == "" {
-		return errEmptyID
+		return ErrEmptyID
 	}
 	if topic == "" {
-		return errEmptyTopic
+		return ErrEmptyTopic
 	}
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
@@ -142,12 +142,12 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	// Check topic
 	s, ok := ps.subscriptions[topic]
 	if !ok {
-		return errNotSubscribed
+		return ErrNotSubscribed
 	}
 	// Check topic ID
 	current, ok := s[id]
 	if !ok {
-		return errNotSubscribed
+		return ErrNotSubscribed
 	}
 	subject := fmt.Sprintf("%s.%s", exchange, topic)
 	if err := ps.ch.QueueUnbind(ps.queue.Name, routingKey, subject, nil); err != nil {
