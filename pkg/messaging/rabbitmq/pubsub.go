@@ -34,7 +34,7 @@ var (
 	errAlreadySubscribed = errors.New("already subscribed to topic")
 	errNotSubscribed     = errors.New("not subscribed")
 	errEmptyTopic        = errors.New("empty topic")
-	errEmptyID           = errors.New("empty ID")
+	errEmptyID           = errors.New("empty id")
 )
 
 var _ messaging.PubSub = (*pubsub)(nil)
