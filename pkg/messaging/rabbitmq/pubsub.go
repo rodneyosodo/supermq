@@ -19,6 +19,7 @@ const (
 	// SubjectAllChannels represents subject to subscribe for all the channels.
 	SubjectAllChannels = "channels.>"
 	exchangeName       = "mainflux-exchange"
+	exchangeKind       = "direct"
 )
 
 var (
@@ -93,7 +94,10 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 		s = make(map[string]subscription)
 		ps.subscriptions[topic] = s
 	}
-
+	_, err := ps.ch.QueueDeclare(topic, true, true, true, false, nil)
+	if err != nil {
+		return err
+	}
 	if err := ps.ch.QueueBind(topic, topic, exchangeName, false, nil); err != nil {
 		return err
 	}
