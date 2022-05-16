@@ -14,8 +14,8 @@ import (
 var _ messaging.Publisher = (*publisher)(nil)
 
 type publisher struct {
-	connection *amqp.Connection
-	channel    *amqp.Channel
+	conn *amqp.Connection
+	ch   *amqp.Channel
 }
 
 // Publisher wraps messaging Publisher exposing
@@ -37,34 +37,39 @@ func NewPublisher(url string) (Publisher, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := ch.ExchangeDeclare(exchangeName, amqp.ExchangeDirect, true, false, false, false, nil); err != nil {
+		return nil, err
+	}
 	ret := &publisher{
-		connection: conn,
-		channel:    ch,
+		conn: conn,
+		ch:   ch,
 	}
 
 	return ret, nil
 }
 
 func (pub *publisher) Publish(topic string, msg messaging.Message) error {
+	if topic == "" {
+		return ErrEmptyTopic
+	}
 	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err
 	}
-	subject := fmt.Sprintf("%s.%s.%s", Exchange, ChansPrefix, topic)
-	if err := pub.channel.ExchangeDeclare(subject, ExchangeKind, true, false, false, false, nil); err != nil {
-		return err
+	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
+	if msg.Subtopic != "" {
+		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 	}
-
-	err = pub.channel.Publish(
+	err = pub.ch.Publish(
+		exchangeName,
 		subject,
-		RoutingKey,
-		Mandatory,
-		Immediate,
+		false,
+		false,
 		amqp.Publishing{
 			Headers:     amqp.Table{},
-			ContentType: "text/plain",
-			Priority:    2,
+			ContentType: "application/octet-stream",
 			AppId:       "mainflux",
+			UserId:      subject,
 			Body:        []byte(data),
 		})
 
@@ -76,5 +81,5 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 }
 
 func (pub *publisher) Close() {
-	pub.connection.Close()
+	pub.conn.Close()
 }

@@ -4,11 +4,11 @@
 package rabbitmq_test
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/mainflux/mainflux/pkg/messaging/rabbitmq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,181 +26,138 @@ var (
 )
 
 func TestPubsub(t *testing.T) {
-	pubsubcases := []struct {
+	// Test Subscribe and Unsubscribe
+	subcases := []struct {
 		desc         string
 		topic        string
+		topicID      string
 		errorMessage error
-		pubsub       bool //true for publish and false for subscribe
+		pubsub       bool //true for subscribe and false for unsubscribe
 	}{
 		{
-			desc:         "Susbcribe to a topic",
+			desc:         "Susbcribe to a topic with an ID",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "topicid1",
+			errorMessage: nil,
+			pubsub:       true,
+		},
+		{
+			desc:         "Susbcribe to the same topic with a different ID",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "topicid2",
+			errorMessage: nil,
+			pubsub:       true,
+		},
+		{
+			desc:         "Susbcribe to an already subscribed topic with an ID",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "topicid1",
+			errorMessage: rabbitmq.ErrAlreadySubscribed,
+			pubsub:       true,
+		},
+		{
+			desc:         "Unsubscribe to a topic with an ID",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "topicid1",
 			errorMessage: nil,
 			pubsub:       false,
 		},
 		{
-			desc:         "Susbcribe to an already subscribed topic",
-			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
-			errorMessage: errors.New("already subscribed to topic"),
+			desc:         "Unsubscribe to a non-existent topic with an ID",
+			topic:        "h",
+			topicID:      "topicid1",
+			errorMessage: rabbitmq.ErrNotSubscribed,
 			pubsub:       false,
 		},
 		{
-			desc:         "Susbcribe to a topic with a sub topic",
+			desc:         "Unsubscribe to the same topic with a different ID",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "topicid2",
+			errorMessage: nil,
+			pubsub:       false,
+		},
+		{
+			desc:         "Unsubscribe to the same topic with a different ID not subscribed",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "topicid3",
+			errorMessage: rabbitmq.ErrNotSubscribed,
+			pubsub:       false,
+		},
+		{
+			desc:         "Unsubscribe to an already unsubscribed topic with an ID",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "topicid1",
+			errorMessage: rabbitmq.ErrNotSubscribed,
+			pubsub:       false,
+		},
+		{
+			desc:         "Susbcribe to a topic with a subtopic with an ID",
 			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
+			topicID:      "topicid1",
 			errorMessage: nil,
-			pubsub:       false,
+			pubsub:       true,
 		},
 		{
-			desc:         "Susbcribe to an already subscribed topic with a sub topic",
+			desc:         "Susbcribe to an already subscribed topic with a subtopic with an ID",
 			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
-			errorMessage: errors.New("already subscribed to topic"),
-			pubsub:       false,
-		},
-		{
-			desc:         "Susbcribe to an empty topic",
-			topic:        "",
-			errorMessage: errors.New("empty topic"),
-			pubsub:       false,
-		},
-		{
-			desc:         "Unsusbcribe to an empty topic",
-			topic:        "",
-			errorMessage: errors.New("empty topic"),
+			topicID:      "topicid1",
+			errorMessage: rabbitmq.ErrAlreadySubscribed,
 			pubsub:       true,
 		},
 		{
-			desc:         "Unsusbcribe to a topic",
-			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
-			errorMessage: nil,
-			pubsub:       true,
-		},
-		{
-			desc:         "Unsusbcribe to an already unsubscribed topic",
-			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
-			errorMessage: errors.New("not subscribed"),
-			pubsub:       true,
-		},
-		{
-			desc:         "Unsusbcribe to a topic with a subtopic",
+			desc:         "Unsubscribe to a topic with a subtopic with an ID",
 			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
-			errorMessage: nil,
-			pubsub:       true,
-		},
-		{
-			desc:         "Doubling Susbcribe to a topic",
-			topic:        "increaseTopic",
+			topicID:      "topicid1",
 			errorMessage: nil,
 			pubsub:       false,
 		},
 		{
-			desc:         "Doubling Susbcribe to an already subscribed topic",
-			topic:        "increaseTopic",
-			errorMessage: errors.New("already subscribed to topic"),
+			desc:         "Unsubscribe to an already unsubscribed topic with a subtopic with an ID",
+			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
+			topicID:      "topicid1",
+			errorMessage: rabbitmq.ErrNotSubscribed,
 			pubsub:       false,
 		},
 		{
-			desc:         "Doubling Susbcribe to a topic with a sub topic",
-			topic:        "secondTopic",
-			errorMessage: nil,
-			pubsub:       false,
-		},
-		{
-			desc:         "Doubling Susbcribe to an already subscribed topic with a sub topic",
-			topic:        "secondTopic",
-			errorMessage: errors.New("already subscribed to topic"),
-			pubsub:       false,
-		},
-		{
-			desc:         "Doubling Susbcribe to an empty topic",
+			desc:         "Susbcribe to an empty topic with an ID",
 			topic:        "",
-			errorMessage: errors.New("empty topic"),
+			topicID:      "topicid1",
+			errorMessage: rabbitmq.ErrEmptyTopic,
+			pubsub:       true,
+		},
+		{
+			desc:         "Unsubscribe to an empty topic with an ID",
+			topic:        "",
+			topicID:      "topicid1",
+			errorMessage: rabbitmq.ErrEmptyTopic,
 			pubsub:       false,
 		},
 		{
-			desc:         "Doubling Unsusbcribe to an empty topic",
-			topic:        "",
-			errorMessage: errors.New("empty topic"),
+			desc:         "Susbcribe to a topic with empty id",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "",
+			errorMessage: rabbitmq.ErrEmptyID,
 			pubsub:       true,
 		},
 		{
-			desc:         "Doubling Unsusbcribe to a topic",
-			topic:        "increaseTopic",
-			errorMessage: nil,
-			pubsub:       true,
-		},
-		{
-			desc:         "Doubling Unsusbcribe to an already unsubscribed topic",
-			topic:        "increaseTopic",
-			errorMessage: errors.New("not subscribed"),
-			pubsub:       true,
-		},
-		{
-			desc:         "Doubling Unsusbcribe to a topic with a subtopic",
-			topic:        "secondTopic",
-			errorMessage: nil,
-			pubsub:       true,
+			desc:         "Unsubscribe to a topic with empty id",
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topicID:      "",
+			errorMessage: rabbitmq.ErrEmptyID,
+			pubsub:       false,
 		},
 	}
 
-	cases := []struct {
-		desc         string
-		topic        string
-		errorMessage error
-		channel      string
-		subtopic     string
-		payload      []byte
-	}{
-		{
-			desc:         "publish message with nil payload",
-			topic:        topic,
-			errorMessage: nil,
-			payload:      nil,
-		},
-		{
-			desc:         "publish message with string payload",
-			topic:        topic,
-			errorMessage: nil,
-			payload:      data,
-		},
-		{
-			desc:         "publish message with channel",
-			topic:        topic,
-			errorMessage: nil,
-			payload:      data,
-			channel:      channel,
-		},
-		{
-			desc:         "publish message with subtopic",
-			topic:        topic,
-			errorMessage: nil,
-			payload:      data,
-			subtopic:     subtopic,
-		},
-		{
-			desc:         "publish message with channel and subtopic",
-			topic:        topic,
-			errorMessage: nil,
-			payload:      data,
-			channel:      channel,
-			subtopic:     subtopic,
-		},
-		{
-			desc:         "publish message with nil topic",
-			topic:        "",
-			errorMessage: errors.New("empty topic"),
-			payload:      nil,
-		},
-	}
-	for _, pc := range pubsubcases {
-		if pc.pubsub == false {
-			err := pubsub.Subscribe(pc.topic, handler)
+	for _, pc := range subcases {
+		if pc.pubsub == true {
+			err := pubsub.Subscribe(pc.topicID, pc.topic, handler{})
 			if pc.errorMessage == nil {
 				require.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", pc.desc, err))
 			} else {
 				assert.Equal(t, err, pc.errorMessage)
 			}
 		} else {
-			err := pubsub.Unsubscribe(pc.topic)
+			err := pubsub.Unsubscribe(pc.topicID, pc.topic)
 			if pc.errorMessage == nil {
 				require.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", pc.desc, err))
 			} else {
@@ -208,36 +165,15 @@ func TestPubsub(t *testing.T) {
 			}
 		}
 	}
-	for _, tc := range cases {
-		expectedMsg := messaging.Message{
-			Channel:  tc.channel,
-			Subtopic: tc.subtopic,
-			Payload:  tc.payload,
-		}
-		_ = pubsub.Subscribe(tc.topic, handler)
-		err := pubsub.Publish(tc.topic, expectedMsg)
-		if tc.errorMessage == nil {
-			require.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s", tc.desc, err))
-			receivedMsg := <-msgChan
-			assert.Equal(t, expectedMsg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
-		} else {
-			assert.Equal(t, err, tc.errorMessage)
-		}
-	}
-	expectedMsg := messaging.Message{
-		Channel:  channel,
-		Subtopic: "demo",
-		Payload:  data,
-	}
-	err := pubsub.Unsubscribe(topic)
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	err = pubsub.Publish(topic, expectedMsg)
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	err = pubsub.Publish(topic, expectedMsg)
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 }
 
-func handler(msg messaging.Message) error {
+type handler struct{}
+
+func (h handler) Handle(msg messaging.Message) error {
 	msgChan <- msg
+	return nil
+}
+
+func (h handler) Cancel() error {
 	return nil
 }
