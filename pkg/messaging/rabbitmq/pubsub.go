@@ -43,13 +43,14 @@ type subscription struct {
 }
 type pubsub struct {
 	publisher
+	queue         string
 	logger        log.Logger
 	subscriptions map[string]map[string]subscription
 	mu            sync.Mutex
 }
 
 // NewPubSub returns RabbitMQ message publisher/subscriber.
-func NewPubSub(url, queueName string, logger log.Logger) (PubSub, error) {
+func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 	endpoint := fmt.Sprintf("amqp://%s", url)
 	conn, err := amqp.Dial(endpoint)
 	if err != nil {
@@ -59,7 +60,7 @@ func NewPubSub(url, queueName string, logger log.Logger) (PubSub, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := ch.ExchangeDeclare(exchangeName, amqp.ExchangeDirect, true, false, false, false, nil); err != nil {
+	if err := ch.ExchangeDeclare(exchangeName, amqp.ExchangeTopic, true, false, false, false, nil); err != nil {
 		return nil, err
 	}
 	ret := &pubsub{
@@ -67,6 +68,7 @@ func NewPubSub(url, queueName string, logger log.Logger) (PubSub, error) {
 			conn: conn,
 			ch:   ch,
 		},
+		queue:         queue,
 		logger:        logger,
 		subscriptions: make(map[string]map[string]subscription),
 	}
@@ -94,14 +96,34 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 		s = make(map[string]subscription)
 		ps.subscriptions[topic] = s
 	}
-	_, err := ps.ch.QueueDeclare(topic, true, true, true, false, nil)
+	if ps.queue != "" {
+		queue, err := ps.ch.QueueDeclare(ps.queue, true, true, true, false, nil)
+		if err != nil {
+			return err
+		}
+		if err := ps.ch.QueueBind(queue.Name, topic, exchangeName, false, nil); err != nil {
+			return err
+		}
+		msgs, err := ps.ch.Consume(queue.Name, id, true, false, false, false, nil)
+		if err != nil {
+			return err
+		}
+
+		go ps.handle(msgs, handler)
+		s[id] = subscription{
+			cancel: handler.Cancel,
+		}
+
+		return nil
+	}
+	queue, err := ps.ch.QueueDeclare("", true, true, true, false, nil)
 	if err != nil {
 		return err
 	}
-	if err := ps.ch.QueueBind(topic, topic, exchangeName, false, nil); err != nil {
+	if err := ps.ch.QueueBind(queue.Name, "#", exchangeName, false, nil); err != nil {
 		return err
 	}
-	msgs, err := ps.ch.Consume(topic, id, true, false, false, false, nil)
+	msgs, err := ps.ch.Consume(queue.Name, id, true, false, false, false, nil)
 	if err != nil {
 		return err
 	}

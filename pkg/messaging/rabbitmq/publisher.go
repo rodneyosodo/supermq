@@ -37,7 +37,7 @@ func NewPublisher(url string) (Publisher, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := ch.ExchangeDeclare(exchangeName, amqp.ExchangeDirect, true, false, false, false, nil); err != nil {
+	if err := ch.ExchangeDeclare(exchangeName, amqp.ExchangeTopic, true, false, false, false, nil); err != nil {
 		return nil, err
 	}
 	ret := &publisher{
