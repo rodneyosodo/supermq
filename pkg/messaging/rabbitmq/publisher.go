@@ -37,7 +37,7 @@ func NewPublisher(url string) (Publisher, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := ch.ExchangeDeclare(exchangeName, amqp.ExchangeTopic, true, false, false, false, nil); err != nil {
+	if err := ch.ExchangeDeclare(exchangeName, amqp.ExchangeDirect, true, false, false, false, nil); err != nil {
 		return nil, err
 	}
 	ret := &publisher{
@@ -64,8 +64,7 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 		amqp.Publishing{
 			Headers:     amqp.Table{},
 			ContentType: "application/octet-stream",
-			AppId:       "mainflux",
-			UserId:      subject,
+			AppId:       "mainflux-publisher",
 			Body:        []byte(data),
 		})
 
