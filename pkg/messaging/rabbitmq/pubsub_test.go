@@ -35,21 +35,21 @@ func TestPubsub(t *testing.T) {
 		pubsub       bool //true for subscribe and false for unsubscribe
 	}{
 		{
-			desc:         "Susbcribe to a topic with an ID",
+			desc:         "Subscribe to a topic with an ID",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
 			topicID:      "topicid1",
 			errorMessage: nil,
 			pubsub:       true,
 		},
 		{
-			desc:         "Susbcribe to the same topic with a different ID",
+			desc:         "Subscribe to the same topic with a different ID",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
 			topicID:      "topicid2",
 			errorMessage: nil,
 			pubsub:       true,
 		},
 		{
-			desc:         "Susbcribe to an already subscribed topic with an ID",
+			desc:         "Subscribe to an already subscribed topic with an ID",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
 			topicID:      "topicid1",
 			errorMessage: rabbitmq.ErrAlreadySubscribed,
@@ -91,14 +91,14 @@ func TestPubsub(t *testing.T) {
 			pubsub:       false,
 		},
 		{
-			desc:         "Susbcribe to a topic with a subtopic with an ID",
+			desc:         "Subscribe to a topic with a subtopic with an ID",
 			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
 			topicID:      "topicid1",
 			errorMessage: nil,
 			pubsub:       true,
 		},
 		{
-			desc:         "Susbcribe to an already subscribed topic with a subtopic with an ID",
+			desc:         "Subscribe to an already subscribed topic with a subtopic with an ID",
 			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
 			topicID:      "topicid1",
 			errorMessage: rabbitmq.ErrAlreadySubscribed,
@@ -119,7 +119,7 @@ func TestPubsub(t *testing.T) {
 			pubsub:       false,
 		},
 		{
-			desc:         "Susbcribe to an empty topic with an ID",
+			desc:         "Subscribe to an empty topic with an ID",
 			topic:        "",
 			topicID:      "topicid1",
 			errorMessage: rabbitmq.ErrEmptyTopic,
@@ -133,7 +133,7 @@ func TestPubsub(t *testing.T) {
 			pubsub:       false,
 		},
 		{
-			desc:         "Susbcribe to a topic with empty id",
+			desc:         "Subscribe to a topic with empty id",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
 			topicID:      "",
 			errorMessage: rabbitmq.ErrEmptyID,
