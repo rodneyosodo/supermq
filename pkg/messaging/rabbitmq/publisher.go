@@ -65,7 +65,7 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 			Headers:     amqp.Table{},
 			ContentType: "application/octet-stream",
 			AppId:       "mainflux-publisher",
-			Body:        []byte(data),
+			Body:        data,
 		})
 
 	if err != nil {
