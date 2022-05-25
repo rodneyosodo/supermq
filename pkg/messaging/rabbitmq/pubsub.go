@@ -43,7 +43,6 @@ type subscription struct {
 }
 type pubsub struct {
 	publisher
-	queue         string
 	logger        log.Logger
 	subscriptions map[string]map[string]subscription
 	mu            sync.Mutex
@@ -96,14 +95,14 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 		ps.subscriptions[topic] = s
 	}
 
-	queue, err := ps.ch.QueueDeclare(topic, true, true, true, false, nil)
+	_, err := ps.ch.QueueDeclare(topic, true, true, true, false, nil)
 	if err != nil {
 		return err
 	}
-	if err := ps.ch.QueueBind(queue.Name, queue.Name, exchangeName, false, nil); err != nil {
+	if err := ps.ch.QueueBind(topic, topic, exchangeName, false, nil); err != nil {
 		return err
 	}
-	msgs, err := ps.ch.Consume(queue.Name, id, true, false, false, false, nil)
+	msgs, err := ps.ch.Consume(topic, id, true, false, false, false, nil)
 	if err != nil {
 		return err
 	}
