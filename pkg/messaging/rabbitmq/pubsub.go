@@ -109,7 +109,6 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 	go ps.handle(msgs, handler)
 	s[id] = subscription{
 		cancel: func() error {
-			clientID := fmt.Sprintf("%s-%s", topic, id)
 			if err := ps.ch.Cancel(clientID, false); err != nil {
 				return err
 			}
