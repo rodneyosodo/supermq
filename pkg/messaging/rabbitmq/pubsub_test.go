@@ -18,6 +18,7 @@ const (
 	chansPrefix = "channels"
 	channel     = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
 	subtopic    = "engine"
+	clientID    = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
 )
 
 var (
@@ -26,6 +27,10 @@ var (
 )
 
 func TestPublisher(t *testing.T) {
+	err := pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s", chansPrefix, topic), handler{})
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	err = pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic), handler{})
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	cases := []struct {
 		desc     string
 		channel  string
@@ -66,6 +71,9 @@ func TestPublisher(t *testing.T) {
 		}
 		err := publisher.Publish(topic, expectedMsg)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		receivedMsg := <-msgChan
+		assert.Equal(t, expectedMsg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
 	}
 }
 
@@ -116,14 +124,14 @@ func TestPubsub(t *testing.T) {
 		{
 			desc:         "Unsubscribe to the same topic with a different ID",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
-			clientID:     "clientid2",
-			errorMessage: nil,
+			clientID:     "clientidd2",
+			errorMessage: rabbitmq.ErrNotSubscribed,
 			pubsub:       false,
 		},
 		{
 			desc:         "Unsubscribe to the same topic with a different ID not subscribed",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
-			clientID:     "clientid3",
+			clientID:     "clientidd3",
 			errorMessage: rabbitmq.ErrNotSubscribed,
 			pubsub:       false,
 		},
@@ -144,14 +152,14 @@ func TestPubsub(t *testing.T) {
 		{
 			desc:         "Subscribe to an already subscribed topic with a subtopic with an ID",
 			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
-			clientID:     "clientid1",
+			clientID:     "clientidd1",
 			errorMessage: rabbitmq.ErrAlreadySubscribed,
 			pubsub:       true,
 		},
 		{
 			desc:         "Unsubscribe to a topic with a subtopic with an ID",
 			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
-			clientID:     "clientid1",
+			clientID:     "clientidd1",
 			errorMessage: nil,
 			pubsub:       false,
 		},

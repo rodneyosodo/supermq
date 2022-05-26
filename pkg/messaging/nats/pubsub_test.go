@@ -31,10 +31,6 @@ func TestPubsub(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	err = pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic), handler{})
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	err = pubsub.Subscribe(clientID, "dummytopic", handler{})
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	err = pubsub.Unsubscribe(clientID, "dummytopic")
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
 		desc     string
@@ -130,7 +126,7 @@ func TestPubsub(t *testing.T) {
 			desc:         "Unsubscribe to the same topic with a different ID",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
 			clientID:     "clientidd2",
-			errorMessage: nil,
+			errorMessage: nats.ErrNotSubscribed,
 			pubsub:       false,
 		},
 		{
