@@ -19,8 +19,8 @@ import (
 	"github.com/mainflux/mainflux/lora"
 	"github.com/mainflux/mainflux/lora/api"
 	"github.com/mainflux/mainflux/lora/mqtt"
-	broker "github.com/mainflux/mainflux/pkg/messaging/broker"
 	"github.com/mainflux/mainflux/pkg/errors"
+	broker "github.com/mainflux/mainflux/pkg/messaging/broker"
 	"golang.org/x/sync/errgroup"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
@@ -46,6 +46,7 @@ const (
 	defRouteMapURL    = "localhost:6379"
 	defRouteMapPass   = ""
 	defRouteMapDB     = "0"
+	defBrokerType     = "nats"
 
 	envHTTPPort       = "MF_LORA_ADAPTER_HTTP_PORT"
 	envLoraMsgURL     = "MF_LORA_ADAPTER_MESSAGES_URL"
@@ -62,6 +63,7 @@ const (
 	envRouteMapURL    = "MF_LORA_ADAPTER_ROUTE_MAP_URL"
 	envRouteMapPass   = "MF_LORA_ADAPTER_ROUTE_MAP_PASS"
 	envRouteMapDB     = "MF_LORA_ADAPTER_ROUTE_MAP_DB"
+	envBrokerType     = "MF_BROKER_TYPE"
 
 	thingsRMPrefix   = "thing"
 	channelsRMPrefix = "channel"
@@ -84,6 +86,7 @@ type config struct {
 	routeMapURL    string
 	routeMapPass   string
 	routeMapDB     string
+	brokerType     string
 }
 
 func main() {
@@ -102,7 +105,7 @@ func main() {
 	esConn := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
 	defer esConn.Close()
 
-	pub, err := broker.NewPublisher(cfg.brokerURL)
+	pub, err := broker.NewPublisher(cfg.brokerType, cfg.brokerURL)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -176,6 +179,7 @@ func loadConfig() config {
 		routeMapURL:    mainflux.Env(envRouteMapURL, defRouteMapURL),
 		routeMapPass:   mainflux.Env(envRouteMapPass, defRouteMapPass),
 		routeMapDB:     mainflux.Env(envRouteMapDB, defRouteMapDB),
+		brokerType:     mainflux.Env(envBrokerType, defBrokerType),
 	}
 }
 

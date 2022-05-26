@@ -21,8 +21,8 @@ import (
 	adapter "github.com/mainflux/mainflux/http"
 	"github.com/mainflux/mainflux/http/api"
 	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/messaging/broker"
 	"github.com/mainflux/mainflux/pkg/errors"
+	"github.com/mainflux/mainflux/pkg/messaging/broker"
 	thingsapi "github.com/mainflux/mainflux/things/api/auth/grpc"
 	"github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -42,6 +42,7 @@ const (
 	defJaegerURL         = ""
 	defThingsAuthURL     = "localhost:8183"
 	defThingsAuthTimeout = "1s"
+	defBrokerType        = "nats"
 
 	envLogLevel          = "MF_HTTP_ADAPTER_LOG_LEVEL"
 	envClientTLS         = "MF_HTTP_ADAPTER_CLIENT_TLS"
@@ -51,6 +52,7 @@ const (
 	envJaegerURL         = "MF_JAEGER_URL"
 	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envBrokerType        = "MF_BROKER_TYPE"
 )
 
 type config struct {
@@ -62,6 +64,7 @@ type config struct {
 	jaegerURL         string
 	thingsAuthURL     string
 	thingsAuthTimeout time.Duration
+	brokerType        string
 }
 
 func main() {
@@ -83,7 +86,7 @@ func main() {
 	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	pub, err := broker.NewPublisher(cfg.brokerURL)
+	pub, err := broker.NewPublisher(cfg.brokerType, cfg.brokerURL)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -147,6 +150,7 @@ func loadConfig() config {
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsAuthURL:     mainflux.Env(envThingsAuthURL, defThingsAuthURL),
 		thingsAuthTimeout: authTimeout,
+		brokerType:        mainflux.Env(envBrokerType, defBrokerType),
 	}
 }
 

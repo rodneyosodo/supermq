@@ -36,6 +36,7 @@ const (
 	defDBHost     = "localhost"
 	defDBPort     = "27017"
 	defConfigPath = "/config.toml"
+	defBrokerType = "nats"
 
 	envBrokerURL  = "MF_BROKER_URL"
 	envLogLevel   = "MF_MONGO_WRITER_LOG_LEVEL"
@@ -44,6 +45,7 @@ const (
 	envDBHost     = "MF_MONGO_WRITER_DB_HOST"
 	envDBPort     = "MF_MONGO_WRITER_DB_PORT"
 	envConfigPath = "MF_MONGO_WRITER_CONFIG_PATH"
+	envBrokerType = "MF_BROKER_TYPE"
 )
 
 type config struct {
@@ -54,6 +56,7 @@ type config struct {
 	dbHost     string
 	dbPort     string
 	configPath string
+	brokerType string
 }
 
 func main() {
@@ -66,7 +69,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	pubSub, err := broker.NewPubSub(cfg.brokerURL, "", logger)
+	pubSub, err := broker.NewPubSub(cfg.brokerType, cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -119,6 +122,7 @@ func loadConfigs() config {
 		dbHost:     mainflux.Env(envDBHost, defDBHost),
 		dbPort:     mainflux.Env(envDBPort, defDBPort),
 		configPath: mainflux.Env(envConfigPath, defConfigPath),
+		brokerType: mainflux.Env(envBrokerType, defBrokerType),
 	}
 }
 

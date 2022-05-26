@@ -118,4 +118,4 @@ else ifeq ("$(MF_BROKER_TYPE)", "nats")
 else
 	echo "Invalid broker type"; exit 1
 endif
-	docker-compose -f docker/docker-compose.yml up -d
+	docker-compose -f docker/docker-compose.yml up

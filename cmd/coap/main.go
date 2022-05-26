@@ -42,6 +42,7 @@ const (
 	defJaegerURL         = ""
 	defThingsAuthURL     = "localhost:8183"
 	defThingsAuthTimeout = "1s"
+	defBrokerType        = "nats"
 
 	envPort              = "MF_COAP_ADAPTER_PORT"
 	envBrokerURL         = "MF_BROKER_URL"
@@ -51,6 +52,7 @@ const (
 	envJaegerURL         = "MF_JAEGER_URL"
 	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envBrokerType        = "MF_BROKER_TYPE"
 )
 
 type config struct {
@@ -62,6 +64,7 @@ type config struct {
 	jaegerURL         string
 	thingsAuthURL     string
 	thingsAuthTimeout time.Duration
+	brokerType        string
 }
 
 func main() {
@@ -82,7 +85,7 @@ func main() {
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsAuthTimeout)
 
-	nps, err := broker.NewPubSub(cfg.brokerURL, "", logger)
+	nps, err := broker.NewPubSub(cfg.brokerType, cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -150,6 +153,7 @@ func loadConfig() config {
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsAuthURL:     mainflux.Env(envThingsAuthURL, defThingsAuthURL),
 		thingsAuthTimeout: authTimeout,
+		brokerType:        mainflux.Env(envBrokerType, defBrokerType),
 	}
 }
 

@@ -18,8 +18,8 @@ import (
 	"github.com/mainflux/mainflux/consumers/writers/api"
 	"github.com/mainflux/mainflux/consumers/writers/influxdb"
 	"github.com/mainflux/mainflux/logger"
-	broker "github.com/mainflux/mainflux/pkg/messaging/broker"
 	"github.com/mainflux/mainflux/pkg/errors"
+	broker "github.com/mainflux/mainflux/pkg/messaging/broker"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
 )
@@ -37,6 +37,7 @@ const (
 	defDBUser     = "mainflux"
 	defDBPass     = "mainflux"
 	defConfigPath = "/config.toml"
+	defBrokerType = "nats"
 
 	envBrokerURL  = "MF_BROKER_URL"
 	envLogLevel   = "MF_INFLUX_WRITER_LOG_LEVEL"
@@ -47,6 +48,7 @@ const (
 	envDBUser     = "MF_INFLUXDB_ADMIN_USER"
 	envDBPass     = "MF_INFLUXDB_ADMIN_PASSWORD"
 	envConfigPath = "MF_INFLUX_WRITER_CONFIG_PATH"
+	envBrokerType = "MF_BROKER_TYPE"
 )
 
 type config struct {
@@ -59,6 +61,7 @@ type config struct {
 	dbUser     string
 	dbPass     string
 	configPath string
+	brokerType string
 }
 
 func main() {
@@ -71,7 +74,7 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	pubSub, err := broker.NewPubSub(cfg.brokerURL, "", logger)
+	pubSub, err := broker.NewPubSub(cfg.brokerType, cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -124,6 +127,7 @@ func loadConfigs() (config, influxdata.HTTPConfig) {
 		dbUser:     mainflux.Env(envDBUser, defDBUser),
 		dbPass:     mainflux.Env(envDBPass, defDBPass),
 		configPath: mainflux.Env(envConfigPath, defConfigPath),
+		brokerType: mainflux.Env(envBrokerType, defBrokerType),
 	}
 
 	clientCfg := influxdata.HTTPConfig{
