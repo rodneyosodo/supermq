@@ -101,14 +101,16 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 	if err := ps.ch.QueueBind(topic, topic, exchangeName, false, nil); err != nil {
 		return err
 	}
-	msgs, err := ps.ch.Consume(topic, id, true, false, false, false, nil)
+	clientID := fmt.Sprintf("%s-%s", topic, id)
+	msgs, err := ps.ch.Consume(topic, clientID, true, false, false, false, nil)
 	if err != nil {
 		return err
 	}
 	go ps.handle(msgs, handler)
 	s[id] = subscription{
 		cancel: func() error {
-			if err := ps.ch.Cancel(id, false); err != nil {
+			clientID := fmt.Sprintf("%s-%s", topic, id)
+			if err := ps.ch.Cancel(clientID, false); err != nil {
 				return err
 			}
 			return handler.Cancel()
