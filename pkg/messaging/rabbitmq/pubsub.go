@@ -19,7 +19,6 @@ const (
 	// SubjectAllChannels represents subject to subscribe for all the channels.
 	SubjectAllChannels = "channels.>"
 	exchangeName       = "mainflux-exchange"
-	exchangeKind       = "direct"
 )
 
 var (
