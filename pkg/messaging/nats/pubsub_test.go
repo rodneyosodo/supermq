@@ -26,7 +26,7 @@ var (
 	data    = []byte("payload")
 )
 
-func TestPubsub(t *testing.T) {
+func TestPublisher(t *testing.T) {
 	err := pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s", chansPrefix, topic), handler{})
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	err = pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic), handler{})
@@ -78,7 +78,9 @@ func TestPubsub(t *testing.T) {
 		receivedMsg := <-msgChan
 		assert.Equal(t, expectedMsg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
 	}
+}
 
+func TestPubsub(t *testing.T) {
 	// Test Subscribe and Unsubscribe
 	subcases := []struct {
 		desc         string
