@@ -26,7 +26,7 @@ var (
 	data    = []byte("payload")
 )
 
-func TestPubsub(t *testing.T) {
+func TestPublisher(t *testing.T) {
 	err := pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s", chansPrefix, topic), handler{})
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	err = pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic), handler{})
@@ -78,7 +78,9 @@ func TestPubsub(t *testing.T) {
 		receivedMsg := <-msgChan
 		assert.Equal(t, expectedMsg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
 	}
+}
 
+func TestPubsub(t *testing.T) {
 	// Test Subscribe and Unsubscribe
 	subcases := []struct {
 		desc         string
@@ -109,35 +111,35 @@ func TestPubsub(t *testing.T) {
 			pubsub:       true,
 		},
 		{
-			desc:         "Unsubscribe to a topic with an ID",
+			desc:         "Unsubscribe from a topic with an ID",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
 			clientID:     "clientid1",
 			errorMessage: nil,
 			pubsub:       false,
 		},
 		{
-			desc:         "Unsubscribe to a non-existent topic with an ID",
+			desc:         "Unsubscribe from a non-existent topic with an ID",
 			topic:        "h",
 			clientID:     "clientid1",
 			errorMessage: nats.ErrNotSubscribed,
 			pubsub:       false,
 		},
 		{
-			desc:         "Unsubscribe to the same topic with a different ID",
+			desc:         "Unsubscribe from the same topic with a different ID",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
 			clientID:     "clientidd2",
 			errorMessage: nats.ErrNotSubscribed,
 			pubsub:       false,
 		},
 		{
-			desc:         "Unsubscribe to the same topic with a different ID not subscribed",
+			desc:         "Unsubscribe from the same topic with a different ID not subscribed",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
 			clientID:     "clientidd3",
 			errorMessage: nats.ErrNotSubscribed,
 			pubsub:       false,
 		},
 		{
-			desc:         "Unsubscribe to an already unsubscribed topic with an ID",
+			desc:         "Unsubscribe from an already unsubscribed topic with an ID",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
 			clientID:     "clientid1",
 			errorMessage: nats.ErrNotSubscribed,
@@ -158,14 +160,14 @@ func TestPubsub(t *testing.T) {
 			pubsub:       true,
 		},
 		{
-			desc:         "Unsubscribe to a topic with a subtopic with an ID",
+			desc:         "Unsubscribe from a topic with a subtopic with an ID",
 			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
 			clientID:     "clientidd1",
 			errorMessage: nil,
 			pubsub:       false,
 		},
 		{
-			desc:         "Unsubscribe to an already unsubscribed topic with a subtopic with an ID",
+			desc:         "Unsubscribe from an already unsubscribed topic with a subtopic with an ID",
 			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
 			clientID:     "clientid1",
 			errorMessage: nats.ErrNotSubscribed,
@@ -179,7 +181,7 @@ func TestPubsub(t *testing.T) {
 			pubsub:       true,
 		},
 		{
-			desc:         "Unsubscribe to an empty topic with an ID",
+			desc:         "Unsubscribe from an empty topic with an ID",
 			topic:        "",
 			clientID:     "clientid1",
 			errorMessage: nats.ErrEmptyTopic,
@@ -193,7 +195,7 @@ func TestPubsub(t *testing.T) {
 			pubsub:       true,
 		},
 		{
-			desc:         "Unsubscribe to a topic with empty id",
+			desc:         "Unsubscribe from a topic with empty id",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
 			clientID:     "",
 			errorMessage: nats.ErrEmptyID,
