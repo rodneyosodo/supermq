@@ -107,14 +107,18 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 	}
 	go ps.handle(msgs, handler)
 	s[id] = subscription{
-		cancel: handler.Cancel,
+		cancel: func() error {
+			if err := ps.ch.Cancel(id, false); err != nil {
+				return err
+			}
+			return handler.Cancel()
+		},
 	}
 
 	return nil
 }
 
 func (ps *pubsub) Unsubscribe(id, topic string) error {
-	defer ps.ch.Cancel(id, false)
 	if id == "" {
 		return ErrEmptyID
 	}
@@ -134,13 +138,13 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	if !ok {
 		return ErrNotSubscribed
 	}
-	if err := ps.ch.QueueUnbind(topic, topic, exchangeName, nil); err != nil {
-		return err
-	}
 	if current.cancel != nil {
 		if err := current.cancel(); err != nil {
 			return err
 		}
+	}
+	if err := ps.ch.QueueUnbind(topic, topic, exchangeName, nil); err != nil {
+		return err
 	}
 
 	delete(s, id)
