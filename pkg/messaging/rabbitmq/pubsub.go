@@ -19,7 +19,6 @@ const (
 	// SubjectAllChannels represents subject to subscribe for all the channels.
 	SubjectAllChannels = "channels.>"
 	exchangeName       = "mainflux-exchange"
-	exchangeKind       = "direct"
 )
 
 var (
@@ -43,7 +42,6 @@ type subscription struct {
 }
 type pubsub struct {
 	publisher
-	queue         string
 	logger        log.Logger
 	subscriptions map[string]map[string]subscription
 	mu            sync.Mutex
@@ -96,27 +94,33 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 		ps.subscriptions[topic] = s
 	}
 
-	queue, err := ps.ch.QueueDeclare(topic, true, true, true, false, nil)
+	_, err := ps.ch.QueueDeclare(topic, true, true, true, false, nil)
 	if err != nil {
 		return err
 	}
-	if err := ps.ch.QueueBind(queue.Name, queue.Name, exchangeName, false, nil); err != nil {
+	if err := ps.ch.QueueBind(topic, topic, exchangeName, false, nil); err != nil {
 		return err
 	}
-	msgs, err := ps.ch.Consume(queue.Name, id, true, false, false, false, nil)
+	clientID := fmt.Sprintf("%s-%s", topic, id)
+	msgs, err := ps.ch.Consume(topic, clientID, true, false, false, false, nil)
 	if err != nil {
 		return err
 	}
 	go ps.handle(msgs, handler)
 	s[id] = subscription{
-		cancel: handler.Cancel,
+		cancel: func() error {
+			clientID := fmt.Sprintf("%s-%s", topic, id)
+			if err := ps.ch.Cancel(clientID, false); err != nil {
+				return err
+			}
+			return handler.Cancel()
+		},
 	}
 
 	return nil
 }
 
 func (ps *pubsub) Unsubscribe(id, topic string) error {
-	defer ps.ch.Cancel(id, false)
 	if id == "" {
 		return ErrEmptyID
 	}
@@ -136,13 +140,13 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	if !ok {
 		return ErrNotSubscribed
 	}
-	if err := ps.ch.QueueUnbind(topic, topic, exchangeName, nil); err != nil {
-		return err
-	}
 	if current.cancel != nil {
 		if err := current.cancel(); err != nil {
 			return err
 		}
+	}
+	if err := ps.ch.QueueUnbind(topic, topic, exchangeName, nil); err != nil {
+		return err
 	}
 
 	delete(s, id)
