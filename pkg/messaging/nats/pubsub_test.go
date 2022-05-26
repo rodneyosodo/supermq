@@ -4,7 +4,6 @@
 package nats_test
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 

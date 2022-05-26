@@ -44,14 +44,18 @@ func NewPublisher(url string) (Publisher, error) {
 		conn: conn,
 		ch:   ch,
 	}
+	return ret, nil
+}
 
 func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 	if topic == "" {
 		return ErrEmptyTopic
 	}
 	data, err := proto.Marshal(&msg)
+	if err != nil {
 		return err
 	}
+
 	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
 	if msg.Subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
