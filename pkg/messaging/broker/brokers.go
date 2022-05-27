@@ -1,7 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package broker
+package brokers
 
 import (
 	"errors"
@@ -11,20 +11,25 @@ import (
 	"github.com/mainflux/mainflux/pkg/messaging/rabbitmq"
 )
 
-const (
-	// SubjectAllChannels represents subject to subscribe for all the channels.
-	SubjectAllChannels = "channels.>"
-)
+// SubjectAllChannels represents subject to subscribe for all the channels.
+const SubjectAllChannels = "channels.>"
 
-var (
-	errEmptyBrokerType = errors.New("empty broker type")
-)
+var errEmptyBrokerType = errors.New("empty broker type")
 
-// PubSub type
-type PubSub nats.PubSub
+// Publisher interface enriched with connection closing.
+type Publisher interface {
+	messaging.Publisher
+	Close() error
+}
+
+// PubSub interface enriched with connection closing.
+type PubSub interface {
+	messaging.PubSub
+	Close() error
+}
 
 // NewPublisher This aggregates the NewPublisher function for all message brokers
-func NewPublisher(brokerType, url string) (nats.Publisher, error) {
+func NewPublisher(brokerType, url string) (Publisher, error) {
 	// brokerType := mainflux.Env(envBrokerType, defBrokerType)
 	switch brokerType {
 	case "nats":
@@ -45,7 +50,7 @@ func NewPublisher(brokerType, url string) (nats.Publisher, error) {
 }
 
 // NewPubSub This aggregates the NewPubSub function for all message brokers
-func NewPubSub(brokerType, url, queue string, logger log.Logger) (nats.PubSub, error) {
+func NewPubSub(brokerType, url, queue string, logger log.Logger) (PubSub, error) {
 	// brokerType := mainflux.Env(envBrokerType, defBrokerType)
 	switch brokerType {
 	case "nats":
