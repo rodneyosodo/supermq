@@ -21,7 +21,7 @@ import (
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/messaging"
-	"github.com/mainflux/mainflux/pkg/messaging/broker"
+	"github.com/mainflux/mainflux/pkg/messaging/brokers"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	localusers "github.com/mainflux/mainflux/things/standalone"
 	"github.com/mainflux/mainflux/twins"
@@ -134,7 +134,7 @@ func main() {
 	defer authCloser.Close()
 	auth, _ := createAuthClient(cfg, authTracer, logger)
 
-	pubSub, err := broker.NewPubSub(cfg.brokerType, cfg.brokerURL, queue, logger)
+	pubSub, err := brokers.NewPubSub(cfg.brokerType, cfg.brokerURL, queue, logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -302,7 +302,7 @@ func newService(id string, ps messaging.PubSub, chanID string, users mainflux.Au
 			Help:      "Total duration of requests in microseconds.",
 		}, []string{"method"}),
 	)
-	err := ps.Subscribe(id, broker.SubjectAllChannels, handle(logger, chanID, svc))
+	err := ps.Subscribe(id, brokers.SubjectAllChannels, handle(logger, chanID, svc))
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)

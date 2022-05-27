@@ -19,7 +19,7 @@ import (
 	"github.com/mainflux/mainflux/consumers/writers/timescale"
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/messaging/broker"
+	"github.com/mainflux/mainflux/pkg/messaging/brokers"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
 )
@@ -78,7 +78,7 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	pubSub, err := broker.NewPubSub(cfg.brokerType, cfg.brokerURL, "", logger)
+	pubSub, err := brokers.NewPubSub(cfg.brokerType, cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)

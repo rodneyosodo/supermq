@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	log "github.com/mainflux/mainflux/logger"
+	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/nats"
 	"github.com/mainflux/mainflux/pkg/messaging/rabbitmq"
 )
@@ -19,13 +20,13 @@ var errEmptyBrokerType = errors.New("empty broker type")
 // Publisher interface enriched with connection closing.
 type Publisher interface {
 	messaging.Publisher
-	Close() error
+	Close()
 }
 
 // PubSub interface enriched with connection closing.
 type PubSub interface {
 	messaging.PubSub
-	Close() error
+	Close()
 }
 
 // NewPublisher This aggregates the NewPublisher function for all message brokers

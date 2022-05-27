@@ -12,7 +12,7 @@ import (
 	"sync"
 
 	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/messaging/broker"
+	"github.com/mainflux/mainflux/pkg/messaging/brokers"
 
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/pkg/messaging"
@@ -41,12 +41,12 @@ var _ Service = (*adapterService)(nil)
 // Observers is a map of maps,
 type adapterService struct {
 	auth    mainflux.ThingsServiceClient
-	pubsub  broker.PubSub
+	pubsub  brokers.PubSub
 	obsLock sync.Mutex
 }
 
 // New instantiates the CoAP adapter implementation.
-func New(auth mainflux.ThingsServiceClient, pubsub broker.PubSub) Service {
+func New(auth mainflux.ThingsServiceClient, pubsub brokers.PubSub) Service {
 	as := &adapterService{
 		auth:    auth,
 		pubsub:  pubsub,

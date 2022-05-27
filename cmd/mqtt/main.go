@@ -20,7 +20,7 @@ import (
 	"github.com/mainflux/mainflux/pkg/auth"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/messaging"
-	"github.com/mainflux/mainflux/pkg/messaging/broker"
+	"github.com/mainflux/mainflux/pkg/messaging/brokers"
 	mqttpub "github.com/mainflux/mainflux/pkg/messaging/mqtt"
 	thingsapi "github.com/mainflux/mainflux/things/api/auth/grpc"
 	mp "github.com/mainflux/mproxy/pkg/mqtt"
@@ -151,7 +151,7 @@ func main() {
 	ec := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
 	defer ec.Close()
 
-	nps, err := broker.NewPubSub(cfg.brokerType, cfg.brokerURL, "mqtt", logger)
+	nps, err := brokers.NewPubSub(cfg.brokerType, cfg.brokerURL, "mqtt", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -164,13 +164,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	fwd := mqtt.NewForwarder(broker.SubjectAllChannels, logger)
+	fwd := mqtt.NewForwarder(brokers.SubjectAllChannels, logger)
 	if err := fwd.Forward(svcName, nps, mpub); err != nil {
 		logger.Error(fmt.Sprintf("Failed to forward message broker messages: %s", err))
 		os.Exit(1)
 	}
 
-	np, err := broker.NewPublisher(cfg.brokerType, cfg.brokerURL)
+	np, err := brokers.NewPublisher(cfg.brokerType, cfg.brokerURL)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)

@@ -21,7 +21,7 @@ import (
 	"github.com/mainflux/mainflux/opcua/gopcua"
 	"github.com/mainflux/mainflux/opcua/redis"
 	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/messaging/broker"
+	"github.com/mainflux/mainflux/pkg/messaging/brokers"
 	"golang.org/x/sync/errgroup"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
@@ -105,7 +105,7 @@ func main() {
 	esConn := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
 	defer esConn.Close()
 
-	pubSub, err := broker.NewPubSub(cfg.brokerType, cfg.brokerURL, "", logger)
+	pubSub, err := brokers.NewPubSub(cfg.brokerType, cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
