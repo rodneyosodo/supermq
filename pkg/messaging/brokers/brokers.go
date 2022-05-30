@@ -5,9 +5,11 @@ package brokers
 
 import (
 	"errors"
+	"time"
 
 	log "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/mainflux/mainflux/pkg/messaging/mqtt"
 	"github.com/mainflux/mainflux/pkg/messaging/nats"
 	"github.com/mainflux/mainflux/pkg/messaging/rabbitmq"
 )
@@ -45,6 +47,16 @@ func NewPublisher(brokerType, url string) (Publisher, error) {
 			return nil, err
 		}
 		return pb, nil
+	case "mqtt":
+		mqttTimout, err := time.ParseDuration("30s")
+		if err != nil {
+			return nil, err
+		}
+		pb, err := mqtt.NewPublisher(url, mqttTimout)
+		if err != nil {
+			return nil, err
+		}
+		return pb, nil
 	default:
 		return nil, errEmptyBrokerType
 	}
@@ -62,6 +74,16 @@ func NewPubSub(brokerType, url, queue string, logger log.Logger) (PubSub, error)
 		return pb, nil
 	case "rabbitmq":
 		pb, err := rabbitmq.NewPubSub(url, queue, logger)
+		if err != nil {
+			return nil, err
+		}
+		return pb, nil
+	case "mqtt":
+		mqttTimout, err := time.ParseDuration("30s")
+		if err != nil {
+			return nil, err
+		}
+		pb, err := mqtt.NewPubSub(url, queue, mqttTimout, logger)
 		if err != nil {
 			return nil, err
 		}
