@@ -37,11 +37,13 @@ func NewPublisher(url string) (Publisher, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := ch.ExchangeDeclare(exchangeName, amqp.ExchangeDirect, true, false, false, false, nil); err != nil {
+		return nil, err
+	}
 	ret := &publisher{
 		conn: conn,
 		ch:   ch,
 	}
-
 	return ret, nil
 }
 
@@ -53,25 +55,21 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 	if err != nil {
 		return err
 	}
-	subject := fmt.Sprintf("%s.%s.%s", exchange, chansPrefix, topic)
+
+	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
 	if msg.Subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 	}
-	if err := pub.ch.ExchangeDeclare(subject, exchangeKind, true, false, false, false, nil); err != nil {
-		return err
-	}
-
 	err = pub.ch.Publish(
+		exchangeName,
 		subject,
-		routingKey,
-		mandatory,
-		immediate,
+		false,
+		false,
 		amqp.Publishing{
 			Headers:     amqp.Table{},
 			ContentType: "application/octet-stream",
-			Priority:    2,
-			AppId:       "mainflux",
-			Body:        []byte(data),
+			AppId:       "mainflux-publisher",
+			Body:        data,
 		})
 
 	if err != nil {
