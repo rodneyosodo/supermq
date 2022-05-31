@@ -14,7 +14,7 @@ import (
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/messaging"
-	"github.com/mainflux/mainflux/pkg/messaging/nats"
+	pubsub "github.com/mainflux/mainflux/pkg/messaging/nats"
 	"github.com/mainflux/mainflux/pkg/transformers"
 	"github.com/mainflux/mainflux/pkg/transformers/json"
 	"github.com/mainflux/mainflux/pkg/transformers/senml"
@@ -92,7 +92,7 @@ type config struct {
 func loadConfig(configPath string) (config, error) {
 	cfg := config{
 		SubscriberCfg: subscriberConfig{
-			Subjects: []string{nats.SubjectAllChannels},
+			Subjects: []string{pubsub.SubjectAllChannels},
 		},
 		TransformerCfg: transformerConfig{
 			Format:      defFormat,
