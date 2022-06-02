@@ -57,7 +57,6 @@ const (
 	defFrom          = ""
 	defJaegerURL     = ""
 	defBrokerURL     = "nats://localhost:4222"
-	defBrokerType    = "nats"
 
 	defSmppAddress    = ""
 	defSmppUsername   = ""
@@ -104,7 +103,6 @@ const (
 	envAuthCACerts = "MF_AUTH_CA_CERTS"
 	envAuthURL     = "MF_AUTH_GRPC_URL"
 	envAuthTimeout = "MF_AUTH_GRPC_TIMEOUT"
-	envBrokerType  = "MF_BROKER_TYPE"
 )
 
 type config struct {
@@ -122,7 +120,6 @@ type config struct {
 	authCACerts string
 	authURL     string
 	authTimeout time.Duration
-	brokerType  string
 }
 
 func main() {
@@ -138,7 +135,7 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	pubSub, err := brokers.NewPubSub(cfg.brokerType, cfg.brokerURL, "", logger)
+	pubSub, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -249,7 +246,6 @@ func loadConfig() config {
 		authCACerts: mainflux.Env(envAuthCACerts, defAuthCACerts),
 		authURL:     mainflux.Env(envAuthURL, defAuthURL),
 		authTimeout: authTimeout,
-		brokerType:  mainflux.Env(envBrokerType, defBrokerType),
 	}
 
 }

@@ -42,7 +42,6 @@ const (
 	defDBSSLKey      = ""
 	defDBSSLRootCert = ""
 	defConfigPath    = "/config.toml"
-	defBrokerType    = "nats"
 
 	envBrokerURL     = "MF_BROKER_URL"
 	envLogLevel      = "MF_POSTGRES_WRITER_LOG_LEVEL"
@@ -57,7 +56,6 @@ const (
 	envDBSSLKey      = "MF_POSTGRES_WRITER_DB_SSL_KEY"
 	envDBSSLRootCert = "MF_POSTGRES_WRITER_DB_SSL_ROOT_CERT"
 	envConfigPath    = "MF_POSTGRES_WRITER_CONFIG_PATH"
-	envBrokerType    = "MF_BROKER_TYPE"
 )
 
 type config struct {
@@ -66,7 +64,6 @@ type config struct {
 	port       string
 	configPath string
 	dbConfig   postgres.Config
-	brokerType string
 }
 
 func main() {
@@ -79,7 +76,7 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	pubSub, err := brokers.NewPubSub(cfg.brokerType, cfg.brokerURL, "", logger)
+	pubSub, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -132,7 +129,6 @@ func loadConfig() config {
 		port:       mainflux.Env(envPort, defPort),
 		configPath: mainflux.Env(envConfigPath, defConfigPath),
 		dbConfig:   dbConfig,
-		brokerType: mainflux.Env(envBrokerType, defBrokerType),
 	}
 }
 

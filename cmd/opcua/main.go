@@ -46,7 +46,6 @@ const (
 	defRouteMapURL    = "localhost:6379"
 	defRouteMapPass   = ""
 	defRouteMapDB     = "0"
-	defBrokerType     = "nats"
 
 	envLogLevel       = "MF_OPCUA_ADAPTER_LOG_LEVEL"
 	envHTTPPort       = "MF_OPCUA_ADAPTER_HTTP_PORT"
@@ -63,7 +62,6 @@ const (
 	envRouteMapURL    = "MF_OPCUA_ADAPTER_ROUTE_MAP_URL"
 	envRouteMapPass   = "MF_OPCUA_ADAPTER_ROUTE_MAP_PASS"
 	envRouteMapDB     = "MF_OPCUA_ADAPTER_ROUTE_MAP_DB"
-	envBrokerType     = "MF_BROKER_TYPE"
 
 	thingsRMPrefix     = "thing"
 	channelsRMPrefix   = "channel"
@@ -82,7 +80,6 @@ type config struct {
 	routeMapURL    string
 	routeMapPass   string
 	routeMapDB     string
-	brokerType     string
 }
 
 func main() {
@@ -105,7 +102,7 @@ func main() {
 	esConn := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
 	defer esConn.Close()
 
-	pubSub, err := brokers.NewPubSub(cfg.brokerType, cfg.brokerURL, "", logger)
+	pubSub, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -174,7 +171,6 @@ func loadConfig() config {
 		routeMapURL:    mainflux.Env(envRouteMapURL, defRouteMapURL),
 		routeMapPass:   mainflux.Env(envRouteMapPass, defRouteMapPass),
 		routeMapDB:     mainflux.Env(envRouteMapDB, defRouteMapDB),
-		brokerType:     mainflux.Env(envBrokerType, defBrokerType),
 	}
 }
 

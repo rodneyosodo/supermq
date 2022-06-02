@@ -40,7 +40,6 @@ const (
 	defDBPass     = "mainflux"
 	defDBPort     = "9042"
 	defConfigPath = "/config.toml"
-	defBrokerType = "nats"
 
 	envBrokerURL  = "MF_BROKER_URL"
 	envLogLevel   = "MF_CASSANDRA_WRITER_LOG_LEVEL"
@@ -51,7 +50,6 @@ const (
 	envDBPass     = "MF_CASSANDRA_WRITER_DB_PASS"
 	envDBPort     = "MF_CASSANDRA_WRITER_DB_PORT"
 	envConfigPath = "MF_CASSANDRA_WRITER_CONFIG_PATH"
-	envBrokerType = "MF_BROKER_TYPE"
 )
 
 type config struct {
@@ -60,7 +58,6 @@ type config struct {
 	port       string
 	configPath string
 	dbCfg      cassandra.DBConfig
-	brokerType string
 }
 
 func main() {
@@ -73,7 +70,7 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	pubSub, err := brokers.NewPubSub(cfg.brokerType, cfg.brokerURL, "", logger)
+	pubSub, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -124,7 +121,6 @@ func loadConfig() config {
 		port:       mainflux.Env(envPort, defPort),
 		configPath: mainflux.Env(envConfigPath, defConfigPath),
 		dbCfg:      dbCfg,
-		brokerType: mainflux.Env(envBrokerType, defBrokerType),
 	}
 }
 

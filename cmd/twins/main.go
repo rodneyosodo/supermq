@@ -62,7 +62,6 @@ const (
 	defBrokerURL       = "nats://localhost:4222"
 	defAuthURL         = "localhost:8181"
 	defAuthTimeout     = "1s"
-	defBrokerType      = "nats"
 
 	envLogLevel        = "MF_TWINS_LOG_LEVEL"
 	envHTTPPort        = "MF_TWINS_HTTP_PORT"
@@ -83,7 +82,6 @@ const (
 	envBrokerURL       = "MF_BROKER_URL"
 	envAuthURL         = "MF_AUTH_GRPC_URL"
 	envAuthTimeout     = "MF_AUTH_GRPC_TIMEOUT"
-	envBrokerType      = "MF_BROKER_TYPE"
 )
 
 type config struct {
@@ -105,7 +103,6 @@ type config struct {
 
 	authURL     string
 	authTimeout time.Duration
-	brokerType  string
 }
 
 func main() {
@@ -134,7 +131,7 @@ func main() {
 	defer authCloser.Close()
 	auth, _ := createAuthClient(cfg, authTracer, logger)
 
-	pubSub, err := brokers.NewPubSub(cfg.brokerType, cfg.brokerURL, queue, logger)
+	pubSub, err := brokers.NewPubSub(cfg.brokerURL, queue, logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -198,7 +195,6 @@ func loadConfig() config {
 		brokerURL:       mainflux.Env(envBrokerURL, defBrokerURL),
 		authURL:         mainflux.Env(envAuthURL, defAuthURL),
 		authTimeout:     authTimeout,
-		brokerType:      mainflux.Env(envBrokerType, defBrokerType),
 	}
 }
 

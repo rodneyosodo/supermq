@@ -37,7 +37,6 @@ const (
 	defDBUser     = "mainflux"
 	defDBPass     = "mainflux"
 	defConfigPath = "/config.toml"
-	defBrokerType = "nats"
 
 	envBrokerURL  = "MF_BROKER_URL"
 	envLogLevel   = "MF_INFLUX_WRITER_LOG_LEVEL"
@@ -48,7 +47,6 @@ const (
 	envDBUser     = "MF_INFLUXDB_ADMIN_USER"
 	envDBPass     = "MF_INFLUXDB_ADMIN_PASSWORD"
 	envConfigPath = "MF_INFLUX_WRITER_CONFIG_PATH"
-	envBrokerType = "MF_BROKER_TYPE"
 )
 
 type config struct {
@@ -61,7 +59,6 @@ type config struct {
 	dbUser     string
 	dbPass     string
 	configPath string
-	brokerType string
 }
 
 func main() {
@@ -74,7 +71,7 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	pubSub, err := brokers.NewPubSub(cfg.brokerType, cfg.brokerURL, "", logger)
+	pubSub, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -127,7 +124,6 @@ func loadConfigs() (config, influxdata.HTTPConfig) {
 		dbUser:     mainflux.Env(envDBUser, defDBUser),
 		dbPass:     mainflux.Env(envDBPass, defDBPass),
 		configPath: mainflux.Env(envConfigPath, defConfigPath),
-		brokerType: mainflux.Env(envBrokerType, defBrokerType),
 	}
 
 	clientCfg := influxdata.HTTPConfig{

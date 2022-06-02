@@ -64,10 +64,8 @@ const (
 	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 	// Message broker
-	defBrokerURL  = "nats://localhost:4222"
-	envBrokerURL  = "MF_BROKER_URL"
-	defBrokerType = "nats"
-	envBrokerType = "MF_BROKER_TYPE"
+	defBrokerURL = "nats://localhost:4222"
+	envBrokerURL = "MF_BROKER_URL"
 	// Jaeger
 	defJaegerURL = ""
 	envJaegerURL = "MF_JAEGER_URL"
@@ -120,7 +118,6 @@ type config struct {
 	authURL               string
 	authPass              string
 	authDB                string
-	brokerType            string
 }
 
 func main() {
@@ -151,7 +148,7 @@ func main() {
 	ec := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
 	defer ec.Close()
 
-	nps, err := brokers.NewPubSub(cfg.brokerType, cfg.brokerURL, "mqtt", logger)
+	nps, err := brokers.NewPubSub(cfg.brokerURL, "mqtt", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -170,7 +167,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	np, err := brokers.NewPublisher(cfg.brokerType, cfg.brokerURL)
+	np, err := brokers.NewPublisher(cfg.brokerURL)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -255,7 +252,6 @@ func loadConfig() config {
 		authURL:               mainflux.Env(envAuthCacheURL, defAuthcacheURL),
 		authPass:              mainflux.Env(envAuthCachePass, defAuthCachePass),
 		authDB:                mainflux.Env(envAuthCacheDB, defAuthCacheDB),
-		brokerType:            mainflux.Env(envBrokerType, defBrokerType),
 	}
 }
 
