@@ -1,5 +1,5 @@
-//go:build nats
-// +build nats
+//go:build !rabbitmq
+// +build !rabbitmq
 
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
@@ -18,6 +18,10 @@ type (
 	Publisher nats.Publisher
 	PubSub    nats.PubSub
 )
+
+func init() {
+	logger.Info("The binary was build using Nats as the message broker")
+}
 
 func NewPublisher(url string) (Publisher, error) {
 	pb, err := nats.NewPublisher(url)

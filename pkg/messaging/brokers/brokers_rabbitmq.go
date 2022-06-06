@@ -19,6 +19,10 @@ type (
 	PubSub    rabbitmq.PubSub
 )
 
+func init() {
+	logger.Info("The binary was build using RabbitMQ as the message broker")
+}
+
 func NewPublisher(url string) (Publisher, error) {
 	pb, err := rabbitmq.NewPublisher(url)
 	if err != nil {
