@@ -7,7 +7,8 @@
 package brokers
 
 import (
-	log "github.com/mainflux/mainflux/logger"
+	"log"
+	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging/nats"
 )
 
@@ -20,7 +21,7 @@ type (
 )
 
 func init() {
-	logger.Info("The binary was build using Nats as the message broker")
+	log.Println("The binary was build using Nats as the message broker")
 }
 
 func NewPublisher(url string) (Publisher, error) {
@@ -32,7 +33,7 @@ func NewPublisher(url string) (Publisher, error) {
 
 }
 
-func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
+func NewPubSub(url, queue string, logger logger.Logger) (PubSub, error) {
 	pb, err := nats.NewPubSub(url, queue, logger)
 	if err != nil {
 		return nil, err
