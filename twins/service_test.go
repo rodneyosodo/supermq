@@ -22,7 +22,6 @@ const (
 	token      = "token"
 	wrongToken = "wrong-token"
 	email      = "user@example.com"
-	brokerURL  = "nats://localhost:4222"
 	numRecs    = 100
 )
 

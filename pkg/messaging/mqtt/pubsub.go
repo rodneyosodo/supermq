@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	protocol = "mqtt"
 	username = "mainflux-mqtt"
 	qos      = 2
 )
