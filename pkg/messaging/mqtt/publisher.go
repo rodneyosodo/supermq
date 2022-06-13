@@ -21,13 +21,8 @@ type publisher struct {
 	timeout time.Duration
 }
 
-type Publisher interface {
-	messaging.Publisher
-	Close()
-}
-
 // NewPublisher returns a new MQTT message publisher.
-func NewPublisher(address string, timeout time.Duration) (Publisher, error) {
+func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, error) {
 	client, err := newClient(address, "mqtt-publisher", timeout)
 	if err != nil {
 		return nil, err

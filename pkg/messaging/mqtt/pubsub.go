@@ -33,13 +33,6 @@ var (
 
 var _ messaging.PubSub = (*pubsub)(nil)
 
-// PubSub wraps messaging Publisher exposing
-// Close() method for NATS connection.
-type PubSub interface {
-	messaging.PubSub
-	Close()
-}
-
 type subscription struct {
 	client mqtt.Client
 	topics []string
@@ -54,7 +47,7 @@ type pubsub struct {
 	subscriptions map[string]subscription
 }
 
-func NewPubSub(url, queue string, timeout time.Duration, logger log.Logger) (PubSub, error) {
+func NewPubSub(url, queue string, timeout time.Duration, logger log.Logger) (messaging.PubSub, error) {
 	client, err := newClient(url, "mqtt-publisher", timeout)
 	if err != nil {
 		return nil, err

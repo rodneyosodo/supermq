@@ -17,3 +17,6 @@ func NewPublisher() messaging.Publisher {
 func (pub mockPublisher) Publish(topic string, msg messaging.Message) error {
 	return nil
 }
+
+func (pub mockPublisher) Close() {
+}
