@@ -18,7 +18,6 @@ const (
 	chansPrefix = "channels"
 	channel     = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
 	subtopic    = "engine"
-	topicID     = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
 )
 
 var (

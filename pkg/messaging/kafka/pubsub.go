@@ -20,8 +20,6 @@ const (
 	chansPrefix = "channels"
 	// SubjectAllChannels represents subject to subscribe for all the channels.
 	SubjectAllChannels = "channels.>"
-	partition          = 0
-	groupID            = "mainflux"
 	offset             = kafka.LastOffset
 )
 
