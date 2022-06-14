@@ -86,7 +86,7 @@ var cmdThings = []cobra.Command{
 	{
 		Use:   "identify <thing_key>",
 		Short: "Identify thing",
-		Long:  "Validates thing's key and returns it's ID if key is valid",
+		Long:  "Validates thing's key and returns its ID",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 1 {
 				logUsage(cmd.Use)
