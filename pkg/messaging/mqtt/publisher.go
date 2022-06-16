@@ -48,6 +48,7 @@ func (pub publisher) Publish(topic string, msg messaging.Message) error {
 	return token.Error()
 }
 
-func (pub publisher) Close() {
+func (pub publisher) Close() error {
 	pub.client.Disconnect(uint(pub.timeout))
+	return nil
 }

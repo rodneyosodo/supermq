@@ -9,7 +9,7 @@ type Publisher interface {
 	Publish(topic string, msg Message) error
 
 	// Close gracefully closes message publisher's connection.
-	Close()
+	Close() error
 }
 
 // MessageHandler represents Message handler for Subscriber.
@@ -31,7 +31,7 @@ type Subscriber interface {
 	Unsubscribe(id, topic string) error
 
 	// Close gracefully closes message subscriber's connection.
-	Close()
+	Close() error
 }
 
 // PubSub  represents aggregation interface for publisher and subscriber.

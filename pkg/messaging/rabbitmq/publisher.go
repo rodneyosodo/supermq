@@ -71,6 +71,6 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 	return nil
 }
 
-func (pub *publisher) Close() {
-	pub.conn.Close()
+func (pub *publisher) Close() error {
+	return pub.conn.Close()
 }
