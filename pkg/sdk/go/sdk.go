@@ -168,7 +168,7 @@ type SDK interface {
 	// DeleteThing removes existing thing.
 	DeleteThing(id, token string) error
 
-	// IdentifyThing validates thing's key and returns it's ID if key is valid
+	// IdentifyThing validates thing's key and returns its ID
 	IdentifyThing(key string) (string, error)
 
 	// CreateGroup creates new group and returns its id.
