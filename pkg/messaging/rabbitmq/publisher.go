@@ -20,8 +20,7 @@ type publisher struct {
 
 // NewPublisher returns RabbitMQ message Publisher.
 func NewPublisher(url string) (messaging.Publisher, error) {
-	endpoint := fmt.Sprintf("amqp://%s", url)
-	conn, err := amqp.Dial(endpoint)
+	conn, err := amqp.Dial(url)
 	if err != nil {
 		return nil, err
 	}

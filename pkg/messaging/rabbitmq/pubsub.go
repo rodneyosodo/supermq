@@ -42,8 +42,7 @@ type pubsub struct {
 
 // NewPubSub returns RabbitMQ message publisher/subscriber.
 func NewPubSub(url, queue string, logger log.Logger) (messaging.PubSub, error) {
-	endpoint := fmt.Sprintf("amqp://%s", url)
-	conn, err := amqp.Dial(endpoint)
+	conn, err := amqp.Dial(url)
 	if err != nil {
 		return nil, err
 	}

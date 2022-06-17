@@ -1,6 +1,6 @@
 services:
   broker:
-    image: rabbitmq:3.7-management
+    image: rabbitmq:3.9.20-management-alpine
     environment:
       RABBITMQ_ERLANG_COOKIE: ${MF_RABBITMQ_COOKIE}
       RABBITMQ_DEFAULT_USER: ${MF_RABBITMQ_USER}

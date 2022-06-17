@@ -7,9 +7,11 @@
 package brokers
 
 import (
-	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/messaging/rabbitmq"
 	"log"
+	
+	"github.com/mainflux/mainflux/logger"
+	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/mainflux/mainflux/pkg/messaging/rabbitmq"
 )
 
 // SubjectAllChannels represents subject to subscribe for all the channels.
