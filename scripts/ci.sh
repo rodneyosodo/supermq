@@ -81,6 +81,10 @@ setup() {
     setup_lint
 }
 
+compile_check(){
+    MF_BROKER_TYPE=nats make http
+}
+
 run_test() {
     echo "Running lint..."
     golangci-lint run --no-config --disable-all --enable gosimple --enable govet --enable unused --enable deadcode --timeout 3m
@@ -94,6 +98,8 @@ run_test() {
             rm profile.out
         fi
     done
+    echo "Compile check..."
+    compile_check
 }
 
 push() {
