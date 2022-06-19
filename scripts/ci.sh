@@ -65,6 +65,8 @@ setup_mf() {
         fi
     done
     make -j$NPROC
+    echo "Compile check for rabbitmq..."
+    MF_BROKER_TYPE=rabbitmq make http
 }
 
 setup_lint() {
@@ -81,9 +83,6 @@ setup() {
     setup_lint
 }
 
-compile_check(){
-    MF_BROKER_TYPE=nats make http
-}
 
 run_test() {
     echo "Running lint..."
@@ -98,8 +97,6 @@ run_test() {
             rm profile.out
         fi
     done
-    echo "Compile check..."
-    compile_check
 }
 
 push() {
