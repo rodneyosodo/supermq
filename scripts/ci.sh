@@ -64,9 +64,9 @@ setup_mf() {
             exit 1
         fi
     done
-    make -j$NPROC
     echo "Compile check for rabbitmq..."
-    MF_BROKER_TYPE=rabbitmq make -j $NPROC
+    MF_BROKER_TYPE=rabbitmq make http
+    make -j$NPROC
 }
 
 setup_lint() {
