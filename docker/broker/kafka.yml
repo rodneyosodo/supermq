@@ -2,8 +2,8 @@ services:
   broker:
     image: spotify/kafka:latest
     environment:
-      ADVERTISED_HOST: 127.0.0.1
-      ADVERTISED_PORT: 9092
+      ADVERTISED_HOST: ${MF_KAFKA_ADDRESS}
+      ADVERTISED_PORT: ${MF_KAFKA_PORT}
     ports:
-      - "2181:2181"
-      - "9092:9092"
+      - ${MF_ZOOKEEPER_PORT}:${MF_ZOOKEEPER_PORT}
+      - ${MF_KAFKA_PORT}:${MF_KAFKA_PORT}

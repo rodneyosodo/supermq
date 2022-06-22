@@ -114,25 +114,25 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 	// Check topic
-	s, ok := ps.subscriptions[topic]
+	subs, ok := ps.subscriptions[topic]
 	if !ok {
 		return ErrNotSubscribed
 	}
 	// Check topic ID
-	reader, ok := s[id]
+	s, ok := subs[id]
 	if !ok {
 		return ErrNotSubscribed
 	}
-	if reader.cancel != nil {
-		if err := reader.cancel(); err != nil {
+	if s.cancel != nil {
+		if err := s.cancel(); err != nil {
 			return err
 		}
 	}
-	if err := reader.Close(); err != nil {
+	if err := s.Close(); err != nil {
 		return err
 	}
-	delete(s, id)
-	if len(s) == 0 {
+	delete(subs, id)
+	if len(subs) == 0 {
 		delete(ps.subscriptions, topic)
 	}
 	return nil
