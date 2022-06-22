@@ -1,5 +1,5 @@
-//go:build !rabbitmq || !kafka
-// +build !rabbitmq !kafka
+//go:build !rabbitmq && !kafka
+// +build !rabbitmq,!kafka
 
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
