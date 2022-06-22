@@ -44,6 +44,7 @@ func (req viewUserReq) validate() error {
 
 type listUsersReq struct {
 	token    string
+	active   bool
 	offset   uint64
 	limit    uint64
 	email    string
@@ -139,6 +140,7 @@ func (req passwChangeReq) validate() error {
 
 type listMemberGroupReq struct {
 	token    string
+	active   bool
 	offset   uint64
 	limit    uint64
 	metadata users.Metadata
@@ -154,5 +156,20 @@ func (req listMemberGroupReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
+	return nil
+}
+
+type removeUserReq struct {
+	token  string
+	userID string
+}
+
+func (req removeUserReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.userID == "" {
+		return apiutil.ErrMissingID
+	}
 	return nil
 }

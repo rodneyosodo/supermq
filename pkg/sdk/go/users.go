@@ -189,3 +189,23 @@ func (sdk mfSDK) UpdatePassword(oldPass, newPass, token string) error {
 
 	return nil
 }
+
+func (sdk mfSDK) DeleteUser(id, token string) error {
+	url := fmt.Sprintf("%s/%s/%s", sdk.usersURL, usersEndpoint, id)
+
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusNoContent {
+		return errors.Wrap(ErrFailedRemoval, errors.New(resp.Status))
+	}
+
+	return nil
+}

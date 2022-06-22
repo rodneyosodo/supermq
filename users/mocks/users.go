@@ -91,7 +91,7 @@ func (urm *userRepositoryMock) RetrieveByID(ctx context.Context, id string) (use
 	return val, nil
 }
 
-func (urm *userRepositoryMock) RetrieveAll(ctx context.Context, offset, limit uint64, ids []string, email string, um users.Metadata) (users.UserPage, error) {
+func (urm *userRepositoryMock) RetrieveAll(ctx context.Context, active bool, offset, limit uint64, ids []string, email string, um users.Metadata) (users.UserPage, error) {
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
@@ -134,6 +134,17 @@ func (urm *userRepositoryMock) UpdatePassword(_ context.Context, token, password
 	return nil
 }
 
+func (urm *userRepositoryMock) Remove(ctx context.Context, user users.User) error {
+	urm.mu.Lock()
+	defer urm.mu.Unlock()
+
+	if _, ok := urm.users[user.Email]; !ok {
+		return errors.ErrNotFound
+	}
+
+	delete(urm.users, user.Email)
+	return nil
+}
 func sortUsers(us map[string]users.User) []users.User {
 	users := []users.User{}
 	ids := make([]string, 0, len(us))

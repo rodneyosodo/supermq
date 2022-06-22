@@ -118,7 +118,7 @@ func listUsersEndpoint(svc users.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return users.UserPage{}, err
 		}
-		up, err := svc.ListUsers(ctx, req.token, req.offset, req.limit, req.email, req.metadata)
+		up, err := svc.ListUsers(ctx, req.token, req.active, req.offset, req.limit, req.email, req.metadata)
 		if err != nil {
 			return users.UserPage{}, err
 		}
@@ -179,12 +179,26 @@ func listMembersEndpoint(svc users.Service) endpoint.Endpoint {
 			return userPageRes{}, errors.Wrap(errors.ErrMalformedEntity, err)
 		}
 
-		page, err := svc.ListMembers(ctx, req.token, req.groupID, req.offset, req.limit, req.metadata)
+		page, err := svc.ListMembers(ctx, req.token, req.groupID, req.active, req.offset, req.limit, req.metadata)
 		if err != nil {
 			return userPageRes{}, err
 		}
 
 		return buildUsersResponse(page), nil
+	}
+}
+
+func removeUserEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(removeUserReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+		err := svc.RemoveUser(ctx, req.token, req.userID)
+		if err != nil {
+			return nil, err
+		}
+		return deleteRes{}, nil
 	}
 }
 

@@ -28,6 +28,7 @@ const (
 	limitKey    = "limit"
 	emailKey    = "email"
 	metadataKey = "metadata"
+	activeKey   = "active"
 	defOffset   = 0
 	defLimit    = 10
 )
@@ -110,6 +111,13 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 		opts...,
 	))
 
+	mux.Delete("/users/:userID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_user")(removeUserEndpoint(svc)),
+		decodeRemoveUser,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.GetFunc("/health", mainflux.Health("users"))
 	mux.Handle("/metrics", promhttp.Handler())
 
@@ -152,8 +160,13 @@ func decodeListUsers(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
+	a, err := apiutil.ReadBoolQuery(r, activeKey, true)
+	if err != nil {
+		return nil, err
+	}
 	req := listUsersReq{
 		token:    apiutil.ExtractBearerToken(r),
+		active:   a,
 		offset:   o,
 		limit:    l,
 		email:    e,
@@ -258,14 +271,28 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 	if err != nil {
 		return nil, err
 	}
+	a, err := apiutil.ReadBoolQuery(r, activeKey, true)
+	if err != nil {
+		return nil, err
+	}
 
 	req := listMemberGroupReq{
 		token:    apiutil.ExtractBearerToken(r),
+		active:   a,
 		groupID:  bone.GetValue(r, "groupId"),
 		offset:   o,
 		limit:    l,
 		metadata: m,
 	}
+	return req, nil
+}
+
+func decodeRemoveUser(_ context.Context, r *http.Request) (interface{}, error) {
+	req := removeUserReq{
+		token:  apiutil.ExtractBearerToken(r),
+		userID: bone.GetValue(r, "userID"),
+	}
+
 	return req, nil
 }
 
