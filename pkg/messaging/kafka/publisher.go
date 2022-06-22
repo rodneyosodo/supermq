@@ -21,15 +21,8 @@ type publisher struct {
 	url  string
 }
 
-// Publisher wraps messaging Publisher exposing
-// Close() method for Kafka connection.
-type Publisher interface {
-	messaging.Publisher
-	Close()
-}
-
 // NewPublisher returns Kafka message Publisher.
-func NewPublisher(url string) (Publisher, error) {
+func NewPublisher(url string) (messaging.Publisher, error) {
 	conn, err := kafka.Dial("tcp", url)
 	if err != nil {
 		return nil, err
@@ -75,6 +68,6 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 	return nil
 }
 
-func (pub *publisher) Close() {
-	pub.conn.Close()
+func (pub *publisher) Close() error {
+	return pub.conn.Close()
 }

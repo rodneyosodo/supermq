@@ -32,13 +32,6 @@ var (
 
 var _ messaging.PubSub = (*pubsub)(nil)
 
-// PubSub wraps messaging Publisher exposing
-// Close() method for Kafka connection.
-type PubSub interface {
-	messaging.PubSub
-	Close()
-}
-
 type subscription struct {
 	*kafka.Reader
 	cancel func() error
@@ -51,7 +44,7 @@ type pubsub struct {
 }
 
 // NewPubSub returns Kafka message publisher/subscriber.
-func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
+func NewPubSub(url, queue string, logger log.Logger) (messaging.PubSub, error) {
 	conn, err := kafka.Dial("tcp", url)
 	if err != nil {
 		return nil, err
