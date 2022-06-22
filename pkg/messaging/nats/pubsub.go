@@ -15,11 +15,7 @@ import (
 	broker "github.com/nats-io/nats.go"
 )
 
-const (
-	chansPrefix = "channels"
-	// SubjectAllChannels represents subject to subscribe for all the channels.
-	SubjectAllChannels = "channels.>"
-)
+const chansPrefix = "channels"
 
 var (
 	ErrAlreadySubscribed = errors.New("already subscribed to topic")
@@ -29,13 +25,6 @@ var (
 )
 
 var _ messaging.PubSub = (*pubsub)(nil)
-
-// PubSub wraps messaging Publisher exposing
-// Close() method for NATS connection.
-type PubSub interface {
-	messaging.PubSub
-	Close()
-}
 
 type subscription struct {
 	*broker.Subscription
@@ -57,7 +46,7 @@ type pubsub struct {
 // from ordinary subscribe. For more information, please take a look
 // here: https://docs.nats.io/developing-with-nats/receiving/queues.
 // If the queue is empty, Subscribe will be used.
-func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
+func NewPubSub(url, queue string, logger log.Logger) (messaging.PubSub, error) {
 	conn, err := broker.Connect(url)
 	if err != nil {
 		return nil, err
