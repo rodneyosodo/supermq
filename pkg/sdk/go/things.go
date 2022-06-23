@@ -230,8 +230,8 @@ func (sdk mfSDK) DeleteThing(id, token string) error {
 }
 
 func (sdk mfSDK) IdentifyThing(key string) (string, error) {
-	datareq := identifyThingReq{Token: key}
-	data, err := json.Marshal(datareq)
+	idReq := identifyThingReq{Token: key}
+	data, err := json.Marshal(idReq)
 	if err != nil {
 		return "", err
 	}

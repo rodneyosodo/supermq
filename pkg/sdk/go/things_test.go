@@ -656,6 +656,8 @@ func TestIdentifyThing(t *testing.T) {
 	th := sdk.Thing{ID: "fe6b4e92-cc98-425e-b0aa-000000007891", Name: "identify"}
 	id, err := mainfluxSDK.CreateThing(th, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	thing, err := mainfluxSDK.Thing(th.ID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
 		desc     string
@@ -665,7 +667,7 @@ func TestIdentifyThing(t *testing.T) {
 	}{
 		{
 			desc:     "identify thing with valid key",
-			thingKey: "123e4567-e89b-12d3-a456-000000000001",
+			thingKey: thing.Key,
 			err:      nil,
 			response: id,
 		},
