@@ -253,7 +253,7 @@ type dbUser struct {
 	Password string       `db:"password"`
 	Metadata []byte       `db:"metadata"`
 	Groups   []auth.Group `db:"groups"`
-	Active   bool         `db:"active"`
+	Active   string       `db:"active"`
 }
 
 func toDBUser(u users.User) (dbUser, error) {

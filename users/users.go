@@ -39,7 +39,7 @@ type User struct {
 	Email    string
 	Password string
 	Metadata Metadata
-	Active   bool
+	Active   string
 }
 
 // Validate returns an error if user representation is invalid.
