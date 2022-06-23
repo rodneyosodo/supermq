@@ -79,7 +79,7 @@ func (lm *loggingMiddleware) ViewProfile(ctx context.Context, token string) (u u
 	return lm.svc.ViewProfile(ctx, token)
 }
 
-func (lm *loggingMiddleware) ListUsers(ctx context.Context, token string, active bool, offset, limit uint64, email string, um users.Metadata) (e users.UserPage, err error) {
+func (lm *loggingMiddleware) ListUsers(ctx context.Context, token string, active string, offset, limit uint64, email string, um users.Metadata) (e users.UserPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_users for token %s took %s to complete", token, time.Since(begin))
 		if err != nil {
@@ -157,7 +157,7 @@ func (lm *loggingMiddleware) SendPasswordReset(ctx context.Context, host, email,
 	return lm.svc.SendPasswordReset(ctx, host, email, token)
 }
 
-func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID string, active bool, offset, limit uint64, m users.Metadata) (mp users.UserPage, err error) {
+func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID string, active string, offset, limit uint64, m users.Metadata) (mp users.UserPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_members for group %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
@@ -170,7 +170,7 @@ func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID str
 	return lm.svc.ListMembers(ctx, token, groupID, active, offset, limit, m)
 }
 
-func (lm *loggingMiddleware) RemoveUser(ctx context.Context, token string, id string) (err error) {
+func (lm *loggingMiddleware) DeactivateUser(ctx context.Context, token string, id string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method remove_user for user %s took %s to complete", id, time.Since(begin))
 		if err != nil {
@@ -180,5 +180,5 @@ func (lm *loggingMiddleware) RemoveUser(ctx context.Context, token string, id st
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.RemoveUser(ctx, token, id)
+	return lm.svc.DeactivateUser(ctx, token, id)
 }

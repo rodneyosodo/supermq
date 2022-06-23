@@ -8,7 +8,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/lib/pq"
@@ -88,7 +87,7 @@ func (ur userRepository) Update(ctx context.Context, user users.User) error {
 }
 
 func (ur userRepository) UpdateUser(ctx context.Context, user users.User) error {
-	q := `UPDATE users SET metadata = :metadata WHERE email = :email AND active = TRUE`
+	q := `UPDATE users SET metadata = :metadata WHERE email = :email AND active = 'active'`
 
 	dbu, err := toDBUser(user)
 	if err != nil {
@@ -103,7 +102,7 @@ func (ur userRepository) UpdateUser(ctx context.Context, user users.User) error 
 }
 
 func (ur userRepository) RetrieveByEmail(ctx context.Context, email string) (users.User, error) {
-	q := `SELECT id, password, metadata FROM users WHERE active = TRUE AND email = $1`
+	q := `SELECT id, password, metadata FROM users WHERE active = 'active' AND email = $1`
 
 	dbu := dbUser{
 		Email: email,
@@ -121,7 +120,7 @@ func (ur userRepository) RetrieveByEmail(ctx context.Context, email string) (use
 }
 
 func (ur userRepository) RetrieveByID(ctx context.Context, id string) (users.User, error) {
-	q := `SELECT email, password, metadata FROM users WHERE active = TRUE AND id = $1`
+	q := `SELECT email, password, metadata FROM users WHERE active = 'active' AND id = $1`
 
 	dbu := dbUser{
 		ID: id,
@@ -138,7 +137,7 @@ func (ur userRepository) RetrieveByID(ctx context.Context, id string) (users.Use
 	return toUser(dbu)
 }
 
-func (ur userRepository) RetrieveAll(ctx context.Context, active bool, offset, limit uint64, userIDs []string, email string, um users.Metadata) (users.UserPage, error) {
+func (ur userRepository) RetrieveAll(ctx context.Context, active string, offset, limit uint64, userIDs []string, email string, um users.Metadata) (users.UserPage, error) {
 	eq, ep, err := createEmailQuery("", email)
 	if err != nil {
 		return users.UserPage{}, errors.Wrap(errors.ErrViewEntity, err)
@@ -148,7 +147,10 @@ func (ur userRepository) RetrieveAll(ctx context.Context, active bool, offset, l
 	if err != nil {
 		return users.UserPage{}, errors.Wrap(errors.ErrViewEntity, err)
 	}
-	aq := fmt.Sprintf("active = %s", strings.ToUpper(strconv.FormatBool(active)))
+	aq := fmt.Sprintf("active = '%s'", active)
+	if active == "all" {
+		aq = "active = 'active' AND active = 'inactive'"
+	}
 
 	var query []string
 	var emq string
@@ -216,7 +218,7 @@ func (ur userRepository) RetrieveAll(ctx context.Context, active bool, offset, l
 }
 
 func (ur userRepository) UpdatePassword(ctx context.Context, email, password string) error {
-	q := `UPDATE users SET password = :password WHERE active = TRUE AND email = :email`
+	q := `UPDATE users SET password = :password WHERE active = 'active' AND email = :email`
 
 	db := dbUser{
 		Email:    email,
@@ -230,8 +232,8 @@ func (ur userRepository) UpdatePassword(ctx context.Context, email, password str
 	return nil
 }
 
-func (ur userRepository) Remove(ctx context.Context, user users.User) error {
-	q := `UPDATE users SET active = FALSE WHERE email = :email`
+func (ur userRepository) Deactivate(ctx context.Context, user users.User) error {
+	q := `UPDATE users SET active = 'inactive' WHERE email = :email`
 
 	dbu, err := toDBUser(user)
 	if err != nil {

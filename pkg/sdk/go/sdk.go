@@ -153,7 +153,7 @@ type SDK interface {
 	// UpdatePassword updates user password.
 	UpdatePassword(oldPass, newPass, token string) error
 
-	// DeleteUser removes existing thing.
+	// DeleteUser deactivates the user.
 	DeleteUser(id, token string) error
 
 	// CreateThing registers new thing and returns its id.

@@ -112,8 +112,8 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 	))
 
 	mux.Delete("/users/:userID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_user")(removeUserEndpoint(svc)),
-		decodeRemoveUser,
+		kitot.TraceServer(tracer, "remove_user")(deactivateUserEndpoint(svc)),
+		decodeDeactivateUser,
 		encodeResponse,
 		opts...,
 	))
@@ -160,7 +160,7 @@ func decodeListUsers(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	a, err := apiutil.ReadBoolQuery(r, activeKey, true)
+	a, err := apiutil.ReadStringQuery(r, activeKey, "active")
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +271,7 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 	if err != nil {
 		return nil, err
 	}
-	a, err := apiutil.ReadBoolQuery(r, activeKey, true)
+	a, err := apiutil.ReadStringQuery(r, activeKey, "active")
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +287,7 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 	return req, nil
 }
 
-func decodeRemoveUser(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeDeactivateUser(_ context.Context, r *http.Request) (interface{}, error) {
 	req := removeUserReq{
 		token:  apiutil.ExtractBearerToken(r),
 		userID: bone.GetValue(r, "userID"),
