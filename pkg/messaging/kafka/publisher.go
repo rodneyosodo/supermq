@@ -6,7 +6,6 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
@@ -16,8 +15,8 @@ import (
 )
 
 var (
-	_              messaging.Publisher = (*publisher)(nil)
-	backoffCeiling int64               = 14400
+	_               messaging.Publisher = (*publisher)(nil)
+	backoffSchedule                     = []time.Duration{1 * time.Second, 3 * time.Second, 10 * time.Second}
 )
 
 type publisher struct {
@@ -61,30 +60,19 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 		Value: data,
 		Topic: subject,
 	}
-	return pub.writeMessage(writer, kafkaMsg)
+	for _, backoff := range backoffSchedule {
+		err := writer.WriteMessages(context.TODO(), kafkaMsg)
+		if !strings.Contains(fmt.Sprint(err), "[5] Leader Not Available:") {
+			return err
+		}
+		if err == nil {
+			break
+		}
+		time.Sleep(backoff)
+	}
+	return nil
 }
 
 func (pub *publisher) Close() error {
 	return pub.conn.Close()
-}
-
-func (pub *publisher) writeMessage(writer *kafka.Writer, msg kafka.Message) error {
-	attempts := 0
-	for {
-		delay := int64(math.Floor((math.Pow(2, float64(attempts)) - 1) * 0.5))
-		if delay > backoffCeiling {
-			delay = backoffCeiling
-		}
-
-		time.Sleep(time.Duration(delay) * time.Second)
-		attempts += 1
-
-		// Sometime it take time for leader to be elected. If that is so, we retry to publish message
-		err := writer.WriteMessages(context.TODO(), msg)
-		if strings.Contains(err.Error(), "[5] Leader Not Available:") {
-			continue
-		}
-		break
-	}
-	return nil
 }
