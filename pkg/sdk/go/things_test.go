@@ -246,7 +246,7 @@ func TestThing(t *testing.T) {
 			desc:     "get non-existent thing",
 			thID:     "43",
 			token:    token,
-			err:      createError(sdk.ErrFailedFetch, http.StatusForbidden),
+			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
 			response: sdk.Thing{},
 		},
 		{
@@ -260,7 +260,6 @@ func TestThing(t *testing.T) {
 
 	for _, tc := range cases {
 		respTh, err := mainfluxSDK.Thing(tc.thID, tc.token)
-
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, respTh, fmt.Sprintf("%s: expected response thing %s, got %s", tc.desc, tc.response, respTh))
 	}
@@ -296,30 +295,34 @@ func TestThings(t *testing.T) {
 		err      error
 		response []sdk.Thing
 		name     string
+		metadata map[string]interface{}
 	}{
 		{
 			desc:     "get a list of things",
 			token:    token,
-			offset:   0,
-			limit:    5,
+			offset:   offset,
+			limit:    limit,
 			err:      nil,
-			response: things[0:5],
+			response: things[0:limit],
+			metadata: make(map[string]interface{}),
 		},
 		{
 			desc:     "get a list of things with invalid token",
 			token:    wrongValue,
-			offset:   0,
-			limit:    5,
+			offset:   offset,
+			limit:    limit,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: nil,
+			metadata: make(map[string]interface{}),
 		},
 		{
 			desc:     "get a list of things with empty token",
 			token:    "",
-			offset:   0,
-			limit:    5,
+			offset:   offset,
+			limit:    limit,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: nil,
+			metadata: make(map[string]interface{}),
 		},
 		{
 			desc:     "get a list of things with zero limit",
@@ -328,26 +331,36 @@ func TestThings(t *testing.T) {
 			limit:    0,
 			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
 			response: nil,
+			metadata: make(map[string]interface{}),
 		},
 		{
 			desc:     "get a list of things with limit greater than max",
 			token:    token,
-			offset:   0,
+			offset:   offset,
 			limit:    110,
 			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
 			response: nil,
+			metadata: make(map[string]interface{}),
 		},
 		{
 			desc:     "get a list of things with offset greater than max",
 			token:    token,
 			offset:   110,
-			limit:    5,
+			limit:    limit,
 			err:      nil,
 			response: []sdk.Thing{},
+			metadata: make(map[string]interface{}),
 		},
 	}
 	for _, tc := range cases {
-		page, err := mainfluxSDK.Things(tc.token, tc.offset, tc.limit, tc.name)
+		filter := sdk.PageMetadata{
+			Name:     tc.name,
+			Total:    total,
+			Offset:   uint64(tc.offset),
+			Limit:    uint64(tc.limit),
+			Metadata: tc.metadata,
+		}
+		page, err := mainfluxSDK.Things(tc.token, filter)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page.Things, fmt.Sprintf("%s: expected response channel %s, got %s", tc.desc, tc.response, page.Things))
 	}
@@ -414,17 +427,17 @@ func TestThingsByChannel(t *testing.T) {
 			desc:     "get a list of things by channel",
 			channel:  cid,
 			token:    token,
-			offset:   0,
-			limit:    5,
+			offset:   offset,
+			limit:    limit,
 			err:      nil,
-			response: things[0:5],
+			response: things[0:limit],
 		},
 		{
 			desc:     "get a list of things by channel with invalid token",
 			channel:  cid,
 			token:    wrongValue,
-			offset:   0,
-			limit:    5,
+			offset:   offset,
+			limit:    limit,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: nil,
 		},
@@ -432,8 +445,8 @@ func TestThingsByChannel(t *testing.T) {
 			desc:     "get a list of things by channel with empty token",
 			channel:  cid,
 			token:    "",
-			offset:   0,
-			limit:    5,
+			offset:   offset,
+			limit:    limit,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: nil,
 		},
@@ -441,7 +454,7 @@ func TestThingsByChannel(t *testing.T) {
 			desc:     "get a list of things by channel with zero limit",
 			channel:  cid,
 			token:    token,
-			offset:   0,
+			offset:   offset,
 			limit:    0,
 			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
 			response: nil,
@@ -450,7 +463,7 @@ func TestThingsByChannel(t *testing.T) {
 			desc:     "get a list of things by channel with limit greater than max",
 			channel:  cid,
 			token:    token,
-			offset:   0,
+			offset:   offset,
 			limit:    110,
 			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
 			response: nil,
@@ -460,7 +473,7 @@ func TestThingsByChannel(t *testing.T) {
 			channel:  cid,
 			token:    token,
 			offset:   110,
-			limit:    5,
+			limit:    limit,
 			err:      nil,
 			response: []sdk.Thing{},
 		},
@@ -468,7 +481,7 @@ func TestThingsByChannel(t *testing.T) {
 			desc:     "get a list of things by channel with invalid args (zero limit) and invalid token",
 			channel:  cid,
 			token:    wrongValue,
-			offset:   0,
+			offset:   offset,
 			limit:    0,
 			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
 			response: nil,
@@ -477,7 +490,7 @@ func TestThingsByChannel(t *testing.T) {
 			desc:         "get a list of not connected things by channel",
 			channel:      cid,
 			token:        token,
-			offset:       0,
+			offset:       offset,
 			limit:        100,
 			disconnected: true,
 			err:          nil,
@@ -600,7 +613,7 @@ func TestDeleteThing(t *testing.T) {
 			desc:    "delete non-existing thing",
 			thingID: "2",
 			token:   token,
-			err:     createError(sdk.ErrFailedRemoval, http.StatusForbidden),
+			err:     createError(sdk.ErrFailedRemoval, http.StatusNotFound),
 		},
 		{
 			desc:    "delete thing with invalid id",
