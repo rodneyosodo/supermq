@@ -70,7 +70,7 @@ func (pub *publisher) Close() error {
 
 func (pub *publisher) writeMessage(writer *kafka.Writer, msg kafka.Message) error {
 	attempts := 0
-	for true {
+	for {
 		delay := int64(math.Floor((math.Pow(2, float64(attempts)) - 1) * 0.5))
 		if delay > backoffCeiling {
 			delay = backoffCeiling
@@ -81,7 +81,6 @@ func (pub *publisher) writeMessage(writer *kafka.Writer, msg kafka.Message) erro
 
 		// Sometime it take time for leader to be elected. If that is so, we retry to publish message
 		err := writer.WriteMessages(context.TODO(), msg)
-		fmt.Println(err.Error())
 		if strings.Contains(err.Error(), "[5] Leader Not Available:") {
 			continue
 		}
