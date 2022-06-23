@@ -149,7 +149,7 @@ func (ur userRepository) RetrieveAll(ctx context.Context, active string, offset,
 	}
 	aq := fmt.Sprintf("active = '%s'", active)
 	if active == "all" {
-		aq = "active = 'active' AND active = 'inactive'"
+		aq = ""
 	}
 
 	var query []string
@@ -160,7 +160,9 @@ func (ur userRepository) RetrieveAll(ctx context.Context, active string, offset,
 	if mq != "" {
 		query = append(query, mq)
 	}
-	query = append(query, aq)
+	if aq != "" {
+		query = append(query, aq)
+	}
 
 	if len(userIDs) > 0 {
 		query = append(query, fmt.Sprintf("id IN ('%s')", strings.Join(userIDs, "','")))
