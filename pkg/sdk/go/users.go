@@ -190,7 +190,7 @@ func (sdk mfSDK) UpdatePassword(oldPass, newPass, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) DeleteUser(id, token string) error {
+func (sdk mfSDK) DeactivateUser(id, token string) error {
 	url := fmt.Sprintf("%s/%s/%s", sdk.usersURL, usersEndpoint, id)
 
 	req, err := http.NewRequest(http.MethodDelete, url, nil)

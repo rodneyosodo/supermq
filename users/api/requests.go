@@ -44,7 +44,7 @@ func (req viewUserReq) validate() error {
 
 type listUsersReq struct {
 	token    string
-	active   string
+	state    string
 	offset   uint64
 	limit    uint64
 	email    string
@@ -63,7 +63,7 @@ func (req listUsersReq) validate() error {
 	if len(req.email) > maxEmailSize {
 		return apiutil.ErrEmailSize
 	}
-	if req.active != "all" && req.active != "active" && req.active != "inactive" {
+	if req.state != "all" && req.state != "active" && req.state != "inactive" {
 		return apiutil.ErrActiveState
 	}
 
@@ -143,7 +143,7 @@ func (req passwChangeReq) validate() error {
 
 type listMemberGroupReq struct {
 	token    string
-	active   string
+	state    string
 	offset   uint64
 	limit    uint64
 	metadata users.Metadata
@@ -158,7 +158,7 @@ func (req listMemberGroupReq) validate() error {
 	if req.groupID == "" {
 		return apiutil.ErrMissingID
 	}
-	if req.active != "all" && req.active != "active" && req.active != "inactive" {
+	if req.state != "all" && req.state != "active" && req.state != "inactive" {
 		return apiutil.ErrActiveState
 	}
 	return nil
