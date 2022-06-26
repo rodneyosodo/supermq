@@ -47,6 +47,10 @@ func NewPubSub(url, queue string, logger log.Logger) (messaging.PubSub, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Check if connection is ready.
+	if _, err := conn.Brokers(); err != nil {
+		return nil, err
+	}
 	ret := &pubsub{
 		publisher: publisher{
 			conn: conn,

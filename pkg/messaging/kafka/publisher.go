@@ -6,8 +6,6 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"strings"
-	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/mainflux/mainflux/pkg/messaging"
@@ -15,8 +13,7 @@ import (
 )
 
 var (
-	_               messaging.Publisher = (*publisher)(nil)
-	backoffSchedule                     = []time.Duration{1 * time.Second, 3 * time.Second, 10 * time.Second}
+	_ messaging.Publisher = (*publisher)(nil)
 )
 
 type publisher struct {
@@ -60,17 +57,7 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 		Value: data,
 		Topic: subject,
 	}
-	for _, backoff := range backoffSchedule {
-		err := writer.WriteMessages(context.TODO(), kafkaMsg)
-		if !strings.Contains(fmt.Sprint(err), "[5] Leader Not Available:") {
-			return err
-		}
-		if err == nil {
-			break
-		}
-		time.Sleep(backoff)
-	}
-	return nil
+	return writer.WriteMessages(context.Background(), kafkaMsg)
 }
 
 func (pub *publisher) Close() error {

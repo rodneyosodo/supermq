@@ -10,7 +10,6 @@ import (
 	"os/signal"
 	"syscall"
 	"testing"
-	"time"
 
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
@@ -19,10 +18,7 @@ import (
 	"github.com/ory/dockertest/v3/docker"
 )
 
-var (
-	publisher messaging.Publisher
-	pubsub    messaging.PubSub
-)
+var pubsub messaging.PubSub
 
 func TestMain(m *testing.M) {
 	pool, err := dockertest.NewPool("")
@@ -51,15 +47,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not start container: %s", err)
 	}
 	handleInterrupt(pool, container)
-	time.Sleep(10 * time.Second)
 	address := fmt.Sprintf("%s:%s", "localhost", container.GetPort("9092/tcp"))
-	if err := pool.Retry(func() error {
-		publisher, err = kafka.NewPublisher(address)
-		return err
-	}); err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
-	}
-
 	logger, err := logger.New(os.Stdout, "error")
 	if err != nil {
 		log.Fatalf(err.Error())
