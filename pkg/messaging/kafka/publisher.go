@@ -6,6 +6,8 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/mainflux/mainflux/pkg/messaging"
@@ -13,7 +15,8 @@ import (
 )
 
 var (
-	_ messaging.Publisher = (*publisher)(nil)
+	_               messaging.Publisher = (*publisher)(nil)
+	backoffSchedule                     = []time.Duration{1 * time.Second, 3 * time.Second, 10 * time.Second}
 )
 
 type publisher struct {
@@ -51,7 +54,19 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 	kafkaMsg := kafka.Message{
 		Value: data,
 	}
-	return writer.WriteMessages(context.Background(), kafkaMsg)
+
+	// Ensuring the kafka topic is created after bringing up the cluster.
+	for _, backoff := range backoffSchedule {
+		err := writer.WriteMessages(context.Background(), kafkaMsg)
+		if !strings.Contains(fmt.Sprint(err), "[5] Leader Not Available:") {
+			return err
+		}
+		if err == nil {
+			break
+		}
+		time.Sleep(backoff)
+	}
+	return nil
 }
 
 func (pub *publisher) Close() error {

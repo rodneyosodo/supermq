@@ -48,7 +48,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not start container: %s", err)
 	}
 	handleInterrupt(pool, container)
-	address := fmt.Sprintf("%s:%s", "127.0.0.1", container.GetPort("9092/tcp"))
+	address := fmt.Sprintf("%s:%s", "localhost", container.GetPort("9092/tcp"))
 
 	// As kafka doesn't support a readiness endpoint we have to ensure that kafka is ready before we test it.
 	// When you immediately start testing it will throw an EOF error thus we should wait for sometime
@@ -64,31 +64,6 @@ func TestMain(m *testing.M) {
 		return err
 	}); err != nil {
 		log.Fatalf("Could not connect to docker: %s", err)
-	}
-
-	// Ensuring the kafka topic is created after bringing up the testing cluster.
-	for {
-		errorCount := 0
-		err = pubsub.Publish("topic", messaging.Message{Payload: []byte("demo"), Subtopic: "engine", Channel: "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"})
-		if err != nil {
-			errorCount++
-		}
-		err = pubsub.Publish("topic", messaging.Message{Payload: []byte("demo"), Channel: "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"})
-		if err != nil {
-			errorCount++
-		}
-		err = pubsub.Publish("topic", messaging.Message{Payload: []byte("demo")})
-		if err != nil {
-			errorCount++
-		}
-		err = pubsub.Publish("topic", messaging.Message{})
-		if err != nil {
-			errorCount++
-		}
-		if errorCount == 0 {
-			break
-		}
-		time.Sleep(1 * time.Second)
 	}
 
 	code := m.Run()
