@@ -43,18 +43,9 @@ type pubsub struct {
 
 // NewPubSub returns Kafka message publisher/subscriber.
 func NewPubSub(url, queue string, logger log.Logger) (messaging.PubSub, error) {
-	conn, err := kafka.Dial("tcp", url)
-	if err != nil {
-		return nil, err
-	}
-	// Check if connection is ready.
-	if _, err := conn.Brokers(); err != nil {
-		return nil, err
-	}
 	ret := &pubsub{
 		publisher: publisher{
-			conn: conn,
-			url:  url,
+			url: url,
 		},
 		subscriptions: make(map[string]map[string]subscription),
 		logger:        logger,
@@ -91,7 +82,6 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 		Topic:       topic,
 		StartOffset: offset,
 	})
-
 	go func() {
 		for {
 			message, err := reader.ReadMessage(context.Background())
@@ -138,6 +128,22 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	delete(subs, id)
 	if len(subs) == 0 {
 		delete(ps.subscriptions, topic)
+	}
+	return nil
+}
+
+func (ps *pubsub) Close() error {
+	for subs := range ps.subscriptions {
+		for s := range ps.subscriptions[subs] {
+			if ps.subscriptions[subs][s].cancel != nil {
+				if err := ps.subscriptions[subs][s].cancel(); err != nil {
+					return err
+				}
+			}
+			if err := ps.subscriptions[subs][s].Close(); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

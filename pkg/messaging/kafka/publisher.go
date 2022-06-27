@@ -17,19 +17,13 @@ var (
 )
 
 type publisher struct {
-	conn *kafka.Conn
-	url  string
+	url string
 }
 
 // NewPublisher returns Kafka message Publisher.
 func NewPublisher(url string) (messaging.Publisher, error) {
-	conn, err := kafka.Dial("tcp", url)
-	if err != nil {
-		return nil, err
-	}
 	ret := &publisher{
-		conn: conn,
-		url:  url,
+		url: url,
 	}
 	return ret, nil
 
@@ -47,19 +41,19 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 	if msg.Subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 	}
-	writer := kafka.NewWriter(kafka.WriterConfig{
-		Brokers: []string{pub.url},
-		Async:   true,
-	})
+	writer := &kafka.Writer{
+		Addr:  kafka.TCP(pub.url),
+		Async: true,
+		Topic: subject,
+	}
 	defer writer.Close()
 
 	kafkaMsg := kafka.Message{
 		Value: data,
-		Topic: subject,
 	}
 	return writer.WriteMessages(context.Background(), kafkaMsg)
 }
 
 func (pub *publisher) Close() error {
-	return pub.conn.Close()
+	return nil
 }
