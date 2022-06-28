@@ -5,6 +5,7 @@ package kafka
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -14,10 +15,9 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-var (
-	_               messaging.Publisher = (*publisher)(nil)
-	backoffSchedule                     = []time.Duration{1 * time.Second, 3 * time.Second, 10 * time.Second}
-)
+var _ messaging.Publisher = (*publisher)(nil)
+
+const retries = 3
 
 type publisher struct {
 	url string
@@ -47,25 +47,31 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 	writer := &kafka.Writer{
 		Addr:  kafka.TCP(pub.url),
 		Async: true,
-		Topic: subject,
 	}
 	defer writer.Close()
 
 	kafkaMsg := kafka.Message{
 		Value: data,
+		Topic: subject,
 	}
 
 	// Ensuring the kafka topic is created after bringing up the cluster.
-	for _, backoff := range backoffSchedule {
-		err := writer.WriteMessages(context.Background(), kafkaMsg)
-		if !strings.Contains(fmt.Sprint(err), "[5] Leader Not Available:") {
+	for i := 0; i < retries; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		// attempt to create topic prior to publishing the message
+		err = writer.WriteMessages(ctx, kafkaMsg)
+		if strings.Contains(fmt.Sprint(err), "[5] Leader Not Available:") || errors.Is(err, context.DeadlineExceeded) {
+			time.Sleep(time.Millisecond * 250)
+			continue
+		}
+
+		if err != nil {
 			return err
 		}
-		if err == nil {
-			break
-		}
-		time.Sleep(backoff)
 	}
+
 	return nil
 }
 
