@@ -78,6 +78,13 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE IF EXISTS users ADD PRIMARY KEY (id)`,
 				},
 			},
+			{
+				Id: "users_5",
+				Up: []string{
+					`ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS
+					 state VARCHAR(10) NOT NULL DEFAULT 'active'`,
+				},
+			},
 		},
 	}
 

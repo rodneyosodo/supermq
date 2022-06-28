@@ -39,6 +39,7 @@ type User struct {
 	Email    string
 	Password string
 	Metadata Metadata
+	State    string
 }
 
 // Validate returns an error if user representation is invalid.
@@ -65,10 +66,13 @@ type UserRepository interface {
 	RetrieveByID(ctx context.Context, id string) (User, error)
 
 	// RetrieveAll retrieves all users for given array of userIDs.
-	RetrieveAll(ctx context.Context, offset, limit uint64, userIDs []string, email string, m Metadata) (UserPage, error)
+	RetrieveAll(ctx context.Context, state string, offset, limit uint64, userIDs []string, email string, m Metadata) (UserPage, error)
 
 	// UpdatePassword updates password for user with given email
 	UpdatePassword(ctx context.Context, email, password string) error
+
+	// Deactivate logically deactives the user identified with the provided ID
+	Deactivate(ctx context.Context, u User) error
 }
 
 func isEmail(email string) bool {

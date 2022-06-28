@@ -38,7 +38,10 @@ func NewUserRepo(db Database) users.UserRepository {
 }
 
 func (ur userRepository) Save(ctx context.Context, user users.User) (string, error) {
-	q := `INSERT INTO users (email, password, id, metadata) VALUES (:email, :password, :id, :metadata) RETURNING id`
+	if user.State == "" {
+		user.State = "active"
+	}
+	q := `INSERT INTO users (email, password, id, metadata, state) VALUES (:email, :password, :id, :metadata, :state) RETURNING id`
 	if user.ID == "" || user.Email == "" {
 		return "", errors.ErrMalformedEntity
 	}
@@ -72,7 +75,7 @@ func (ur userRepository) Save(ctx context.Context, user users.User) (string, err
 }
 
 func (ur userRepository) Update(ctx context.Context, user users.User) error {
-	q := `UPDATE users SET(email, password, metadata) VALUES (:email, :password, :metadata) WHERE email = :email`
+	q := `UPDATE users SET(email, password, metadata, state) VALUES (:email, :password, :metadata, :state) WHERE email = :email;`
 
 	dbu, err := toDBUser(user)
 	if err != nil {
@@ -87,7 +90,7 @@ func (ur userRepository) Update(ctx context.Context, user users.User) error {
 }
 
 func (ur userRepository) UpdateUser(ctx context.Context, user users.User) error {
-	q := `UPDATE users SET metadata = :metadata WHERE email = :email`
+	q := `UPDATE users SET metadata = :metadata WHERE email = :email AND state = 'active'`
 
 	dbu, err := toDBUser(user)
 	if err != nil {
@@ -102,7 +105,7 @@ func (ur userRepository) UpdateUser(ctx context.Context, user users.User) error 
 }
 
 func (ur userRepository) RetrieveByEmail(ctx context.Context, email string) (users.User, error) {
-	q := `SELECT id, password, metadata FROM users WHERE email = $1`
+	q := `SELECT id, password, metadata FROM users WHERE state = 'active' AND email = $1`
 
 	dbu := dbUser{
 		Email: email,
@@ -120,7 +123,7 @@ func (ur userRepository) RetrieveByEmail(ctx context.Context, email string) (use
 }
 
 func (ur userRepository) RetrieveByID(ctx context.Context, id string) (users.User, error) {
-	q := `SELECT email, password, metadata FROM users WHERE id = $1`
+	q := `SELECT email, password, metadata FROM users WHERE state = 'active' AND id = $1`
 
 	dbu := dbUser{
 		ID: id,
@@ -137,7 +140,7 @@ func (ur userRepository) RetrieveByID(ctx context.Context, id string) (users.Use
 	return toUser(dbu)
 }
 
-func (ur userRepository) RetrieveAll(ctx context.Context, offset, limit uint64, userIDs []string, email string, um users.Metadata) (users.UserPage, error) {
+func (ur userRepository) RetrieveAll(ctx context.Context, state string, offset, limit uint64, userIDs []string, email string, um users.Metadata) (users.UserPage, error) {
 	eq, ep, err := createEmailQuery("", email)
 	if err != nil {
 		return users.UserPage{}, errors.Wrap(errors.ErrViewEntity, err)
@@ -147,6 +150,10 @@ func (ur userRepository) RetrieveAll(ctx context.Context, offset, limit uint64, 
 	if err != nil {
 		return users.UserPage{}, errors.Wrap(errors.ErrViewEntity, err)
 	}
+	aq := fmt.Sprintf("state = '%s'", state)
+	if state == "all" {
+		aq = ""
+	}
 
 	var query []string
 	var emq string
@@ -155,6 +162,9 @@ func (ur userRepository) RetrieveAll(ctx context.Context, offset, limit uint64, 
 	}
 	if mq != "" {
 		query = append(query, mq)
+	}
+	if aq != "" {
+		query = append(query, aq)
 	}
 
 	if len(userIDs) > 0 {
@@ -213,7 +223,7 @@ func (ur userRepository) RetrieveAll(ctx context.Context, offset, limit uint64, 
 }
 
 func (ur userRepository) UpdatePassword(ctx context.Context, email, password string) error {
-	q := `UPDATE users SET password = :password WHERE email = :email`
+	q := `UPDATE users SET password = :password WHERE state = 'active' AND email = :email`
 
 	db := dbUser{
 		Email:    email,
@@ -227,12 +237,28 @@ func (ur userRepository) UpdatePassword(ctx context.Context, email, password str
 	return nil
 }
 
+func (ur userRepository) Deactivate(ctx context.Context, user users.User) error {
+	q := `UPDATE users SET state = 'inactive' WHERE email = :email`
+
+	dbu, err := toDBUser(user)
+	if err != nil {
+		return errors.Wrap(errors.ErrUpdateEntity, err)
+	}
+
+	if _, err := ur.db.NamedExecContext(ctx, q, dbu); err != nil {
+		return errors.Wrap(errors.ErrUpdateEntity, err)
+	}
+
+	return nil
+}
+
 type dbUser struct {
 	ID       string       `db:"id"`
 	Email    string       `db:"email"`
 	Password string       `db:"password"`
 	Metadata []byte       `db:"metadata"`
 	Groups   []auth.Group `db:"groups"`
+	State    string       `db:"state"`
 }
 
 func toDBUser(u users.User) (dbUser, error) {
@@ -250,6 +276,7 @@ func toDBUser(u users.User) (dbUser, error) {
 		Email:    u.Email,
 		Password: u.Password,
 		Metadata: data,
+		State:    u.State,
 	}, nil
 }
 
@@ -281,6 +308,7 @@ func toUser(dbu dbUser) (users.User, error) {
 		Email:    dbu.Email,
 		Password: dbu.Password,
 		Metadata: metadata,
+		State:    dbu.State,
 	}, nil
 }
 

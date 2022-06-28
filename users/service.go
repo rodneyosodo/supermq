@@ -53,7 +53,7 @@ type Service interface {
 	ViewProfile(ctx context.Context, token string) (User, error)
 
 	// ListUsers retrieves users list for a valid admin token.
-	ListUsers(ctx context.Context, token string, offset, limit uint64, email string, meta Metadata) (UserPage, error)
+	ListUsers(ctx context.Context, token string, state string, offset, limit uint64, email string, meta Metadata) (UserPage, error)
 
 	// UpdateUser updates the user metadata.
 	UpdateUser(ctx context.Context, token string, user User) error
@@ -73,7 +73,10 @@ type Service interface {
 	SendPasswordReset(ctx context.Context, host, email, token string) error
 
 	// ListMembers retrieves everything that is assigned to a group identified by groupID.
-	ListMembers(ctx context.Context, token, groupID string, offset, limit uint64, meta Metadata) (UserPage, error)
+	ListMembers(ctx context.Context, token, groupID string, state string, offset, limit uint64, meta Metadata) (UserPage, error)
+
+	// DeactivateUser logically deactivates the user identified with the provided ID
+	DeactivateUser(ctx context.Context, token, id string) error
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -217,7 +220,7 @@ func (svc usersService) ViewProfile(ctx context.Context, token string) (User, er
 	}, nil
 }
 
-func (svc usersService) ListUsers(ctx context.Context, token string, offset, limit uint64, email string, m Metadata) (UserPage, error) {
+func (svc usersService) ListUsers(ctx context.Context, token string, state string, offset, limit uint64, email string, m Metadata) (UserPage, error) {
 	id, err := svc.identify(ctx, token)
 	if err != nil {
 		return UserPage{}, err
@@ -226,7 +229,7 @@ func (svc usersService) ListUsers(ctx context.Context, token string, offset, lim
 	if err := svc.authorize(ctx, id.id, "authorities", "member"); err != nil {
 		return UserPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
-	return svc.users.RetrieveAll(ctx, offset, limit, nil, email, m)
+	return svc.users.RetrieveAll(ctx, state, offset, limit, nil, email, m)
 }
 
 func (svc usersService) UpdateUser(ctx context.Context, token string, u User) error {
@@ -307,7 +310,7 @@ func (svc usersService) SendPasswordReset(_ context.Context, host, email, token 
 	return svc.email.SendPasswordReset(to, host, token)
 }
 
-func (svc usersService) ListMembers(ctx context.Context, token, groupID string, offset, limit uint64, m Metadata) (UserPage, error) {
+func (svc usersService) ListMembers(ctx context.Context, token, groupID string, state string, offset, limit uint64, m Metadata) (UserPage, error) {
 	if _, err := svc.identify(ctx, token); err != nil {
 		return UserPage{}, err
 	}
@@ -328,7 +331,21 @@ func (svc usersService) ListMembers(ctx context.Context, token, groupID string, 
 		}, nil
 	}
 
-	return svc.users.RetrieveAll(ctx, offset, limit, userIDs, "", m)
+	return svc.users.RetrieveAll(ctx, state, offset, limit, userIDs, "", m)
+}
+
+func (svc usersService) DeactivateUser(ctx context.Context, token, id string) error {
+	_, err := svc.identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	dbUser, err := svc.users.RetrieveByID(ctx, id)
+	if err != nil {
+		return errors.Wrap(errors.ErrAuthentication, err)
+	}
+
+	return svc.users.Deactivate(ctx, dbUser)
 }
 
 // Auth helpers

@@ -58,6 +58,7 @@ var cmdUsers = []cobra.Command{
 				Offset:   uint64(Offset),
 				Limit:    uint64(Limit),
 				Metadata: metadata,
+				State:    State,
 			}
 			if args[0] == "all" {
 				l, err := sdk.Users(args[1], pageMetadata)
@@ -143,12 +144,30 @@ var cmdUsers = []cobra.Command{
 			logOK()
 		},
 	},
+	{
+		Use:   "deactivate <user_id> <user_auth_token>",
+		Short: "Deactivates user",
+		Long:  `Deactivates user`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 2 {
+				logUsage(cmd.Use)
+				return
+			}
+
+			if err := sdk.DeactivateUser(args[0], args[1]); err != nil {
+				logError(err)
+				return
+			}
+
+			logOK()
+		},
+	},
 }
 
 // NewUsersCmd returns users command.
 func NewUsersCmd() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "users [create | get | update | token | password]",
+		Use:   "users [create | get | update | token | password | deactivate]",
 		Short: "Users management",
 		Long:  `Users management: create accounts and tokens"`,
 	}
