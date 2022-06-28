@@ -19,10 +19,7 @@ import (
 	"github.com/ory/dockertest/v3/docker"
 )
 
-var (
-	publisher messaging.Publisher
-	pubsub    messaging.PubSub
-)
+var pubsub messaging.PubSub
 
 func TestMain(m *testing.M) {
 	pool, err := dockertest.NewPool("")
@@ -51,14 +48,12 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not start container: %s", err)
 	}
 	handleInterrupt(pool, container)
-	time.Sleep(10 * time.Second)
 	address := fmt.Sprintf("%s:%s", "localhost", container.GetPort("9092/tcp"))
-	if err := pool.Retry(func() error {
-		publisher, err = kafka.NewPublisher(address)
-		return err
-	}); err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
-	}
+
+	// As kafka doesn't support a readiness endpoint we have to ensure that kafka is ready before we test it.
+	// When you immediately start testing it will throw an EOF error thus we should wait for sometime
+	// before starting the tests after bringing the docker container up
+	time.Sleep(10 * time.Second)
 
 	logger, err := logger.New(os.Stdout, "error")
 	if err != nil {
