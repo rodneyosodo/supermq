@@ -5,10 +5,7 @@ package kafka
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"strings"
-	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/mainflux/mainflux/pkg/messaging"
@@ -16,8 +13,6 @@ import (
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
-
-const retries = 3
 
 type publisher struct {
 	url string
@@ -44,9 +39,29 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 	if msg.Subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 	}
+
+	conn, err := kafka.Dial("tcp", pub.url)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	topicConfigs := []kafka.TopicConfig{
+		{
+			Topic:             subject,
+			NumPartitions:     -1,
+			ReplicationFactor: -1,
+		},
+	}
+	if err := conn.CreateTopics(topicConfigs...); err != nil {
+		return err
+	}
+
 	writer := &kafka.Writer{
-		Addr:  kafka.TCP(pub.url),
-		Async: true,
+		Addr:         kafka.TCP(pub.url),
+		Async:        true,
+		MaxAttempts:  100,
+		RequiredAcks: kafka.RequireAll,
 	}
 	defer writer.Close()
 
@@ -55,24 +70,7 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 		Topic: subject,
 	}
 
-	// Ensuring the kafka topic is created after bringing up the cluster.
-	for i := 0; i < retries; i++ {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		// attempt to create topic prior to publishing the message
-		err = writer.WriteMessages(ctx, kafkaMsg)
-		if strings.Contains(fmt.Sprint(err), "[5] Leader Not Available:") || errors.Is(err, context.DeadlineExceeded) {
-			time.Sleep(time.Millisecond * 250)
-			continue
-		}
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return writer.WriteMessages(context.Background(), kafkaMsg)
 }
 
 func (pub *publisher) Close() error {

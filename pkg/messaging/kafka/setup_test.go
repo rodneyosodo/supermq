@@ -38,6 +38,9 @@ func TestMain(m *testing.M) {
 			"9092",
 			"2181",
 		},
+		PortBindings: map[docker.Port][]docker.PortBinding{
+			"9092/tcp": {{HostIP: "localhost", HostPort: "9092/tcp"}},
+		},
 	}, func(config *docker.HostConfig) {
 		config.AutoRemove = true
 		config.RestartPolicy = docker.RestartPolicy{
