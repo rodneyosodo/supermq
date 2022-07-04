@@ -6,6 +6,7 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/mainflux/mainflux/pkg/messaging"
@@ -15,7 +16,9 @@ import (
 var _ messaging.Publisher = (*publisher)(nil)
 
 type publisher struct {
-	url string
+	url    string
+	mu     sync.Mutex
+	topics []string
 }
 
 // NewPublisher returns Kafka message Publisher.
@@ -69,10 +72,38 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 		Value: data,
 		Topic: subject,
 	}
-
-	return writer.WriteMessages(context.Background(), kafkaMsg)
+	if err := writer.WriteMessages(context.Background(), kafkaMsg); err != nil {
+		return err
+	}
+	pub.mu.Lock()
+	defer pub.mu.Unlock()
+	if !pub.topicInTopics(subject) {
+		pub.topics = append(pub.topics, subject)
+	}
+	return nil
 }
 
 func (pub *publisher) Close() error {
+	pub.mu.Lock()
+	defer pub.mu.Unlock()
+	req := &kafka.DeleteTopicsRequest{
+		Addr:   kafka.TCP(pub.url),
+		Topics: pub.topics,
+	}
+	client := kafka.Client{
+		Addr: kafka.TCP(pub.url),
+	}
+	if _, err := client.DeleteTopics(context.Background(), req); err != nil {
+		return err
+	}
 	return nil
+}
+
+func (pub *publisher) topicInTopics(topic string) bool {
+	for _, t := range pub.topics {
+		if t == topic {
+			return true
+		}
+	}
+	return false
 }
