@@ -17,14 +17,20 @@ var _ messaging.Publisher = (*publisher)(nil)
 
 type publisher struct {
 	url    string
+	conn   *kafka.Conn
 	mu     sync.Mutex
-	topics []string
+	topics map[string]*kafka.Writer
 }
 
 // NewPublisher returns Kafka message Publisher.
 func NewPublisher(url string) (messaging.Publisher, error) {
+	conn, err := kafka.Dial("tcp", url)
+	if err != nil {
+		return &publisher{}, err
+	}
 	ret := &publisher{
-		url: url,
+		url:  url,
+		conn: conn,
 	}
 	return ret, nil
 
@@ -43,11 +49,18 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 	}
 
-	conn, err := kafka.Dial("tcp", pub.url)
-	if err != nil {
-		return err
+	kafkaMsg := kafka.Message{
+		Value: data,
+		Topic: subject,
 	}
-	defer conn.Close()
+
+	writer, ok := pub.topics[subject]
+	if ok {
+		if err := writer.WriteMessages(context.Background(), kafkaMsg); err != nil {
+			return err
+		}
+		return nil
+	}
 
 	topicConfigs := []kafka.TopicConfig{
 		{
@@ -56,39 +69,39 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 			ReplicationFactor: -1,
 		},
 	}
-	if err := conn.CreateTopics(topicConfigs...); err != nil {
+	if err := pub.conn.CreateTopics(topicConfigs...); err != nil {
 		return err
 	}
-
-	writer := &kafka.Writer{
+	writer = &kafka.Writer{
 		Addr:         kafka.TCP(pub.url),
 		Async:        true,
 		MaxAttempts:  100,
 		RequiredAcks: kafka.RequireAll,
-	}
-	defer writer.Close()
-
-	kafkaMsg := kafka.Message{
-		Value: data,
-		Topic: subject,
 	}
 	if err := writer.WriteMessages(context.Background(), kafkaMsg); err != nil {
 		return err
 	}
 	pub.mu.Lock()
 	defer pub.mu.Unlock()
-	if !pub.topicInTopics(subject) {
-		pub.topics = append(pub.topics, subject)
-	}
+	pub.topics[subject] = writer
 	return nil
 }
 
 func (pub *publisher) Close() error {
+	defer pub.conn.Close()
+
 	pub.mu.Lock()
 	defer pub.mu.Unlock()
+
+	topics := make([]string, 0, len(pub.topics))
+	for topic := range pub.topics {
+		topics = append(topics, topic)
+		pub.topics[topic].Close()
+	}
+
 	req := &kafka.DeleteTopicsRequest{
 		Addr:   kafka.TCP(pub.url),
-		Topics: pub.topics,
+		Topics: topics,
 	}
 	client := kafka.Client{
 		Addr: kafka.TCP(pub.url),
@@ -97,13 +110,4 @@ func (pub *publisher) Close() error {
 		return err
 	}
 	return nil
-}
-
-func (pub *publisher) topicInTopics(topic string) bool {
-	for _, t := range pub.topics {
-		if t == topic {
-			return true
-		}
-	}
-	return false
 }

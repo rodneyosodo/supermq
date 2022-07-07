@@ -117,12 +117,7 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	if !ok {
 		return ErrNotSubscribed
 	}
-	if s.cancel != nil {
-		if err := s.cancel(); err != nil {
-			return err
-		}
-	}
-	if err := s.Close(); err != nil {
+	if err := s.close(); err != nil {
 		return err
 	}
 	delete(subs, id)
@@ -133,14 +128,9 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 }
 
 func (ps *pubsub) Close() error {
-	for subs := range ps.subscriptions {
-		for s := range ps.subscriptions[subs] {
-			if ps.subscriptions[subs][s].cancel != nil {
-				if err := ps.subscriptions[subs][s].cancel(); err != nil {
-					return err
-				}
-			}
-			if err := ps.subscriptions[subs][s].Close(); err != nil {
+	for _, subs := range ps.subscriptions {
+		for _, s := range subs {
+			if err := s.close(); err != nil {
 				return err
 			}
 		}
@@ -156,4 +146,13 @@ func (ps *pubsub) handle(message kafka.Message, h messaging.MessageHandler) {
 	if err := h.Handle(msg); err != nil {
 		ps.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
 	}
+}
+
+func (s subscription) close() error {
+	if s.cancel != nil {
+		if err := s.cancel(); err != nil {
+			return err
+		}
+	}
+	return s.Close()
 }
