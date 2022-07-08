@@ -29,8 +29,9 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 		return &publisher{}, err
 	}
 	ret := &publisher{
-		url:  url,
-		conn: conn,
+		url:    url,
+		conn:   conn,
+		topics: make(map[string]*kafka.Writer),
 	}
 	return ret, nil
 

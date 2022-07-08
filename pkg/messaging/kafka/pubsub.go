@@ -43,9 +43,15 @@ type pubsub struct {
 
 // NewPubSub returns Kafka message publisher/subscriber.
 func NewPubSub(url, queue string, logger log.Logger) (messaging.PubSub, error) {
+	conn, err := kafka.Dial("tcp", url)
+	if err != nil {
+		return &pubsub{}, err
+	}
 	ret := &pubsub{
 		publisher: publisher{
-			url: url,
+			url:    url,
+			conn:   conn,
+			topics: make(map[string]*kafka.Writer),
 		},
 		subscriptions: make(map[string]map[string]subscription),
 		logger:        logger,
