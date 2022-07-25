@@ -119,15 +119,6 @@ rundev:
 run:
 ifeq ("$(MF_BROKER_TYPE)", "rabbitmq")
 	sed -i "s,file: brokers/.*.yml,file: brokers/rabbitmq.yml," docker/docker-compose.yml
-<<<<<<< HEAD
-	export MF_BROKER_URL=amqp://$(MF_RABBITMQ_USER):$(MF_RABBITMQ_PASS)@broker:$(MF_RABBITMQ_PORT)$(MF_RABBITMQ_VHOST) && docker-compose -f docker/docker-compose.yml up
-else ifeq ("$(MF_BROKER_TYPE)", "nats")
-	sed -i "s,file: brokers/.*.yml,file: brokers/nats.yml," docker/docker-compose.yml
-	export MF_BROKER_URL=nats://broker:$(MF_NATS_PORT) && docker-compose -f docker/docker-compose.yml up
-else
-	echo "Invalid broker type"; exit 1
-endif
-=======
 	sed -i "s,MF_BROKER_URL: .*,MF_BROKER_URL: $$\{MF_RABBITMQ_URL\}," docker/docker-compose.yml
 else ifeq ("$(MF_BROKER_TYPE)", "nats")
 	sed -i "s,file: brokers/.*.yml,file: brokers/nats.yml," docker/docker-compose.yml
@@ -136,4 +127,3 @@ else
 	echo "Invalid broker type"; exit 1
 endif
 	docker-compose -f docker/docker-compose.yml up
->>>>>>> 5c495238a6b62029daaf71ea2cc9c9388cf88287

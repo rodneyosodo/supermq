@@ -111,7 +111,7 @@ func TestCreateThing(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		loc, err := mainfluxSDK.CreateThing(tc.thing, tc.token)
+		loc, err := mainfluxSDK.CreateThing(tc.token, tc.thing)
 
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.location, loc, fmt.Sprintf("%s: expected location %s got %s", tc.desc, tc.location, loc))
@@ -195,7 +195,7 @@ func TestCreateThings(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		res, err := mainfluxSDK.CreateThings(tc.things, tc.token)
+		res, err := mainfluxSDK.CreateThings(tc.token, tc.things)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 
 		for idx := range tc.res {
@@ -216,7 +216,7 @@ func TestThing(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id, err := mainfluxSDK.CreateThing(th1, token)
+	id, err := mainfluxSDK.CreateThing(token, th1)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th1.Key = fmt.Sprintf("%s%012d", uuid.Prefix, 1)
 
@@ -251,7 +251,7 @@ func TestThing(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		respTh, err := mainfluxSDK.Thing(tc.thID, tc.token)
+		respTh, err := mainfluxSDK.Thing(tc.token, tc.thID)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, respTh, fmt.Sprintf("%s: expected response thing %s, got %s", tc.desc, tc.response, respTh))
 	}
@@ -273,7 +273,7 @@ func TestThings(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", chPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
 		th := sdk.Thing{ID: id, Name: name, Metadata: metadata}
-		_, err := mainfluxSDK.CreateThing(th, token)
+		_, err := mainfluxSDK.CreateThing(token, th)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th.Key = fmt.Sprintf("%s%012d", uuid.Prefix, i)
 		things = append(things, th)
@@ -371,7 +371,7 @@ func TestThingsByChannel(t *testing.T) {
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 
 	ch := sdk.Channel{Name: "test_channel"}
-	cid, err := mainfluxSDK.CreateChannel(ch, token)
+	cid, err := mainfluxSDK.CreateChannel(token, ch)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	var n = 10
@@ -386,7 +386,7 @@ func TestThingsByChannel(t *testing.T) {
 			Metadata: metadata,
 			Key:      fmt.Sprintf("%s%012d", uuid.Prefix, 2*i+1),
 		}
-		tid, err := mainfluxSDK.CreateThing(th, token)
+		tid, err := mainfluxSDK.CreateThing(token, th)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		things = append(things, th)
@@ -401,7 +401,7 @@ func TestThingsByChannel(t *testing.T) {
 			ChannelIDs: []string{cid},
 			ThingIDs:   []string{tid},
 		}
-		err = mainfluxSDK.Connect(conIDs, token)
+		err = mainfluxSDK.Connect(token, conIDs)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 
@@ -490,7 +490,12 @@ func TestThingsByChannel(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		page, err := mainfluxSDK.ThingsByChannel(tc.token, tc.channel, tc.offset, tc.limit, tc.disconnected)
+		pm := sdk.PageMetadata{
+			Offset:       tc.offset,
+			Limit:        tc.limit,
+			Disconnected: tc.disconnected,
+		}
+		page, err := mainfluxSDK.ThingsByChannel(tc.token, tc.channel, pm)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page.Things, fmt.Sprintf("%s: expected response channel %s, got %s", tc.desc, tc.response, page.Things))
 	}
@@ -507,7 +512,7 @@ func TestUpdateThing(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id, err := mainfluxSDK.CreateThing(th1, token)
+	id, err := mainfluxSDK.CreateThing(token, th1)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th1.Name = "test2"
 
@@ -570,7 +575,7 @@ func TestUpdateThing(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := mainfluxSDK.UpdateThing(tc.thing, tc.token)
+		err := mainfluxSDK.UpdateThing(tc.token, tc.thing)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }
@@ -586,7 +591,7 @@ func TestDeleteThing(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id, err := mainfluxSDK.CreateThing(th1, token)
+	id, err := mainfluxSDK.CreateThing(token, th1)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -634,7 +639,7 @@ func TestDeleteThing(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := mainfluxSDK.DeleteThing(tc.thingID, tc.token)
+		err := mainfluxSDK.DeleteThing(tc.token, tc.thingID)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }
@@ -654,13 +659,13 @@ func TestConnectThing(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	thingID, err := mainfluxSDK.CreateThing(th1, token)
+	thingID, err := mainfluxSDK.CreateThing(token, th1)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	chanID1, err := mainfluxSDK.CreateChannel(ch2, token)
+	chanID1, err := mainfluxSDK.CreateChannel(token, ch2)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	chanID2, err := mainfluxSDK.CreateChannel(ch3, otherToken)
+	chanID2, err := mainfluxSDK.CreateChannel(otherToken, ch3)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -735,7 +740,7 @@ func TestConnectThing(t *testing.T) {
 			ChannelIDs: []string{tc.chanID},
 			ThingIDs:   []string{tc.thingID},
 		}
-		err := mainfluxSDK.Connect(conIDs, tc.token)
+		err := mainfluxSDK.Connect(tc.token, conIDs)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }
@@ -755,13 +760,13 @@ func TestConnect(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	thingID, err := mainfluxSDK.CreateThing(th1, token)
+	thingID, err := mainfluxSDK.CreateThing(token, th1)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	chanID1, err := mainfluxSDK.CreateChannel(ch2, token)
+	chanID1, err := mainfluxSDK.CreateChannel(token, ch2)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	chanID2, err := mainfluxSDK.CreateChannel(ch3, otherToken)
+	chanID2, err := mainfluxSDK.CreateChannel(otherToken, ch3)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -837,7 +842,7 @@ func TestConnect(t *testing.T) {
 			[]string{tc.chanID},
 		}
 
-		err := mainfluxSDK.Connect(connIDs, tc.token)
+		err := mainfluxSDK.Connect(tc.token, connIDs)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }
@@ -858,20 +863,20 @@ func TestDisconnectThing(t *testing.T) {
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 
-	thingID, err := mainfluxSDK.CreateThing(th1, token)
+	thingID, err := mainfluxSDK.CreateThing(token, th1)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	chanID1, err := mainfluxSDK.CreateChannel(ch2, token)
+	chanID1, err := mainfluxSDK.CreateChannel(token, ch2)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	conIDs := sdk.ConnectionIDs{
 		ChannelIDs: []string{chanID1},
 		ThingIDs:   []string{thingID},
 	}
-	err = mainfluxSDK.Connect(conIDs, token)
+	err = mainfluxSDK.Connect(token, conIDs)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	chanID2, err := mainfluxSDK.CreateChannel(ch2, otherToken)
+	chanID2, err := mainfluxSDK.CreateChannel(otherToken, ch2)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -940,7 +945,7 @@ func TestDisconnectThing(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := mainfluxSDK.DisconnectThing(tc.thingID, tc.chanID, tc.token)
+		err := mainfluxSDK.DisconnectThing(tc.token, tc.thingID, tc.chanID)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }

@@ -17,7 +17,7 @@ import (
 const thingsEndpoint = "things"
 const connectEndpoint = "connect"
 
-func (sdk mfSDK) CreateThing(t Thing, token string) (string, error) {
+func (sdk mfSDK) CreateThing(token string, t Thing) (string, error) {
 	data, err := json.Marshal(t)
 	if err != nil {
 		return "", err
@@ -44,7 +44,7 @@ func (sdk mfSDK) CreateThing(t Thing, token string) (string, error) {
 	return id, nil
 }
 
-func (sdk mfSDK) CreateThings(things []Thing, token string) ([]Thing, error) {
+func (sdk mfSDK) CreateThings(token string, things []Thing) ([]Thing, error) {
 	data, err := json.Marshal(things)
 	if err != nil {
 		return []Thing{}, err
@@ -114,8 +114,8 @@ func (sdk mfSDK) Things(token string, pm PageMetadata) (ThingsPage, error) {
 	return tp, nil
 }
 
-func (sdk mfSDK) ThingsByChannel(token, chanID string, offset, limit uint64, disconn bool) (ThingsPage, error) {
-	url := fmt.Sprintf("%s/channels/%s/things?offset=%d&limit=%d&disconnected=%t", sdk.thingsURL, chanID, offset, limit, disconn)
+func (sdk mfSDK) ThingsByChannel(token, chanID string, pm PageMetadata) (ThingsPage, error) {
+	url := fmt.Sprintf("%s/channels/%s/things?offset=%d&limit=%d&disconnected=%t", sdk.thingsURL, chanID, pm.Offset, pm.Limit, pm.Disconnected)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return ThingsPage{}, err
@@ -144,7 +144,7 @@ func (sdk mfSDK) ThingsByChannel(token, chanID string, offset, limit uint64, dis
 	return tp, nil
 }
 
-func (sdk mfSDK) Thing(id, token string) (Thing, error) {
+func (sdk mfSDK) Thing(token, id string) (Thing, error) {
 	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, thingsEndpoint, id)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -175,7 +175,7 @@ func (sdk mfSDK) Thing(id, token string) (Thing, error) {
 	return t, nil
 }
 
-func (sdk mfSDK) UpdateThing(t Thing, token string) error {
+func (sdk mfSDK) UpdateThing(token string, t Thing) error {
 	data, err := json.Marshal(t)
 	if err != nil {
 		return err
@@ -200,7 +200,7 @@ func (sdk mfSDK) UpdateThing(t Thing, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) DeleteThing(id, token string) error {
+func (sdk mfSDK) DeleteThing(token, id string) error {
 	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, thingsEndpoint, id)
 
 	req, err := http.NewRequest(http.MethodDelete, url, nil)
@@ -220,7 +220,7 @@ func (sdk mfSDK) DeleteThing(id, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) Connect(connIDs ConnectionIDs, token string) error {
+func (sdk mfSDK) Connect(token string, connIDs ConnectionIDs) error {
 	data, err := json.Marshal(connIDs)
 	if err != nil {
 		return err
@@ -244,7 +244,7 @@ func (sdk mfSDK) Connect(connIDs ConnectionIDs, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) DisconnectThing(thingID, chanID, token string) error {
+func (sdk mfSDK) DisconnectThing(token, thingID, chanID string) error {
 	url := fmt.Sprintf("%s/%s/%s/%s/%s", sdk.thingsURL, channelsEndpoint, chanID, thingsEndpoint, thingID)
 	req, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {

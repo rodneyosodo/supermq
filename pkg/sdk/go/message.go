@@ -40,7 +40,7 @@ func (sdk mfSDK) SendMessage(chanName, msg, key string) error {
 	return nil
 }
 
-func (sdk mfSDK) ReadMessages(chanName, token string) (MessagesPage, error) {
+func (sdk mfSDK) ReadMessages(token, chanName string) (MessagesPage, error) {
 	chanNameParts := strings.SplitN(chanName, ".", 2)
 	chanID := chanNameParts[0]
 	subtopicPart := ""
