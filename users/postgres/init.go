@@ -81,8 +81,9 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "users_5",
 				Up: []string{
+					`CREATE TYPE USER_STATUS AS ENUM ('enabled', 'disabled');`,
 					`ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS
-					 state VARCHAR(10) NOT NULL DEFAULT 'active'`,
+					status USER_STATUS NOT NULL DEFAULT 'enabled'`,
 				},
 			},
 		},

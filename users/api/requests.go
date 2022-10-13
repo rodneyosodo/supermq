@@ -31,8 +31,8 @@ func (req createUserReq) validate() error {
 }
 
 type viewUserReq struct {
-	token  string
-	userID string
+	token string
+	id    string
 }
 
 func (req viewUserReq) validate() error {
@@ -44,7 +44,7 @@ func (req viewUserReq) validate() error {
 
 type listUsersReq struct {
 	token    string
-	state    string
+	status   string
 	offset   uint64
 	limit    uint64
 	email    string
@@ -63,8 +63,10 @@ func (req listUsersReq) validate() error {
 	if len(req.email) > maxEmailSize {
 		return apiutil.ErrEmailSize
 	}
-	if req.state != "all" && req.state != "active" && req.state != "inactive" {
-		return apiutil.ErrActiveState
+	if req.status != users.AllStatusKey &&
+		req.status != users.EnabledStatusKey &&
+		req.status != users.DisabledStatusKey {
+		return apiutil.ErrInvalidStatus
 	}
 
 	return nil
@@ -143,11 +145,11 @@ func (req passwChangeReq) validate() error {
 
 type listMemberGroupReq struct {
 	token    string
-	state    string
+	status   string
 	offset   uint64
 	limit    uint64
 	metadata users.Metadata
-	groupID  string
+	id       string
 }
 
 func (req listMemberGroupReq) validate() error {
@@ -155,25 +157,27 @@ func (req listMemberGroupReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.groupID == "" {
+	if req.id == "" {
 		return apiutil.ErrMissingID
 	}
-	if req.state != "all" && req.state != "active" && req.state != "inactive" {
-		return apiutil.ErrActiveState
+	if req.status != users.AllStatusKey &&
+		req.status != users.EnabledStatusKey &&
+		req.status != users.DisabledStatusKey {
+		return apiutil.ErrInvalidStatus
 	}
 	return nil
 }
 
-type removeUserReq struct {
-	token  string
-	userID string
+type changeUserStatusReq struct {
+	token string
+	id    string
 }
 
-func (req removeUserReq) validate() error {
+func (req changeUserStatusReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
-	if req.userID == "" {
+	if req.id == "" {
 		return apiutil.ErrMissingID
 	}
 	return nil
