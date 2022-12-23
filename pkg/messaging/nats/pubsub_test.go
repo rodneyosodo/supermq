@@ -4,6 +4,7 @@
 package nats_test
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -22,8 +23,9 @@ const (
 )
 
 var (
-	msgChan = make(chan messaging.Message)
-	data    = []byte("payload")
+	msgChan   = make(chan messaging.Message)
+	data      = []byte("payload")
+	errFailed = errors.New("failed")
 )
 
 func TestPublisher(t *testing.T) {
@@ -251,7 +253,7 @@ func TestPubsub(t *testing.T) {
 			desc:         "Subscribe to another already subscribed topic with an ID with Unsubscribe failing",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic+"1"),
 			clientID:     "clientid3",
-			errorMessage: nats.ErrFailed,
+			errorMessage: errFailed,
 			pubsub:       true,
 			handler:      handler{true},
 		},
@@ -267,7 +269,7 @@ func TestPubsub(t *testing.T) {
 			desc:         "Unsubscribe from a topic with an ID with failing handler",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic+"2"),
 			clientID:     "clientid4",
-			errorMessage: nats.ErrFailed,
+			errorMessage: errFailed,
 			pubsub:       false,
 			handler:      handler{true},
 		},
@@ -303,7 +305,7 @@ func (h handler) Handle(msg messaging.Message) error {
 
 func (h handler) Cancel() error {
 	if h.fail {
-		return nats.ErrFailed
+		return errFailed
 	}
 	return nil
 }
