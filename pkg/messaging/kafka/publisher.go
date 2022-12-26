@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/mainflux/mainflux/pkg/messaging"
@@ -14,6 +15,12 @@ import (
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
+
+var (
+	numPartitions     = 1
+	replicationFactor = 1
+	batchTimeout      = time.Microsecond
+)
 
 type publisher struct {
 	url    string
@@ -52,7 +59,6 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 
 	kafkaMsg := kafka.Message{
 		Value: data,
-		Topic: subject,
 	}
 
 	writer, ok := pub.topics[subject]
@@ -66,8 +72,8 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 	topicConfigs := []kafka.TopicConfig{
 		{
 			Topic:             subject,
-			NumPartitions:     -1,
-			ReplicationFactor: -1,
+			NumPartitions:     numPartitions,
+			ReplicationFactor: replicationFactor,
 		},
 	}
 	if err := pub.conn.CreateTopics(topicConfigs...); err != nil {
@@ -75,9 +81,10 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 	}
 	writer = &kafka.Writer{
 		Addr:         kafka.TCP(pub.url),
-		Async:        true,
-		MaxAttempts:  100,
+		Topic:        subject,
 		RequiredAcks: kafka.RequireAll,
+		Balancer:     &kafka.LeastBytes{},
+		BatchTimeout: batchTimeout,
 	}
 	if err := writer.WriteMessages(context.Background(), kafkaMsg); err != nil {
 		return err
