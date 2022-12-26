@@ -19,7 +19,10 @@ import (
 	"github.com/ory/dockertest/v3/docker"
 )
 
-var pubsub messaging.PubSub
+var (
+	publisher messaging.Publisher
+	pubsub    messaging.PubSub
+)
 
 func TestMain(m *testing.M) {
 	pool, err := dockertest.NewPool("")
@@ -57,6 +60,13 @@ func TestMain(m *testing.M) {
 	// When you immediately start testing it will throw an EOF error thus we should wait for sometime
 	// before starting the tests after bringing the docker container up
 	time.Sleep(10 * time.Second)
+
+	if err := pool.Retry(func() error {
+		publisher, err = kafka.NewPublisher(address)
+		return err
+	}); err != nil {
+		log.Fatalf("Could not connect to docker: %s", err)
+	}
 
 	logger, err := logger.New(os.Stdout, "error")
 	if err != nil {
