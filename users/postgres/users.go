@@ -66,21 +66,6 @@ func (ur userRepository) Save(ctx context.Context, user users.User) (string, err
 	return id, nil
 }
 
-func (ur userRepository) Update(ctx context.Context, user users.User) error {
-	q := `UPDATE users SET(email, password, metadata, status) VALUES (:email, :password, :metadata, :status) WHERE email = :email;`
-
-	dbu, err := toDBUser(user)
-	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
-	}
-
-	if _, err := ur.db.NamedExecContext(ctx, q, dbu); err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
-	}
-
-	return nil
-}
-
 func (ur userRepository) UpdateUser(ctx context.Context, user users.User) error {
 	q := `UPDATE users SET metadata = :metadata WHERE email = :email AND status = 'enabled'`
 
