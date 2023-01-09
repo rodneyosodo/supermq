@@ -115,6 +115,7 @@ func TestThingUpdate(t *testing.T) {
 	thing := things.Thing{
 		ID:    thID,
 		Owner: email,
+		Name:  "thingname",
 		Key:   thkey,
 	}
 
@@ -141,6 +142,7 @@ func TestThingUpdate(t *testing.T) {
 			thing: things.Thing{
 				ID:    nonexistentThingID,
 				Owner: email,
+				Name:  validName,
 			},
 			err: errors.ErrNotFound,
 		},
@@ -149,6 +151,7 @@ func TestThingUpdate(t *testing.T) {
 			thing: things.Thing{
 				ID:    thing.ID,
 				Owner: wrongValue,
+				Name:  validName,
 			},
 			err: nil,
 		},
@@ -157,6 +160,7 @@ func TestThingUpdate(t *testing.T) {
 			thing: things.Thing{
 				ID:    nonexistentThingID,
 				Owner: wrongValue,
+				Name:  validName,
 			},
 			err: errors.ErrNotFound,
 		},
@@ -167,6 +171,27 @@ func TestThingUpdate(t *testing.T) {
 				Owner: email,
 				Key:   thkey,
 				Name:  validName,
+			},
+			err: nil,
+		},
+		{
+			desc: "update thing with valid metadata",
+			thing: things.Thing{
+				ID:       thID,
+				Owner:    email,
+				Key:      thkey,
+				Metadata: things.Metadata{"key": "value"},
+			},
+			err: nil,
+		},
+		{
+			desc: "update thing with valid name and metadata",
+			thing: things.Thing{
+				ID:       thID,
+				Owner:    email,
+				Key:      thkey,
+				Name:     validName,
+				Metadata: things.Metadata{"key": "value"},
 			},
 			err: nil,
 		},
