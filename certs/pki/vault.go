@@ -154,7 +154,7 @@ func (p *pkiAgent) Revoke(serial string) (time.Time, error) {
 	// This is a library issue and will be solved once a POST request is added to p.client.Logical()
 	// as the current alternatives either use a PUT or DELETE request
 	cReq := certRevokeReq{
-		// Vault expects it certificate serial on the json body as 03-39-ce and not 03:39:ce
+		// Vault expects it certificate serial in the json body as 03-39-ce and not 03:39:ce
 		SerialNumber: strings.Replace(serial, ":", "-", -1),
 	}
 
