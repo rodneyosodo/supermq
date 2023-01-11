@@ -135,6 +135,7 @@ func (p *pkiAgent) IssueCert(cn string, ttl, keyType string, keyBits int) (Cert,
 }
 
 func (p *pkiAgent) Read(serial string) (Cert, error) {
+	// Vault represents it certificate serial on the URI path as 03-39-ce and not 03:39:ce
 	s, err := p.client.Logical().Read(p.readURL + strings.Replace(serial, ":", "-", -1))
 	if err != nil {
 		return Cert{}, err
@@ -153,10 +154,11 @@ func (p *pkiAgent) Revoke(serial string) (time.Time, error) {
 	// This is a library issue and will be solved once a POST request is added to p.client.Logical()
 	// as the current alternatives either use a PUT or DELETE request
 	cReq := certRevokeReq{
+		// Vault expects it certificate serial on the json body as 03-39-ce and not 03:39:ce
 		SerialNumber: strings.Replace(serial, ":", "-", -1),
 	}
 
-	r := p.client.NewRequest("POST", p.revokeURL)
+	r := p.client.NewRequest(http.MethodPost, p.revokeURL)
 	if err := r.SetJSONBody(cReq); err != nil {
 		return time.Time{}, err
 	}
