@@ -29,7 +29,7 @@ type certsRes struct {
 }
 
 type revokeCertsRes struct {
-	RevocationTime time.Time `mapstructure:"revocation_time"`
+	RevocationTime time.Time `json:"revocation_time"`
 }
 
 func (res certsPageRes) Code() int {
