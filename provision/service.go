@@ -224,10 +224,10 @@ func (ps *provisionService) Provision(token, name, externalID, externalKey strin
 
 			res.ClientCert[thing.ID] = cert.ClientCert
 			res.ClientKey[thing.ID] = cert.ClientKey
-			res.CACert = cert.CACert
+			res.CACert = ""
 
 			if needsBootstrap(thing) {
-				if err = ps.sdk.UpdateBootstrapCerts(bsConfig.MFThing, cert.ClientCert, cert.ClientKey, cert.CACert, token); err != nil {
+				if err = ps.sdk.UpdateBootstrapCerts(bsConfig.MFThing, cert.ClientCert, cert.ClientKey, "", token); err != nil {
 					return Result{}, errors.Wrap(ErrFailedCertCreation, err)
 				}
 			}
@@ -388,7 +388,7 @@ func (ps *provisionService) recover(e *error, ths *[]SDK.Thing, chs *[]SDK.Chann
 		clean(ps, things, channels, token)
 		for _, th := range things {
 			if ps.conf.Bootstrap.X509Provision && needsBootstrap(th) {
-				ps.errLog(ps.sdk.RemoveCert(th.ID, token))
+				ps.errLog(ps.sdk.RevokeCert(th.ID, token))
 			}
 			if needsBootstrap(th) {
 				bs, err := ps.sdk.ViewBootstrap(th.ID, token)

@@ -91,6 +91,12 @@ func revokeCert(svc certs.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		return svc.RevokeCert(ctx, req.token, req.certID)
+		res, err := svc.RevokeCert(ctx, req.token, req.certID)
+		if err != nil {
+			return nil, err
+		}
+		return revokeCertsRes{
+			RevocationTime: res.RevocationTime,
+		}, nil
 	}
 }
