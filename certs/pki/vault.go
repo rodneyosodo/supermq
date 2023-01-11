@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/vault/api"
@@ -33,7 +34,6 @@ var (
 	ErrFailedCertRevocation = errors.New("failed to revoke certificate")
 
 	errFailedVaultCertIssue = errors.New("failed to issue vault certificate")
-	errFailedVaultRead      = errors.New("failed to read vault certificate")
 	errFailedCertDecoding   = errors.New("failed to decode response from vault service")
 )
 
@@ -83,9 +83,8 @@ type certRevokeReq struct {
 
 // NewVaultClient instantiates a Vault client.
 func NewVaultClient(token, host, path, role string) (Agent, error) {
-	conf := &api.Config{
-		Address: host,
-	}
+	conf := api.DefaultConfig()
+	conf.Address = host
 
 	client, err := api.NewClient(conf)
 	if err != nil {
@@ -98,8 +97,8 @@ func NewVaultClient(token, host, path, role string) (Agent, error) {
 		role:      role,
 		path:      path,
 		client:    client,
-		issueURL:  "/" + apiVer + "/" + path + "/" + issue + "/" + role,
-		readURL:   "/" + apiVer + "/" + path + "/" + cert + "/",
+		issueURL:  "/" + path + "/" + issue + "/" + role,
+		readURL:   "/" + path + "/" + cert + "/",
 		revokeURL: "/" + apiVer + "/" + path + "/" + revoke,
 	}
 	return &p, nil
@@ -113,29 +112,16 @@ func (p *pkiAgent) IssueCert(cn string, ttl, keyType string, keyBits int) (Cert,
 		KeyType:    keyType,
 	}
 
-	r := p.client.NewRequest("POST", p.issueURL)
-	if err := r.SetJSONBody(cReq); err != nil {
-		return Cert{}, err
-	}
-
-	resp, err := p.client.RawRequest(r)
-	if resp != nil {
-		defer resp.Body.Close()
-	}
-
+	var certRequest map[string]interface{}
+	data, err := json.Marshal(cReq)
 	if err != nil {
 		return Cert{}, err
 	}
-
-	if resp.StatusCode >= http.StatusBadRequest {
-		_, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return Cert{}, err
-		}
-		return Cert{}, errors.Wrap(errFailedVaultCertIssue, err)
+	if err := json.Unmarshal(data, &certRequest); err != nil {
+		return Cert{}, nil
 	}
 
-	s, err := api.ParseSecret(resp.Body)
+	s, err := p.client.Logical().Write(p.issueURL, certRequest)
 	if err != nil {
 		return Cert{}, err
 	}
@@ -149,27 +135,10 @@ func (p *pkiAgent) IssueCert(cn string, ttl, keyType string, keyBits int) (Cert,
 }
 
 func (p *pkiAgent) Read(serial string) (Cert, error) {
-	r := p.client.NewRequest("GET", p.readURL+"/"+serial)
-
-	resp, err := p.client.RawRequest(r)
+	s, err := p.client.Logical().Read(p.readURL + strings.Replace(serial, ":", "-", -1))
 	if err != nil {
 		return Cert{}, err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= http.StatusBadRequest {
-		_, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return Cert{}, err
-		}
-		return Cert{}, errors.Wrap(errFailedVaultRead, err)
-	}
-
-	s, err := api.ParseSecret(resp.Body)
-	if err != nil {
-		return Cert{}, err
-	}
-
 	cert := Cert{}
 	if err = mapstructure.Decode(s.Data, &cert); err != nil {
 		return Cert{}, errors.Wrap(errFailedCertDecoding, err)
@@ -179,15 +148,18 @@ func (p *pkiAgent) Read(serial string) (Cert, error) {
 }
 
 func (p *pkiAgent) Revoke(serial string) (time.Time, error) {
+	// We aren't using p.client.Logical().Delete() since it is making a DELETE request to vault
+	// yet for certificate revoking vault needs a POST request to the same URL
+	// This is a library issue and will be solved once a POST request is added to p.client.Logical()
+	// as the current alternatives either use a PUT or DELETE request
 	cReq := certRevokeReq{
-		SerialNumber: serial,
+		SerialNumber: strings.Replace(serial, ":", "-", -1),
 	}
 
 	r := p.client.NewRequest("POST", p.revokeURL)
 	if err := r.SetJSONBody(cReq); err != nil {
 		return time.Time{}, err
 	}
-
 	resp, err := p.client.RawRequest(r)
 	if err != nil {
 		return time.Time{}, err

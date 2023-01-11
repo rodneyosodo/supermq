@@ -50,7 +50,6 @@ func (sdk mfSDK) IssueCert(thingID string, keyBits int, keyType, valid, token st
 
 func (sdk mfSDK) ViewCert(id, token string) (Cert, errors.SDKError) {
 	url := fmt.Sprintf("%s/%s/%s", sdk.certsURL, certsEndpoint, id)
-	fmt.Println(url)
 	_, body, err := sdk.processRequest(http.MethodGet, url, token, string(CTJSON), nil, http.StatusOK)
 	if err != nil {
 		return Cert{}, err
