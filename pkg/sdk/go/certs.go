@@ -23,11 +23,9 @@ type Cert struct {
 	Expiration time.Time `json:"expiration,omitempty"`
 }
 
-func (sdk mfSDK) IssueCert(thingID string, keyBits int, keyType, valid, token string) (Cert, errors.SDKError) {
+func (sdk mfSDK) IssueCert(thingID, valid, token string) (Cert, errors.SDKError) {
 	r := certReq{
 		ThingID: thingID,
-		KeyBits: keyBits,
-		KeyType: keyType,
 		Valid:   valid,
 	}
 	d, err := json.Marshal(r)
@@ -79,9 +77,6 @@ func (sdk mfSDK) RevokeCert(id, token string) (time.Time, errors.SDKError) {
 }
 
 type certReq struct {
-	ThingID    string `json:"thing_id"`
-	KeyBits    int    `json:"key_bits"`
-	KeyType    string `json:"key_type"`
-	Encryption string `json:"encryption"`
-	Valid      string `json:"ttl"`
+	ThingID string `json:"thing_id"`
+	Valid   string `json:"ttl"`
 }

@@ -45,12 +45,10 @@ var cmdCerts = []cobra.Command{
 
 // NewCertsCmd returns certificate command.
 func NewCertsCmd() *cobra.Command {
-	var keySize uint16
-	var keyType string
 	var ttl uint32
 
 	issueCmd := cobra.Command{
-		Use:   "issue <thing_id> <user_auth_token> [--keysize=2048] [--keytype=rsa] [--ttl=8760]",
+		Use:   "issue <thing_id> <user_auth_token> [--ttl=8760]",
 		Short: "Issue certificate",
 		Long:  `Issues new certificate for a thing`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -62,7 +60,7 @@ func NewCertsCmd() *cobra.Command {
 			thingID := args[0]
 			valid := strconv.FormatUint(uint64(ttl), 10)
 
-			c, err := sdk.IssueCert(thingID, int(keySize), keyType, valid, args[1])
+			c, err := sdk.IssueCert(thingID, valid, args[1])
 			if err != nil {
 				logError(err)
 				return
@@ -71,8 +69,6 @@ func NewCertsCmd() *cobra.Command {
 		},
 	}
 
-	issueCmd.Flags().Uint16Var(&keySize, "keysize", 2048, "certificate key strength in bits: 2048, 4096 (RSA) or 224, 256, 384, 512 (EC)")
-	issueCmd.Flags().StringVar(&keyType, "keytype", "rsa", "certificate key type: RSA or EC")
 	issueCmd.Flags().Uint32Var(&ttl, "ttl", 8760, "certificate time to live in hours")
 
 	cmd := cobra.Command{

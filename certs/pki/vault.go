@@ -6,7 +6,7 @@ package pki
 
 import (
 	"encoding/json"
-	"strings"
+	"fmt"
 	"time"
 
 	"github.com/hashicorp/vault/api"
@@ -34,19 +34,19 @@ var (
 )
 
 type Cert struct {
-	ClientCert     string    `json:"client_cert" mapstructure:"certificate"`
-	IssuingCA      string    `json:"issuing_ca" mapstructure:"issuing_ca"`
-	CAChain        []string  `json:"ca_chain" mapstructure:"ca_chain"`
-	ClientKey      string    `json:"client_key" mapstructure:"private_key"`
-	PrivateKeyType string    `json:"private_key_type" mapstructure:"private_key_type"`
-	Serial         string    `json:"serial" mapstructure:"serial_number"`
-	Expire         time.Time `json:"expire" mapstructure:"-"`
+	ClientCert     string   `json:"client_cert" mapstructure:"certificate"`
+	IssuingCA      string   `json:"issuing_ca" mapstructure:"issuing_ca"`
+	CAChain        []string `json:"ca_chain" mapstructure:"ca_chain"`
+	ClientKey      string   `json:"client_key" mapstructure:"private_key"`
+	PrivateKeyType string   `json:"private_key_type" mapstructure:"private_key_type"`
+	Serial         string   `json:"serial" mapstructure:"serial_number"`
+	Expire         int64    `json:"expire" mapstructure:"expiration"`
 }
 
 // Agent represents the Vault PKI interface.
 type Agent interface {
 	// IssueCert issues certificate on PKI
-	IssueCert(cn string, ttl, keyType string, keyBits int) (Cert, error)
+	IssueCert(cn, ttl string) (Cert, error)
 
 	// Read retrieves certificate from PKI
 	Read(serial string) (Cert, error)
@@ -69,8 +69,6 @@ type pkiAgent struct {
 type certReq struct {
 	CommonName string `json:"common_name"`
 	TTL        string `json:"ttl"`
-	KeyBits    int    `json:"key_bits"`
-	KeyType    string `json:"key_type"`
 }
 
 type certRevokeReq struct {
@@ -100,12 +98,10 @@ func NewVaultClient(token, host, path, role string) (Agent, error) {
 	return &p, nil
 }
 
-func (p *pkiAgent) IssueCert(cn string, ttl, keyType string, keyBits int) (Cert, error) {
+func (p *pkiAgent) IssueCert(cn, ttl string) (Cert, error) {
 	cReq := certReq{
 		CommonName: cn,
-		TTL:        ttl,
-		KeyBits:    keyBits,
-		KeyType:    keyType,
+		TTL:        fmt.Sprintf("%sh", ttl),
 	}
 
 	var certIssueReq map[string]interface{}
@@ -131,8 +127,7 @@ func (p *pkiAgent) IssueCert(cn string, ttl, keyType string, keyBits int) (Cert,
 }
 
 func (p *pkiAgent) Read(serial string) (Cert, error) {
-	// Vault represents it certificate serial on the URI path as 03-39-ce and not 03:39:ce
-	s, err := p.client.Logical().Read(p.readURL + strings.Replace(serial, ":", "-", -1))
+	s, err := p.client.Logical().Read(p.readURL + serial)
 	if err != nil {
 		return Cert{}, err
 	}
@@ -140,7 +135,6 @@ func (p *pkiAgent) Read(serial string) (Cert, error) {
 	if err = mapstructure.Decode(s.Data, &cert); err != nil {
 		return Cert{}, errors.Wrap(errFailedCertDecoding, err)
 	}
-
 	return cert, nil
 }
 

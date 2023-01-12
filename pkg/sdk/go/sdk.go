@@ -236,7 +236,7 @@ type SDK interface {
 	Whitelist(cfg BootstrapConfig, token string) errors.SDKError
 
 	// IssueCert issues a certificate for a thing required for mtls.
-	IssueCert(thingID string, keyBits int, keyType, valid, token string) (Cert, errors.SDKError)
+	IssueCert(thingID, valid, token string) (Cert, errors.SDKError)
 
 	// ViewCert returns a certificate given certificate ID
 	ViewCert(certID, token string) (Cert, errors.SDKError)
