@@ -388,7 +388,8 @@ func (ps *provisionService) recover(e *error, ths *[]SDK.Thing, chs *[]SDK.Chann
 		clean(ps, things, channels, token)
 		for _, th := range things {
 			if ps.conf.Bootstrap.X509Provision && needsBootstrap(th) {
-				ps.errLog(ps.sdk.RevokeCert(th.ID, token))
+				_, err := ps.sdk.RevokeCert(th.ID, token)
+				ps.errLog(err)
 			}
 			if needsBootstrap(th) {
 				bs, err := ps.sdk.ViewBootstrap(th.ID, token)

@@ -63,10 +63,19 @@ func (sdk mfSDK) ViewCert(id, token string) (Cert, errors.SDKError) {
 	return cert, nil
 }
 
-func (sdk mfSDK) RevokeCert(id, token string) errors.SDKError {
+func (sdk mfSDK) RevokeCert(id, token string) (time.Time, errors.SDKError) {
 	url := fmt.Sprintf("%s/%s/%s", sdk.certsURL, certsEndpoint, id)
-	_, _, err := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), nil, http.StatusOK)
-	return err
+	_, body, err := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), nil, http.StatusOK)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	var rcr revokeCertsRes
+	if err := json.Unmarshal(body, &rcr); err != nil {
+		return time.Time{}, errors.NewSDKError(err)
+	}
+
+	return rcr.RevocationTime, nil
 }
 
 type certReq struct {

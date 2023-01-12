@@ -242,7 +242,7 @@ type SDK interface {
 	ViewCert(certID, token string) (Cert, errors.SDKError)
 
 	// RevokeCert revokes certificate for thing with thingID
-	RevokeCert(thingID, token string) errors.SDKError
+	RevokeCert(thingID, token string) (time.Time, errors.SDKError)
 
 	// Issue issues a new key, returning its token value alongside.
 	Issue(duration time.Duration, token string) (KeyRes, errors.SDKError)

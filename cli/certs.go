@@ -33,12 +33,12 @@ var cmdCerts = []cobra.Command{
 				logUsage(cmd.Use)
 				return
 			}
-			err := sdk.RevokeCert(args[0], args[1])
+			rtime, err := sdk.RevokeCert(args[0], args[1])
 			if err != nil {
 				logError(err)
 				return
 			}
-			logOK()
+			logJSON(rtime)
 		},
 	},
 }
