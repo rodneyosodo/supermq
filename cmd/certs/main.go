@@ -69,7 +69,7 @@ const (
 	defVaultHost       = ""
 	defVaultRole       = "mainflux"
 	defVaultToken      = ""
-	defVaultPKIIntPath = "pki"
+	defVaultPKIIntPath = "pki_int"
 
 	envPort           = "MF_CERTS_HTTP_PORT"
 	envLogLevel       = "MF_CERTS_LOG_LEVEL"

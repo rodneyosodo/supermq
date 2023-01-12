@@ -6,8 +6,6 @@ package pki
 
 import (
 	"encoding/json"
-	"io/ioutil"
-	"net/http"
 	"strings"
 	"time"
 
@@ -99,7 +97,7 @@ func NewVaultClient(token, host, path, role string) (Agent, error) {
 		client:    client,
 		issueURL:  "/" + path + "/" + issue + "/" + role,
 		readURL:   "/" + path + "/" + cert + "/",
-		revokeURL: "/" + apiVer + "/" + path + "/" + revoke,
+		revokeURL: "/" + path + "/" + revoke,
 	}
 	return &p, nil
 }
@@ -112,16 +110,16 @@ func (p *pkiAgent) IssueCert(cn string, ttl, keyType string, keyBits int) (Cert,
 		KeyType:    keyType,
 	}
 
-	var certRequest map[string]interface{}
+	var certIssueReq map[string]interface{}
 	data, err := json.Marshal(cReq)
 	if err != nil {
 		return Cert{}, err
 	}
-	if err := json.Unmarshal(data, &certRequest); err != nil {
+	if err := json.Unmarshal(data, &certIssueReq); err != nil {
 		return Cert{}, nil
 	}
 
-	s, err := p.client.Logical().Write(p.issueURL, certRequest)
+	s, err := p.client.Logical().Write(p.issueURL, certIssueReq)
 	if err != nil {
 		return Cert{}, err
 	}
@@ -149,34 +147,20 @@ func (p *pkiAgent) Read(serial string) (Cert, error) {
 }
 
 func (p *pkiAgent) Revoke(serial string) (time.Time, error) {
-	// We aren't using p.client.Logical().Delete() since it is making a DELETE request to vault
-	// yet for certificate revoking vault needs a POST request to the same URL
-	// This is a library issue and will be solved once a POST request is added to p.client.Logical()
-	// as the current alternatives either use a PUT or DELETE request
 	cReq := certRevokeReq{
-		// Vault expects it certificate serial in the json body as 03-39-ce and not 03:39:ce
-		SerialNumber: strings.Replace(serial, ":", "-", -1),
+		SerialNumber: serial,
 	}
 
-	r := p.client.NewRequest(http.MethodPost, p.revokeURL)
-	if err := r.SetJSONBody(cReq); err != nil {
-		return time.Time{}, err
-	}
-	resp, err := p.client.RawRequest(r)
+	var certRevokeReq map[string]interface{}
+	data, err := json.Marshal(cReq)
 	if err != nil {
 		return time.Time{}, err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= http.StatusBadRequest {
-		_, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return time.Time{}, err
-		}
-		return time.Time{}, errors.Wrap(errFailedVaultCertIssue, err)
+	if err := json.Unmarshal(data, &certRevokeReq); err != nil {
+		return time.Time{}, nil
 	}
 
-	s, err := api.ParseSecret(resp.Body)
+	s, err := p.client.Logical().Write(p.revokeURL, certRevokeReq)
 	if err != nil {
 		return time.Time{}, err
 	}
