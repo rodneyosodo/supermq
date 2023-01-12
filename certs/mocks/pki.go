@@ -23,7 +23,6 @@ import (
 
 const (
 	keyBits = 2048
-	keyType = "rsa"
 )
 
 var (
