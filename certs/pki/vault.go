@@ -18,7 +18,6 @@ const (
 	issue  = "issue"
 	cert   = "cert"
 	revoke = "revoke"
-	apiVer = "v1"
 )
 
 var (
@@ -31,8 +30,7 @@ var (
 	// ErrFailedCertRevocation indicates failed certificate revocation
 	ErrFailedCertRevocation = errors.New("failed to revoke certificate")
 
-	errFailedVaultCertIssue = errors.New("failed to issue vault certificate")
-	errFailedCertDecoding   = errors.New("failed to decode response from vault service")
+	errFailedCertDecoding = errors.New("failed to decode response from vault service")
 )
 
 type Cert struct {
