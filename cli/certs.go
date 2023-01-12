@@ -38,7 +38,7 @@ var cmdCerts = []cobra.Command{
 				logError(err)
 				return
 			}
-			logJSON(rtime)
+			logRevokedTime(rtime)
 		},
 	},
 }

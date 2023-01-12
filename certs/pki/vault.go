@@ -162,11 +162,10 @@ func (p *pkiAgent) Revoke(serial string) (time.Time, error) {
 	if err != nil {
 		return time.Time{}, err
 	}
-
 	rev, err := s.Data["revocation_time"].(json.Number).Float64()
 	if err != nil {
 		return time.Time{}, err
 	}
 
-	return time.Unix(0, int64(rev)*int64(time.Millisecond)), nil
+	return time.Unix(0, int64(rev)*int64(time.Second)), nil
 }
