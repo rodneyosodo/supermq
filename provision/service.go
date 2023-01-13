@@ -61,8 +61,7 @@ type Service interface {
 	// A duration string is a possibly signed sequence of decimal numbers,
 	// each with optional fraction and a unit suffix, such as "300ms", "-1.5h" or "2h45m".
 	// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
-	// keyBits for certificate key
-	Cert(token, thingID, duration string, keyBits int) (string, string, error)
+	Cert(token, thingID, duration string) (string, string, error)
 }
 
 type provisionService struct {
@@ -253,7 +252,7 @@ func (ps *provisionService) Provision(token, name, externalID, externalKey strin
 	return res, nil
 }
 
-func (ps *provisionService) Cert(token, thingID, ttl string, keyBits int) (string, string, error) {
+func (ps *provisionService) Cert(token, thingID, ttl string) (string, string, error) {
 	token, err := ps.createTokenIfEmpty(token)
 	if err != nil {
 		return "", "", err

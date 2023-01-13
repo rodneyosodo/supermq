@@ -123,7 +123,6 @@ func TestIssueCert(t *testing.T) {
 		thingID string
 		ttl     string
 		key     string
-		keyBits int
 		err     error
 	}{
 		{
