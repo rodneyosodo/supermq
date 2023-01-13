@@ -21,9 +21,7 @@ import (
 	"github.com/mainflux/mainflux/pkg/errors"
 )
 
-const (
-	keyBits = 2048
-)
+const keyBits = 2048
 
 var (
 	errPrivateKeyEmpty           = errors.New("private key is empty")
