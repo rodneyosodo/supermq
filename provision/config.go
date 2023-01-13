@@ -52,8 +52,6 @@ type Gateway struct {
 // Cert represetns the certificate config
 type Cert struct {
 	TTL string `json:"ttl" toml:"ttl"`
-	// KeyBits int    `json:"key_bits" toml:"key_bits"`
-	// KeyType string `json:"key_type"`
 }
 
 // Config struct of Provision
