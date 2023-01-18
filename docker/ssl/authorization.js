@@ -167,10 +167,12 @@ function parseCert(cert, key) {
         for (var i = 0; i < pairs.length; i++) {
             var pair = pairs[i].split('=');
             if (pair[0].toUpperCase() == key) {
-                return pair[1];
+                return "Thing " + pair[1].replace("\\", "");
             }
         }
     }
 
     return '';
 }
+
+export default {setKey,authenticate};
