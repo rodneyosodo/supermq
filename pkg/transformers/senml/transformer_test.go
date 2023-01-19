@@ -24,7 +24,7 @@ func TestTransformJSON(t *testing.T) {
 	require.Nil(t, err, "Decoding JSON expected to succeed")
 
 	tr := senml.New(senml.JSON)
-	msg := messaging.Message{
+	msg := &messaging.Message{
 		Channel:   "channel",
 		Subtopic:  "subtopic",
 		Publisher: "publisher",
@@ -34,7 +34,7 @@ func TestTransformJSON(t *testing.T) {
 
 	// 82AD2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D650164756E697406F95CB0036331323307F958B002F9514005F94900AA2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D6506F95CB007F958B005F94900
 
-	jsonPld := &msg
+	jsonPld := msg
 	jsonPld.Payload = jsonBytes
 
 	val := 52.0
@@ -68,7 +68,7 @@ func TestTransformJSON(t *testing.T) {
 		},
 		{
 			desc: "test normalize defaults to JSON",
-			msg:  &msg,
+			msg:  msg,
 			msgs: msgs,
 			err:  nil,
 		},
@@ -92,7 +92,10 @@ func TestTransformCBOR(t *testing.T) {
 	require.Nil(t, err, "Decoding CBOR expected to succeed")
 
 	tr := senml.New(senml.CBOR)
-	msg := messaging.Message{
+
+	// 82AD2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D650164756E697406F95CB0036331323307F958B002F9514005F94900AA2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D6506F95CB007F958B005F94900
+
+	cborPld := &messaging.Message{
 		Channel:   "channel",
 		Subtopic:  "subtopic",
 		Publisher: "publisher",
@@ -100,13 +103,13 @@ func TestTransformCBOR(t *testing.T) {
 		Payload:   cborBytes,
 	}
 
-	// 82AD2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D650164756E697406F95CB0036331323307F958B002F9514005F94900AA2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D6506F95CB007F958B005F94900
-
-	cborPld := &msg
-	cborPld.Payload = cborBytes
-
-	tooManyMsg := &msg
-	tooManyMsg.Payload = tooManyBytes
+	tooManyMsg := &messaging.Message{
+		Channel:   "channel",
+		Subtopic:  "subtopic",
+		Publisher: "publisher",
+		Protocol:  "protocol",
+		Payload:   tooManyBytes,
+	}
 
 	val := 52.0
 	sum := 110.0
