@@ -43,22 +43,22 @@ func TestTransformJSON(t *testing.T) {
 		Payload:   []byte(validPayload),
 		Created:   now,
 	}
-	invalid := msg
+	invalid := &msg
 	invalid.Payload = []byte(invalidPayload)
 
-	listMsg := msg
+	listMsg := &msg
 	listMsg.Payload = []byte(listPayload)
 
-	tsMsg := msg
+	tsMsg := &msg
 	tsMsg.Payload = []byte(tsPayload)
 
-	microsMsg := msg
+	microsMsg := &msg
 	microsMsg.Payload = []byte(microsPayload)
 
-	invalidFmt := msg
+	invalidFmt := &msg
 	invalidFmt.Subtopic = ""
 
-	invalidTimeField := msg
+	invalidTimeField := &msg
 	invalidTimeField.Payload = []byte(invalidTsPayload)
 
 	jsonMsgs := json.Messages{
@@ -164,13 +164,13 @@ func TestTransformJSON(t *testing.T) {
 
 	cases := []struct {
 		desc string
-		msg  messaging.Message
+		msg  *messaging.Message
 		json interface{}
 		err  error
 	}{
 		{
 			desc: "test transform JSON",
-			msg:  msg,
+			msg:  &msg,
 			json: jsonMsgs,
 			err:  nil,
 		},
