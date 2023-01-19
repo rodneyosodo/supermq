@@ -4,6 +4,7 @@ GO_VERSION=1.19.4
 PROTOC_VERSION=3.15.8
 PROTOC_GEN_VERSION=v1.28.1
 PROTOC_GRPC_VERSION=v1.2.0
+PROTOC_GOFAST_VERSION=v1.3.1
 
 function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"; }
 
@@ -38,6 +39,7 @@ setup_protoc() {
     rm -f PROTOC_ZIP
 
     go install google.golang.org/protobuf/cmd/protoc-gen-go@$PROTOC_GEN_VERSION
+    go install github.com/gogo/protobuf/protoc-gen-gofast@$PROTOC_GOFAST_VERSION
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@$PROTOC_GRPC_VERSION
 
     export PATH=$PATH:/usr/local/bin/protoc
