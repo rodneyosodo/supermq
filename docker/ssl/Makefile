@@ -41,4 +41,3 @@ thing_cert:
 clean_certs:
 	rm -r $(CRT_LOCATION)/*.crt
 	rm -r $(CRT_LOCATION)/*.key
-	rm -r $(CRT_LOCATION)/*.srl
