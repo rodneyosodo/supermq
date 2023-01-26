@@ -29,7 +29,7 @@ function authenticate(s) {
 
         var pass = parsePackage(s, data);
 
-        if (!clientKey.length || !clientKey.includes(pass) ) {
+        if (!clientKey.length || !clientKey.endsWith(pass) ) {
             s.error('Cert CN (' + clientKey + ') does not contain client password');
             s.off('upload')
             s.deny();
