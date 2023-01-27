@@ -3,7 +3,16 @@
 
 package certs
 
-import "context"
+import (
+	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
+	"io/ioutil"
+	"os"
+
+	"github.com/mainflux/mainflux/pkg/errors"
+)
 
 // ConfigsPage contains page related metadata as well as list
 type Page struct {
@@ -29,4 +38,47 @@ type Repository interface {
 
 	// RetrieveBySerial retrieves a certificate for a given serial ID
 	RetrieveBySerial(ctx context.Context, ownerID, serialID string) (Cert, error)
+}
+
+func LoadCertificates(caPath, caKeyPath string) (tls.Certificate, *x509.Certificate, error) {
+	var tlsCert tls.Certificate
+	var caCert *x509.Certificate
+
+	if caPath == "" || caKeyPath == "" {
+		return tlsCert, caCert, nil
+	}
+
+	if _, err := os.Stat(caPath); os.IsNotExist(err) {
+		return tlsCert, caCert, err
+	}
+
+	if _, err := os.Stat(caKeyPath); os.IsNotExist(err) {
+		return tlsCert, caCert, err
+	}
+
+	tlsCert, err := tls.LoadX509KeyPair(caPath, caKeyPath)
+	if err != nil {
+		return tlsCert, caCert, errors.Wrap(err, err)
+	}
+
+	b, err := ioutil.ReadFile(caPath)
+	if err != nil {
+		return tlsCert, caCert, err
+	}
+
+	caCert, err = ReadCert(b)
+	if err != nil {
+		return tlsCert, caCert, errors.Wrap(err, err)
+	}
+
+	return tlsCert, caCert, nil
+}
+
+func ReadCert(b []byte) (*x509.Certificate, error) {
+	block, _ := pem.Decode(b)
+	if block == nil {
+		return nil, errors.New("failed to decode PEM data")
+	}
+
+	return x509.ParseCertificate(block.Bytes)
 }

@@ -156,6 +156,6 @@ func TestViewSubscription(t *testing.T) {
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		tc.response.ID = respSub.ID
 		tc.response.OwnerID = respSub.OwnerID
-		assert.Equal(t, tc.response, respSub, fmt.Sprintf("%s: expected response channel %s, got %s", tc.desc, tc.response, respSub))
+		assert.Equal(t, tc.response, respSub, fmt.Sprintf("%s: expected response %s, got %s", tc.desc, tc.response, respSub))
 	}
 }
