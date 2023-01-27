@@ -28,10 +28,6 @@ var (
 		Topic:   "topic",
 		Contact: "contact",
 	}
-	sub2 = sdk.Subscription{
-		Topic:   "topic1",
-		Contact: "contact2",
-	}
 	emptySubscription = sdk.Subscription{}
 	exampleUser1      = "email1@example.com"
 	exampleUser2      = "email2@example.com"
