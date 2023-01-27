@@ -7,7 +7,7 @@ package mainflux;
 
 import "google/protobuf/empty.proto";
 
-option go_package = "mainflux";
+option go_package = "./mainflux";
 
 service ThingsService {
     rpc CanAccessByKey(AccessByKeyReq) returns (ThingID) {}
