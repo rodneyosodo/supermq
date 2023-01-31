@@ -1,6 +1,3 @@
-// Copyright (c) Mainflux
-// SPDX-License-Identifier: Apache-2.0
-
 package api
 
 import (
@@ -9,126 +6,131 @@ import (
 	"net/http"
 	"strings"
 
-	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/mainflux/mainflux"
+	"github.com/mainflux/mainflux/internal/api"
 	"github.com/mainflux/mainflux/internal/apiutil"
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/uuid"
 	"github.com/mainflux/mainflux/users"
-	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/go-kit/kit/otelkit"
 )
 
-const (
-	contentType = "application/json"
-	offsetKey   = "offset"
-	limitKey    = "limit"
-	emailKey    = "email"
-	metadataKey = "metadata"
-	statusKey   = "status"
-	defOffset   = 0
-	defLimit    = 10
-)
-
-// MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Logger) http.Handler {
+// MakeClientsHandler returns a HTTP handler for API endpoints.
+func MakeClientsHandler(svc users.Service, mux *bone.Mux, logger logger.Logger) {
 	opts := []kithttp.ServerOption{
-		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, api.EncodeError)),
 	}
 
-	mux := bone.New()
-
 	mux.Post("/users", kithttp.NewServer(
-		kitot.TraceServer(tracer, "register")(registrationEndpoint(svc)),
+		otelkit.EndpointMiddleware(otelkit.WithOperation("register_user"))(registrationEndpoint(svc)),
 		decodeCreateUserReq,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Get("/users/profile", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_profile")(viewProfileEndpoint(svc)),
-		decodeViewProfile,
-		encodeResponse,
+		api.EncodeResponse,
 		opts...,
 	))
 
 	mux.Get("/users/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_user")(viewUserEndpoint(svc)),
+		otelkit.EndpointMiddleware(otelkit.WithOperation("view_user"))(viewUserEndpoint(svc)),
 		decodeViewUser,
-		encodeResponse,
+		api.EncodeResponse,
+		opts...,
+	))
+
+	mux.Get("/users/profile", kithttp.NewServer(
+		otelkit.EndpointMiddleware(otelkit.WithOperation("view_profile"))(viewProfileEndpoint(svc)),
+		decodeViewProfile,
+		api.EncodeResponse,
 		opts...,
 	))
 
 	mux.Get("/users", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_users")(listUsersEndpoint(svc)),
+		otelkit.EndpointMiddleware(otelkit.WithOperation("list_users"))(listClientsEndpoint(svc)),
 		decodeListUsers,
-		encodeResponse,
+		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Put("/users", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_user")(updateUserEndpoint(svc)),
+	mux.Get("/users/:groupID/members", kithttp.NewServer(
+		otelkit.EndpointMiddleware(otelkit.WithOperation("list_members"))(listMembersEndpoint(svc)),
+		decodeListMembersRequest,
+		api.EncodeResponse,
+		opts...,
+	))
+
+	mux.Patch("/users/:id", kithttp.NewServer(
+		otelkit.EndpointMiddleware(otelkit.WithOperation("update_user_name_and_metadata"))(updateUserEndpoint(svc)),
 		decodeUpdateUser,
-		encodeResponse,
+		api.EncodeResponse,
+		opts...,
+	))
+
+	mux.Patch("/users/:id/tags", kithttp.NewServer(
+		otelkit.EndpointMiddleware(otelkit.WithOperation("update_user_tags"))(updateUserTagsEndpoint(svc)),
+		decodeUpdateUserTags,
+		api.EncodeResponse,
+		opts...,
+	))
+
+	mux.Patch("/users/:id/identity", kithttp.NewServer(
+		otelkit.EndpointMiddleware(otelkit.WithOperation("update_user_identity"))(updateUserIdentityEndpoint(svc)),
+		decodeUpdateUserCredentials,
+		api.EncodeResponse,
 		opts...,
 	))
 
 	mux.Post("/password/reset-request", kithttp.NewServer(
-		kitot.TraceServer(tracer, "res-req")(passwordResetRequestEndpoint(svc)),
+		otelkit.EndpointMiddleware(otelkit.WithOperation("res-req"))(passwordResetRequestEndpoint(svc)),
 		decodePasswordResetRequest,
-		encodeResponse,
+		api.EncodeResponse,
 		opts...,
 	))
 
 	mux.Put("/password/reset", kithttp.NewServer(
-		kitot.TraceServer(tracer, "reset")(passwordResetEndpoint(svc)),
+		otelkit.EndpointMiddleware(otelkit.WithOperation("reset"))(passwordResetEndpoint(svc)),
 		decodePasswordReset,
-		encodeResponse,
+		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Patch("/password", kithttp.NewServer(
-		kitot.TraceServer(tracer, "reset")(passwordChangeEndpoint(svc)),
-		decodePasswordChange,
-		encodeResponse,
+	mux.Patch("/users/:id/password", kithttp.NewServer(
+		otelkit.EndpointMiddleware(otelkit.WithOperation("update_user_password"))(changePasswordEndpoint(svc)),
+		decodeUpdateUserCredentials,
+		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Get("/groups/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_members")(listMembersEndpoint(svc)),
-		decodeListMembersRequest,
-		encodeResponse,
+	mux.Patch("/users/:id/owner", kithttp.NewServer(
+		otelkit.EndpointMiddleware(otelkit.WithOperation("update_user_owner"))(updateUserOwnerEndpoint(svc)),
+		decodeUpdateUserOwner,
+		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Post("/tokens", kithttp.NewServer(
-		kitot.TraceServer(tracer, "login")(loginEndpoint(svc)),
+	mux.Post("/users/tokens", kithttp.NewServer(
+		otelkit.EndpointMiddleware(otelkit.WithOperation("login"))(loginEndpoint(svc)),
 		decodeCredentials,
-		encodeResponse,
+		api.EncodeResponse,
 		opts...,
 	))
 
 	mux.Post("/users/:id/enable", kithttp.NewServer(
-		kitot.TraceServer(tracer, "enable_user")(enableUserEndpoint(svc)),
-		decodeChangeUserStatus,
-		encodeResponse,
+		otelkit.EndpointMiddleware(otelkit.WithOperation("enable_user"))(enableUserEndpoint(svc)),
+		decodeChangeClientStatus,
+		api.EncodeResponse,
 		opts...,
 	))
 
 	mux.Post("/users/:id/disable", kithttp.NewServer(
-		kitot.TraceServer(tracer, "disable_user")(disableUserEndpoint(svc)),
-		decodeChangeUserStatus,
-		encodeResponse,
+		otelkit.EndpointMiddleware(otelkit.WithOperation("disable_user"))(disableUserEndpoint(svc)),
+		decodeChangeClientStatus,
+		api.EncodeResponse,
 		opts...,
 	))
 
 	mux.GetFunc("/health", mainflux.Health("users"))
 	mux.Handle("/metrics", promhttp.Handler())
-
-	return mux
 }
 
 func decodeViewUser(_ context.Context, r *http.Request) (interface{}, error) {
@@ -147,43 +149,72 @@ func decodeViewProfile(_ context.Context, r *http.Request) (interface{}, error) 
 }
 
 func decodeListUsers(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
+	var sid string
+	s, err := apiutil.ReadStringQuery(r, api.StatusKey, api.DefClientStatus)
+	if err != nil {
+		return nil, err
+	}
+	o, err := apiutil.ReadNumQuery[uint64](r, api.OffsetKey, api.DefOffset)
+	if err != nil {
+		return nil, err
+	}
+	l, err := apiutil.ReadNumQuery[uint64](r, api.LimitKey, api.DefLimit)
+	if err != nil {
+		return nil, err
+	}
+	m, err := apiutil.ReadMetadataQuery(r, api.MetadataKey, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
+	n, err := apiutil.ReadStringQuery(r, api.NameKey, "")
 	if err != nil {
 		return nil, err
 	}
-
-	e, err := apiutil.ReadStringQuery(r, emailKey, "")
+	t, err := apiutil.ReadStringQuery(r, api.TagKey, "")
 	if err != nil {
 		return nil, err
 	}
-
-	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
+	oid, err := apiutil.ReadStringQuery(r, api.OwnerKey, "")
 	if err != nil {
 		return nil, err
 	}
-
-	s, err := apiutil.ReadStringQuery(r, statusKey, users.EnabledStatusKey)
+	visibility, err := apiutil.ReadStringQuery(r, api.VisibilityKey, api.MyVisibility)
+	if err != nil {
+		return nil, err
+	}
+	switch visibility {
+	case api.MyVisibility:
+		oid = api.MyVisibility
+	case api.SharedVisibility:
+		sid = api.MyVisibility
+	case api.AllVisibility:
+		sid = api.MyVisibility
+		oid = api.MyVisibility
+	}
+	st, err := users.ToStatus(s)
 	if err != nil {
 		return nil, err
 	}
 	req := listUsersReq{
 		token:    apiutil.ExtractBearerToken(r),
-		status:   s,
+		status:   st,
 		offset:   o,
 		limit:    l,
-		email:    e,
 		metadata: m,
+		name:     n,
+		tag:      t,
+		sharedBy: sid,
+		owner:    oid,
 	}
 	return req, nil
 }
 
 func decodeUpdateUser(_ context.Context, r *http.Request) (interface{}, error) {
-	req := updateUserReq{token: apiutil.ExtractBearerToken(r)}
+	req := updateUserReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, "id"),
+	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
@@ -191,40 +222,20 @@ func decodeUpdateUser(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeCredentials(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
-	}
-
-	var user users.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
-	user.Email = strings.TrimSpace(user.Email)
-	return userReq{user}, nil
-}
-
-func decodeCreateUserReq(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
-	}
-
-	var user users.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
-
-	user.Email = strings.TrimSpace(user.Email)
-	req := createUserReq{
-		user:  user,
+func decodeUpdateUserTags(_ context.Context, r *http.Request) (interface{}, error) {
+	req := updateUserTagsReq{
 		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, "id"),
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
 }
 
 func decodePasswordResetRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
 		return nil, errors.ErrUnsupportedContentType
 	}
 
@@ -239,7 +250,7 @@ func decodePasswordResetRequest(_ context.Context, r *http.Request) (interface{}
 }
 
 func decodePasswordReset(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
 		return nil, errors.ErrUnsupportedContentType
 	}
 
@@ -251,12 +262,11 @@ func decodePasswordReset(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
-func decodePasswordChange(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+func decodeUpdateUserCredentials(_ context.Context, r *http.Request) (interface{}, error) {
+	req := updateUserCredentialsReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, "id"),
 	}
-
-	req := passwChangeReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
@@ -264,38 +274,48 @@ func decodePasswordChange(_ context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
+func decodeUpdateUserOwner(_ context.Context, r *http.Request) (interface{}, error) {
+	req := updateUserOwnerReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, "id"),
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
-	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
-	if err != nil {
-		return nil, err
-	}
-	s, err := apiutil.ReadStringQuery(r, statusKey, users.EnabledStatusKey)
-	if err != nil {
-		return nil, err
-	}
-
-	req := listMemberGroupReq{
-		token:    apiutil.ExtractBearerToken(r),
-		status:   s,
-		id:       bone.GetValue(r, "id"),
-		offset:   o,
-		limit:    l,
-		metadata: m,
-	}
 	return req, nil
 }
 
-func decodeChangeUserStatus(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeCredentials(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
+		return nil, errors.ErrUnsupportedContentType
+	}
+	req := loginUserReq{}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeCreateUserReq(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
+		return nil, errors.ErrUnsupportedContentType
+	}
+
+	var user users.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+	req := createUserReq{
+		user:  user,
+		token: apiutil.ExtractBearerToken(r),
+	}
+
+	return req, nil
+}
+
+func decodeChangeClientStatus(_ context.Context, r *http.Request) (interface{}, error) {
 	req := changeUserStatusReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, "id"),
@@ -304,66 +324,36 @@ func decodeChangeUserStatus(_ context.Context, r *http.Request) (interface{}, er
 	return req, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
-	if ar, ok := response.(mainflux.Response); ok {
-		for k, v := range ar.Headers() {
-			w.Header().Set(k, v)
-		}
-		w.Header().Set("Content-Type", contentType)
-		w.WriteHeader(ar.Code())
-
-		if ar.Empty() {
-			return nil
-		}
+func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	s, err := apiutil.ReadStringQuery(r, api.StatusKey, api.DefClientStatus)
+	if err != nil {
+		return nil, err
 	}
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-func encodeError(_ context.Context, err error, w http.ResponseWriter) {
-	switch {
-	case errors.Contains(err, errors.ErrInvalidQueryParams),
-		errors.Contains(err, errors.ErrMalformedEntity),
-		errors.Contains(err, users.ErrPasswordFormat),
-		err == apiutil.ErrMissingEmail,
-		err == apiutil.ErrMissingHost,
-		err == apiutil.ErrMissingPass,
-		err == apiutil.ErrMissingConfPass,
-		err == apiutil.ErrLimitSize,
-		err == apiutil.ErrOffsetSize,
-		err == apiutil.ErrInvalidResetPass:
-		w.WriteHeader(http.StatusBadRequest)
-	case errors.Contains(err, errors.ErrAuthentication),
-		err == apiutil.ErrBearerToken:
-		w.WriteHeader(http.StatusUnauthorized)
-	case errors.Contains(err, errors.ErrAuthorization):
-		w.WriteHeader(http.StatusForbidden)
-	case errors.Contains(err, errors.ErrConflict),
-		errors.Contains(err, errors.ErrConflict):
-		w.WriteHeader(http.StatusConflict)
-	case errors.Contains(err, errors.ErrUnsupportedContentType):
-		w.WriteHeader(http.StatusUnsupportedMediaType)
-	case errors.Contains(err, errors.ErrNotFound):
-		w.WriteHeader(http.StatusNotFound)
-
-	case errors.Contains(err, uuid.ErrGeneratingID),
-		errors.Contains(err, users.ErrRecoveryToken):
-		w.WriteHeader(http.StatusInternalServerError)
-
-	case errors.Contains(err, errors.ErrCreateEntity),
-		errors.Contains(err, errors.ErrUpdateEntity),
-		errors.Contains(err, errors.ErrViewEntity),
-		errors.Contains(err, errors.ErrRemoveEntity):
-		w.WriteHeader(http.StatusInternalServerError)
-
-	default:
-		w.WriteHeader(http.StatusInternalServerError)
+	o, err := apiutil.ReadNumQuery[uint64](r, api.OffsetKey, api.DefOffset)
+	if err != nil {
+		return nil, err
 	}
-
-	if errorVal, ok := err.(errors.Error); ok {
-		w.Header().Set("Content-Type", contentType)
-		if err := json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: errorVal.Msg()}); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+	l, err := apiutil.ReadNumQuery[uint64](r, api.LimitKey, api.DefLimit)
+	if err != nil {
+		return nil, err
 	}
+	m, err := apiutil.ReadMetadataQuery(r, api.MetadataKey, nil)
+	if err != nil {
+		return nil, err
+	}
+	st, err := users.ToStatus(s)
+	if err != nil {
+		return nil, err
+	}
+	req := listMembersReq{
+		token: apiutil.ExtractBearerToken(r),
+		Page: users.Page{
+			Status:   st,
+			Offset:   o,
+			Limit:    l,
+			Metadata: m,
+		},
+		groupID: bone.GetValue(r, "groupID"),
+	}
+	return req, nil
 }

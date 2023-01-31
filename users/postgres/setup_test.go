@@ -1,6 +1,3 @@
-// Copyright (c) Mainflux
-// SPDX-License-Identifier: Apache-2.0
-
 // Package postgres_test contains tests for PostgreSQL repository
 // implementations.
 package postgres_test
@@ -11,15 +8,21 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
-
-	"github.com/mainflux/mainflux/users/postgres"
+	"github.com/mainflux/mainflux/internal/postgres"
+	upostgres "github.com/mainflux/mainflux/users/postgres"
 	dockertest "github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v3/docker"
+	"go.opentelemetry.io/otel"
 )
 
-var db *sqlx.DB
+var (
+	db       *sqlx.DB
+	database postgres.Database
+	tracer   = otel.Tracer("repo_tests")
+)
 
 func TestMain(m *testing.M) {
 	pool, err := dockertest.NewPool("")
@@ -27,18 +30,27 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
-	cfg := []string{
-		"POSTGRES_USER=test",
-		"POSTGRES_PASSWORD=test",
-		"POSTGRES_DB=test",
-	}
-	container, err := pool.Run("postgres", "13.3-alpine", cfg)
+	container, err := pool.RunWithOptions(&dockertest.RunOptions{
+		Repository: "postgres",
+		Tag:        "15.1-alpine",
+		Env: []string{
+			"POSTGRES_USER=test",
+			"POSTGRES_PASSWORD=test",
+			"POSTGRES_DB=test",
+			"listen_addresses = '*'",
+		},
+	}, func(config *docker.HostConfig) {
+		config.AutoRemove = true
+		config.RestartPolicy = docker.RestartPolicy{Name: "no"}
+	})
 	if err != nil {
 		log.Fatalf("Could not start container: %s", err)
 	}
 
 	port := container.GetPort("5432/tcp")
 
+	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
+	pool.MaxWait = 120 * time.Second
 	if err := pool.Retry(func() error {
 		url := fmt.Sprintf("host=localhost port=%s user=test dbname=test password=test sslmode=disable", port)
 		db, err := sql.Open("pgx", url)
@@ -62,9 +74,10 @@ func TestMain(m *testing.M) {
 		SSLRootCert: "",
 	}
 
-	if db, err = postgres.Connect(dbConfig); err != nil {
+	if db, err = upostgres.Connect(dbConfig); err != nil {
 		log.Fatalf("Could not setup test DB connection: %s", err)
 	}
+	database = postgres.NewDatabase(db, tracer)
 
 	code := m.Run()
 

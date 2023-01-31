@@ -1,8 +1,3 @@
-// Copyright (c) Mainflux
-// SPDX-License-Identifier: Apache-2.0
-
-//go:build !test
-
 package api
 
 import (
@@ -21,65 +16,59 @@ type loggingMiddleware struct {
 	svc    users.Service
 }
 
-// LoggingMiddleware adds logging facilities to the core service.
 func LoggingMiddleware(svc users.Service, logger log.Logger) users.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) Register(ctx context.Context, token string, user users.User) (uid string, err error) {
+func (lm *loggingMiddleware) Register(ctx context.Context, token string, user users.User) (u users.User, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method register for user %s took %s to complete", user.Email, time.Since(begin))
+		message := fmt.Sprintf("Method register_user of identity %s with token %s took %s to complete", user.Credentials.Identity, token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-
 	}(time.Now())
-
 	return lm.svc.Register(ctx, token, user)
 }
 
 func (lm *loggingMiddleware) Login(ctx context.Context, user users.User) (token string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method login for user %s took %s to complete", user.Email, time.Since(begin))
+		message := fmt.Sprintf("Method issue_token for user %s took %s to complete", user.Credentials.Identity, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
-
 	return lm.svc.Login(ctx, user)
 }
 
 func (lm *loggingMiddleware) ViewUser(ctx context.Context, token, id string) (u users.User, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_user for user %s took %s to complete", u.Email, time.Since(begin))
+		message := fmt.Sprintf("Method view_user for user %s took %s to complete", u.Credentials.Identity, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
-
 	return lm.svc.ViewUser(ctx, token, id)
 }
 
 func (lm *loggingMiddleware) ViewProfile(ctx context.Context, token string) (u users.User, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_profile for user %s took %s to complete", u.Email, time.Since(begin))
+		message := fmt.Sprintf("Method view_user for user %s took %s to complete", u.Credentials.Identity, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
-
 	return lm.svc.ViewProfile(ctx, token)
 }
 
-func (lm *loggingMiddleware) ListUsers(ctx context.Context, token string, pm users.PageMetadata) (e users.UserPage, err error) {
+func (lm *loggingMiddleware) ListUsers(ctx context.Context, token string, pm users.Page) (cp users.UsersPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_users for token %s took %s to complete", token, time.Since(begin))
 		if err != nil {
@@ -88,89 +77,106 @@ func (lm *loggingMiddleware) ListUsers(ctx context.Context, token string, pm use
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
-
 	return lm.svc.ListUsers(ctx, token, pm)
 }
 
-func (lm *loggingMiddleware) UpdateUser(ctx context.Context, token string, u users.User) (err error) {
+func (lm *loggingMiddleware) UpdateUser(ctx context.Context, token string, user users.User) (u users.User, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_user for user %s took %s to complete", u.Email, time.Since(begin))
+		message := fmt.Sprintf("Method update_user_name_and_metadata for token %s took %s to complete", token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
+	return lm.svc.UpdateUser(ctx, token, user)
+}
 
-	return lm.svc.UpdateUser(ctx, token, u)
+func (lm *loggingMiddleware) UpdateUserTags(ctx context.Context, token string, user users.User) (u users.User, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method update_user_tags for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+	return lm.svc.UpdateUserTags(ctx, token, user)
+}
+
+func (lm *loggingMiddleware) UpdateUserIdentity(ctx context.Context, token, id, identity string) (u users.User, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method update_user_identity for token %s and identity %s took %s to complete", token, identity, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+	return lm.svc.UpdateUserIdentity(ctx, token, id, identity)
+}
+
+func (lm *loggingMiddleware) ChangePassword(ctx context.Context, token, oldSecret, newSecret string) (u users.User, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method update_user_secret for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+	return lm.svc.ChangePassword(ctx, token, oldSecret, newSecret)
+}
+
+func (lm *loggingMiddleware) UpdateUserOwner(ctx context.Context, token string, user users.User) (u users.User, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method update_user_owner for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+	return lm.svc.UpdateUserOwner(ctx, token, user)
 }
 
 func (lm *loggingMiddleware) GenerateResetToken(ctx context.Context, email, host string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method generate_reset_token for user %s took %s to complete", email, time.Since(begin))
+		message := fmt.Sprintf("Method generate_reset_token for email %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
-
 	return lm.svc.GenerateResetToken(ctx, email, host)
 }
 
-func (lm *loggingMiddleware) ChangePassword(ctx context.Context, email, password, oldPassword string) (err error) {
+func (lm *loggingMiddleware) ResetPassword(ctx context.Context, token, password string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method change_password for user %s took %s to complete", email, time.Since(begin))
+		message := fmt.Sprintf("Method reset_password for token %s took %s to complete", token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
-
-	return lm.svc.ChangePassword(ctx, email, password, oldPassword)
+	return lm.svc.ResetPassword(ctx, token, password)
 }
 
-func (lm *loggingMiddleware) ResetPassword(ctx context.Context, email, password string) (err error) {
+func (lm *loggingMiddleware) SendPasswordReset(ctx context.Context, email, host, token string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method reset_password for user %s took %s to complete", email, time.Since(begin))
+		message := fmt.Sprintf("Method update_user_owner for token %s took %s to complete", token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
-
-	return lm.svc.ResetPassword(ctx, email, password)
+	return lm.svc.SendPasswordReset(ctx, email, host, token)
 }
 
-func (lm *loggingMiddleware) SendPasswordReset(ctx context.Context, host, email, token string) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method send_password_reset for user %s took %s to complete", email, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.SendPasswordReset(ctx, host, email, token)
-}
-
-func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID string, pm users.PageMetadata) (mp users.UserPage, err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_members for group %s took %s to complete", groupID, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.ListMembers(ctx, token, groupID, pm)
-}
-
-func (lm *loggingMiddleware) EnableUser(ctx context.Context, token string, id string) (err error) {
+func (lm *loggingMiddleware) EnableUser(ctx context.Context, token string, id string) (u users.User, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method enable_user for user %s took %s to complete", id, time.Since(begin))
 		if err != nil {
@@ -179,11 +185,10 @@ func (lm *loggingMiddleware) EnableUser(ctx context.Context, token string, id st
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
-
 	return lm.svc.EnableUser(ctx, token, id)
 }
 
-func (lm *loggingMiddleware) DisableUser(ctx context.Context, token string, id string) (err error) {
+func (lm *loggingMiddleware) DisableUser(ctx context.Context, token string, id string) (u users.User, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method disable_user for user %s took %s to complete", id, time.Since(begin))
 		if err != nil {
@@ -192,6 +197,17 @@ func (lm *loggingMiddleware) DisableUser(ctx context.Context, token string, id s
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
-
 	return lm.svc.DisableUser(ctx, token, id)
+}
+
+func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID string, cp users.Page) (mp users.MembersPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_members for group %s and token %s took %s to complete", groupID, token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+	return lm.svc.ListMembers(ctx, token, groupID, cp)
 }

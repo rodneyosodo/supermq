@@ -39,99 +39,127 @@ func TestValidate(t *testing.T) {
 	}{
 		"validate user with valid data": {
 			user: users.User{
-				Email:    email,
-				Password: password,
+				Credentials: users.Credentials{
+					Identity: email,
+					Secret:   password,
+				},
 			},
 			err: nil,
 		},
 		"validate user with valid domain and subdomain": {
 			user: users.User{
-				Email:    "user@example.sub.domain.com",
-				Password: password,
+				Credentials: users.Credentials{
+					Identity: "user@example.sub.domain.com",
+					Secret:   password,
+				},
 			},
 			err: nil,
 		},
 		"validate user with invalid subdomain": {
 			user: users.User{
-				Email:    "user@example..domain.com",
-				Password: password,
+				Credentials: users.Credentials{
+					Identity: "user@example..domain.com",
+					Secret:   password,
+				},
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		"validate user with invalid domain": {
 			user: users.User{
-				Email:    "user@.sub.com",
-				Password: password,
+				Credentials: users.Credentials{
+					Identity: "user@.sub.com",
+					Secret:   password,
+				},
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		"validate user with empty email": {
 			user: users.User{
-				Email:    "",
-				Password: password,
+				Credentials: users.Credentials{
+					Identity: "",
+					Secret:   password,
+				},
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		"validate user with invalid email": {
 			user: users.User{
-				Email:    "userexample.com",
-				Password: password,
+				Credentials: users.Credentials{
+					Identity: "userexample.com",
+					Secret:   password,
+				},
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		"validate user with utf8 email (cyrillic)": {
 			user: users.User{
-				Email:    "почта@кино-россия.рф",
-				Password: password,
+				Credentials: users.Credentials{
+					Identity: "почта@кино-россия.рф",
+					Secret:   password,
+				},
 			},
 			err: nil,
 		},
 		"validate user with utf8 email (hieroglyph)": {
 			user: users.User{
-				Email:    "艾付忧西开@艾付忧西开.再得",
-				Password: password,
+				Credentials: users.Credentials{
+					Identity: "艾付忧西开@艾付忧西开.再得",
+					Secret:   password,
+				},
 			},
 			err: nil,
 		},
 		"validate user with no email tld": {
 			user: users.User{
-				Email:    "user@example.",
-				Password: password,
+				Credentials: users.Credentials{
+					Identity: "user@example.",
+					Secret:   password,
+				},
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		"validate user with too long email tld": {
 			user: users.User{
-				Email:    "user@example." + randomString(maxTLDLen+1),
-				Password: password,
+				Credentials: users.Credentials{
+					Identity: "user@example." + randomString(maxTLDLen+1),
+					Secret:   password,
+				},
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		"validate user with no email domain": {
 			user: users.User{
-				Email:    "user@.com",
-				Password: password,
+				Credentials: users.Credentials{
+					Identity: "user@.com",
+					Secret:   password,
+				},
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		"validate user with too long email domain": {
 			user: users.User{
-				Email:    "user@" + randomString(maxDomainLen+1) + ".com",
-				Password: password,
+				Credentials: users.Credentials{
+					Identity: "user@" + randomString(maxDomainLen+1) + ".com",
+					Secret:   password,
+				},
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		"validate user with no email local": {
 			user: users.User{
-				Email:    "@example.com",
-				Password: password,
+				Credentials: users.Credentials{
+					Identity: "@example.com",
+					Secret:   password,
+				},
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		"validate user with too long email local": {
 			user: users.User{
-				Email:    randomString(maxLocalLen+1) + "@example.com",
-				Password: password,
+				Credentials: users.Credentials{
+					Identity: randomString(maxLocalLen+1) + "@example.com",
+					Secret:   password,
+				},
 			},
 			err: errors.ErrMalformedEntity,
 		},

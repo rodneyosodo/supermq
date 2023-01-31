@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -12,34 +10,49 @@ import (
 	"time"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	"github.com/go-zoo/bone"
 	"github.com/jmoiron/sqlx"
 	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/auth"
-	api "github.com/mainflux/mainflux/auth/api"
-	grpcapi "github.com/mainflux/mainflux/auth/api/grpc"
-	httpapi "github.com/mainflux/mainflux/auth/api/http"
-	"github.com/mainflux/mainflux/auth/jwt"
-	"github.com/mainflux/mainflux/auth/keto"
-	"github.com/mainflux/mainflux/auth/postgres"
-	"github.com/mainflux/mainflux/auth/tracing"
+	"github.com/mainflux/mainflux/auth/groups"
+	gapi "github.com/mainflux/mainflux/auth/groups/api"
+	gpostgres "github.com/mainflux/mainflux/auth/groups/postgres"
+	gtracing "github.com/mainflux/mainflux/auth/groups/tracing"
+	"github.com/mainflux/mainflux/auth/keys"
+	kapi "github.com/mainflux/mainflux/auth/keys/api"
+	"github.com/mainflux/mainflux/auth/keys/jwt"
+	kpostgres "github.com/mainflux/mainflux/auth/keys/postgres"
+	ktracing "github.com/mainflux/mainflux/auth/keys/tracing"
+	"github.com/mainflux/mainflux/auth/policies"
+	grpcapi "github.com/mainflux/mainflux/auth/policies/api/grpc"
+	papi "github.com/mainflux/mainflux/auth/policies/api/http"
+	ppostgres "github.com/mainflux/mainflux/auth/policies/postgres"
+	ptracing "github.com/mainflux/mainflux/auth/policies/tracing"
+	"github.com/mainflux/mainflux/internal/postgres"
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/uuid"
-	"github.com/opentracing/opentracing-go"
-	acl "github.com/ory/keto/proto/ory/keto/acl/v1alpha1"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	jconfig "github.com/uber/jaeger-client-go/config"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/reflection"
 )
 
 const (
+	svcName       = "auth"
 	stopWaitTime  = 5 * time.Second
 	httpProtocol  = "http"
 	httpsProtocol = "https"
 
-	defLogLevel      = "error"
+	defLogLevel      = "debug"
+	defSecretKey     = "clientsecret"
 	defDBHost        = "localhost"
 	defDBPort        = "5432"
 	defDBUser        = "mainflux"
@@ -54,14 +67,11 @@ const (
 	defSecret        = "auth"
 	defServerCert    = ""
 	defServerKey     = ""
-	defJaegerURL     = ""
-	defKetoReadHost  = "mainflux-keto"
-	defKetoWriteHost = "mainflux-keto"
-	defKetoReadPort  = "4466"
-	defKetoWritePort = "4467"
+	defJaegerURL     = "http://localhost:6831"
 	defLoginDuration = "10h"
 
 	envLogLevel      = "MF_AUTH_LOG_LEVEL"
+	envSecretKey     = "MF_AUTH_SECRET_KEY"
 	envDBHost        = "MF_AUTH_DB_HOST"
 	envDBPort        = "MF_AUTH_DB_PORT"
 	envDBUser        = "MF_AUTH_DB_USER"
@@ -77,26 +87,18 @@ const (
 	envServerCert    = "MF_AUTH_SERVER_CERT"
 	envServerKey     = "MF_AUTH_SERVER_KEY"
 	envJaegerURL     = "MF_JAEGER_URL"
-	envKetoReadHost  = "MF_KETO_READ_REMOTE_HOST"
-	envKetoWriteHost = "MF_KETO_WRITE_REMOTE_HOST"
-	envKetoReadPort  = "MF_KETO_READ_REMOTE_PORT"
-	envKetoWritePort = "MF_KETO_WRITE_REMOTE_PORT"
 	envLoginDuration = "MF_AUTH_LOGIN_TOKEN_DURATION"
 )
 
 type config struct {
 	logLevel      string
+	secretKey     string
 	dbConfig      postgres.Config
 	httpPort      string
 	grpcPort      string
-	secret        string
 	serverCert    string
 	serverKey     string
 	jaegerURL     string
-	ketoReadHost  string
-	ketoWriteHost string
-	ketoWritePort string
-	ketoReadPort  string
 	loginDuration time.Duration
 }
 
@@ -104,29 +106,35 @@ func main() {
 	cfg := loadConfig()
 	ctx, cancel := context.WithCancel(context.Background())
 	g, ctx := errgroup.WithContext(ctx)
+
 	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
 
-	db := connectToDB(cfg.dbConfig, logger)
-	defer db.Close()
+	kdb, gdb, pdb := connectToDB(cfg.dbConfig, logger)
+	defer kdb.Close()
+	defer gdb.Close()
+	defer pdb.Close()
 
-	tracer, closer := initJaeger("auth", cfg.jaegerURL, logger)
-	defer closer.Close()
+	tp, err := initJaeger(svcName, cfg.jaegerURL)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
+	}
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			logger.Error(fmt.Sprintf("Error shutting down tracer provider: %v", err))
+		}
+	}()
+	tracer := otel.Tracer(svcName)
 
-	dbTracer, dbCloser := initJaeger("auth_db", cfg.jaegerURL, logger)
-	defer dbCloser.Close()
-
-	readerConn, writerConn := initKeto(cfg.ketoReadHost, cfg.ketoReadPort, cfg.ketoWriteHost, cfg.ketoWritePort, logger)
-
-	svc := newService(db, dbTracer, cfg.secret, logger, readerConn, writerConn, cfg.loginDuration)
+	ksvc, gsvc, psvc := newService(kdb, gdb, pdb, tracer, cfg, logger)
 
 	g.Go(func() error {
-		return startHTTPServer(ctx, tracer, svc, cfg.httpPort, cfg.serverCert, cfg.serverKey, logger)
+		return startHTTPServer(ctx, ksvc, gsvc, psvc, cfg.httpPort, cfg.serverCert, cfg.serverKey, logger)
 	})
 	g.Go(func() error {
-		return startGRPCServer(ctx, tracer, svc, cfg.grpcPort, cfg.serverCert, cfg.serverKey, logger)
+		return startGRPCServer(ctx, ksvc, psvc, cfg.grpcPort, cfg.serverCert, cfg.serverKey, logger)
 	})
 
 	g.Go(func() error {
@@ -161,108 +169,143 @@ func loadConfig() config {
 
 	return config{
 		logLevel:      mainflux.Env(envLogLevel, defLogLevel),
+		secretKey:     mainflux.Env(envSecretKey, defSecretKey),
 		dbConfig:      dbConfig,
 		httpPort:      mainflux.Env(envHTTPPort, defHTTPPort),
 		grpcPort:      mainflux.Env(envGRPCPort, defGRPCPort),
-		secret:        mainflux.Env(envSecret, defSecret),
 		serverCert:    mainflux.Env(envServerCert, defServerCert),
 		serverKey:     mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
-		ketoReadHost:  mainflux.Env(envKetoReadHost, defKetoReadHost),
-		ketoWriteHost: mainflux.Env(envKetoWriteHost, defKetoWriteHost),
-		ketoReadPort:  mainflux.Env(envKetoReadPort, defKetoReadPort),
-		ketoWritePort: mainflux.Env(envKetoWritePort, defKetoWritePort),
 		loginDuration: loginDuration,
 	}
 
 }
 
-func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, io.Closer) {
-	if url == "" {
-		return opentracing.NoopTracer{}, ioutil.NopCloser(nil)
-	}
-
-	tracer, closer, err := jconfig.Configuration{
-		ServiceName: svcName,
-		Sampler: &jconfig.SamplerConfig{
-			Type:  "const",
-			Param: 1,
-		},
-		Reporter: &jconfig.ReporterConfig{
-			LocalAgentHostPort: url,
-			LogSpans:           true,
-		},
-	}.NewTracer()
+func initJaeger(svcName, url string) (*tracesdk.TracerProvider, error) {
+	exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
-		os.Exit(1)
+		return nil, err
 	}
+	tp := tracesdk.NewTracerProvider(
+		tracesdk.WithSampler(tracesdk.AlwaysSample()),
+		tracesdk.WithBatcher(exporter),
+		tracesdk.WithSpanProcessor(tracesdk.NewBatchSpanProcessor(exporter)),
+		tracesdk.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String(svcName),
+		)),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
-	return tracer, closer
+	return tp, nil
 }
 
-func initKeto(hostReadAddress, readPort, hostWriteAddress, writePort string, logger logger.Logger) (readerConnection, writerConnection *grpc.ClientConn) {
-	readConn, err := grpc.Dial(fmt.Sprintf("%s:%s", hostReadAddress, readPort), grpc.WithInsecure())
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to dial %s:%s for Keto Read Service: %s", hostReadAddress, readPort, err))
-		os.Exit(1)
-	}
-
-	writeConn, err := grpc.Dial(fmt.Sprintf("%s:%s", hostWriteAddress, writePort), grpc.WithInsecure())
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to dial %s:%s for Keto Write Service: %s", hostWriteAddress, writePort, err))
-		os.Exit(1)
-	}
-
-	return readConn, writeConn
-}
-
-func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
-	db, err := postgres.Connect(dbConfig)
+func connectToDB(dbConfig postgres.Config, logger logger.Logger) (keys *sqlx.DB, groups *sqlx.DB, policies *sqlx.DB) {
+	kdb, err := kpostgres.Connect(dbConfig)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to postgres: %s", err))
 		os.Exit(1)
 	}
-	return db
+	fmt.Println("KEYS")
+	gdb, err := gpostgres.Connect(dbConfig)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to connect to postgres: %s", err))
+		os.Exit(1)
+	}
+	fmt.Println("GROUPS")
+	pdb, err := ppostgres.Connect(dbConfig)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to connect to postgres: %s", err))
+		os.Exit(1)
+	}
+	fmt.Println("POLICIES")
+	return kdb, gdb, pdb
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, secret string, logger logger.Logger, readerConn, writerConn *grpc.ClientConn, duration time.Duration) auth.Service {
-	database := postgres.NewDatabase(db)
-	keysRepo := tracing.New(postgres.New(database), tracer)
+func newService(kdb *sqlx.DB, gdb *sqlx.DB, pdb *sqlx.DB, tracer trace.Tracer, c config, logger logger.Logger) (keys.Service, groups.Service, policies.Service) {
+	kdatabase := postgres.NewDatabase(pdb, tracer)
+	krepo := kpostgres.New(kdatabase)
 
-	groupsRepo := postgres.NewGroupRepo(database)
-	groupsRepo = tracing.GroupRepositoryMiddleware(tracer, groupsRepo)
+	gdatabase := postgres.NewDatabase(pdb, tracer)
+	grepo := gpostgres.NewGroupRepo(gdatabase)
 
-	pa := keto.NewPolicyAgent(acl.NewCheckServiceClient(readerConn), acl.NewWriteServiceClient(writerConn), acl.NewReadServiceClient(readerConn))
+	pdatabase := postgres.NewDatabase(pdb, tracer)
+	prepo := ppostgres.NewPolicyRepo(pdatabase)
 
-	idProvider := uuid.New()
-	t := jwt.New(secret)
+	idp := uuid.New()
+	tokenizer := jwt.New(c.secretKey)
 
-	svc := auth.New(keysRepo, groupsRepo, idProvider, t, pa, duration)
-	svc = api.LoggingMiddleware(svc, logger)
-	svc = api.MetricsMiddleware(
-		svc,
+	ksvc := keys.NewService(krepo, idp, tokenizer, c.loginDuration)
+	gsvc := groups.NewService(krepo, grepo, prepo, tokenizer, idp)
+	psvc := policies.NewService(prepo, tokenizer, krepo, idp)
+
+	ksvc = ktracing.TracingMiddleware(ksvc, tracer)
+	ksvc = kapi.LoggingMiddleware(ksvc, logger)
+	ksvc = kapi.MetricsMiddleware(
+		ksvc,
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
-			Namespace: "auth",
+			Namespace: "keys",
 			Subsystem: "api",
 			Name:      "request_count",
 			Help:      "Number of requests received.",
 		}, []string{"method"}),
 		kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
-			Namespace: "auth",
+			Namespace: "keys",
 			Subsystem: "api",
 			Name:      "request_latency_microseconds",
 			Help:      "Total duration of requests in microseconds.",
 		}, []string{"method"}),
 	)
 
-	return svc
+	gsvc = gtracing.TracingMiddleware(gsvc, tracer)
+	gsvc = gapi.LoggingMiddleware(gsvc, logger)
+	gsvc = gapi.MetricsMiddleware(
+		gsvc,
+		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: "groups",
+			Subsystem: "api",
+			Name:      "request_count",
+			Help:      "Number of requests received.",
+		}, []string{"method"}),
+		kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
+			Namespace: "groups",
+			Subsystem: "api",
+			Name:      "request_latency_microseconds",
+			Help:      "Total duration of requests in microseconds.",
+		}, []string{"method"}),
+	)
+
+	psvc = ptracing.TracingMiddleware(psvc, tracer)
+	psvc = papi.LoggingMiddleware(psvc, logger)
+	psvc = papi.MetricsMiddleware(
+		psvc,
+		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: "policies",
+			Subsystem: "api",
+			Name:      "request_count",
+			Help:      "Number of requests received.",
+		}, []string{"method"}),
+		kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
+			Namespace: "policies",
+			Subsystem: "api",
+			Name:      "request_latency_microseconds",
+			Help:      "Total duration of requests in microseconds.",
+		}, []string{"method"}),
+	)
+
+	return ksvc, gsvc, psvc
 }
 
-func startHTTPServer(ctx context.Context, tracer opentracing.Tracer, svc auth.Service, port string, certFile string, keyFile string, logger logger.Logger) error {
+func startHTTPServer(ctx context.Context, ksvc keys.Service, gsvc groups.Service, psvc policies.Service, port string, certFile string, keyFile string, logger logger.Logger) error {
 	p := fmt.Sprintf(":%s", port)
-	server := &http.Server{Addr: p, Handler: httpapi.MakeHandler(svc, tracer, logger)}
 	errCh := make(chan error)
+	m := bone.New()
+	kapi.MakeHandler(ksvc, m, logger)
+	gapi.MakeGroupsHandler(gsvc, m, logger)
+	papi.MakePolicyHandler(psvc, m, logger)
+	server := &http.Server{Addr: p, Handler: m}
+
 	protocol := httpProtocol
 	switch {
 	case certFile != "" || keyFile != "":
@@ -293,7 +336,7 @@ func startHTTPServer(ctx context.Context, tracer opentracing.Tracer, svc auth.Se
 	}
 }
 
-func startGRPCServer(ctx context.Context, tracer opentracing.Tracer, svc auth.Service, port string, certFile string, keyFile string, logger logger.Logger) error {
+func startGRPCServer(ctx context.Context, ksvc keys.Service, psvc policies.Service, port string, certFile string, keyFile string, logger logger.Logger) error {
 	p := fmt.Sprintf(":%s", port)
 	errCh := make(chan error)
 
@@ -315,8 +358,8 @@ func startGRPCServer(ctx context.Context, tracer opentracing.Tracer, svc auth.Se
 		logger.Info(fmt.Sprintf("Authentication gRPC service started using http on port %s", port))
 		server = grpc.NewServer()
 	}
-
-	mainflux.RegisterAuthServiceServer(server, grpcapi.NewServer(tracer, svc))
+	reflection.Register(server)
+	mainflux.RegisterAuthServiceServer(server, grpcapi.NewServer(psvc, ksvc))
 	logger.Info(fmt.Sprintf("Authentication gRPC service started, exposed port %s", port))
 	go func() {
 		errCh <- server.Serve(listener)

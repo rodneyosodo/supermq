@@ -49,7 +49,7 @@ func newUserService() users.Service {
 	emailer := mocks.NewEmailer()
 	idProvider := uuid.New()
 
-	return users.New(usersRepo, hasher, auth, emailer, idProvider, passRegex)
+	return users.NewService(usersRepo, hasher, auth, emailer, idProvider, passRegex)
 }
 
 func newUserServer(svc users.Service) *httptest.Server {

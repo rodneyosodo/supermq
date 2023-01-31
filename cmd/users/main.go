@@ -6,8 +6,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -15,33 +13,38 @@ import (
 	"strconv"
 	"time"
 
+	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	"github.com/go-zoo/bone"
+	"github.com/jmoiron/sqlx"
+	"github.com/mainflux/mainflux"
+	authapi "github.com/mainflux/mainflux/auth/policies/api/grpc"
 	"github.com/mainflux/mainflux/internal/email"
+	"github.com/mainflux/mainflux/internal/postgres"
+	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	"github.com/mainflux/mainflux/users"
+	"github.com/mainflux/mainflux/users/api"
 	"github.com/mainflux/mainflux/users/bcrypt"
 	"github.com/mainflux/mainflux/users/emailer"
-	"github.com/mainflux/mainflux/users/tracing"
+	upostgres "github.com/mainflux/mainflux/users/postgres"
+	stdprometheus "github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-
-	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	"github.com/jmoiron/sqlx"
-	"github.com/mainflux/mainflux"
-	authapi "github.com/mainflux/mainflux/auth/api/grpc"
-	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/users/api"
-	"github.com/mainflux/mainflux/users/postgres"
-	opentracing "github.com/opentracing/opentracing-go"
-	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	jconfig "github.com/uber/jaeger-client-go/config"
 )
 
 const (
 	stopWaitTime = 5 * time.Second
 
-	defLogLevel      = "error"
+	defLogLevel      = "debug"
 	defDBHost        = "localhost"
 	defDBPort        = "5432"
 	defDBUser        = "mainflux"
@@ -54,7 +57,7 @@ const (
 	defHTTPPort      = "8180"
 	defServerCert    = ""
 	defServerKey     = ""
-	defJaegerURL     = ""
+	defJaegerURL     = "http://localhost:6831"
 
 	defEmailHost        = "localhost"
 	defEmailPort        = "25"
@@ -63,8 +66,8 @@ const (
 	defEmailFromAddress = ""
 	defEmailFromName    = ""
 	defEmailTemplate    = "email.tmpl"
-	defAdminEmail       = ""
-	defAdminPassword    = ""
+	defAdminEmail       = "admin@example.com"
+	defAdminPassword    = "12345678"
 	defPassRegex        = "^.{8,}$"
 
 	defTokenResetEndpoint = "/reset-request" // URL where user lands after click on the reset link from email
@@ -144,24 +147,26 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	authTracer, closer := initJaeger("auth", cfg.jaegerURL, logger)
-	defer closer.Close()
+	tp, err := initJaeger("users", cfg.jaegerURL)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
+	}
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			logger.Error(fmt.Sprintf("Error shutting down tracer provider: %v", err))
+		}
+	}()
+	tracer := otel.Tracer("users")
 
-	auth, close := connectToAuth(cfg, authTracer, logger)
+	auth, close := connectToAuth(cfg, logger)
 	if close != nil {
 		defer close()
 	}
 
-	tracer, closer := initJaeger("users", cfg.jaegerURL, logger)
-	defer closer.Close()
-
-	dbTracer, dbCloser := initJaeger("users_db", cfg.jaegerURL, logger)
-	defer dbCloser.Close()
-
-	svc := newService(db, dbTracer, auth, cfg, logger)
+	svc := newService(db, tracer, auth, cfg, logger)
 
 	g.Go(func() error {
-		return startHTTPServer(ctx, tracer, svc, cfg.httpPort, cfg.serverCert, cfg.serverKey, logger)
+		return startHTTPServer(ctx, svc, cfg.httpPort, cfg.serverCert, cfg.serverKey, logger)
 	})
 
 	g.Go(func() error {
@@ -241,31 +246,28 @@ func loadConfig() config {
 
 }
 
-func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, io.Closer) {
-	if url == "" {
-		return opentracing.NoopTracer{}, ioutil.NopCloser(nil)
-	}
-
-	tracer, closer, err := jconfig.Configuration{
-		ServiceName: svcName,
-		Sampler: &jconfig.SamplerConfig{
-			Type:  "const",
-			Param: 1,
-		},
-		Reporter: &jconfig.ReporterConfig{
-			LocalAgentHostPort: url,
-			LogSpans:           true,
-		},
-	}.NewTracer()
+func initJaeger(svcName, url string) (*tracesdk.TracerProvider, error) {
+	exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
-		os.Exit(1)
+		return nil, err
 	}
+	tp := tracesdk.NewTracerProvider(
+		tracesdk.WithSampler(tracesdk.AlwaysSample()),
+		tracesdk.WithBatcher(exporter),
+		tracesdk.WithSpanProcessor(tracesdk.NewBatchSpanProcessor(exporter)),
+		tracesdk.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String(svcName),
+		)),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
-	return tracer, closer
+	return tp, nil
 }
+
 func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
-	db, err := postgres.Connect(dbConfig)
+	db, err := upostgres.Connect(dbConfig)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to postgres: %s", err))
 		os.Exit(1)
@@ -273,7 +275,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func connectToAuth(cfg config, tracer opentracing.Tracer, logger logger.Logger) (mainflux.AuthServiceClient, func() error) {
+func connectToAuth(cfg config, logger logger.Logger) (mainflux.AuthServiceClient, func() error) {
 	var opts []grpc.DialOption
 	if cfg.authTLS {
 		if cfg.authCACerts != "" {
@@ -295,13 +297,14 @@ func connectToAuth(cfg config, tracer opentracing.Tracer, logger logger.Logger) 
 		os.Exit(1)
 	}
 
-	return authapi.NewClient(tracer, conn, cfg.authTimeout), conn.Close
+	return authapi.NewClient(nil, conn, cfg.authTimeout), conn.Close
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, auth mainflux.AuthServiceClient, c config, logger logger.Logger) users.Service {
-	database := postgres.NewDatabase(db)
+func newService(db *sqlx.DB, tracer trace.Tracer, auth mainflux.AuthServiceClient, c config, logger logger.Logger) users.Service {
+	database := postgres.NewDatabase(db, tracer)
+	urepo := upostgres.NewUsersRepo(database)
+
 	hasher := bcrypt.New()
-	userRepo := tracing.UserRepositoryMiddleware(postgres.NewUserRepo(database), tracer)
 
 	emailer, err := emailer.New(c.resetURL, &c.emailConf)
 	if err != nil {
@@ -310,7 +313,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, auth mainflux.AuthServic
 
 	idProvider := uuid.New()
 
-	svc := users.New(userRepo, hasher, auth, emailer, idProvider, c.passRegex)
+	svc := users.New(urepo, hasher, auth, emailer, idProvider, c.passRegex)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
@@ -327,99 +330,59 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, auth mainflux.AuthServic
 			Help:      "Total duration of requests in microseconds.",
 		}, []string{"method"}),
 	)
-	if err := createAdmin(svc, userRepo, c, auth); err != nil {
+	if err := createAdmin(svc, urepo, hasher, c, auth); err != nil {
 		logger.Error("failed to create admin user: " + err.Error())
 		os.Exit(1)
-	}
-
-	switch c.selfRegister {
-	case true:
-		// If MF_USERS_ALLOW_SELF_REGISTER environment variable is "true",
-		// everybody can create a new user. Here, check the existence of that
-		// policy. If the policy does not exist, create it; otherwise, there is
-		// no need to do anything further.
-		_, err := auth.Authorize(context.Background(), &mainflux.AuthorizeReq{Obj: "user", Act: "create", Sub: "*"})
-		if err != nil {
-			// Add a policy that allows anybody to create a user
-			apr, err := auth.AddPolicy(context.Background(), &mainflux.AddPolicyReq{Obj: "user", Act: "create", Sub: "*"})
-			if err != nil {
-				logger.Error("failed to add the policy related to MF_USERS_ALLOW_SELF_REGISTER: " + err.Error())
-				os.Exit(1)
-			}
-			if !apr.GetAuthorized() {
-				logger.Error("failed to authorized the policy result related to MF_USERS_ALLOW_SELF_REGISTER: " + errors.ErrAuthorization.Error())
-				os.Exit(1)
-			}
-		}
-	default:
-		// If MF_USERS_ALLOW_SELF_REGISTER environment variable is "false",
-		// everybody cannot create a new user. Therefore, delete a policy that
-		// allows everybody to create a new user.
-		dpr, err := auth.DeletePolicy(context.Background(), &mainflux.DeletePolicyReq{Obj: "user", Act: "create", Sub: "*"})
-		if err != nil {
-			logger.Error("failed to delete a policy: " + err.Error())
-			os.Exit(1)
-		}
-		if !dpr.GetDeleted() {
-			logger.Error("deleting a policy expected to succeed.")
-			os.Exit(1)
-		}
 	}
 
 	return svc
 }
 
-func createAdmin(svc users.Service, userRepo users.UserRepository, c config, auth mainflux.AuthServiceClient) error {
-	user := users.User{
-		Email:    c.adminEmail,
-		Password: c.adminPassword,
+func createAdmin(svc users.Service, urepo users.Repository, hsr users.Hasher, c config, auth mainflux.AuthServiceClient) error {
+	id, err := uuid.New().ID()
+	if err != nil {
+		return err
+	}
+	hash, err := hsr.Hash(c.adminPassword)
+	if err != nil {
+		return err
 	}
 
-	if admin, err := userRepo.RetrieveByEmail(context.Background(), user.Email); err == nil {
-		// The admin is already created. Check existence of the admin policy.
-		_, err := auth.Authorize(context.Background(), &mainflux.AuthorizeReq{Obj: "authorities", Act: "member", Sub: admin.ID})
-		if err != nil {
-			apr, err := auth.AddPolicy(context.Background(), &mainflux.AddPolicyReq{Obj: "authorities", Act: "member", Sub: admin.ID})
-			if err != nil {
-				return err
-			}
-			if !apr.GetAuthorized() {
-				return errors.ErrAuthorization
-			}
-		}
+	user := users.User{
+		ID:   id,
+		Name: "admin",
+		Credentials: users.Credentials{
+			Identity: c.adminEmail,
+			Secret:   hash,
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Status:    users.EnabledStatus,
+	}
+
+	if _, err := urepo.RetrieveByIdentity(context.Background(), user.Credentials.Identity); err == nil {
 		return nil
 	}
 
-	// Add a policy that allows anybody to create a user
-	apr, err := auth.AddPolicy(context.Background(), &mainflux.AddPolicyReq{Obj: "user", Act: "create", Sub: "*"})
-	if err != nil {
-		return err
-	}
-	if !apr.GetAuthorized() {
-		return errors.ErrAuthorization
-	}
-
 	// Create an admin
-	uid, err := svc.Register(context.Background(), "", user)
-	if err != nil {
+	if _, err = urepo.Save(context.Background(), user); err != nil {
 		return err
 	}
-
-	apr, err = auth.AddPolicy(context.Background(), &mainflux.AddPolicyReq{Obj: "authorities", Act: "member", Sub: uid})
+	user.Credentials.Secret = c.adminPassword
+	_, err = svc.Login(context.Background(), user)
 	if err != nil {
 		return err
-	}
-	if !apr.GetAuthorized() {
-		return errors.ErrAuthorization
 	}
 
 	return nil
 }
 
-func startHTTPServer(ctx context.Context, tracer opentracing.Tracer, svc users.Service, port string, certFile string, keyFile string, logger logger.Logger) error {
+func startHTTPServer(ctx context.Context, svc users.Service, port string, certFile string, keyFile string, logger logger.Logger) error {
 	p := fmt.Sprintf(":%s", port)
 	errCh := make(chan error)
-	server := &http.Server{Addr: p, Handler: api.MakeHandler(svc, tracer, logger)}
+	m := bone.New()
+	api.MakeClientsHandler(svc, m, logger)
+	server := &http.Server{Addr: p, Handler: m}
 
 	switch {
 	case certFile != "" || keyFile != "":

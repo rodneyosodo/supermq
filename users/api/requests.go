@@ -1,9 +1,7 @@
-// Copyright (c) Mainflux
-// SPDX-License-Identifier: Apache-2.0
-
 package api
 
 import (
+	"github.com/mainflux/mainflux/internal/api"
 	"github.com/mainflux/mainflux/internal/apiutil"
 	"github.com/mainflux/mainflux/users"
 )
@@ -13,20 +11,16 @@ const (
 	maxEmailSize = 1024
 )
 
-type userReq struct {
-	user users.User
-}
-
-func (req userReq) validate() error {
-	return req.user.Validate()
-}
-
 type createUserReq struct {
 	user  users.User
 	token string
 }
 
 func (req createUserReq) validate() error {
+	if len(req.user.Name) > api.MaxNameSize {
+		return apiutil.ErrNameSize
+	}
+
 	return req.user.Validate()
 }
 
@@ -43,30 +37,55 @@ func (req viewUserReq) validate() error {
 }
 
 type listUsersReq struct {
-	token    string
-	status   string
-	offset   uint64
-	limit    uint64
-	email    string
-	metadata users.Metadata
+	token      string
+	status     users.Status
+	offset     uint64
+	limit      uint64
+	name       string
+	tag        string
+	owner      string
+	sharedBy   string
+	visibility string
+	metadata   users.Metadata
+	email      string
 }
 
 func (req listUsersReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
-
 	if req.limit > maxLimitSize || req.limit < 1 {
 		return apiutil.ErrLimitSize
 	}
-
 	if len(req.email) > maxEmailSize {
 		return apiutil.ErrEmailSize
 	}
-	if req.status != users.AllStatusKey &&
-		req.status != users.EnabledStatusKey &&
-		req.status != users.DisabledStatusKey {
+	if req.visibility != "" &&
+		req.visibility != api.AllVisibility &&
+		req.visibility != api.MyVisibility &&
+		req.visibility != api.SharedVisibility {
+		return apiutil.ErrInvalidVisibilityType
+	}
+	if req.status != users.AllStatus &&
+		req.status != users.EnabledStatus &&
+		req.status != users.DisabledStatus {
 		return apiutil.ErrInvalidStatus
+	}
+	return nil
+}
+
+type listMembersReq struct {
+	users.Page
+	token   string
+	groupID string
+}
+
+func (req listMembersReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.groupID == "" {
+		return apiutil.ErrMissingID
 	}
 
 	return nil
@@ -74,10 +93,69 @@ func (req listUsersReq) validate() error {
 
 type updateUserReq struct {
 	token    string
+	id       string
+	Name     string                 `json:"name,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 func (req updateUserReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}
+
+type updateUserTagsReq struct {
+	id    string
+	token string
+	Tags  []string `json:"tags,omitempty"`
+}
+
+func (req updateUserTagsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingID
+	}
+	if len(req.Tags) == 0 {
+		return apiutil.ErrMissingUserTags
+	}
+	return nil
+}
+
+type updateUserOwnerReq struct {
+	id    string
+	token string
+	Owner string `json:"owner,omitempty"`
+}
+
+func (req updateUserOwnerReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingID
+	}
+	if req.Owner == "" {
+		return apiutil.ErrMissingOwner
+	}
+	return nil
+}
+
+type updateUserCredentialsReq struct {
+	token     string
+	id        string
+	Identity  string `json:"email,omitempty"`
+	OldSecret string `json:"old_secret,omitempty"`
+	NewSecret string `json:"new_secret,omitempty"`
+}
+
+func (req updateUserCredentialsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -127,58 +205,40 @@ func (req resetTokenReq) validate() error {
 	return nil
 }
 
-type passwChangeReq struct {
-	token       string
-	Password    string `json:"password"`
-	OldPassword string `json:"old_password"`
-}
-
-func (req passwChangeReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-	if req.OldPassword == "" {
-		return apiutil.ErrMissingPass
-	}
-	return nil
-}
-
-type listMemberGroupReq struct {
-	token    string
-	status   string
-	offset   uint64
-	limit    uint64
-	metadata users.Metadata
-	id       string
-}
-
-func (req listMemberGroupReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.id == "" {
-		return apiutil.ErrMissingID
-	}
-	if req.status != users.AllStatusKey &&
-		req.status != users.EnabledStatusKey &&
-		req.status != users.DisabledStatusKey {
-		return apiutil.ErrInvalidStatus
-	}
-	return nil
-}
-
 type changeUserStatusReq struct {
 	token string
 	id    string
 }
 
 func (req changeUserStatusReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
 	if req.id == "" {
 		return apiutil.ErrMissingID
+	}
+	return nil
+}
+
+type loginUserReq struct {
+	Identity string `json:"email,omitempty"`
+	Secret   string `json:"password,omitempty"`
+}
+
+func (req loginUserReq) validate() error {
+	if req.Identity == "" {
+		return apiutil.ErrMissingIdentity
+	}
+	if req.Secret == "" {
+		return apiutil.ErrMissingSecret
+	}
+	return nil
+}
+
+type tokenReq struct {
+	RefreshToken string `json:"refresh_token,omitempty"`
+}
+
+func (req tokenReq) validate() error {
+	if req.RefreshToken == "" {
+		return apiutil.ErrBearerToken
 	}
 	return nil
 }

@@ -11,62 +11,11 @@ volumes:
   mainflux-auth-db-volume:
   mainflux-users-db-volume:
   mainflux-things-db-volume:
-  mainflux-keto-db-volume:
   mainflux-auth-redis-volume:
   mainflux-es-redis-volume:
   mainflux-mqtt-broker-volume:
 
 services:
-  keto:
-    image: oryd/keto:v0.6.0-alpha.3
-    container_name: mainflux-keto
-    ports:
-      - ${MF_KETO_READ_REMOTE_PORT}:${MF_KETO_READ_REMOTE_PORT}
-      - ${MF_KETO_WRITE_REMOTE_PORT}:${MF_KETO_WRITE_REMOTE_PORT}
-    environment:
-      - DSN=postgresql://${MF_KETO_DB_USER}:${MF_KETO_DB_PASS}@keto-db:${MF_KETO_DB_PORT}/${MF_KETO_DB}?sslmode=disable
-    command: serve -c /home/ory/keto.yml
-    restart: on-failure
-    volumes:
-      - type: bind
-        source: ./keto
-        target: /home/ory
-    networks:
-      - mainflux-base-net
-    depends_on:
-      - keto-db
-
-  keto-migrate:
-    image: oryd/keto:v0.6.0-alpha.3
-    container_name: mainflux-keto-migrate
-    environment:
-      - KETO_WRITE_REMOTE=keto:${MF_KETO_WRITE_REMOTE_PORT}
-      - KETO_READ_REMOTE=keto:${MF_KETO_READ_REMOTE_PORT}
-      - DSN=postgresql://${MF_KETO_DB_USER}:${MF_KETO_DB_PASS}@keto-db:${MF_KETO_DB_PORT}/${MF_KETO_DB}?sslmode=disable
-    volumes:
-      - type: bind
-        source: ./keto
-        target: /home/ory
-    command: migrate up --all-namespaces -c /home/ory/keto.yml --yes
-    restart: on-failure
-    networks:
-      - mainflux-base-net
-    depends_on:
-      - keto-db
-
-  keto-db:
-    image: postgres:13.3-alpine
-    container_name: mainflux-keto-db
-    restart: on-failure
-    environment:
-      POSTGRES_USER: ${MF_KETO_DB_USER}
-      POSTGRES_PASSWORD: ${MF_KETO_DB_PASS}
-      POSTGRES_DB: ${MF_KETO_DB}
-    networks:
-      - mainflux-base-net
-    volumes:
-      - mainflux-keto-db-volume:/var/lib/postgresql/data
-
   nginx:
     image: nginx:1.23.3-alpine
     container_name: mainflux-nginx
@@ -108,7 +57,7 @@ services:
     - 4222:4222
 
   auth-db:
-    image: postgres:13.3-alpine
+    image: postgres:15.1-alpine
     container_name: mainflux-auth-db
     restart: on-failure
     environment:
@@ -125,7 +74,6 @@ services:
     container_name: mainflux-auth
     depends_on:
       - auth-db
-      - keto
     expose:
       - ${MF_AUTH_GRPC_PORT}
     restart: on-failure
@@ -141,10 +89,6 @@ services:
       MF_AUTH_SECRET: ${MF_AUTH_SECRET}
       MF_AUTH_LOGIN_TOKEN_DURATION: ${MF_AUTH_LOGIN_TOKEN_DURATION}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
-      MF_KETO_READ_REMOTE_HOST: ${MF_KETO_READ_REMOTE_HOST}
-      MF_KETO_READ_REMOTE_PORT: ${MF_KETO_READ_REMOTE_PORT}
-      MF_KETO_WRITE_REMOTE_HOST: ${MF_KETO_WRITE_REMOTE_HOST}
-      MF_KETO_WRITE_REMOTE_PORT: ${MF_KETO_WRITE_REMOTE_PORT}
     ports:
       - ${MF_AUTH_HTTP_PORT}:${MF_AUTH_HTTP_PORT}
       - ${MF_AUTH_GRPC_PORT}:${MF_AUTH_GRPC_PORT}
@@ -152,27 +96,34 @@ services:
       - mainflux-base-net
 
   users-db:
-    image: postgres:13.3-alpine
+    image: postgres:15.1-alpine
     container_name: mainflux-users-db
     restart: on-failure
+    expose:
+      - ${MF_USERS_DB_PORT}
     environment:
       POSTGRES_USER: ${MF_USERS_DB_USER}
       POSTGRES_PASSWORD: ${MF_USERS_DB_PASS}
       POSTGRES_DB: ${MF_USERS_DB}
     networks:
       - mainflux-base-net
+    ports:
+      - ${MF_USERS_DB_PORT}:${MF_USERS_DB_PORT}
+    command: -p ${MF_USERS_DB_PORT}
     volumes:
       - mainflux-users-db-volume:/var/lib/postgresql/data
+
 
   users:
     image: mainflux/users:${MF_RELEASE_TAG}
     container_name: mainflux-users
-    volumes:
-      - ./templates/${MF_USERS_RESET_PWD_TEMPLATE}:/${MF_EMAIL_TEMPLATE}
     depends_on:
       - users-db
-      - auth
     restart: on-failure
+    expose:
+      - ${MF_USERS_HTTP_PORT}
+    volumes:
+      - ./templates/${MF_USERS_RESET_PWD_TEMPLATE}:/${MF_EMAIL_TEMPLATE}
     environment:
       MF_USERS_LOG_LEVEL: ${MF_USERS_LOG_LEVEL}
       MF_USERS_DB_HOST: users-db
@@ -180,10 +131,18 @@ services:
       MF_USERS_DB_USER: ${MF_USERS_DB_USER}
       MF_USERS_DB_PASS: ${MF_USERS_DB_PASS}
       MF_USERS_DB: ${MF_USERS_DB}
+      MF_USERS_DB_SSL_MODE: ${MF_USERS_DB_SSL_MODE}
+      MF_USERS_DB_SSL_CERT: ${MF_USERS_DB_SSL_CERT}
+      MF_USERS_DB_SSL_KEY: ${MF_USERS_DB_SSL_KEY}
+      MF_USERS_DB_SSL_ROOT_CERT: ${MF_USERS_DB_SSL_ROOT_CERT}
       MF_USERS_HTTP_PORT: ${MF_USERS_HTTP_PORT}
-      MF_JAEGER_URL: ${MF_JAEGER_URL}
-      MF_EMAIL_HOST: ${MF_EMAIL_HOST}
-      MF_EMAIL_PORT: ${MF_EMAIL_PORT}
+      MF_USERS_GRPC_PORT: ${MF_USERS_GRPC_PORT}
+      MF_JAEGER_URL: ${UV_JAEGER_URL}
+      MF_USERS_GRPC_URL: ${MF_USERS_GRPC_URL}
+      MF_USERS_GRPC_TIMEOUT: ${MF_USERS_GRPC_TIMEOUT}
+      MF_USERS_SERVER_CERT: ${MF_USERS_SERVER_CERT}
+      MF_USERS_SERVER_KEY: ${MF_USERS_SERVER_KEY}
+
       MF_EMAIL_USERNAME: ${MF_EMAIL_USERNAME}
       MF_EMAIL_PASSWORD: ${MF_EMAIL_PASSWORD}
       MF_EMAIL_FROM_ADDRESS: ${MF_EMAIL_FROM_ADDRESS}
@@ -195,10 +154,13 @@ services:
       MF_USERS_ADMIN_EMAIL: ${MF_USERS_ADMIN_EMAIL}
       MF_USERS_ADMIN_PASSWORD: ${MF_USERS_ADMIN_PASSWORD}
       MF_USERS_ALLOW_SELF_REGISTER: ${MF_USERS_ALLOW_SELF_REGISTER}
+
     ports:
       - ${MF_USERS_HTTP_PORT}:${MF_USERS_HTTP_PORT}
+      - ${MF_USERS_GRPC_PORT}:${MF_USERS_GRPC_PORT}
     networks:
       - mainflux-base-net
+
 
   things-db:
     image: postgres:13.3-alpine
@@ -252,7 +214,7 @@ services:
       - mainflux-base-net
 
   jaeger:
-    image: jaegertracing/all-in-one:1.20
+    image: jaegertracing/all-in-one:1.38.0
     container_name: mainflux-jaeger
     ports:
       - ${MF_JAEGER_PORT}:${MF_JAEGER_PORT}/udp

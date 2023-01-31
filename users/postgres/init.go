@@ -1,36 +1,19 @@
-// Copyright (c) Mainflux
-// SPDX-License-Identifier: Apache-2.0
-
 package postgres
 
 import (
 	"fmt"
 
-	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
+	_ "github.com/jackc/pgx/v4/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
-
+	"github.com/mainflux/mainflux/internal/postgres"
 	migrate "github.com/rubenv/sql-migrate"
 )
-
-// Config defines the options that are used when connecting to a PostgreSQL instance
-type Config struct {
-	Host        string
-	Port        string
-	User        string
-	Pass        string
-	Name        string
-	SSLMode     string
-	SSLCert     string
-	SSLKey      string
-	SSLRootCert string
-}
 
 // Connect creates a connection to the PostgreSQL instance and applies any
 // unapplied database migrations. A non-nil error is returned to indicate
 // failure.
-func Connect(cfg Config) (*sqlx.DB, error) {
+func Connect(cfg postgres.Config) (*sqlx.DB, error) {
 	url := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s sslcert=%s sslkey=%s sslrootcert=%s", cfg.Host, cfg.Port, cfg.User, cfg.Name, cfg.Pass, cfg.SSLMode, cfg.SSLCert, cfg.SSLKey, cfg.SSLRootCert)
-
 	db, err := sqlx.Open("pgx", url)
 	if err != nil {
 		return nil, err
@@ -43,52 +26,26 @@ func Connect(cfg Config) (*sqlx.DB, error) {
 }
 
 func migrateDB(db *sqlx.DB) error {
-
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
-				Id: "users_1",
+				Id: "clients_01",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS users (
-					 email    VARCHAR(254) PRIMARY KEY,
-					 password CHAR(60)     NOT  NULL
+						id          VARCHAR(254) PRIMARY KEY,
+						name        VARCHAR(254),
+						owner       VARCHAR(254),
+						identity    VARCHAR(254) UNIQUE NOT NULL,
+						secret      TEXT NOT NULL,
+						tags        TEXT[],
+						metadata    JSONB,
+						created_at  TIMESTAMP,
+						updated_at  TIMESTAMP,
+						status      SMALLINT NOT NULL CHECK (status >= 0) DEFAULT 1
 					)`,
 				},
-				Down: []string{"DROP TABLE users"},
-			},
-			{
-				Id: "users_2",
-				Up: []string{
-					`ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS metadata JSONB`,
-				},
-			},
-			{
-				Id: "users_3",
-				Up: []string{
-					`CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-					 ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS
-					 id UUID NOT NULL DEFAULT gen_random_uuid()`,
-				},
-			},
-			{
-				Id: "users_4",
-				Up: []string{
-					`ALTER TABLE IF EXISTS users DROP CONSTRAINT users_pkey`,
-					`ALTER TABLE IF EXISTS users ADD CONSTRAINT users_email_key UNIQUE (email)`,
-					`ALTER TABLE IF EXISTS users ADD PRIMARY KEY (id)`,
-				},
-			},
-			{
-				Id: "users_5",
-				Up: []string{
-					`DO $$
-					BEGIN
-						IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_status') THEN
-							CREATE TYPE user_status AS ENUM ('enabled', 'disabled');
-						END IF;
-					END$$;`,
-					`ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS
-					status USER_STATUS NOT NULL DEFAULT 'enabled'`,
+				Down: []string{
+					`DROP TABLE IF EXISTS users`,
 				},
 			},
 		},

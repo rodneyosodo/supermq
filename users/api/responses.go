@@ -1,6 +1,3 @@
-// Copyright (c) Mainflux
-// SPDX-License-Identifier: Apache-2.0
-
 package api
 
 import (
@@ -8,27 +5,31 @@ import (
 	"net/http"
 
 	"github.com/mainflux/mainflux"
+	"github.com/mainflux/mainflux/users"
 )
 
 var (
 	_ mainflux.Response = (*tokenRes)(nil)
 	_ mainflux.Response = (*viewUserRes)(nil)
-	_ mainflux.Response = (*passwChangeRes)(nil)
 	_ mainflux.Response = (*createUserRes)(nil)
-	_ mainflux.Response = (*deleteRes)(nil)
+	_ mainflux.Response = (*updateUserRes)(nil)
+	_ mainflux.Response = (*deleteUserRes)(nil)
+	_ mainflux.Response = (*userssPageRes)(nil)
+	_ mainflux.Response = (*viewMembersRes)(nil)
+	_ mainflux.Response = (*memberPageRes)(nil)
 )
 
 // MailSent message response when link is sent
 const MailSent = "Email with reset link is sent"
 
 type pageRes struct {
+	Limit  uint64 `json:"limit,omitempty"`
+	Offset uint64 `json:"offset,omitempty"`
 	Total  uint64 `json:"total"`
-	Offset uint64 `json:"offset"`
-	Limit  uint64 `json:"limit"`
 }
 
 type createUserRes struct {
-	ID      string
+	users.User
 	created bool
 }
 
@@ -51,11 +52,13 @@ func (res createUserRes) Headers() map[string]string {
 }
 
 func (res createUserRes) Empty() bool {
-	return true
+	return false
 }
 
 type tokenRes struct {
-	Token string `json:"token,omitempty"`
+	AccessToken  string `json:"access_token,omitempty"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+	AccessType   string `json:"access_type,omitempty"`
 }
 
 func (res tokenRes) Code() int {
@@ -67,10 +70,12 @@ func (res tokenRes) Headers() map[string]string {
 }
 
 func (res tokenRes) Empty() bool {
-	return res.Token == ""
+	return res.AccessToken == "" || res.RefreshToken == ""
 }
 
-type updateUserRes struct{}
+type updateUserRes struct {
+	users.User
+}
 
 func (res updateUserRes) Code() int {
 	return http.StatusOK
@@ -81,13 +86,11 @@ func (res updateUserRes) Headers() map[string]string {
 }
 
 func (res updateUserRes) Empty() bool {
-	return true
+	return false
 }
 
 type viewUserRes struct {
-	ID       string                 `json:"id"`
-	Email    string                 `json:"email"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	users.User
 }
 
 func (res viewUserRes) Code() int {
@@ -102,20 +105,69 @@ func (res viewUserRes) Empty() bool {
 	return false
 }
 
-type userPageRes struct {
+type userssPageRes struct {
 	pageRes
 	Users []viewUserRes `json:"users"`
 }
 
-func (res userPageRes) Code() int {
+func (res userssPageRes) Code() int {
 	return http.StatusOK
 }
 
-func (res userPageRes) Headers() map[string]string {
+func (res userssPageRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res userPageRes) Empty() bool {
+func (res userssPageRes) Empty() bool {
+	return false
+}
+
+type viewMembersRes struct {
+	users.User
+}
+
+func (res viewMembersRes) Code() int {
+	return http.StatusOK
+}
+
+func (res viewMembersRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res viewMembersRes) Empty() bool {
+	return false
+}
+
+type memberPageRes struct {
+	pageRes
+	Members []viewMembersRes `json:"members"`
+}
+
+func (res memberPageRes) Code() int {
+	return http.StatusOK
+}
+
+func (res memberPageRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res memberPageRes) Empty() bool {
+	return false
+}
+
+type deleteUserRes struct {
+	users.User
+}
+
+func (res deleteUserRes) Code() int {
+	return http.StatusOK
+}
+
+func (res deleteUserRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res deleteUserRes) Empty() bool {
 	return false
 }
 
@@ -148,18 +200,4 @@ func (res passwChangeRes) Headers() map[string]string {
 
 func (res passwChangeRes) Empty() bool {
 	return false
-}
-
-type deleteRes struct{}
-
-func (res deleteRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res deleteRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res deleteRes) Empty() bool {
-	return true
 }

@@ -1,9 +1,8 @@
-// Copyright (c) Mainflux
-// SPDX-License-Identifier: Apache-2.0
-
 syntax = "proto3";
 
 package mainflux;
+
+option go_package = "./mainflux";
 
 import "google/protobuf/empty.proto";
 
@@ -67,9 +66,10 @@ message IssueReq {
 }
 
 message AuthorizeReq {
-    string sub = 1;
-    string obj = 2;
-    string act = 3;
+    string sub        = 1;
+    string obj        = 2;
+    string act        = 3;
+    string entityType = 4;
 }
 
 message AuthorizeRes {
