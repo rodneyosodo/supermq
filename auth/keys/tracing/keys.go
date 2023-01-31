@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	saveOp     = "save"
 	retrieveOp = "retrieve_by_id"
 	revokeOp   = "remove"
 )
