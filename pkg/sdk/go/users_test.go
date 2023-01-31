@@ -11,8 +11,9 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/go-zoo/bone"
 	"github.com/mainflux/mainflux"
-	mfauth "github.com/mainflux/mainflux/auth"
+	mfauth "github.com/mainflux/mainflux/auth/keys"
 	"github.com/mainflux/mainflux/internal/apiutil"
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
@@ -21,7 +22,6 @@ import (
 	"github.com/mainflux/mainflux/users"
 	"github.com/mainflux/mainflux/users/api"
 	"github.com/mainflux/mainflux/users/mocks"
-	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,12 +49,13 @@ func newUserService() users.Service {
 	emailer := mocks.NewEmailer()
 	idProvider := uuid.New()
 
-	return users.NewService(usersRepo, hasher, auth, emailer, idProvider, passRegex)
+	return users.New(usersRepo, hasher, auth, emailer, idProvider, passRegex)
 }
 
 func newUserServer(svc users.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := api.MakeHandler(svc, mocktracer.New(), logger)
+	mux := bone.New()
+	api.MakeClientsHandler(svc, mux, logger)
 	return httptest.NewServer(mux)
 }
 
