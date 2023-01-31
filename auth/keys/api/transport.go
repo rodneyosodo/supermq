@@ -66,14 +66,3 @@ func decodeKeyReq(_ context.Context, r *http.Request) (interface{}, error) {
 	}
 	return req, nil
 }
-
-func encodeError(_ context.Context, err error, w http.ResponseWriter) {
-
-
-	if errorVal, ok := err.(errors.Error); ok {
-		w.Header().Set("Content-Type", api.ContentType)
-		if err := json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: errorVal.Msg()}); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	}
-}
