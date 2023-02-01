@@ -27,7 +27,7 @@ var (
 	userDotRegexp = regexp.MustCompile("(^[.]{1})|([.]{1}$)|([.]{2,})")
 )
 
-// Credentials represent client credentials: its
+// Credentials represent user credentials: its
 // "identity" which can be a username, email, generated name;
 // and "secret" which can be a password or access token.
 type Credentials struct {
@@ -35,7 +35,7 @@ type Credentials struct {
 	Secret   string `json:"password"` // password or token
 }
 
-// User represents generic Client.
+// User represents generic user.
 type User struct {
 	ID          string      `json:"id"`
 	Name        string      `json:"name,omitempty"`
