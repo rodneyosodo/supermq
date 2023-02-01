@@ -12,11 +12,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-const (
-	retrieveOp = "retrieve_by_id"
-	revokeOp   = "remove"
-)
-
 var _ keys.Service = (*keyTracingMiddleware)(nil)
 
 // keyTracingMiddleware tracks request and their latency, and adds spans
