@@ -7,10 +7,10 @@ import (
 	context "context"
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
-	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -1203,8 +1203,8 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ThingsServiceClient interface {
 	CanAccessByKey(ctx context.Context, in *AccessByKeyReq, opts ...grpc.CallOption) (*ThingID, error)
-	IsChannelOwner(ctx context.Context, in *ChannelOwnerReq, opts ...grpc.CallOption) (*empty.Empty, error)
-	CanAccessByID(ctx context.Context, in *AccessByIDReq, opts ...grpc.CallOption) (*empty.Empty, error)
+	IsChannelOwner(ctx context.Context, in *ChannelOwnerReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	CanAccessByID(ctx context.Context, in *AccessByIDReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Identify(ctx context.Context, in *Token, opts ...grpc.CallOption) (*ThingID, error)
 }
 
@@ -1225,8 +1225,8 @@ func (c *thingsServiceClient) CanAccessByKey(ctx context.Context, in *AccessByKe
 	return out, nil
 }
 
-func (c *thingsServiceClient) IsChannelOwner(ctx context.Context, in *ChannelOwnerReq, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *thingsServiceClient) IsChannelOwner(ctx context.Context, in *ChannelOwnerReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/mainflux.ThingsService/IsChannelOwner", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -1234,8 +1234,8 @@ func (c *thingsServiceClient) IsChannelOwner(ctx context.Context, in *ChannelOwn
 	return out, nil
 }
 
-func (c *thingsServiceClient) CanAccessByID(ctx context.Context, in *AccessByIDReq, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *thingsServiceClient) CanAccessByID(ctx context.Context, in *AccessByIDReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/mainflux.ThingsService/CanAccessByID", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -1255,8 +1255,8 @@ func (c *thingsServiceClient) Identify(ctx context.Context, in *Token, opts ...g
 // ThingsServiceServer is the server API for ThingsService service.
 type ThingsServiceServer interface {
 	CanAccessByKey(context.Context, *AccessByKeyReq) (*ThingID, error)
-	IsChannelOwner(context.Context, *ChannelOwnerReq) (*empty.Empty, error)
-	CanAccessByID(context.Context, *AccessByIDReq) (*empty.Empty, error)
+	IsChannelOwner(context.Context, *ChannelOwnerReq) (*emptypb.Empty, error)
+	CanAccessByID(context.Context, *AccessByIDReq) (*emptypb.Empty, error)
 	Identify(context.Context, *Token) (*ThingID, error)
 }
 
@@ -1267,10 +1267,10 @@ type UnimplementedThingsServiceServer struct {
 func (*UnimplementedThingsServiceServer) CanAccessByKey(ctx context.Context, req *AccessByKeyReq) (*ThingID, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CanAccessByKey not implemented")
 }
-func (*UnimplementedThingsServiceServer) IsChannelOwner(ctx context.Context, req *ChannelOwnerReq) (*empty.Empty, error) {
+func (*UnimplementedThingsServiceServer) IsChannelOwner(ctx context.Context, req *ChannelOwnerReq) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsChannelOwner not implemented")
 }
-func (*UnimplementedThingsServiceServer) CanAccessByID(ctx context.Context, req *AccessByIDReq) (*empty.Empty, error) {
+func (*UnimplementedThingsServiceServer) CanAccessByID(ctx context.Context, req *AccessByIDReq) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CanAccessByID not implemented")
 }
 func (*UnimplementedThingsServiceServer) Identify(ctx context.Context, req *Token) (*ThingID, error) {
@@ -1388,7 +1388,7 @@ type AuthServiceClient interface {
 	AddPolicy(ctx context.Context, in *AddPolicyReq, opts ...grpc.CallOption) (*AddPolicyRes, error)
 	DeletePolicy(ctx context.Context, in *DeletePolicyReq, opts ...grpc.CallOption) (*DeletePolicyRes, error)
 	ListPolicies(ctx context.Context, in *ListPoliciesReq, opts ...grpc.CallOption) (*ListPoliciesRes, error)
-	Assign(ctx context.Context, in *Assignment, opts ...grpc.CallOption) (*empty.Empty, error)
+	Assign(ctx context.Context, in *Assignment, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Members(ctx context.Context, in *MembersReq, opts ...grpc.CallOption) (*MembersRes, error)
 }
 
@@ -1454,8 +1454,8 @@ func (c *authServiceClient) ListPolicies(ctx context.Context, in *ListPoliciesRe
 	return out, nil
 }
 
-func (c *authServiceClient) Assign(ctx context.Context, in *Assignment, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *authServiceClient) Assign(ctx context.Context, in *Assignment, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/mainflux.AuthService/Assign", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -1480,7 +1480,7 @@ type AuthServiceServer interface {
 	AddPolicy(context.Context, *AddPolicyReq) (*AddPolicyRes, error)
 	DeletePolicy(context.Context, *DeletePolicyReq) (*DeletePolicyRes, error)
 	ListPolicies(context.Context, *ListPoliciesReq) (*ListPoliciesRes, error)
-	Assign(context.Context, *Assignment) (*empty.Empty, error)
+	Assign(context.Context, *Assignment) (*emptypb.Empty, error)
 	Members(context.Context, *MembersReq) (*MembersRes, error)
 }
 
@@ -1506,7 +1506,7 @@ func (*UnimplementedAuthServiceServer) DeletePolicy(ctx context.Context, req *De
 func (*UnimplementedAuthServiceServer) ListPolicies(ctx context.Context, req *ListPoliciesReq) (*ListPoliciesRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPolicies not implemented")
 }
-func (*UnimplementedAuthServiceServer) Assign(ctx context.Context, req *Assignment) (*empty.Empty, error) {
+func (*UnimplementedAuthServiceServer) Assign(ctx context.Context, req *Assignment) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Assign not implemented")
 }
 func (*UnimplementedAuthServiceServer) Members(ctx context.Context, req *MembersReq) (*MembersRes, error) {
