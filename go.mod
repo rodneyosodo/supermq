@@ -20,7 +20,6 @@ require (
 	github.com/hashicorp/vault/api v1.8.1
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f
 	github.com/influxdata/influxdb v1.10.0
-	github.com/jackc/pgconn v1.9.1-0.20210724152538-d89c8390a530
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
 	github.com/jackc/pgtype v1.13.0
 	github.com/jackc/pgx/v5 v5.2.0
@@ -108,10 +107,8 @@ require (
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
-	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.1.1 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.1 // indirect
