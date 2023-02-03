@@ -37,7 +37,7 @@ const (
 type config struct {
 	LogLevel  string `env:"MF_INFLUX_READER_LOG_LEVEL"  envDefault:"info"`
 	BrokerURL string `env:"MF_BROKER_URL"               envDefault:"nats://localhost:4222"`
-	JaegerURL string `env:"MF_JAEGER_URL"               envDefault:"localhost:6831"`
+	JaegerURL string `env:"MF_JAEGER_URL"               envDefault:"http://jaeger:14268/api/traces"`
 }
 
 func main() {
@@ -61,11 +61,16 @@ func main() {
 	defer tcHandler.Close()
 	logger.Info("Successfully connected to things grpc server " + tcHandler.Secure())
 
-	tracer, traceCloser, err := jaegerClient.NewTracer(svcName, cfg.JaegerURL)
+	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL)
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("failed to init Jaeger: %s", err))
+		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
 	}
-	defer traceCloser.Close()
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			logger.Error(fmt.Sprintf("Error shutting down tracer provider: %v", err))
+		}
+	}()
+	tracer := tp.Tracer(svcName)
 
 	nps, err := brokers.NewPubSub(cfg.BrokerURL, "", logger)
 	if err != nil {

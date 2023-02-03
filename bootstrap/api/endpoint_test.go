@@ -19,17 +19,22 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mainflux/mainflux"
+	"github.com/go-zoo/bone"
 	"github.com/mainflux/mainflux/bootstrap"
 	bsapi "github.com/mainflux/mainflux/bootstrap/api"
 	"github.com/mainflux/mainflux/bootstrap/mocks"
 	"github.com/mainflux/mainflux/internal/apiutil"
-	"github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 	mfsdk "github.com/mainflux/mainflux/pkg/sdk/go"
-	"github.com/mainflux/mainflux/things"
-	thingsapi "github.com/mainflux/mainflux/things/api/things/http"
-	"github.com/opentracing/opentracing-go/mocktracer"
+	"github.com/mainflux/mainflux/things/clients"
+	capi "github.com/mainflux/mainflux/things/clients/api"
+	"github.com/mainflux/mainflux/things/groups"
+	gapi "github.com/mainflux/mainflux/things/groups/api"
+	tpolicies "github.com/mainflux/mainflux/things/policies"
+	papi "github.com/mainflux/mainflux/things/policies/api/http"
+	"github.com/mainflux/mainflux/users/policies"
+	upolicies "github.com/mainflux/mainflux/users/policies"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -163,7 +168,7 @@ func dec(in []byte) ([]byte, error) {
 	return in, nil
 }
 
-func newService(auth mainflux.AuthServiceClient, url string) bootstrap.Service {
+func newService(auth policies.AuthServiceClient, url string) bootstrap.Service {
 	things := mocks.NewConfigsRepository()
 	config := mfsdk.Config{
 		ThingsURL: url,
@@ -173,11 +178,11 @@ func newService(auth mainflux.AuthServiceClient, url string) bootstrap.Service {
 	return bootstrap.New(auth, things, sdk, encKey)
 }
 
-func generateChannels() map[string]things.Channel {
-	channels := make(map[string]things.Channel, channelsNum)
+func generateChannels() map[string]groups.Group {
+	channels := make(map[string]groups.Group, channelsNum)
 	for i := 0; i < channelsNum; i++ {
 		id := strconv.Itoa(i + 1)
-		channels[id] = things.Channel{
+		channels[id] = groups.Group{
 			ID:       id,
 			Owner:    email,
 			Metadata: metadata,
@@ -186,18 +191,24 @@ func generateChannels() map[string]things.Channel {
 	return channels
 }
 
-func newThingsService(auth mainflux.AuthServiceClient) things.Service {
-	return mocks.NewThingsService(map[string]things.Thing{}, generateChannels(), auth)
+func newThingsService(auth upolicies.AuthServiceClient) (clients.Service, groups.Service, tpolicies.Service) {
+	csvc := mocks.NewThingsService(map[string]clients.Client{}, auth)
+	gsvc := mocks.NewChannelsService(generateChannels(), auth)
+	psvc := mocks.NewPoliciesService(auth)
+	return csvc, gsvc, psvc
 }
 
-func newThingsServer(svc things.Service) *httptest.Server {
-	logger := logger.NewMock()
-	mux := thingsapi.MakeHandler(mocktracer.New(), svc, logger)
+func newThingsServer(csvc clients.Service, gsvc groups.Service, psvc tpolicies.Service) *httptest.Server {
+	logger := mflog.NewMock()
+	mux := bone.New()
+	capi.MakeHandler(csvc, mux, logger)
+	gapi.MakeHandler(gsvc, mux, logger)
+	papi.MakePolicyHandler(csvc, psvc, mux, logger)
 	return httptest.NewServer(mux)
 }
 
 func newBootstrapServer(svc bootstrap.Service) *httptest.Server {
-	logger := logger.NewMock()
+	logger := mflog.NewMock()
 	mux := bsapi.MakeHandler(svc, bootstrap.NewConfigReader(encKey), logger)
 	return httptest.NewServer(mux)
 }

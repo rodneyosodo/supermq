@@ -29,13 +29,13 @@ var cmdChannels = []cobra.Command{
 				return
 			}
 
-			id, err := sdk.CreateChannel(channel, args[1])
+			channel, err := sdk.CreateChannel(channel, args[1])
 			if err != nil {
 				logError(err)
 				return
 			}
 
-			logCreated(id)
+			logJSON(channel)
 		},
 	},
 	{
@@ -97,30 +97,13 @@ var cmdChannels = []cobra.Command{
 				return
 			}
 
-			if err := sdk.UpdateChannel(channel, args[1]); err != nil {
+			channel, err := sdk.UpdateChannel(channel, args[1])
+			if err != nil {
 				logError(err)
 				return
 			}
 
-			logOK()
-		},
-	},
-	{
-		Use:   "delete <channel_id> <user_auth_token>",
-		Short: "Delete channel",
-		Long:  `Delete channel by ID`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
-				logUsage(cmd.Use)
-				return
-			}
-
-			if err := sdk.DeleteChannel(args[0], args[1]); err != nil {
-				logError(err)
-				return
-			}
-
-			logOK()
+			logJSON(channel)
 		},
 	},
 	{
@@ -147,26 +130,41 @@ var cmdChannels = []cobra.Command{
 		},
 	},
 	{
-		Use:   "not-connected <channel_id> <user_auth_token>",
-		Short: "Not-connected list",
-		Long:  `List of Things not connected to a Channel`,
+		Use:   "enable <channel_id> <user_auth_token>",
+		Short: "Change channel status to enabled",
+		Long:  `Change channel status to enabled`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
 				return
 			}
-			pm := mfxsdk.PageMetadata{
-				Offset:       uint64(Offset),
-				Limit:        uint64(Limit),
-				Disconnected: true,
-			}
-			cl, err := sdk.ThingsByChannel(args[0], pm, args[1])
+
+			channel, err := sdk.EnableChannel(args[0], args[1])
 			if err != nil {
 				logError(err)
 				return
 			}
 
-			logJSON(cl)
+			logJSON(channel)
+		},
+	},
+	{
+		Use:   "disable <channel_id> <user_auth_token>",
+		Short: "Change channel status to disabled",
+		Long:  `Change channel status to disabled`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 2 {
+				logUsage(cmd.Use)
+				return
+			}
+
+			channel, err := sdk.DisableChannel(args[0], args[1])
+			if err != nil {
+				logError(err)
+				return
+			}
+
+			logJSON(channel)
 		},
 	},
 }
