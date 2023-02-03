@@ -9,7 +9,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/mainflux/mainflux"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/mainflux/mainflux/internal"
@@ -20,6 +19,7 @@ import (
 	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
+	"github.com/mainflux/mainflux/things/policies"
 	adapter "github.com/mainflux/mainflux/ws"
 	"github.com/mainflux/mainflux/ws/api"
 )
@@ -34,7 +34,7 @@ const (
 type config struct {
 	LogLevel  string `env:"MF_WS_ADAPTER_LOG_LEVEL"   envDefault:"info"`
 	BrokerURL string `env:"MF_BROKER_URL"             envDefault:"nats://localhost:4222"`
-	JaegerURL string `env:"MF_JAEGER_URL"             envDefault:"localhost:6831"`
+	JaegerURL string `env:"MF_JAEGER_URL"             envDefault:"http://jaeger:14268/api/traces"`
 }
 
 func main() {
@@ -86,7 +86,7 @@ func main() {
 	}
 }
 
-func newService(tc mainflux.ThingsServiceClient, nps messaging.PubSub, logger mflog.Logger) adapter.Service {
+func newService(tc policies.ThingsServiceClient, nps messaging.PubSub, logger mflog.Logger) adapter.Service {
 	svc := adapter.New(tc, nps)
 	svc = api.LoggingMiddleware(svc, logger)
 	counter, latency := internal.MakeMetrics("ws_adapter", "api")

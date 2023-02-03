@@ -1,5 +1,6 @@
-# Users service
+# Clients
 
+<<<<<<< HEAD
 Users service provides an HTTP API for managing users. Through this API clients
 are able to do the following actions:
 
@@ -96,3 +97,6 @@ For more information about service capabilities and its usage, please check out
 the [API documentation](https://api.mainflux.io/?urls.primaryName=users-openapi.yml).
 
 [doc]: https://docs.mainflux.io
+=======
+Repository for Clients service for handling generic clients
+>>>>>>> 12a7bd753 (Move Things and Users to Clients)
