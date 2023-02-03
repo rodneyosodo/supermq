@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/lora"
 )
 
@@ -54,11 +54,11 @@ type eventStore struct {
 	svc      lora.Service
 	client   *redis.Client
 	consumer string
-	logger   logger.Logger
+	logger   mflog.Logger
 }
 
 // NewEventStore returns new event store instance.
-func NewEventStore(svc lora.Service, client *redis.Client, consumer string, log logger.Logger) Subscriber {
+func NewEventStore(svc lora.Service, client *redis.Client, consumer string, log mflog.Logger) Subscriber {
 	return eventStore{
 		svc:      svc,
 		client:   client,

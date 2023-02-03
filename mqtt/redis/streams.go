@@ -5,8 +5,6 @@ package redis
 
 import (
 	"context"
-	"strconv"
-	"time"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -37,11 +35,8 @@ func NewEventStore(client *redis.Client, instance string) EventStore {
 }
 
 func (es eventStore) storeEvent(clientID, eventType string) error {
-	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
-
 	event := mqttEvent{
 		clientID:  clientID,
-		timestamp: timestamp,
 		eventType: eventType,
 		instance:  es.instance,
 	}

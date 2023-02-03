@@ -12,8 +12,8 @@ import (
 	"sync"
 
 	"github.com/mainflux/mainflux/pkg/errors"
+	"github.com/mainflux/mainflux/things/policies"
 
-	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/pkg/messaging"
 )
 
@@ -39,13 +39,13 @@ var _ Service = (*adapterService)(nil)
 
 // Observers is a map of maps,
 type adapterService struct {
-	auth    mainflux.ThingsServiceClient
+	auth    policies.ThingsServiceClient
 	pubsub  messaging.PubSub
 	obsLock sync.Mutex
 }
 
 // New instantiates the CoAP adapter implementation.
-func New(auth mainflux.ThingsServiceClient, pubsub messaging.PubSub) Service {
+func New(auth policies.ThingsServiceClient, pubsub messaging.PubSub) Service {
 	as := &adapterService{
 		auth:    auth,
 		pubsub:  pubsub,
@@ -56,26 +56,37 @@ func New(auth mainflux.ThingsServiceClient, pubsub messaging.PubSub) Service {
 }
 
 func (svc *adapterService) Publish(ctx context.Context, key string, msg *messaging.Message) error {
-	ar := &mainflux.AccessByKeyReq{
-		Token:  key,
-		ChanID: msg.Channel,
+	ar := &policies.AuthorizeReq{
+		Sub:        key,
+		Obj:        msg.Channel,
+		Act:        policies.WriteAction,
+		EntityType: policies.GroupEntityType,
 	}
-	thid, err := svc.auth.CanAccessByKey(ctx, ar)
+	res, err := svc.auth.Authorize(ctx, ar)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	msg.Publisher = thid.GetValue()
+	if !res.GetAuthorized() {
+		return errors.ErrAuthorization
+	}
+	msg.Publisher = res.GetThingID()
 
 	return svc.pubsub.Publish(ctx, msg.Channel, msg)
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic string, c Client) error {
-	ar := &mainflux.AccessByKeyReq{
-		Token:  key,
-		ChanID: chanID,
+	ar := &policies.AuthorizeReq{
+		Sub:        key,
+		Obj:        chanID,
+		Act:        policies.ReadAction,
+		EntityType: policies.GroupEntityType,
 	}
-	if _, err := svc.auth.CanAccessByKey(ctx, ar); err != nil {
+	res, err := svc.auth.Authorize(ctx, ar)
+	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+	if !res.GetAuthorized() {
+		return errors.ErrAuthorization
 	}
 	subject := fmt.Sprintf("%s.%s", chansPrefix, chanID)
 	if subtopic != "" {
@@ -85,12 +96,18 @@ func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic 
 }
 
 func (svc *adapterService) Unsubscribe(ctx context.Context, key, chanID, subtopic, token string) error {
-	ar := &mainflux.AccessByKeyReq{
-		Token:  key,
-		ChanID: chanID,
+	ar := &policies.AuthorizeReq{
+		Sub:        key,
+		Obj:        chanID,
+		Act:        policies.ReadAction,
+		EntityType: policies.GroupEntityType,
 	}
-	if _, err := svc.auth.CanAccessByKey(ctx, ar); err != nil {
+	res, err := svc.auth.Authorize(ctx, ar)
+	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+	if !res.GetAuthorized() {
+		return errors.ErrAuthorization
 	}
 	subject := fmt.Sprintf("%s.%s", chansPrefix, chanID)
 	if subtopic != "" {

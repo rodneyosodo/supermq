@@ -16,6 +16,8 @@ import (
 	"github.com/mainflux/mainflux/pkg/auth"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/mainflux/mainflux/things/policies"
+
 	"github.com/mainflux/mproxy/pkg/session"
 )
 
@@ -109,7 +111,7 @@ func (h *handler) AuthPublish(ctx context.Context, topic *string, payload *[]byt
 		return ErrMissingTopicPub
 	}
 
-	return h.authAccess(ctx, s.Username, *topic)
+	return h.authAccess(ctx, s.Username, *topic, policies.WriteAction)
 }
 
 // AuthSubscribe is called on device publish,
@@ -124,7 +126,7 @@ func (h *handler) AuthSubscribe(ctx context.Context, topics *[]string) error {
 	}
 
 	for _, v := range *topics {
-		if err := h.authAccess(ctx, s.Username, v); err != nil {
+		if err := h.authAccess(ctx, s.Username, v, policies.ReadAction); err != nil {
 			return err
 		}
 
@@ -218,7 +220,7 @@ func (h *handler) Disconnect(ctx context.Context) {
 	}
 }
 
-func (h *handler) authAccess(ctx context.Context, username string, topic string) error {
+func (h *handler) authAccess(ctx context.Context, username, topic, action string) error {
 	// Topics are in the format:
 	// channels/<channel_id>/messages/<subtopic>/.../ct/<content_type>
 	if !channelRegExp.Match([]byte(topic)) {
@@ -231,7 +233,7 @@ func (h *handler) authAccess(ctx context.Context, username string, topic string)
 	}
 
 	chanID := channelParts[1]
-	return h.auth.Authorize(ctx, chanID, username)
+	return h.auth.Authorize(ctx, chanID, username, action)
 }
 
 func parseSubtopic(subtopic string) (string, error) {

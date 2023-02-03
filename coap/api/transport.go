@@ -6,7 +6,7 @@ package api
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -18,7 +18,7 @@ import (
 	"github.com/go-zoo/bone"
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/coap"
-	log "github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/plgd-dev/go-coap/v2/message"
 	"github.com/plgd-dev/go-coap/v2/message/codes"
@@ -45,7 +45,7 @@ var (
 )
 
 var (
-	logger  log.Logger
+	logger  mflog.Logger
 	service coap.Service
 )
 
@@ -59,7 +59,7 @@ func MakeHTTPHandler() http.Handler {
 }
 
 // MakeCoAPHandler creates handler for CoAP messages.
-func MakeCoAPHandler(svc coap.Service, l log.Logger) mux.HandlerFunc {
+func MakeCoAPHandler(svc coap.Service, l mflog.Logger) mux.HandlerFunc {
 	logger = l
 	service = svc
 
@@ -156,7 +156,7 @@ func decodeMessage(msg *mux.Message) (*messaging.Message, error) {
 	}
 
 	if msg.Body != nil {
-		buff, err := ioutil.ReadAll(msg.Body)
+		buff, err := io.ReadAll(msg.Body)
 		if err != nil {
 			return ret, err
 		}
