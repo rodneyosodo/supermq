@@ -268,7 +268,7 @@ func TestSaveStates(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	var recs = make([]senml.Record, numRecs)
-	mocks.CreateSenML(numRecs, recs)
+	mocks.CreateSenML(recs)
 
 	var ttlAdded uint64
 
@@ -342,7 +342,7 @@ func TestListStates(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	var recs = make([]senml.Record, numRecs)
-	mocks.CreateSenML(numRecs, recs)
+	mocks.CreateSenML(recs)
 	message, err := mocks.CreateMessage(attr, recs)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	err = svc.SaveStates(message)

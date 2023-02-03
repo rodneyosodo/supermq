@@ -11,19 +11,19 @@ import (
 	"time"
 
 	"github.com/mainflux/mainflux/coap"
-	log "github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
 )
 
 var _ coap.Service = (*loggingMiddleware)(nil)
 
 type loggingMiddleware struct {
-	logger log.Logger
+	logger mflog.Logger
 	svc    coap.Service
 }
 
 // LoggingMiddleware adds logging facilities to the adapter.
-func LoggingMiddleware(svc coap.Service, logger log.Logger) coap.Service {
+func LoggingMiddleware(svc coap.Service, logger mflog.Logger) coap.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
