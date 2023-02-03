@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/ws"
 )
@@ -18,12 +18,12 @@ import (
 var _ ws.Service = (*loggingMiddleware)(nil)
 
 type loggingMiddleware struct {
-	logger log.Logger
+	logger mflog.Logger
 	svc    ws.Service
 }
 
 // LoggingMiddleware adds logging facilities to the adapter
-func LoggingMiddleware(svc ws.Service, logger log.Logger) ws.Service {
+func LoggingMiddleware(svc ws.Service, logger mflog.Logger) ws.Service {
 	return &loggingMiddleware{logger, svc}
 }
 

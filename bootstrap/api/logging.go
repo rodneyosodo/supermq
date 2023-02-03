@@ -11,18 +11,18 @@ import (
 	"time"
 
 	"github.com/mainflux/mainflux/bootstrap"
-	log "github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 )
 
 var _ bootstrap.Service = (*loggingMiddleware)(nil)
 
 type loggingMiddleware struct {
-	logger log.Logger
+	logger mflog.Logger
 	svc    bootstrap.Service
 }
 
 // NewLoggingMiddleware adds logging facilities to the core service.
-func NewLoggingMiddleware(svc bootstrap.Service, logger log.Logger) bootstrap.Service {
+func NewLoggingMiddleware(svc bootstrap.Service, logger mflog.Logger) bootstrap.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
