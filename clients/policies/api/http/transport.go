@@ -17,7 +17,7 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakePolicyHandler(svcName string, svc policies.Service, mux *bone.Mux, logger logger.Logger) {
+func MakePolicyHandler(svc policies.Service, mux *bone.Mux, logger logger.Logger) {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, api.EncodeError)),
 	}
