@@ -45,7 +45,7 @@ func MakeClientsHandler(svc clients.Service, mux *bone.Mux, logger logger.Logger
 		opts...,
 	))
 
-	mux.Get("/cgroups/:groupID/members", kithttp.NewServer(
+	mux.Get("/clients/groups/:groupID/members", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("list_members"))(listMembersEndpoint(svc)),
 		decodeListMembersRequest,
 		api.EncodeResponse,

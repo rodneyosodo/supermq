@@ -21,21 +21,21 @@ func MakeGroupsHandler(svc groups.Service, mux *bone.Mux, logger logger.Logger) 
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, api.EncodeError)),
 	}
-	mux.Post("/cgroups", kithttp.NewServer(
+	mux.Post("/clients/groups", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("create_group"))(createGroupEndpoint(svc)),
 		decodeGroupCreate,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Get("/cgroups/:id", kithttp.NewServer(
+	mux.Get("/clients/groups/:id", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("view_group"))(viewGroupEndpoint(svc)),
 		decodeGroupRequest,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Put("/cgroups/:id", kithttp.NewServer(
+	mux.Put("/clients/groups/:id", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("update_group"))(updateGroupEndpoint(svc)),
 		decodeGroupUpdate,
 		api.EncodeResponse,
@@ -49,20 +49,20 @@ func MakeGroupsHandler(svc groups.Service, mux *bone.Mux, logger logger.Logger) 
 		opts...,
 	))
 
-	mux.Get("/cgroups", kithttp.NewServer(
+	mux.Get("/clients/groups", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("list_groups"))(listGroupsEndpoint(svc)),
 		decodeListGroupsRequest,
 		api.EncodeResponse,
 		opts...,
 	))
-	mux.Post("/cgroups/:id/enable", kithttp.NewServer(
+	mux.Post("/clients/groups/:id/enable", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("enable_group"))(enableGroupEndpoint(svc)),
 		decodeChangeGroupStatus,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Post("/cgroups/:id/disable", kithttp.NewServer(
+	mux.Post("/clients/groups/:id/disable", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("disable_group"))(disableGroupEndpoint(svc)),
 		decodeChangeGroupStatus,
 		api.EncodeResponse,

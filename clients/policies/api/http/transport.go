@@ -17,39 +17,39 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakePolicyHandler(svc policies.Service, mux *bone.Mux, logger logger.Logger) {
+func MakePolicyHandler(svcName string, svc policies.Service, mux *bone.Mux, logger logger.Logger) {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, api.EncodeError)),
 	}
-	mux.Post("/authorize", kithttp.NewServer(
+	mux.Post("/clients/authorize", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("authorize"))(authorizeEndpoint(svc)),
 		decodeAuthorize,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Post("/cpolicies", kithttp.NewServer(
+	mux.Post("/clients/policies", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("add_policy"))(createPolicyEndpoint(svc)),
 		decodePolicyCreate,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Put("/cpolicies", kithttp.NewServer(
+	mux.Put("/clients/policies", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("update_policy"))(updatePolicyEndpoint(svc)),
 		decodePolicyUpdate,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Get("/cpolicies", kithttp.NewServer(
+	mux.Get("/clients/policies", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("list_policies"))(listPolicyEndpoint(svc)),
 		decodeListPoliciesRequest,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Delete("/cpolicies/:subject/:object", kithttp.NewServer(
+	mux.Delete("/clients/policies/:subject/:object", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("delete_policy"))(deletePolicyEndpoint(svc)),
 		deletePolicyRequest,
 		api.EncodeResponse,
