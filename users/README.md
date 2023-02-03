@@ -1,4 +1,4 @@
-# Users service
+# Clients
 
 Users service provides an HTTP API for managing users. Through this API clients
 are able to do the following actions:
@@ -45,8 +45,7 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`users`](https://github.com/mainflux/mainflux/blob/master/docker/docker-compose.yml#L109-L143) service section in 
-docker-compose to see how service is deployed.
+The service itself is distributed as Docker container. Check the [`users`](https://github.com/mainflux/mainflux/blob/master/docker/docker-compose.yml#L109-L143) service section in docker-compose to see how service is deployed.
 
 To start the service outside of the container, execute the following shell script:
 

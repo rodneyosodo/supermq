@@ -6,15 +6,14 @@ package mocks
 import (
 	"context"
 
-	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/pkg/errors"
+	"github.com/mainflux/mainflux/things/policies"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-var _ mainflux.ThingsServiceClient = (*thingsClient)(nil)
+var _ policies.ThingsServiceClient = (*thingsClient)(nil)
 
 // ServiceErrToken is used to simulate internal server error.
 const ServiceErrToken = "unavailable"
@@ -24,12 +23,12 @@ type thingsClient struct {
 }
 
 // NewThingsClient returns mock implementation of things service client.
-func NewThingsClient(data map[string]string) mainflux.ThingsServiceClient {
+func NewThingsClient(data map[string]string) policies.ThingsServiceClient {
 	return &thingsClient{data}
 }
 
-func (tc thingsClient) CanAccessByKey(ctx context.Context, req *mainflux.AccessByKeyReq, opts ...grpc.CallOption) (*mainflux.ThingID, error) {
-	key := req.GetToken()
+func (tc thingsClient) AuthorizeByKey(ctx context.Context, req *policies.TAuthorizeReq, opts ...grpc.CallOption) (*policies.ClientID, error) {
+	key := req.GetSub()
 
 	// Since there is no appropriate way to simulate internal server error,
 	// we had to use this obscure approach. ErrorToken simulates gRPC
@@ -47,17 +46,13 @@ func (tc thingsClient) CanAccessByKey(ctx context.Context, req *mainflux.AccessB
 		return nil, status.Error(codes.Unauthenticated, "invalid credentials provided")
 	}
 
-	return &mainflux.ThingID{Value: id}, nil
+	return &policies.ClientID{Value: id}, nil
 }
 
-func (tc thingsClient) CanAccessByID(context.Context, *mainflux.AccessByIDReq, ...grpc.CallOption) (*empty.Empty, error) {
+func (tc thingsClient) Authorize(context.Context, *policies.TAuthorizeReq, ...grpc.CallOption) (*policies.TAuthorizeRes, error) {
 	panic("not implemented")
 }
 
-func (tc thingsClient) IsChannelOwner(context.Context, *mainflux.ChannelOwnerReq, ...grpc.CallOption) (*empty.Empty, error) {
-	panic("not implemented")
-}
-
-func (tc thingsClient) Identify(ctx context.Context, req *mainflux.Token, opts ...grpc.CallOption) (*mainflux.ThingID, error) {
+func (tc thingsClient) Identify(ctx context.Context, req *policies.Key, opts ...grpc.CallOption) (*policies.ClientID, error) {
 	panic("not implemented")
 }
