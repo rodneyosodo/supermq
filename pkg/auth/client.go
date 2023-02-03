@@ -7,12 +7,12 @@ import (
 	"context"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/mainflux/mainflux"
+	"github.com/mainflux/mainflux/things/policies"
 )
 
 // Client represents Auth cache.
 type Client interface {
-	Authorize(ctx context.Context, chanID, thingID string) error
+	Authorize(ctx context.Context, chanID, thingID, action string) error
 	Identify(ctx context.Context, thingKey string) (string, error)
 }
 
@@ -23,11 +23,11 @@ const (
 
 type client struct {
 	redisClient  *redis.Client
-	thingsClient mainflux.ThingsServiceClient
+	thingsClient policies.ThingsServiceClient
 }
 
 // New returns redis channel cache implementation.
-func New(redisClient *redis.Client, thingsClient mainflux.ThingsServiceClient) Client {
+func New(redisClient *redis.Client, thingsClient policies.ThingsServiceClient) Client {
 	return client{
 		redisClient:  redisClient,
 		thingsClient: thingsClient,
@@ -38,7 +38,7 @@ func (c client) Identify(ctx context.Context, thingKey string) (string, error) {
 	tkey := keyPrefix + ":" + thingKey
 	thingID, err := c.redisClient.Get(ctx, tkey).Result()
 	if err != nil {
-		t := &mainflux.Token{
+		t := &policies.Key{
 			Value: string(thingKey),
 		}
 
@@ -51,15 +51,17 @@ func (c client) Identify(ctx context.Context, thingKey string) (string, error) {
 	return thingID, nil
 }
 
-func (c client) Authorize(ctx context.Context, chanID, thingID string) error {
+func (c client) Authorize(ctx context.Context, chanID, thingID, action string) error {
 	if c.redisClient.SIsMember(ctx, chanPrefix+":"+chanID, thingID).Val() {
 		return nil
 	}
 
-	ar := &mainflux.AccessByIDReq{
-		ThingID: thingID,
-		ChanID:  chanID,
+	ar := &policies.TAuthorizeReq{
+		Sub:        thingID,
+		Obj:        chanID,
+		Act:        action,
+		EntityType: policies.GroupEntityType,
 	}
-	_, err := c.thingsClient.CanAccessByID(ctx, ar)
+	_, err := c.thingsClient.Authorize(ctx, ar)
 	return err
 }

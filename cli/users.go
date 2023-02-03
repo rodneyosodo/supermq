@@ -7,34 +7,39 @@ import (
 	"encoding/json"
 
 	mfxsdk "github.com/mainflux/mainflux/pkg/sdk/go"
+	"github.com/mainflux/mainflux/users/clients"
 	"github.com/spf13/cobra"
 )
 
 var cmdUsers = []cobra.Command{
 	{
-		Use:   "create <username> <password> <user_auth_token>",
+		Use:   "create <name> <username> <password> <user_auth_token>",
 		Short: "Create user",
 		Long:  `Creates new user`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) < 2 || len(args) > 3 {
+			if len(args) < 3 || len(args) > 4 {
 				logUsage(cmd.Use)
 				return
 			}
-			if len(args) == 2 {
+			if len(args) == 3 {
 				args = append(args, "")
 			}
 
 			user := mfxsdk.User{
-				Email:    args[0],
-				Password: args[1],
+				Name: args[0],
+				Credentials: mfxsdk.Credentials{
+					Identity: args[1],
+					Secret:   args[2],
+				},
+				Status: clients.EnabledStatus.String(),
 			}
-			id, err := sdk.CreateUser(user, args[2])
+			user, err := sdk.CreateUser(user, args[3])
 			if err != nil {
 				logError(err)
 				return
 			}
 
-			logCreated(id)
+			logJSON(user)
 		},
 	},
 	{
@@ -89,8 +94,10 @@ var cmdUsers = []cobra.Command{
 			}
 
 			user := mfxsdk.User{
-				Email:    args[0],
-				Password: args[1],
+				Credentials: mfxsdk.Credentials{
+					Identity: args[0],
+					Secret:   args[1],
+				},
 			}
 			token, err := sdk.CreateToken(user)
 			if err != nil {
@@ -98,7 +105,27 @@ var cmdUsers = []cobra.Command{
 				return
 			}
 
-			logCreated(token)
+			logJSON(token)
+
+		},
+	},
+	{
+		Use:   "refreshtoken <token>",
+		Short: "Get token",
+		Long:  `Generate new token from refresh token`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 1 {
+				logUsage(cmd.Use)
+				return
+			}
+
+			token, err := sdk.RefreshToken(args[0])
+			if err != nil {
+				logError(err)
+				return
+			}
+
+			logJSON(token)
 
 		},
 	},
@@ -118,30 +145,127 @@ var cmdUsers = []cobra.Command{
 				return
 			}
 
-			if err := sdk.UpdateUser(user, args[1]); err != nil {
+			user, err := sdk.UpdateUser(user, args[1])
+			if err != nil {
 				logError(err)
 				return
 			}
 
-			logOK()
+			logJSON(user)
 		},
 	},
 	{
-		Use:   "password <old_password> <password> <user_auth_token>",
-		Short: "Update password",
-		Long:  `Update user password`,
+		Use:   "updatetags <user_id> <tags> <user_auth_token>",
+		Short: "Update user tags",
+		Long:  `Update user tags`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
 
-			if err := sdk.UpdatePassword(args[0], args[1], args[2]); err != nil {
+			var user mfxsdk.User
+			if err := json.Unmarshal([]byte(args[1]), &user.Tags); err != nil {
+				logError(err)
+				return
+			}
+			user.ID = args[0]
+			user, err := sdk.UpdateUserTags(user, args[2])
+			if err != nil {
 				logError(err)
 				return
 			}
 
-			logOK()
+			logJSON(user)
+		},
+	},
+	{
+		Use:   "updateidentity <user_id> <identity> <user_auth_token>",
+		Short: "Update user identity",
+		Long:  `Update user identity`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 3 {
+				logUsage(cmd.Use)
+				return
+			}
+
+			var user mfxsdk.User
+			if err := json.Unmarshal([]byte(args[1]), &user.Credentials.Identity); err != nil {
+				logError(err)
+				return
+			}
+			user.ID = args[0]
+			user, err := sdk.UpdateUserTags(user, args[2])
+			if err != nil {
+				logError(err)
+				return
+			}
+
+			logJSON(user)
+		},
+	},
+	{
+		Use:   "updateowner <user_id> <owner> <user_auth_token>",
+		Short: "Update user owner",
+		Long:  `Update user owner`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 3 {
+				logUsage(cmd.Use)
+				return
+			}
+
+			var user mfxsdk.User
+			if err := json.Unmarshal([]byte(args[1]), &user.Owner); err != nil {
+				logError(err)
+				return
+			}
+			user.ID = args[0]
+			user, err := sdk.UpdateUserTags(user, args[2])
+			if err != nil {
+				logError(err)
+				return
+			}
+
+			logJSON(user)
+		},
+	},
+
+	{
+		Use:   "profile <user_auth_token>",
+		Short: "Get user profile",
+		Long:  `Get user profile`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 1 {
+				logUsage(cmd.Use)
+				return
+			}
+
+			user, err := sdk.UserProfile(args[0])
+			if err != nil {
+				logError(err)
+				return
+			}
+
+			logJSON(user)
+		},
+	},
+	{
+		Use:   "password <user_id> <old_password> <password> <user_auth_token>",
+		Short: "Update password",
+		Long:  `Update user password`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 4 {
+				logUsage(cmd.Use)
+				return
+			}
+
+			user, err := sdk.UpdatePassword(args[0], args[1], args[2], args[3])
+			if err != nil {
+				logError(err)
+				return
+			}
+
+			logJSON(user)
 		},
 	},
 	{
@@ -154,12 +278,13 @@ var cmdUsers = []cobra.Command{
 				return
 			}
 
-			if err := sdk.EnableUser(args[0], args[1]); err != nil {
+			user, err := sdk.EnableUser(args[0], args[1])
+			if err != nil {
 				logError(err)
 				return
 			}
 
-			logOK()
+			logJSON(user)
 		},
 	},
 	{
@@ -172,12 +297,13 @@ var cmdUsers = []cobra.Command{
 				return
 			}
 
-			if err := sdk.DisableUser(args[0], args[1]); err != nil {
+			user, err := sdk.DisableUser(args[0], args[1])
+			if err != nil {
 				logError(err)
 				return
 			}
 
-			logOK()
+			logJSON(user)
 		},
 	},
 }

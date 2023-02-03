@@ -10,18 +10,18 @@ import (
 	"time"
 
 	"github.com/mainflux/mainflux/consumers"
-	log "github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 )
 
 var _ consumers.Consumer = (*loggingMiddleware)(nil)
 
 type loggingMiddleware struct {
-	logger   log.Logger
+	logger   mflog.Logger
 	consumer consumers.Consumer
 }
 
 // LoggingMiddleware adds logging facilities to the adapter.
-func LoggingMiddleware(consumer consumers.Consumer, logger log.Logger) consumers.Consumer {
+func LoggingMiddleware(consumer consumers.Consumer, logger mflog.Logger) consumers.Consumer {
 	return &loggingMiddleware{
 		logger:   logger,
 		consumer: consumer,

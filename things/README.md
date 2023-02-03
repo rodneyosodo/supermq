@@ -1,4 +1,4 @@
-# Things
+# Clients
 
 Things service provides an HTTP API for managing platform resources: things and channels.
 Through this API clients are able to do the following actions:

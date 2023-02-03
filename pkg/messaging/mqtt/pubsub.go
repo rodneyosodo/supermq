@@ -10,7 +10,7 @@ import (
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	log "github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"google.golang.org/protobuf/proto"
 )
@@ -53,7 +53,7 @@ type subscription struct {
 
 type pubsub struct {
 	publisher
-	logger        log.Logger
+	logger        mflog.Logger
 	mu            sync.RWMutex
 	address       string
 	timeout       time.Duration
@@ -61,7 +61,7 @@ type pubsub struct {
 }
 
 // NewPubSub returns MQTT message publisher/subscriber.
-func NewPubSub(url, queue string, timeout time.Duration, logger log.Logger) (messaging.PubSub, error) {
+func NewPubSub(url, queue string, timeout time.Duration, logger mflog.Logger) (messaging.PubSub, error) {
 	client, err := newClient(url, "mqtt-publisher", timeout)
 	if err != nil {
 		return nil, err

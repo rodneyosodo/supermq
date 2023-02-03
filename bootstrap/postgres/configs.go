@@ -14,7 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
 	"github.com/mainflux/mainflux/bootstrap"
-	"github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 )
 
@@ -33,12 +33,12 @@ var _ bootstrap.ConfigRepository = (*configRepository)(nil)
 
 type configRepository struct {
 	db  *sqlx.DB
-	log logger.Logger
+	log mflog.Logger
 }
 
 // NewConfigRepository instantiates a PostgreSQL implementation of config
 // repository.
-func NewConfigRepository(db *sqlx.DB, log logger.Logger) bootstrap.ConfigRepository {
+func NewConfigRepository(db *sqlx.DB, log mflog.Logger) bootstrap.ConfigRepository {
 	return &configRepository{db: db, log: log}
 }
 

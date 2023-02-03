@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	log "github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
 )
 
@@ -25,11 +25,11 @@ type Forwarder interface {
 
 type forwarder struct {
 	topic  string
-	logger log.Logger
+	logger mflog.Logger
 }
 
 // NewForwarder returns new Forwarder implementation.
-func NewForwarder(topic string, logger log.Logger) Forwarder {
+func NewForwarder(topic string, logger mflog.Logger) Forwarder {
 	return forwarder{
 		topic:  topic,
 		logger: logger,
@@ -40,7 +40,7 @@ func (f forwarder) Forward(id string, sub messaging.Subscriber, pub messaging.Pu
 	return sub.Subscribe(id, f.topic, handle(pub, f.logger))
 }
 
-func handle(pub messaging.Publisher, logger log.Logger) handleFunc {
+func handle(pub messaging.Publisher, logger mflog.Logger) handleFunc {
 	return func(msg *messaging.Message) error {
 		if msg.Protocol == protocol {
 			return nil

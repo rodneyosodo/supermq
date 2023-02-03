@@ -11,18 +11,18 @@ import (
 	"time"
 
 	"github.com/mainflux/mainflux/certs"
-	log "github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 )
 
 var _ certs.Service = (*loggingMiddleware)(nil)
 
 type loggingMiddleware struct {
-	logger log.Logger
+	logger mflog.Logger
 	svc    certs.Service
 }
 
 // NewLoggingMiddleware adds logging facilities to the core service.
-func NewLoggingMiddleware(svc certs.Service, logger log.Logger) certs.Service {
+func NewLoggingMiddleware(svc certs.Service, logger mflog.Logger) certs.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
