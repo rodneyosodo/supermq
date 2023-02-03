@@ -33,8 +33,8 @@ default values.
 | MF_EMAIL_FROM_ADDRESS             | Email "from" address                                                    |                       |
 | MF_EMAIL_FROM_NAME                | Email "from" name                                                       |                       |
 | MF_EMAIL_TEMPLATE                 | Email template for sending notification emails                          | email.tmpl            |
-| MF_AUTH_GRPC_URL                  | Auth service gRPC URL                                                   | localhost:7001        |
-| MF_AUTH_GRPC_TIMEOUT              | Auth service gRPC request timeout in seconds                            | 1s                    |
+| MF_AUTH_GRPC_URL                  | Users service gRPC URL                                                  | localhost:7001        |
+| MF_AUTH_GRPC_TIMEOUT              | Users service gRPC request timeout in seconds                           | 1s                    |
 | MF_AUTH_CLIENT_TLS                | Auth client TLS flag                                                    | false                 |
 | MF_AUTH_CA_CERTS                  | Path to Auth client CA certs in pem format                              |                       |
 

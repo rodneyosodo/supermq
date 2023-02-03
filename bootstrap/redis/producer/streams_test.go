@@ -13,17 +13,23 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/mainflux/mainflux"
+	"github.com/go-zoo/bone"
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/opentracing/opentracing-go/mocktracer"
 
 	"github.com/mainflux/mainflux/bootstrap"
 	"github.com/mainflux/mainflux/bootstrap/mocks"
 	"github.com/mainflux/mainflux/bootstrap/redis/producer"
+	mfclients "github.com/mainflux/mainflux/pkg/clients"
+	mfgroups "github.com/mainflux/mainflux/pkg/groups"
 	mfsdk "github.com/mainflux/mainflux/pkg/sdk/go"
-	"github.com/mainflux/mainflux/things"
-	httpapi "github.com/mainflux/mainflux/things/api/things/http"
+	"github.com/mainflux/mainflux/things/clients"
+	capi "github.com/mainflux/mainflux/things/clients/api"
+	"github.com/mainflux/mainflux/things/groups"
+	gapi "github.com/mainflux/mainflux/things/groups/api"
+	tpolicies "github.com/mainflux/mainflux/things/policies"
+	papi "github.com/mainflux/mainflux/things/policies/api/http"
+	upolicies "github.com/mainflux/mainflux/users/policies"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -63,7 +69,7 @@ var (
 	}
 )
 
-func newService(auth mainflux.AuthServiceClient, url string) bootstrap.Service {
+func newService(auth upolicies.AuthServiceClient, url string) bootstrap.Service {
 	configs := mocks.NewConfigsRepository()
 	config := mfsdk.Config{
 		ThingsURL: url,
@@ -73,25 +79,33 @@ func newService(auth mainflux.AuthServiceClient, url string) bootstrap.Service {
 	return bootstrap.New(auth, configs, sdk, encKey)
 }
 
-func newThingsService(auth mainflux.AuthServiceClient) things.Service {
-	channels := make(map[string]things.Channel, channelsNum)
+func newThingsService(auth upolicies.AuthServiceClient) (clients.Service, groups.Service, tpolicies.Service) {
+	channels := make(map[string]mfgroups.Group, channelsNum)
 	for i := 0; i < channelsNum; i++ {
 		id := strconv.Itoa(i + 1)
-		channels[id] = things.Channel{
+		channels[id] = mfgroups.Group{
 			ID:       id,
 			Owner:    email,
 			Metadata: map[string]interface{}{"meta": "data"},
+			Status:   mfclients.EnabledStatus,
 		}
 	}
 
-	return mocks.NewThingsService(map[string]things.Thing{}, channels, auth)
+	csvc := mocks.NewThingsService(map[string]mfclients.Client{}, auth)
+	gsvc := mocks.NewChannelsService(channels, auth)
+	psvc := mocks.NewPoliciesService(auth)
+	return csvc, gsvc, psvc
 }
 
-func newThingsServer(svc things.Service) *httptest.Server {
+func newThingsServer(csvc clients.Service, gsvc groups.Service, psvc tpolicies.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(mocktracer.New(), svc, logger)
+	mux := bone.New()
+	capi.MakeHandler(csvc, mux, logger)
+	gapi.MakeHandler(gsvc, mux, logger)
+	papi.MakePolicyHandler(csvc, psvc, mux, logger)
 	return httptest.NewServer(mux)
 }
+
 func TestAdd(t *testing.T) {
 	err := redisClient.FlushAll(context.Background()).Err()
 	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -156,9 +170,8 @@ func TestAdd(t *testing.T) {
 
 		var event map[string]interface{}
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
-			msg := streams[0].Messages[0]
-			event = msg.Values
-			lastID = msg.ID
+			event := streams[0].Messages
+			lastID = event[0].ID
 		}
 
 		test(t, tc.event, event, tc.desc)
@@ -222,11 +235,15 @@ func TestUpdate(t *testing.T) {
 			token:  validToken,
 			err:    nil,
 			event: map[string]interface{}{
-				"thing_id":  modified.MFThing,
-				"name":      modified.Name,
-				"content":   modified.Content,
-				"timestamp": time.Now().Unix(),
-				"operation": configUpdate,
+				"name":           modified.Name,
+				"content":        modified.Content,
+				"timestamp":      time.Now().Unix(),
+				"operation":      configUpdate,
+				"channels":       "[1, 2]",
+				"external_id":    "external_id",
+				"mainflux_thing": "1",
+				"owner":          email,
+				"state":          "0",
 			},
 		},
 		{
@@ -253,6 +270,7 @@ func TestUpdate(t *testing.T) {
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
 			msg := streams[0].Messages[0]
 			event = msg.Values
+			event["timestamp"] = msg.ID
 			lastID = msg.ID
 		}
 
@@ -318,9 +336,8 @@ func TestUpdateConnections(t *testing.T) {
 
 		var event map[string]interface{}
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
-			msg := streams[0].Messages[0]
-			event = msg.Values
-			lastID = msg.ID
+			event := streams[0].Messages
+			lastID = event[0].ID
 		}
 
 		test(t, tc.event, event, tc.desc)
@@ -400,9 +417,8 @@ func TestRemove(t *testing.T) {
 
 		var event map[string]interface{}
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
-			msg := streams[0].Messages[0]
-			event = msg.Values
-			lastID = msg.ID
+			event := streams[0].Messages
+			lastID = event[0].ID
 		}
 
 		test(t, tc.event, event, tc.desc)
@@ -447,7 +463,7 @@ func TestBootstrap(t *testing.T) {
 		{
 			desc:        "bootstrap with an error",
 			externalID:  saved.ExternalID,
-			externalKey: "external_id",
+			externalKey: "external_id1",
 			err:         bootstrap.ErrExternalKey,
 			event: map[string]interface{}{
 				"external_id": "external_id",
@@ -471,9 +487,8 @@ func TestBootstrap(t *testing.T) {
 
 		var event map[string]interface{}
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
-			msg := streams[0].Messages[0]
-			event = msg.Values
-			lastID = msg.ID
+			event := streams[0].Messages
+			lastID = event[0].ID
 		}
 		test(t, tc.event, event, tc.desc)
 	}
@@ -539,9 +554,8 @@ func TestChangeState(t *testing.T) {
 
 		var event map[string]interface{}
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
-			msg := streams[0].Messages[0]
-			event = msg.Values
-			lastID = msg.ID
+			event := streams[0].Messages
+			lastID = event[0].ID
 		}
 
 		test(t, tc.event, event, tc.desc)
@@ -551,9 +565,11 @@ func TestChangeState(t *testing.T) {
 func test(t *testing.T, expected, actual map[string]interface{}, description string) {
 	if expected != nil && actual != nil {
 		ts1 := expected["timestamp"].(int64)
+		ats := actual["timestamp"].(string)
 
-		ts2, err := strconv.ParseInt(actual["timestamp"].(string), 10, 64)
+		ts2, err := strconv.ParseInt(strings.Split(ats, "-")[0], 10, 64)
 		require.Nil(t, err, fmt.Sprintf("%s: expected to get a valid timestamp, got %s", description, err))
+		ts2 = time.UnixMilli(ts2).Unix()
 
 		val := ts1 == ts2 || ts2 <= ts1+defaultTimout
 		assert.True(t, val, fmt.Sprintf("%s: timestamp is not in valid range", description))

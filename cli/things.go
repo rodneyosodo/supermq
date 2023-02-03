@@ -6,6 +6,7 @@ package cli
 import (
 	"encoding/json"
 
+	mfclients "github.com/mainflux/mainflux/pkg/clients"
 	mfxsdk "github.com/mainflux/mainflux/pkg/sdk/go"
 	"github.com/spf13/cobra"
 )
@@ -26,14 +27,14 @@ var cmdThings = []cobra.Command{
 				logError(err)
 				return
 			}
-
-			id, err := sdk.CreateThing(thing, args[1])
+			thing.Status = mfclients.EnabledStatus.String()
+			thing, err := sdk.CreateThing(thing, args[1])
 			if err != nil {
 				logError(err)
 				return
 			}
 
-			logCreated(id)
+			logJSON(thing)
 		},
 	},
 	{
@@ -77,24 +78,6 @@ var cmdThings = []cobra.Command{
 		},
 	},
 	{
-		Use:   "delete <thing_id> <user_auth_token>",
-		Short: "Delete thing",
-		Long:  `Removes thing from database`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
-				logUsage(cmd.Use)
-				return
-			}
-
-			if err := sdk.DeleteThing(args[0], args[1]); err != nil {
-				logError(err)
-				return
-			}
-
-			logOK()
-		},
-	},
-	{
 		Use:   "identify <thing_key>",
 		Short: "Identify thing",
 		Long:  "Validates thing's key and returns its ID",
@@ -118,56 +101,131 @@ var cmdThings = []cobra.Command{
 		Short: "Update thing",
 		Long:  `Update thing record`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) < 2 {
+			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
-			if args[0] == "key" {
-				if err := sdk.UpdateThingKey(args[1], args[2], args[3]); err != nil {
-					logError(err)
-					return
-				}
 
-				logOK()
-				return
-			}
 			var thing mfxsdk.Thing
-			if err := json.Unmarshal([]byte(args[0]), &thing); err != nil {
+			if err := json.Unmarshal([]byte(args[1]), &thing); err != nil {
+				logError(err)
+				return
+			}
+			thing.ID = args[0]
+			thing, err := sdk.UpdateThing(thing, args[2])
+			if err != nil {
 				logError(err)
 				return
 			}
 
-			if err := sdk.UpdateThing(thing, args[1]); err != nil {
-				logError(err)
-				return
-			}
-
-			logOK()
+			logJSON(thing)
 		},
 	},
 	{
-		Use:   "share <thing_id> <user_id> <policies> <user_auth_token>",
-		Short: "share thing",
-		Long: `Shares a thing with user identified.
-				policies - '["policy1", ...]'`,
+		Use:   "update tags <thing_id> <tags> <user_auth_token>",
+		Short: "Update thing tags",
+		Long:  `Update thing record`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 4 {
+			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
 
-			var policies []string
-			if err := json.Unmarshal([]byte(args[2]), &policies); err != nil {
+			var thing mfxsdk.Thing
+			if err := json.Unmarshal([]byte(args[1]), &thing.Tags); err != nil {
+				logError(err)
+				return
+			}
+			thing.ID = args[0]
+			thing, err := sdk.UpdateThingTags(thing, args[2])
+			if err != nil {
 				logError(err)
 				return
 			}
 
-			if err := sdk.ShareThing(args[0], args[1], policies, args[2]); err != nil {
+			logJSON(thing)
+		},
+	},
+	{
+		Use:   "update secret <thing_id> <secret> <user_auth_token>",
+		Short: "Update thing tags",
+		Long:  `Update thing record`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 3 {
+				logUsage(cmd.Use)
+				return
+			}
+
+			thing, err := sdk.UpdateThingSecret(args[0], args[1], args[2])
+			if err != nil {
 				logError(err)
 				return
 			}
 
-			logOK()
+			logJSON(thing)
+		},
+	},
+	{
+		Use:   "update owner <thing_id> <tags> <user_auth_token>",
+		Short: "Update thing owner",
+		Long:  `Update thing record`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 3 {
+				logUsage(cmd.Use)
+				return
+			}
+
+			var thing mfxsdk.Thing
+			if err := json.Unmarshal([]byte(args[1]), &thing.Owner); err != nil {
+				logError(err)
+				return
+			}
+			thing.ID = args[0]
+			thing, err := sdk.UpdateThingOwner(thing, args[2])
+			if err != nil {
+				logError(err)
+				return
+			}
+
+			logJSON(thing)
+		},
+	},
+	{
+		Use:   "enable <thing_id> <user_auth_token>",
+		Short: "Change thing status to enabled",
+		Long:  `Change thing status to enabled`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 2 {
+				logUsage(cmd.Use)
+				return
+			}
+
+			thing, err := sdk.EnableThing(args[0], args[1])
+			if err != nil {
+				logError(err)
+				return
+			}
+
+			logJSON(thing)
+		},
+	},
+	{
+		Use:   "disable <thing_id> <user_auth_token>",
+		Short: "Change thing status to disabled",
+		Long:  `Change thing status to disabled`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 2 {
+				logUsage(cmd.Use)
+				return
+			}
+
+			thing, err := sdk.DisableThing(args[0], args[1])
+			if err != nil {
+				logError(err)
+				return
+			}
+
+			logJSON(thing)
 		},
 	},
 	{
@@ -202,7 +260,11 @@ var cmdThings = []cobra.Command{
 				return
 			}
 
-			if err := sdk.DisconnectThing(args[0], args[1], args[2]); err != nil {
+			connIDs := mfxsdk.ConnectionIDs{
+				ThingIDs:   []string{args[0]},
+				ChannelIDs: []string{args[1]},
+			}
+			if err := sdk.Disconnect(connIDs, args[2]); err != nil {
 				logError(err)
 				return
 			}
@@ -223,29 +285,6 @@ var cmdThings = []cobra.Command{
 				Offset:       uint64(Offset),
 				Limit:        uint64(Limit),
 				Disconnected: false,
-			}
-			cl, err := sdk.ChannelsByThing(args[0], pm, args[1])
-			if err != nil {
-				logError(err)
-				return
-			}
-
-			logJSON(cl)
-		},
-	},
-	{
-		Use:   "not-connected <thing_id> <user_auth_token>",
-		Short: "Not-connected list",
-		Long:  `List of Channels not connected to a Thing`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
-				logUsage(cmd.Use)
-				return
-			}
-			pm := mfxsdk.PageMetadata{
-				Offset:       uint64(Offset),
-				Limit:        uint64(Limit),
-				Disconnected: true,
 			}
 			cl, err := sdk.ChannelsByThing(args[0], pm, args[1])
 			if err != nil {

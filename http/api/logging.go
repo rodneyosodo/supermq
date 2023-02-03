@@ -11,19 +11,19 @@ import (
 	"time"
 
 	"github.com/mainflux/mainflux/http"
-	log "github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
 )
 
 var _ http.Service = (*loggingMiddleware)(nil)
 
 type loggingMiddleware struct {
-	logger log.Logger
+	logger mflog.Logger
 	svc    http.Service
 }
 
 // LoggingMiddleware adds logging facilities to the adapter.
-func LoggingMiddleware(svc http.Service, logger log.Logger) http.Service {
+func LoggingMiddleware(svc http.Service, logger mflog.Logger) http.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
