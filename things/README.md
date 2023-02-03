@@ -1,4 +1,4 @@
-# Things
+# Clients
 
 Things service provides an HTTP API for managing platform resources: things and channels.
 Through this API clients are able to do the following actions:
@@ -41,11 +41,11 @@ default values.
 | MF_THINGS_AUTH_GRPC_PORT   | Things service Auth gRPC port                                           | 7000           |
 | MF_THINGS_SERVER_CERT      | Path to server certificate in pem format                                |                |
 | MF_THINGS_SERVER_KEY       | Path to server key in pem format                                        |                |
-| MF_THINGS_STANDALONE_EMAIL | User email for standalone mode (no gRPC communication with users)       |                |
+| MF_THINGS_STANDALONE_ID    | User ID for standalone mode (no gRPC communication with users)          |                |
 | MF_THINGS_STANDALONE_TOKEN | User token for standalone mode that should be passed in auth header     |                |
 | MF_JAEGER_URL              | Jaeger server URL                                                       | localhost:6831 |
-| MF_AUTH_GRPC_URL           | Auth service gRPC URL                                                   | localhost:7001 |
-| MF_AUTH_GRPC_TIMEOUT       | Auth service gRPC request timeout in seconds                            | 1s             |
+| MF_AUTH_GRPC_URL           | Users service gRPC URL                                                  | localhost:7001 |
+| MF_AUTH_GRPC_TIMEOUT       | Users service gRPC request timeout in seconds                           | 1s             |
 
 **Note** that if you want `things` service to have only one user locally, you should use `MF_THINGS_STANDALONE` env vars. By specifying these, you don't need `auth` service in your deployment for users' authorization.
 
@@ -94,8 +94,8 @@ MF_THINGS_SERVER_KEY=[Path to server key] \
 MF_THINGS_STANDALONE_EMAIL=[User email for standalone mode (no gRPC communication with auth)] \
 MF_THINGS_STANDALONE_TOKEN=[User token for standalone mode that should be passed in auth header] \
 MF_JAEGER_URL=[Jaeger server URL] \
-MF_AUTH_GRPC_URL=[Auth service gRPC URL] \
-MF_AUTH_GRPC_TIMEOUT=[Auth service gRPC request timeout in seconds] \
+MF_AUTH_GRPC_URL=[Users service gRPC URL] \
+MF_AUTH_GRPC_TIMEOUT=[Users service gRPC request timeout in seconds] \
 $GOBIN/mainflux-things
 ```
 

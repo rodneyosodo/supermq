@@ -9,9 +9,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/mainflux/mainflux/things/policies"
 )
 
 const (
@@ -59,12 +59,12 @@ type Service interface {
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
-	auth   mainflux.ThingsServiceClient
+	auth   policies.ThingsServiceClient
 	pubsub messaging.PubSub
 }
 
 // New instantiates the WS adapter implementation
-func New(auth mainflux.ThingsServiceClient, pubsub messaging.PubSub) Service {
+func New(auth policies.ThingsServiceClient, pubsub messaging.PubSub) Service {
 	return &adapterService{
 		auth:   auth,
 		pubsub: pubsub,
@@ -82,7 +82,7 @@ func (svc *adapterService) Publish(ctx context.Context, thingKey string, msg *me
 		return ErrFailedMessagePublish
 	}
 
-	msg.Publisher = thid.GetValue()
+	msg.Publisher = thid
 
 	if err := svc.pubsub.Publish(ctx, msg.GetChannel(), msg); err != nil {
 		return ErrFailedMessagePublish
@@ -102,14 +102,14 @@ func (svc *adapterService) Subscribe(ctx context.Context, thingKey, chanID, subt
 		return ErrUnauthorizedAccess
 	}
 
-	c.id = thid.GetValue()
+	c.id = thid
 
 	subject := fmt.Sprintf("%s.%s", chansPrefix, chanID)
 	if subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, subtopic)
 	}
 
-	if err := svc.pubsub.Subscribe(ctx, thid.GetValue(), subject, c); err != nil {
+	if err := svc.pubsub.Subscribe(ctx, thid, subject, c); err != nil {
 		return ErrFailedSubscription
 	}
 
@@ -132,18 +132,23 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, thingKey, chanID, su
 		subject = fmt.Sprintf("%s.%s", subject, subtopic)
 	}
 
-	return svc.pubsub.Unsubscribe(ctx, thid.GetValue(), subject)
+	return svc.pubsub.Unsubscribe(ctx, thid, subject)
 }
 
-func (svc *adapterService) authorize(ctx context.Context, thingKey, chanID string) (*mainflux.ThingID, error) {
-	ar := &mainflux.AccessByKeyReq{
-		Token:  thingKey,
-		ChanID: chanID,
+func (svc *adapterService) authorize(ctx context.Context, thingKey, chanID string) (string, error) {
+	ar := &policies.AuthorizeReq{
+		Sub:        thingKey,
+		Obj:        chanID,
+		Act:        policies.ReadAction,
+		EntityType: policies.GroupEntityType,
 	}
-	thid, err := svc.auth.CanAccessByKey(ctx, ar)
+	res, err := svc.auth.Authorize(ctx, ar)
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrAuthorization, err)
+		return "", errors.Wrap(errors.ErrAuthorization, err)
+	}
+	if !res.GetAuthorized() {
+		return "", errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	return thid, nil
+	return res.GetThingID(), nil
 }

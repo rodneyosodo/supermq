@@ -10,8 +10,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/go-redis/redis/v8"
-	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/certs"
 	"github.com/mainflux/mainflux/certs/api"
 	vault "github.com/mainflux/mainflux/certs/pki"
@@ -21,6 +19,7 @@ import (
 	"github.com/mainflux/mainflux/internal/server"
 	httpserver "github.com/mainflux/mainflux/internal/server/http"
 	mflog "github.com/mainflux/mainflux/logger"
+	"github.com/mainflux/mainflux/users/policies"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/jmoiron/sqlx"
@@ -49,7 +48,7 @@ type config struct {
 	LogLevel  string `env:"MF_CERTS_LOG_LEVEL"        envDefault:"info"`
 	CertsURL  string `env:"MF_SDK_CERTS_URL"          envDefault:"http://localhost"`
 	ThingsURL string `env:"MF_THINGS_URL"             envDefault:"http://things:9000"`
-	JaegerURL string `env:"MF_JAEGER_URL"             envDefault:"localhost:6831"`
+	JaegerURL string `env:"MF_JAEGER_URL"             envDefault:"http://jaeger:14268/api/traces"`
 
 	// Sign and issue certificates without 3rd party PKI
 	SignCAPath    string `env:"MF_CERTS_SIGN_CA_PATH"        envDefault:"ca.crt"`
@@ -100,14 +99,14 @@ func main() {
 	}
 	defer db.Close()
 
-	auth, authHandler, err := authClient.Setup(envPrefix, cfg.JaegerURL)
+	auth, authHandler, err := authClient.Setup(envPrefix, svcName, cfg.JaegerURL)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	defer authHandler.Close()
 	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 
-	svc := newService(auth, db, logger, nil, tlsCert, caCert, cfg, pkiClient)
+	svc := newService(auth, db, logger, tlsCert, caCert, cfg, pkiClient)
 
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
 	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
@@ -128,7 +127,7 @@ func main() {
 	}
 }
 
-func newService(auth mainflux.AuthServiceClient, db *sqlx.DB, logger mflog.Logger, esClient *redis.Client, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent vault.Agent) certs.Service {
+func newService(auth policies.AuthServiceClient, db *sqlx.DB, logger mflog.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent vault.Agent) certs.Service {
 	certsRepo := certsPg.NewRepository(db, logger)
 	config := mfsdk.Config{
 		CertsURL:  cfg.CertsURL,

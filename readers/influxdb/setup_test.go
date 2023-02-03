@@ -11,12 +11,12 @@ import (
 	"time"
 
 	influxdata "github.com/influxdata/influxdb-client-go/v2"
-	mainflux_log "github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	dockertest "github.com/ory/dockertest/v3"
 )
 
 var (
-	testLog, _ = mainflux_log.New(os.Stdout, mainflux_log.Info.String())
+	testLog, _ = mflog.New(os.Stdout, mflog.Info.String())
 	address    string
 )
 
