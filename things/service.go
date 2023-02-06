@@ -16,11 +16,14 @@ import (
 
 const (
 	usersObjectKey    = "users"
+	thingsObjectKey   = "things"
 	authoritiesObject = "authorities"
 	memberRelationKey = "member"
+	createKey         = "c_add"
 	readRelationKey   = "read"
 	writeRelationKey  = "write"
 	deleteRelationKey = "delete"
+	entityType        = "group"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -152,8 +155,7 @@ func (ts *thingsService) CreateThings(ctx context.Context, token string, things 
 	if err != nil {
 		return []Thing{}, err
 	}
-
-	if err := ts.authorize(ctx, res.GetId(), usersObjectKey, memberRelationKey); err != nil {
+	if err := ts.authorize(ctx, token, thingsObjectKey, createKey); err != nil {
 		return []Thing{}, err
 	}
 
@@ -240,19 +242,8 @@ func (ts *thingsService) ShareThing(ctx context.Context, token, thingID string, 
 }
 
 func (ts *thingsService) claimOwnership(ctx context.Context, objectID string, actions, userIDs []string) error {
-	var errs error
-	for _, userID := range userIDs {
-		for _, action := range actions {
-			apr, err := ts.auth.AddPolicy(ctx, &policies.AddPolicyReq{Obj: objectID, Act: action, Sub: userID})
-			if err != nil {
-				errs = errors.Wrap(fmt.Errorf("cannot claim ownership on object '%s' by user '%s': %s", objectID, userID, err), errs)
-			}
-			if !apr.GetAuthorized() {
-				errs = errors.Wrap(fmt.Errorf("cannot claim ownership on object '%s' by user '%s': unauthorized", objectID, userID), errs)
-			}
-		}
-	}
-	return errs
+	// TODO - During clients integration on things add owner field to claim ownership during creation of thing
+	return nil
 }
 
 func (ts *thingsService) UpdateKey(ctx context.Context, token, id, key string) error {
@@ -608,9 +599,10 @@ func (ts *thingsService) ListMembers(ctx context.Context, token, groupID string,
 
 func (ts *thingsService) authorize(ctx context.Context, subject, object string, relation string) error {
 	req := &policies.AuthorizeReq{
-		Sub: subject,
-		Obj: object,
-		Act: relation,
+		EntityType: entityType,
+		Sub:        subject,
+		Obj:        object,
+		Act:        relation,
 	}
 	res, err := ts.auth.Authorize(ctx, req)
 	if err != nil {

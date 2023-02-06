@@ -311,7 +311,7 @@ func newService(db *sqlx.DB, tracer trace.Tracer, c config, logger logger.Logger
 		}, []string{"method"}),
 	)
 
-	if err := createAdmin(c, cRepo, hsr, csvc); err != nil {
+	if err := createAdmin(c, cRepo, hsr, csvc, psvc); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create admin client: %s", err))
 		os.Exit(1)
 	}
@@ -404,7 +404,7 @@ func startGRPCServer(ctx context.Context, csvc clients.Service, psvc policies.Se
 	}
 }
 
-func createAdmin(c config, crepo clients.ClientRepository, hsr clients.Hasher, svc clients.Service) error {
+func createAdmin(c config, crepo clients.ClientRepository, hsr clients.Hasher, svc clients.Service, psvc policies.Service) error {
 	id, err := uuid.New().ID()
 	if err != nil {
 		return err
@@ -437,10 +437,14 @@ func createAdmin(c config, crepo clients.ClientRepository, hsr clients.Hasher, s
 	if _, err = crepo.Save(context.Background(), client); err != nil {
 		return err
 	}
-	_, err = svc.IssueToken(context.Background(), c.adminIdentity, c.adminSecret)
+	tkn, err := svc.IssueToken(context.Background(), c.adminIdentity, c.adminSecret)
 	if err != nil {
 		return err
 	}
-
+	// Add policy to make admin create things
+	pr := policies.Policy{Subject: client.ID, Object: "things", Actions: []string{"c_add"}}
+	if err := psvc.AddPolicy(context.Background(), tkn.AccessToken, pr); err != nil {
+		return err
+	}
 	return nil
 }

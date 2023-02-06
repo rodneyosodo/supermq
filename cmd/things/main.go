@@ -63,14 +63,14 @@ const (
 	defESPass          = ""
 	defESDB            = "0"
 	defHTTPPort        = "8182"
-	defAuthHTTPPort    = "8989"
-	defAuthGRPCPort    = "8181"
+	defAuthHTTPPort    = "9191"
+	defAuthGRPCPort    = "9192"
 	defServerCert      = ""
 	defServerKey       = ""
 	defStandaloneEmail = ""
 	defStandaloneToken = ""
 	defJaegerURL       = ""
-	defAuthURL         = "localhost:8181"
+	defAuthURL         = "localhost:9192"
 	defAuthTimeout     = "1s"
 
 	envLogLevel        = "MF_THINGS_LOG_LEVEL"
@@ -99,7 +99,7 @@ const (
 	envStandaloneEmail = "MF_THINGS_STANDALONE_EMAIL"
 	envStandaloneToken = "MF_THINGS_STANDALONE_TOKEN"
 	envJaegerURL       = "MF_JAEGER_URL"
-	envAuthURL         = "MF_AUTH_GRPC_URL"
+	envAuthURL         = "MF_CLIENTS_GRPC_URL"
 	envAuthTimeout     = "MF_AUTH_GRPC_TIMEOUT"
 )
 
