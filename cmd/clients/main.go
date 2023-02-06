@@ -441,8 +441,13 @@ func createAdmin(c config, crepo clients.ClientRepository, hsr clients.Hasher, s
 	if err != nil {
 		return err
 	}
-	// Add policy to make admin create things
-	pr := policies.Policy{Subject: client.ID, Object: "things", Actions: []string{"c_add"}}
+	// Add policy for things
+	pr := policies.Policy{Subject: client.ID, Object: "things", Actions: []string{"c_add", "c_list", "c_update", "c_delete"}}
+	if err := psvc.AddPolicy(context.Background(), tkn.AccessToken, pr); err != nil {
+		return err
+	}
+	// Add policy for channels
+	pr = policies.Policy{Subject: client.ID, Object: "channels", Actions: []string{"c_add", "c_list", "c_update", "c_delete"}}
 	if err := psvc.AddPolicy(context.Background(), tkn.AccessToken, pr); err != nil {
 		return err
 	}
