@@ -10,11 +10,10 @@ networks:
 volumes:
   mainflux-clients-db-volume:
   mainflux-keys-db-volume:
-  mainflux-auth-db-volume:
   mainflux-users-db-volume:
   mainflux-things-db-volume:
   mainflux-keto-db-volume:
-  mainflux-auth-redis-volume:
+  mainflux-client-redis-volume:
   mainflux-es-redis-volume:
   mainflux-mqtt-broker-volume:
 
@@ -86,7 +85,7 @@ services:
       MF_THINGS_DB_USER: ${MF_THINGS_DB_USER}
       MF_THINGS_DB_PASS: ${MF_THINGS_DB_PASS}
       MF_THINGS_DB: ${MF_THINGS_DB}
-      MF_THINGS_CACHE_URL: auth-redis:${MF_REDIS_TCP_PORT}
+      MF_THINGS_CACHE_URL: client-redis:${MF_REDIS_TCP_PORT}
       MF_THINGS_ES_URL: es-redis:${MF_REDIS_TCP_PORT}
       MF_THINGS_HTTP_PORT: ${MF_THINGS_HTTP_PORT}
       MF_THINGS_AUTH_HTTP_PORT: ${MF_THINGS_AUTH_HTTP_PORT}
@@ -100,6 +99,15 @@ services:
       - ${MF_THINGS_AUTH_GRPC_PORT}:${MF_THINGS_AUTH_GRPC_PORT}
     networks:
       - mainflux-base-net
+
+  client-redis:
+    image: redis:6.2.2-alpine
+    container_name: mainflux-client-redis
+    restart: on-failure
+    networks:
+      - mainflux-base-net
+    volumes:
+      - mainflux-client-redis-volume:/data
 
   clients-db:
     image: postgres:15.1-alpine
