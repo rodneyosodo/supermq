@@ -9,6 +9,7 @@ networks:
 
 volumes:
   mainflux-clients-db-volume:
+  mainflux-keys-db-volume:
   mainflux-auth-db-volume:
   mainflux-users-db-volume:
   mainflux-things-db-volume:
@@ -92,7 +93,7 @@ services:
       - .env
     depends_on:
       - things
-      - users
+      - clients
       - mqtt-adapter
       - http-adapter
       - ws-adapter
@@ -149,55 +150,6 @@ services:
     ports:
       - ${MF_AUTH_HTTP_PORT}:${MF_AUTH_HTTP_PORT}
       - ${MF_AUTH_GRPC_PORT}:${MF_AUTH_GRPC_PORT}
-    networks:
-      - mainflux-base-net
-
-  users-db:
-    image: postgres:13.3-alpine
-    container_name: mainflux-users-db
-    restart: on-failure
-    environment:
-      POSTGRES_USER: ${MF_USERS_DB_USER}
-      POSTGRES_PASSWORD: ${MF_USERS_DB_PASS}
-      POSTGRES_DB: ${MF_USERS_DB}
-    networks:
-      - mainflux-base-net
-    volumes:
-      - mainflux-users-db-volume:/var/lib/postgresql/data
-
-  users:
-    image: mainflux/users:${MF_RELEASE_TAG}
-    container_name: mainflux-users
-    volumes:
-      - ./templates/${MF_USERS_RESET_PWD_TEMPLATE}:/${MF_EMAIL_TEMPLATE}
-    depends_on:
-      - users-db
-      - auth
-    restart: on-failure
-    environment:
-      MF_USERS_LOG_LEVEL: ${MF_USERS_LOG_LEVEL}
-      MF_USERS_DB_HOST: users-db
-      MF_USERS_DB_PORT: ${MF_USERS_DB_PORT}
-      MF_USERS_DB_USER: ${MF_USERS_DB_USER}
-      MF_USERS_DB_PASS: ${MF_USERS_DB_PASS}
-      MF_USERS_DB: ${MF_USERS_DB}
-      MF_USERS_HTTP_PORT: ${MF_USERS_HTTP_PORT}
-      MF_JAEGER_URL: ${MF_JAEGER_URL}
-      MF_EMAIL_HOST: ${MF_EMAIL_HOST}
-      MF_EMAIL_PORT: ${MF_EMAIL_PORT}
-      MF_EMAIL_USERNAME: ${MF_EMAIL_USERNAME}
-      MF_EMAIL_PASSWORD: ${MF_EMAIL_PASSWORD}
-      MF_EMAIL_FROM_ADDRESS: ${MF_EMAIL_FROM_ADDRESS}
-      MF_EMAIL_FROM_NAME: ${MF_EMAIL_FROM_NAME}
-      MF_EMAIL_TEMPLATE: ${MF_EMAIL_TEMPLATE}
-      MF_TOKEN_RESET_ENDPOINT: ${MF_TOKEN_RESET_ENDPOINT}
-      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
-      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
-      MF_USERS_ADMIN_EMAIL: ${MF_USERS_ADMIN_EMAIL}
-      MF_USERS_ADMIN_PASSWORD: ${MF_USERS_ADMIN_PASSWORD}
-      MF_USERS_ALLOW_SELF_REGISTER: ${MF_USERS_ALLOW_SELF_REGISTER}
-    ports:
-      - ${MF_USERS_HTTP_PORT}:${MF_USERS_HTTP_PORT}
     networks:
       - mainflux-base-net
 
@@ -270,6 +222,7 @@ services:
     container_name: mainflux-clients
     depends_on:
       - clients-db
+      - keys
     restart: on-failure
     environment:
       MF_CLIENTS_LOG_LEVEL: ${MF_CLIENTS_LOG_LEVEL}
