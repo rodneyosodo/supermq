@@ -19,56 +19,6 @@ volumes:
   mainflux-mqtt-broker-volume:
 
 services:
-  keto:
-    image: oryd/keto:v0.6.0-alpha.3
-    container_name: mainflux-keto
-    ports:
-      - ${MF_KETO_READ_REMOTE_PORT}:${MF_KETO_READ_REMOTE_PORT}
-      - ${MF_KETO_WRITE_REMOTE_PORT}:${MF_KETO_WRITE_REMOTE_PORT}
-    environment:
-      - DSN=postgresql://${MF_KETO_DB_USER}:${MF_KETO_DB_PASS}@keto-db:${MF_KETO_DB_PORT}/${MF_KETO_DB}?sslmode=disable
-    command: serve -c /home/ory/keto.yml
-    restart: on-failure
-    volumes:
-      - type: bind
-        source: ./keto
-        target: /home/ory
-    networks:
-      - mainflux-base-net
-    depends_on:
-      - keto-db
-
-  keto-migrate:
-    image: oryd/keto:v0.6.0-alpha.3
-    container_name: mainflux-keto-migrate
-    environment:
-      - KETO_WRITE_REMOTE=keto:${MF_KETO_WRITE_REMOTE_PORT}
-      - KETO_READ_REMOTE=keto:${MF_KETO_READ_REMOTE_PORT}
-      - DSN=postgresql://${MF_KETO_DB_USER}:${MF_KETO_DB_PASS}@keto-db:${MF_KETO_DB_PORT}/${MF_KETO_DB}?sslmode=disable
-    volumes:
-      - type: bind
-        source: ./keto
-        target: /home/ory
-    command: migrate up --all-namespaces -c /home/ory/keto.yml --yes
-    restart: on-failure
-    networks:
-      - mainflux-base-net
-    depends_on:
-      - keto-db
-
-  keto-db:
-    image: postgres:13.3-alpine
-    container_name: mainflux-keto-db
-    restart: on-failure
-    environment:
-      POSTGRES_USER: ${MF_KETO_DB_USER}
-      POSTGRES_PASSWORD: ${MF_KETO_DB_PASS}
-      POSTGRES_DB: ${MF_KETO_DB}
-    networks:
-      - mainflux-base-net
-    volumes:
-      - mainflux-keto-db-volume:/var/lib/postgresql/data
-
   nginx:
     image: nginx:1.23.3-alpine
     container_name: mainflux-nginx
@@ -109,50 +59,6 @@ services:
     ports:
     - 4222:4222
 
-  auth-db:
-    image: postgres:13.3-alpine
-    container_name: mainflux-auth-db
-    restart: on-failure
-    environment:
-      POSTGRES_USER: ${MF_AUTH_DB_USER}
-      POSTGRES_PASSWORD: ${MF_AUTH_DB_PASS}
-      POSTGRES_DB: ${MF_AUTH_DB}
-    networks:
-      - mainflux-base-net
-    volumes:
-      - mainflux-auth-db-volume:/var/lib/postgresql/data
-
-  auth:
-    image: mainflux/auth:${MF_RELEASE_TAG}
-    container_name: mainflux-auth
-    depends_on:
-      - auth-db
-      - keto
-    expose:
-      - ${MF_AUTH_GRPC_PORT}
-    restart: on-failure
-    environment:
-      MF_AUTH_LOG_LEVEL: ${MF_AUTH_LOG_LEVEL}
-      MF_AUTH_DB_HOST: auth-db
-      MF_AUTH_DB_PORT: ${MF_AUTH_DB_PORT}
-      MF_AUTH_DB_USER: ${MF_AUTH_DB_USER}
-      MF_AUTH_DB_PASS: ${MF_AUTH_DB_PASS}
-      MF_AUTH_DB: ${MF_AUTH_DB}
-      MF_AUTH_HTTP_PORT: ${MF_AUTH_HTTP_PORT}
-      MF_AUTH_GRPC_PORT: ${MF_AUTH_GRPC_PORT}
-      MF_AUTH_SECRET: ${MF_AUTH_SECRET}
-      MF_AUTH_LOGIN_TOKEN_DURATION: ${MF_AUTH_LOGIN_TOKEN_DURATION}
-      MF_JAEGER_URL: ${MF_JAEGER_URL}
-      MF_KETO_READ_REMOTE_HOST: ${MF_KETO_READ_REMOTE_HOST}
-      MF_KETO_READ_REMOTE_PORT: ${MF_KETO_READ_REMOTE_PORT}
-      MF_KETO_WRITE_REMOTE_HOST: ${MF_KETO_WRITE_REMOTE_HOST}
-      MF_KETO_WRITE_REMOTE_PORT: ${MF_KETO_WRITE_REMOTE_PORT}
-    ports:
-      - ${MF_AUTH_HTTP_PORT}:${MF_AUTH_HTTP_PORT}
-      - ${MF_AUTH_GRPC_PORT}:${MF_AUTH_GRPC_PORT}
-    networks:
-      - mainflux-base-net
-
   things-db:
     image: postgres:13.3-alpine
     container_name: mainflux-things-db
@@ -166,21 +72,12 @@ services:
     volumes:
       - mainflux-things-db-volume:/var/lib/postgresql/data
 
-  auth-redis:
-    image: redis:6.2.2-alpine
-    container_name: mainflux-auth-redis
-    restart: on-failure
-    networks:
-      - mainflux-base-net
-    volumes:
-      - mainflux-auth-redis-volume:/data
-
   things:
     image: mainflux/things:${MF_RELEASE_TAG}
     container_name: mainflux-things
     depends_on:
       - things-db
-      - auth
+      - clients
     restart: on-failure
     environment:
       MF_THINGS_LOG_LEVEL: ${MF_THINGS_LOG_LEVEL}
@@ -195,7 +92,7 @@ services:
       MF_THINGS_AUTH_HTTP_PORT: ${MF_THINGS_AUTH_HTTP_PORT}
       MF_THINGS_AUTH_GRPC_PORT: ${MF_THINGS_AUTH_GRPC_PORT}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
-      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
+      MF_CLIENTS_GRPC_URL: ${MF_CLIENTS_GRPC_URL}
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
     ports:
       - ${MF_THINGS_HTTP_PORT}:${MF_THINGS_HTTP_PORT}
@@ -222,7 +119,6 @@ services:
     container_name: mainflux-clients
     depends_on:
       - clients-db
-      - keys
     restart: on-failure
     environment:
       MF_CLIENTS_LOG_LEVEL: ${MF_CLIENTS_LOG_LEVEL}
