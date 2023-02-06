@@ -137,7 +137,7 @@ var cmdUsers = []cobra.Command{
 		Short: "Update password",
 		Long:  `Update user password`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 3 {
+			if len(args) != 4 {
 				logUsage(cmd.Use)
 				return
 			}
