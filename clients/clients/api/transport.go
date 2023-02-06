@@ -52,7 +52,7 @@ func MakeClientsHandler(svc clients.Service, mux *bone.Mux, logger logger.Logger
 		opts...,
 	))
 
-	mux.Get("/groups/:groupID/members", kithttp.NewServer(
+	mux.Get("/groups/:id/members", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("list_members"))(listMembersEndpoint(svc)),
 		decodeListMembersRequest,
 		api.EncodeResponse,
@@ -365,7 +365,7 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 			Limit:    l,
 			Metadata: m,
 		},
-		groupID: bone.GetValue(r, "groupID"),
+		groupID: bone.GetValue(r, "id"),
 	}
 	return req, nil
 }
