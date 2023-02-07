@@ -26,7 +26,7 @@ import (
 var (
 	sub1 = sdk.Subscription{
 		Topic:   "topic",
-		Contact: "contact-mainflux",
+		Contact: "contact",
 	}
 	emptySubscription = sdk.Subscription{}
 	exampleUser1      = "email1@example.com"

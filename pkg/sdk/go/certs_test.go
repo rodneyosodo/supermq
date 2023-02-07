@@ -33,16 +33,8 @@ var (
 	thingID           = "1"
 	caPath            = "../../../docker/ssl/certs/ca.crt"
 	caKeyPath         = "../../../docker/ssl/certs/ca.key"
-	cfgLogLevel       = "error"
-	cfgClientTLS      = false
-	cfgServerCert     = ""
-	cfgServerKey      = ""
-	cfgCertsURL       = "http://localhost"
-	cfgJaegerURL      = ""
-	cfgAuthURL        = "localhost:8181"
 	cfgAuthTimeout    = "1s"
 	cfgSignHoursValid = "24h"
-	cfgSignRSABits    = 2048
 )
 
 func newCertsThingsService(auth mainflux.AuthServiceClient) things.Service {
@@ -82,23 +74,9 @@ func newCertService() (certs.Service, error) {
 		return nil, err
 	}
 
-	c := certs.Config{
-		LogLevel:       cfgLogLevel,
-		ClientTLS:      cfgClientTLS,
-		ServerCert:     cfgServerCert,
-		ServerKey:      cfgServerKey,
-		CertsURL:       cfgCertsURL,
-		JaegerURL:      cfgJaegerURL,
-		AuthURL:        cfgAuthURL,
-		SignTLSCert:    tlsCert,
-		SignX509Cert:   caCert,
-		SignHoursValid: cfgSignHoursValid,
-		SignRSABits:    cfgSignRSABits,
-	}
-
 	pki := mocks.NewPkiAgent(tlsCert, caCert, cfgSignHoursValid, authTimeout)
 
-	return certs.New(auth, repo, mfsdk, c, pki), nil
+	return certs.New(auth, repo, mfsdk, pki), nil
 }
 
 func newCertServer(svc certs.Service) *httptest.Server {
