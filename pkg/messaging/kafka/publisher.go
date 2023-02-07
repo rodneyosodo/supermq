@@ -44,11 +44,11 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 
 }
 
-func (pub *publisher) Publish(topic string, msg messaging.Message) error {
+func (pub *publisher) Publish(topic string, msg *messaging.Message) error {
 	if topic == "" {
 		return ErrEmptyTopic
 	}
-	data, err := proto.Marshal(&msg)
+	data, err := proto.Marshal(msg)
 	if err != nil {
 		return err
 	}

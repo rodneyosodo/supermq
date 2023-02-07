@@ -149,7 +149,7 @@ func (ps *pubsub) handle(message kafka.Message, h messaging.MessageHandler) {
 	if err := proto.Unmarshal(message.Value, &msg); err != nil {
 		ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
 	}
-	if err := h.Handle(msg); err != nil {
+	if err := h.Handle(&msg); err != nil {
 		ps.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
 	}
 }

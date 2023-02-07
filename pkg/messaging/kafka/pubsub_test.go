@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	msgChan = make(chan messaging.Message)
+	msgChan = make(chan *messaging.Message)
 	data    = []byte("payload")
 )
 
@@ -69,7 +69,7 @@ func TestPubsub(t *testing.T) {
 			Subtopic: tc.subtopic,
 			Payload:  tc.payload,
 		}
-		err := publisher.Publish(topic, expectedMsg)
+		err := publisher.Publish(topic, &expectedMsg)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	}
 
@@ -216,7 +216,7 @@ func TestPubsub(t *testing.T) {
 
 type handler struct{}
 
-func (h handler) Handle(msg messaging.Message) error {
+func (h handler) Handle(msg *messaging.Message) error {
 	msgChan <- msg
 	return nil
 }
