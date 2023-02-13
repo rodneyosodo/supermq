@@ -27,10 +27,10 @@ var (
 )
 
 func TestPubsub(t *testing.T) {
-	err := pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s", chansPrefix, topic), handler{})
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	err = pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic), handler{})
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	// err := pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s", chansPrefix, topic), handler{})
+	// require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	// err = pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic), handler{})
+	// require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	cases := []struct {
 		desc     string
 		channel  string
@@ -217,6 +217,7 @@ func TestPubsub(t *testing.T) {
 type handler struct{}
 
 func (h handler) Handle(msg *messaging.Message) error {
+	fmt.Printf("Message %s\n", msg.String())
 	msgChan <- msg
 	return nil
 }

@@ -4,21 +4,19 @@
 package kafka
 
 import (
-	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
+	kf "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	log "github.com/mainflux/mainflux/logger"
-
-	"github.com/gogo/protobuf/proto"
 	"github.com/mainflux/mainflux/pkg/messaging"
-	kafka "github.com/segmentio/kafka-go"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
 	chansPrefix = "channels"
-	offset      = kafka.LastOffset
 )
 
 var (
@@ -31,11 +29,13 @@ var (
 var _ messaging.PubSub = (*pubsub)(nil)
 
 type subscription struct {
-	*kafka.Reader
+	*kf.Consumer
 	cancel func() error
 }
 type pubsub struct {
 	publisher
+	url           string
+	queue         string
 	logger        log.Logger
 	mu            sync.Mutex
 	subscriptions map[string]map[string]subscription
@@ -43,16 +43,17 @@ type pubsub struct {
 
 // NewPubSub returns Kafka message publisher/subscriber.
 func NewPubSub(url, queue string, logger log.Logger) (messaging.PubSub, error) {
-	conn, err := kafka.Dial("tcp", url)
+	prod, err := kf.NewProducer(&kf.ConfigMap{"bootstrap.servers": url})
 	if err != nil {
 		return &pubsub{}, err
 	}
+
 	ret := &pubsub{
 		publisher: publisher{
-			url:    url,
-			conn:   conn,
-			topics: make(map[string]*kafka.Writer),
+			prod: prod,
 		},
+		url:           url,
+		queue:         queue,
 		subscriptions: make(map[string]map[string]subscription),
 		logger:        logger,
 	}
@@ -82,24 +83,36 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 		ps.subscriptions[topic] = s
 	}
 
-	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:     []string{ps.url},
-		GroupID:     id,
-		Topic:       topic,
-		StartOffset: offset,
+	consumer, err := kf.NewConsumer(&kf.ConfigMap{
+		"bootstrap.servers":        ps.url,
+		"broker.address.family":    "v4",
+		"group.id":                 "mainflux",
+		"auto.offset.reset":        "latest",
+		"metadata.max.age.ms":      1,
+		"allow.auto.create.topics": "true",
 	})
+	if err != nil {
+		return err
+	}
+	if err = consumer.SubscribeTopics([]string{formatTopic(topic)}, nil); err != nil {
+		return err
+	}
+
 	go func() {
 		for {
-			message, err := reader.ReadMessage(context.Background())
-			if err != nil {
-				break
-			}
+			message, err := consumer.ReadMessage(-1)
 			ps.handle(message, handler)
+			if err == nil {
+				ps.handle(message, handler)
+			} else if !err.(kf.Error).IsTimeout() {
+				ps.logger.Error(err.Error())
+				return
+			}
 		}
 	}()
 	s[id] = subscription{
-		Reader: reader,
-		cancel: handler.Cancel,
+		Consumer: consumer,
+		cancel:   handler.Cancel,
 	}
 	return nil
 }
@@ -144,12 +157,12 @@ func (ps *pubsub) Close() error {
 	return nil
 }
 
-func (ps *pubsub) handle(message kafka.Message, h messaging.MessageHandler) {
-	var msg messaging.Message
-	if err := proto.Unmarshal(message.Value, &msg); err != nil {
+func (ps *pubsub) handle(message *kf.Message, h messaging.MessageHandler) {
+	var msg = &messaging.Message{}
+	if err := proto.Unmarshal(message.Value, msg); err != nil {
 		ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
 	}
-	if err := h.Handle(&msg); err != nil {
+	if err := h.Handle(msg); err != nil {
 		ps.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
 	}
 }
@@ -161,4 +174,11 @@ func (s subscription) close() error {
 		}
 	}
 	return s.Close()
+}
+
+func formatTopic(topic string) string {
+	if strings.Contains(topic, "*") {
+		return fmt.Sprintf("^%s", topic)
+	}
+	return topic
 }

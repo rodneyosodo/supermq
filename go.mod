@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/caarlos0/env/v7 v7.0.0
 	github.com/cenkalti/backoff/v4 v4.1.3
+	github.com/confluentinc/confluent-kafka-go/v2 v2.0.2
 	github.com/docker/docker v20.10.21+incompatible
 	github.com/eclipse/paho.mqtt.golang v1.4.2
 	github.com/fatih/color v1.13.0
@@ -38,7 +39,6 @@ require (
 	github.com/prometheus/client_golang v1.13.0
 	github.com/rabbitmq/amqp091-go v1.5.0
 	github.com/rubenv/sql-migrate v1.2.0
-	github.com/segmentio/kafka-go v0.4.30
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.13.0
 	github.com/stretchr/testify v1.8.1
@@ -121,7 +121,6 @@ require (
 	github.com/opencontainers/runc v1.1.4 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
-	github.com/pierrec/lz4/v4 v4.1.14 // indirect
 	github.com/pion/dtls/v2 v2.1.5 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/transport v0.13.1 // indirect
