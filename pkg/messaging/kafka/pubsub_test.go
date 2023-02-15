@@ -27,50 +27,67 @@ var (
 )
 
 func TestPubsub(t *testing.T) {
-	err := pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s", chansPrefix, topic), handler{})
+	err := pubsub.Subscribe(clientID, fmt.Sprintf("%s.*", chansPrefix), handler{})
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	err = pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic), handler{})
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
 	cases := []struct {
 		desc     string
-		channel  string
+		topic    string
 		subtopic string
 		payload  []byte
+		err      error
 	}{
 		{
+			desc:    "publish message with empty topic",
+			topic:   "",
+			err:     kafka.ErrEmptyTopic,
+			payload: data,
+		},
+		{
 			desc:    "publish message with nil payload",
+			topic:   channel,
 			payload: nil,
+			err:     nil,
 		},
 		{
 			desc:    "publish message with string payload",
+			topic:   channel,
 			payload: data,
+			err:     nil,
 		},
 		{
-			desc:    "publish message with channel",
+			desc:    "publish message with topic",
 			payload: data,
-			channel: channel,
+			topic:   channel,
+			err:     nil,
 		},
 		{
 			desc:     "publish message with subtopic",
 			payload:  data,
 			subtopic: subtopic,
+			err:      kafka.ErrEmptyTopic,
 		},
 		{
-			desc:     "publish message with channel and subtopic",
+			desc:     "publish message with topic and subtopic",
 			payload:  data,
-			channel:  channel,
+			topic:    channel,
 			subtopic: subtopic,
+			err:      nil,
 		},
 	}
 
 	for _, tc := range cases {
 		expectedMsg := messaging.Message{
-			Channel:  tc.channel,
 			Subtopic: tc.subtopic,
 			Payload:  tc.payload,
 		}
-		err := publisher.Publish(topic, &expectedMsg)
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		err := publisher.Publish(tc.topic, &expectedMsg)
+		if tc.err == nil {
+			require.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", tc.desc, err))
+		} else {
+			assert.Equal(t, err, tc.err)
+		}
+
 	}
 
 	// Test Subscribe and Unsubscribe

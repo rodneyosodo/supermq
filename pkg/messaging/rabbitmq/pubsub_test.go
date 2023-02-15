@@ -37,11 +37,8 @@ func TestPublisher(t *testing.T) {
 	conn, ch, err := newConn()
 	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	topicChan := subscribe(t, ch, fmt.Sprintf("%s.%s", chansPrefix, topic))
-	subtopicChan := subscribe(t, ch, fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic))
-
+	topicChan := subscribe(t, ch, fmt.Sprintf("%s.#", chansPrefix))
 	go rabbitHandler(topicChan, handler{})
-	go rabbitHandler(subtopicChan, handler{})
 
 	t.Cleanup(func() {
 		conn.Close()
@@ -50,48 +47,63 @@ func TestPublisher(t *testing.T) {
 
 	cases := []struct {
 		desc     string
-		channel  string
+		topic    string
 		subtopic string
 		payload  []byte
+		err      error
 	}{
 		{
+			desc:  "publish message with empty topic",
+			topic: "",
+			err:   rabbitmq.ErrEmptyTopic,
+		},
+		{
 			desc:    "publish message with nil payload",
+			topic:   channel,
 			payload: nil,
+			err:     nil,
 		},
 		{
 			desc:    "publish message with string payload",
+			topic:   channel,
 			payload: data,
+			err:     nil,
 		},
 		{
-			desc:    "publish message with channel",
+			desc:    "publish message with topic",
 			payload: data,
-			channel: channel,
+			topic:   channel,
+			err:     nil,
 		},
 		{
 			desc:     "publish message with subtopic",
 			payload:  data,
 			subtopic: subtopic,
+			err:      rabbitmq.ErrEmptyTopic,
 		},
 		{
 			desc:     "publish message with channel and subtopic",
 			payload:  data,
-			channel:  channel,
+			topic:    channel,
 			subtopic: subtopic,
+			err:      nil,
 		},
 	}
 
 	for _, tc := range cases {
 		expectedMsg := messaging.Message{
 			Publisher: clientID,
-			Channel:   tc.channel,
 			Subtopic:  tc.subtopic,
 			Payload:   tc.payload,
 		}
-		err = pubsub.Publish(topic, &expectedMsg)
-		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s", tc.desc, err))
-
-		receivedMsg := <-msgChan
-		assert.Equal(t, expectedMsg.Payload, receivedMsg.Payload, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &expectedMsg.Payload, receivedMsg.Payload))
+		err := publisher.Publish(tc.topic, &expectedMsg)
+		if tc.err == nil {
+			assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s", tc.desc, err))
+			receivedMsg := <-msgChan
+			assert.Equal(t, expectedMsg.Payload, receivedMsg.Payload, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &expectedMsg.Payload, receivedMsg.Payload))
+		} else {
+			assert.Equal(t, err, tc.err)
+		}
 	}
 }
 
