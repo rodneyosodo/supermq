@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/segmentio/kafka-go"
+	"google.golang.org/protobuf/proto"
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
@@ -80,11 +80,12 @@ func (pub *publisher) Publish(topic string, msg *messaging.Message) error {
 		return err
 	}
 	writer = &kafka.Writer{
-		Addr:         kafka.TCP(pub.url),
-		Topic:        subject,
-		RequiredAcks: kafka.RequireAll,
-		Balancer:     &kafka.LeastBytes{},
-		BatchTimeout: batchTimeout,
+		Addr:                   kafka.TCP(pub.url),
+		Topic:                  subject,
+		RequiredAcks:           kafka.RequireAll,
+		Balancer:               &kafka.LeastBytes{},
+		BatchTimeout:           batchTimeout,
+		AllowAutoTopicCreation: true,
 	}
 	if err := writer.WriteMessages(context.Background(), kafkaMsg); err != nil {
 		return err

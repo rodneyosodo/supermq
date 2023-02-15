@@ -15,7 +15,7 @@ import (
 )
 
 // SubjectAllChannels represents subject to subscribe for all the channels.
-const SubjectAllChannels = "channels.>"
+const SubjectAllChannels = "channels.*"
 
 func init() {
 	log.Println("The binary was build using Kafka as the message broker")
