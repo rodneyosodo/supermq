@@ -29,56 +29,62 @@ var (
 )
 
 func TestPublisher(t *testing.T) {
-	err := pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s", chansPrefix, topic), handler{})
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	err = pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic), handler{})
+	err := pubsub.Subscribe(clientID, fmt.Sprintf("%s.>", chansPrefix), handler{})
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
 		desc     string
-		channel  string
+		topic    string
 		subtopic string
 		payload  []byte
+		err      error
 	}{
 		{
 			desc:    "publish message with nil payload",
+			topic:   channel,
 			payload: nil,
+			err:     nil,
+		},
+		{
+			desc:    "publish message with empty topic",
+			topic:   "",
+			payload: data,
+			err:     nats.ErrEmptyTopic,
 		},
 		{
 			desc:    "publish message with string payload",
+			topic:   channel,
 			payload: data,
-		},
-		{
-			desc:    "publish message with channel",
-			payload: data,
-			channel: channel,
+			err:     nil,
 		},
 		{
 			desc:     "publish message with subtopic",
 			payload:  data,
 			subtopic: subtopic,
+			err:      nats.ErrEmptyTopic,
 		},
 		{
-			desc:     "publish message with channel and subtopic",
+			desc:     "publish message with topic and subtopic",
 			payload:  data,
-			channel:  channel,
+			topic:    channel,
 			subtopic: subtopic,
+			err:      nil,
 		},
 	}
 
 	for _, tc := range cases {
 		expectedMsg := messaging.Message{
-			Channel:  tc.channel,
 			Subtopic: tc.subtopic,
 			Payload:  tc.payload,
 		}
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-		err = pubsub.Publish(topic, &expectedMsg)
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-		receivedMsg := <-msgChan
-		assert.Equal(t, expectedMsg.Payload, receivedMsg.Payload, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &expectedMsg.Payload, receivedMsg.Payload))
+		err = pubsub.Publish(tc.topic, &expectedMsg)
+		if tc.err == nil {
+			require.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", tc.desc, err))
+			receivedMsg := <-msgChan
+			assert.Equal(t, expectedMsg.Payload, receivedMsg.Payload, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &expectedMsg.Payload, receivedMsg.Payload))
+		} else {
+			assert.Equal(t, err, tc.err)
+		}
 	}
 }
 

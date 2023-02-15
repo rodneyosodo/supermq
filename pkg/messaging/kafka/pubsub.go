@@ -4,19 +4,26 @@
 package kafka
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"strings"
+	"regexp"
 	"sync"
+	"time"
 
-	kf "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	log "github.com/mainflux/mainflux/logger"
+
 	"github.com/mainflux/mainflux/pkg/messaging"
+	kafka "github.com/segmentio/kafka-go"
+	ktopics "github.com/segmentio/kafka-go/topics"
 	"google.golang.org/protobuf/proto"
 )
 
 const (
-	chansPrefix = "channels"
+	chansPrefix               = "channels"
+	SubjectAllChannels        = "channels.*"
+	offset                    = kafka.LastOffset
+	defaultScanningIntervalMS = 500
 )
 
 var (
@@ -29,31 +36,33 @@ var (
 var _ messaging.PubSub = (*pubsub)(nil)
 
 type subscription struct {
-	*kf.Consumer
+	*kafka.Reader
 	cancel func() error
 }
 type pubsub struct {
 	publisher
-	url           string
-	queue         string
+	client        *kafka.Client
 	logger        log.Logger
 	mu            sync.Mutex
 	subscriptions map[string]map[string]subscription
 }
 
 // NewPubSub returns Kafka message publisher/subscriber.
-func NewPubSub(url, queue string, logger log.Logger) (messaging.PubSub, error) {
-	prod, err := kf.NewProducer(&kf.ConfigMap{"bootstrap.servers": url})
+func NewPubSub(url, _ string, logger log.Logger) (messaging.PubSub, error) {
+	conn, err := kafka.Dial("tcp", url)
 	if err != nil {
 		return &pubsub{}, err
 	}
-
+	client := &kafka.Client{
+		Addr: conn.LocalAddr(),
+	}
 	ret := &pubsub{
 		publisher: publisher{
-			prod: prod,
+			url:    url,
+			conn:   conn,
+			topics: make(map[string]*kafka.Writer),
 		},
-		url:           url,
-		queue:         queue,
+		client:        client,
 		subscriptions: make(map[string]map[string]subscription),
 		logger:        logger,
 	}
@@ -70,49 +79,26 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
-	// Check topic
-	s, ok := ps.subscriptions[topic]
-	switch ok {
-	case true:
-		// Check topic ID
-		if _, ok := s[id]; ok {
-			return ErrAlreadySubscribed
-		}
-	default:
-		s = make(map[string]subscription)
-		ps.subscriptions[topic] = s
-	}
-
-	consumer, err := kf.NewConsumer(&kf.ConfigMap{
-		"bootstrap.servers":        ps.url,
-		"broker.address.family":    "v4",
-		"group.id":                 "mainflux",
-		"auto.offset.reset":        "latest",
-		"metadata.max.age.ms":      1,
-		"allow.auto.create.topics": "true",
-	})
+	s, err := ps.checkTopic(topic, id, ErrAlreadySubscribed)
 	if err != nil {
 		return err
 	}
-	if err = consumer.SubscribeTopics([]string{formatTopic(topic)}, nil); err != nil {
-		return err
-	}
+	ps.configReader(id, topic, s, handler)
 
-	go func() {
-		for {
-			message, err := consumer.ReadMessage(-1)
-			ps.handle(message, handler)
-			if err == nil {
-				ps.handle(message, handler)
-			} else if !err.(kf.Error).IsTimeout() {
-				ps.logger.Error(err.Error())
-				return
+	// Subscribe to all topic by prediocially scanning for all topics and consuming them
+	if topic == SubjectAllChannels {
+		go func() {
+			for {
+				topics, _ := ps.listTopic()
+				for _, t := range topics {
+					s, err := ps.checkTopic(t, id, ErrAlreadySubscribed)
+					if err == nil {
+						ps.configReader(id, t, s, handler)
+					}
+				}
+				time.Sleep(defaultScanningIntervalMS * time.Millisecond)
 			}
-		}
-	}()
-	s[id] = subscription{
-		Consumer: consumer,
-		cancel:   handler.Cancel,
+		}()
 	}
 	return nil
 }
@@ -157,12 +143,12 @@ func (ps *pubsub) Close() error {
 	return nil
 }
 
-func (ps *pubsub) handle(message *kf.Message, h messaging.MessageHandler) {
-	var msg = &messaging.Message{}
-	if err := proto.Unmarshal(message.Value, msg); err != nil {
+func (ps *pubsub) handle(message kafka.Message, h messaging.MessageHandler) {
+	var msg messaging.Message
+	if err := proto.Unmarshal(message.Value, &msg); err != nil {
 		ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
 	}
-	if err := h.Handle(msg); err != nil {
+	if err := h.Handle(&msg); err != nil {
 		ps.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
 	}
 }
@@ -176,9 +162,53 @@ func (s subscription) close() error {
 	return s.Close()
 }
 
-func formatTopic(topic string) string {
-	if strings.Contains(topic, "*") {
-		return fmt.Sprintf("^%s", topic)
+func (ps *pubsub) listTopic() ([]string, error) {
+	allRegex := regexp.MustCompile(SubjectAllChannels)
+	allTopics, err := ktopics.ListRe(context.Background(), ps.client, allRegex)
+	if err != nil {
+		return []string{}, err
 	}
-	return topic
+	var topics []string
+	for _, t := range allTopics {
+		topics = append(topics, t.Name)
+	}
+	return topics, nil
+}
+
+func (ps *pubsub) checkTopic(topic, id string, err error) (map[string]subscription, error) {
+	// Check topic
+	s, ok := ps.subscriptions[topic]
+	switch ok {
+	case true:
+		// Check topic ID
+		if _, ok := s[id]; ok {
+			return map[string]subscription{}, err
+		}
+	default:
+		s = make(map[string]subscription)
+		ps.subscriptions[topic] = s
+	}
+	return s, nil
+}
+
+func (ps *pubsub) configReader(id, topic string, s map[string]subscription, handler messaging.MessageHandler) {
+	reader := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:     []string{ps.url},
+		GroupID:     id,
+		Topic:       topic,
+		StartOffset: offset,
+	})
+	go func() {
+		for {
+			message, err := reader.ReadMessage(context.Background())
+			if err != nil {
+				break
+			}
+			ps.handle(message, handler)
+		}
+	}()
+	s[id] = subscription{
+		Reader: reader,
+		cancel: handler.Cancel,
+	}
 }

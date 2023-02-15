@@ -4,27 +4,41 @@
 package kafka
 
 import (
+	"context"
 	"fmt"
+	"sync"
+	"time"
 
-	kf "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/segmentio/kafka-go"
 	"google.golang.org/protobuf/proto"
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
 
+var (
+	numPartitions     = 1
+	replicationFactor = 1
+	batchTimeout      = time.Microsecond
+)
+
 type publisher struct {
-	prod *kf.Producer
+	url    string
+	conn   *kafka.Conn
+	mu     sync.Mutex
+	topics map[string]*kafka.Writer
 }
 
 // NewPublisher returns Kafka message Publisher.
 func NewPublisher(url string) (messaging.Publisher, error) {
-	prod, err := kf.NewProducer(&kf.ConfigMap{"bootstrap.servers": url})
+	conn, err := kafka.Dial("tcp", url)
 	if err != nil {
 		return &publisher{}, err
 	}
 	ret := &publisher{
-		prod: prod,
+		url:    url,
+		conn:   conn,
+		topics: make(map[string]*kafka.Writer),
 	}
 	return ret, nil
 
@@ -43,20 +57,66 @@ func (pub *publisher) Publish(topic string, msg *messaging.Message) error {
 		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 	}
 
-	kafkaMsg := kf.Message{
-		TopicPartition: kf.TopicPartition{Topic: &subject},
-		Value:          data,
+	kafkaMsg := kafka.Message{
+		Value: data,
 	}
 
-	if err := pub.prod.Produce(&kafkaMsg, nil); err != nil {
+	writer, ok := pub.topics[subject]
+	if ok {
+		if err := writer.WriteMessages(context.Background(), kafkaMsg); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	topicConfigs := []kafka.TopicConfig{
+		{
+			Topic:             subject,
+			NumPartitions:     numPartitions,
+			ReplicationFactor: replicationFactor,
+		},
+	}
+	if err := pub.conn.CreateTopics(topicConfigs...); err != nil {
 		return err
 	}
-
-	pub.prod.Flush(1 * 1000)
+	writer = &kafka.Writer{
+		Addr:                   kafka.TCP(pub.url),
+		Topic:                  subject,
+		RequiredAcks:           kafka.RequireAll,
+		Balancer:               &kafka.LeastBytes{},
+		BatchTimeout:           batchTimeout,
+		AllowAutoTopicCreation: true,
+	}
+	if err := writer.WriteMessages(context.Background(), kafkaMsg); err != nil {
+		return err
+	}
+	pub.mu.Lock()
+	defer pub.mu.Unlock()
+	pub.topics[subject] = writer
 	return nil
 }
 
 func (pub *publisher) Close() error {
-	pub.prod.Close()
+	defer pub.conn.Close()
+
+	pub.mu.Lock()
+	defer pub.mu.Unlock()
+
+	topics := make([]string, 0, len(pub.topics))
+	for topic := range pub.topics {
+		topics = append(topics, topic)
+		pub.topics[topic].Close()
+	}
+
+	req := &kafka.DeleteTopicsRequest{
+		Addr:   kafka.TCP(pub.url),
+		Topics: topics,
+	}
+	client := kafka.Client{
+		Addr: kafka.TCP(pub.url),
+	}
+	if _, err := client.DeleteTopics(context.Background(), req); err != nil {
+		return err
+	}
 	return nil
 }
