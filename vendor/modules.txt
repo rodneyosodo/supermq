@@ -308,7 +308,9 @@ github.com/jmoiron/sqlx/reflectx
 # github.com/klauspost/compress v1.15.11
 ## explicit; go 1.17
 github.com/klauspost/compress
+github.com/klauspost/compress/flate
 github.com/klauspost/compress/fse
+github.com/klauspost/compress/gzip
 github.com/klauspost/compress/huff0
 github.com/klauspost/compress/internal/cpuinfo
 github.com/klauspost/compress/internal/snapref
@@ -434,7 +436,7 @@ github.com/pelletier/go-toml/v2/internal/tracker
 ## explicit
 github.com/pierrec/lz4
 github.com/pierrec/lz4/internal/xxh32
-# github.com/pierrec/lz4/v4 v4.1.14
+# github.com/pierrec/lz4/v4 v4.1.15
 ## explicit; go 1.14
 github.com/pierrec/lz4/v4
 github.com/pierrec/lz4/v4/internal/lz4block
@@ -533,7 +535,7 @@ github.com/rubenv/sql-migrate/sqlparse
 # github.com/ryanuber/go-glob v1.0.0
 ## explicit
 github.com/ryanuber/go-glob
-# github.com/segmentio/kafka-go v0.4.30
+# github.com/segmentio/kafka-go v0.4.38
 ## explicit; go 1.15
 github.com/segmentio/kafka-go
 github.com/segmentio/kafka-go/compress
@@ -547,6 +549,7 @@ github.com/segmentio/kafka-go/protocol/addpartitionstotxn
 github.com/segmentio/kafka-go/protocol/alterconfigs
 github.com/segmentio/kafka-go/protocol/alterpartitionreassignments
 github.com/segmentio/kafka-go/protocol/apiversions
+github.com/segmentio/kafka-go/protocol/consumer
 github.com/segmentio/kafka-go/protocol/createacls
 github.com/segmentio/kafka-go/protocol/createpartitions
 github.com/segmentio/kafka-go/protocol/createtopics
@@ -560,16 +563,21 @@ github.com/segmentio/kafka-go/protocol/findcoordinator
 github.com/segmentio/kafka-go/protocol/heartbeat
 github.com/segmentio/kafka-go/protocol/incrementalalterconfigs
 github.com/segmentio/kafka-go/protocol/initproducerid
+github.com/segmentio/kafka-go/protocol/joingroup
+github.com/segmentio/kafka-go/protocol/leavegroup
 github.com/segmentio/kafka-go/protocol/listgroups
 github.com/segmentio/kafka-go/protocol/listoffsets
 github.com/segmentio/kafka-go/protocol/metadata
 github.com/segmentio/kafka-go/protocol/offsetcommit
+github.com/segmentio/kafka-go/protocol/offsetdelete
 github.com/segmentio/kafka-go/protocol/offsetfetch
 github.com/segmentio/kafka-go/protocol/produce
 github.com/segmentio/kafka-go/protocol/saslauthenticate
 github.com/segmentio/kafka-go/protocol/saslhandshake
+github.com/segmentio/kafka-go/protocol/syncgroup
 github.com/segmentio/kafka-go/protocol/txnoffsetcommit
 github.com/segmentio/kafka-go/sasl
+github.com/segmentio/kafka-go/topics
 # github.com/sirupsen/logrus v1.9.0
 ## explicit; go 1.13
 github.com/sirupsen/logrus
