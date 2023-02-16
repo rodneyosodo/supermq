@@ -11,7 +11,9 @@ import (
 )
 
 type tokenRes struct {
-	Token string `json:"token,omitempty"`
+	AccessToken  string `json:"access_token,omitempty"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+	AccessType   string `json:"access_type,omitempty"`
 }
 
 type createThingsRes struct {
@@ -78,26 +80,6 @@ func (res KeyRes) Headers() map[string]string {
 
 func (res KeyRes) Empty() bool {
 	return res.Value == ""
-}
-
-type retrieveKeyRes struct {
-	ID        string     `json:"id,omitempty"`
-	IssuerID  string     `json:"issuer_id,omitempty"`
-	Subject   string     `json:"subject,omitempty"`
-	IssuedAt  time.Time  `json:"issued_at,omitempty"`
-	ExpiresAt *time.Time `json:"expires_at,omitempty"`
-}
-
-func (res retrieveKeyRes) Code() int {
-	return http.StatusOK
-}
-
-func (res retrieveKeyRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res retrieveKeyRes) Empty() bool {
-	return false
 }
 
 type revokeCertsRes struct {
