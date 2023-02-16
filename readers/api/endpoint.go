@@ -10,9 +10,10 @@ import (
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/readers"
+	"github.com/mainflux/mainflux/users/policies"
 )
 
-func listMessagesEndpoint(svc readers.MessageRepository, tc mainflux.ThingsServiceClient, ac mainflux.AuthServiceClient) endpoint.Endpoint {
+func listMessagesEndpoint(svc readers.MessageRepository, tc mainflux.ThingsServiceClient, ac policies.AuthServiceClient) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listMessagesReq)
 

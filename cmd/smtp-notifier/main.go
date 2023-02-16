@@ -10,7 +10,6 @@ import (
 	"os"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/consumers"
 	"github.com/mainflux/mainflux/consumers/notifiers"
 	"github.com/mainflux/mainflux/consumers/notifiers/api"
@@ -28,6 +27,7 @@ import (
 	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
 	"github.com/mainflux/mainflux/pkg/ulid"
+	"github.com/mainflux/mainflux/users/policies"
 	opentracing "github.com/opentracing/opentracing-go"
 	"golang.org/x/sync/errgroup"
 )
@@ -125,7 +125,7 @@ func main() {
 
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, auth mainflux.AuthServiceClient, c config, ec email.Config, logger mflog.Logger) notifiers.Service {
+func newService(db *sqlx.DB, tracer opentracing.Tracer, auth policies.AuthServiceClient, c config, ec email.Config, logger mflog.Logger) notifiers.Service {
 	database := notifierPg.NewDatabase(db)
 	repo := tracing.New(notifierPg.New(database), tracer)
 	idp := ulid.New()

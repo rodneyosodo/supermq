@@ -31,6 +31,7 @@ import (
 	thingsPg "github.com/mainflux/mainflux/things/postgres"
 	rediscache "github.com/mainflux/mainflux/things/redis"
 	"github.com/mainflux/mainflux/things/tracing"
+	"github.com/mainflux/mainflux/users/policies"
 	opentracing "github.com/opentracing/opentracing-go"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -171,7 +172,7 @@ func main() {
 	}
 }
 
-func newService(auth mainflux.AuthServiceClient, dbTracer opentracing.Tracer, cacheTracer opentracing.Tracer, db *sqlx.DB, cacheClient *redis.Client, esClient *redis.Client, logger mflog.Logger) things.Service {
+func newService(auth policies.AuthServiceClient, dbTracer opentracing.Tracer, cacheTracer opentracing.Tracer, db *sqlx.DB, cacheClient *redis.Client, esClient *redis.Client, logger mflog.Logger) things.Service {
 	database := thingsPg.NewDatabase(db)
 
 	thingsRepo := thingsPg.NewThingRepository(database)

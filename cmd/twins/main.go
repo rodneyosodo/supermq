@@ -10,7 +10,6 @@ import (
 	"os"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/internal"
 	authClient "github.com/mainflux/mainflux/internal/clients/grpc/auth"
 	jaegerClient "github.com/mainflux/mainflux/internal/clients/jaeger"
@@ -30,6 +29,7 @@ import (
 	twmongodb "github.com/mainflux/mainflux/twins/mongodb"
 	rediscache "github.com/mainflux/mainflux/twins/redis"
 	"github.com/mainflux/mainflux/twins/tracing"
+	"github.com/mainflux/mainflux/users/policies"
 	opentracing "github.com/opentracing/opentracing-go"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/sync/errgroup"
@@ -90,7 +90,7 @@ func main() {
 	}
 	defer dbCloser.Close()
 
-	var auth mainflux.AuthServiceClient
+	var auth policies.AuthServiceClient
 	switch cfg.StandaloneEmail != "" && cfg.StandaloneToken != "" {
 	case true:
 		auth = localusers.NewAuthService(cfg.StandaloneEmail, cfg.StandaloneToken)
@@ -137,7 +137,7 @@ func main() {
 	}
 }
 
-func newService(id string, ps messaging.PubSub, chanID string, users mainflux.AuthServiceClient, dbTracer opentracing.Tracer, db *mongo.Database, cacheTracer opentracing.Tracer, cacheClient *redis.Client, logger mflog.Logger) twins.Service {
+func newService(id string, ps messaging.PubSub, chanID string, users policies.AuthServiceClient, dbTracer opentracing.Tracer, db *mongo.Database, cacheTracer opentracing.Tracer, cacheClient *redis.Client, logger mflog.Logger) twins.Service {
 	twinRepo := twmongodb.NewTwinRepository(db)
 	twinRepo = tracing.TwinRepositoryMiddleware(dbTracer, twinRepo)
 

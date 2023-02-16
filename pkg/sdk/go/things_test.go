@@ -28,7 +28,6 @@ const (
 	email       = "user@example.com"
 	adminEmail  = "admin@example.com"
 	otherEmail  = "other_user@example.com"
-	token       = "token"
 	otherToken  = "other_token"
 	wrongValue  = "wrong_value"
 	badKey      = "999"
@@ -43,10 +42,8 @@ var (
 )
 
 func newThingsService(tokens map[string]string) things.Service {
-	userPolicy := mocks.MockSubjectSet{Object: "users", Relation: "member"}
-	adminPolicy := mocks.MockSubjectSet{Object: "authorities", Relation: "member"}
-	auth := mocks.NewAuthService(tokens, map[string][]mocks.MockSubjectSet{
-		adminEmail: {userPolicy, adminPolicy}, email: {userPolicy}})
+	adminPolicy := mocks.MockSubjectSet{Subject: "token", Relation: things.AdminRelationKey}
+	auth := mocks.NewAuthService(tokens, map[string][]mocks.MockSubjectSet{token: {adminPolicy}})
 	conns := make(chan mocks.Connection)
 	thingsRepo := mocks.NewThingRepository(conns)
 	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)
@@ -548,7 +545,7 @@ func TestUpdateThing(t *testing.T) {
 				Metadata: metadata,
 			},
 			token: token,
-			err:   errors.NewSDKErrorWithStatus(errors.ErrAuthorization, http.StatusForbidden),
+			err:   errors.NewSDKErrorWithStatus(errors.ErrNotFound, http.StatusNotFound),
 		},
 		{
 			desc: "update channel with an empty id",
@@ -618,7 +615,7 @@ func TestDeleteThing(t *testing.T) {
 			desc:    "delete non-existing thing",
 			thingID: "2",
 			token:   token,
-			err:     errors.NewSDKErrorWithStatus(errors.ErrNotFound, http.StatusNotFound),
+			err:     nil,
 		},
 		{
 			desc:    "delete thing with invalid id",

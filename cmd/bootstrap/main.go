@@ -8,11 +8,6 @@ import (
 	"log"
 	"os"
 
-	r "github.com/go-redis/redis/v8"
-	"github.com/jmoiron/sqlx"
-	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/bootstrap"
-	api "github.com/mainflux/mainflux/bootstrap/api"
 	bootstrapPg "github.com/mainflux/mainflux/bootstrap/postgres"
 	rediscons "github.com/mainflux/mainflux/bootstrap/redis/consumer"
 	redisprod "github.com/mainflux/mainflux/bootstrap/redis/producer"
@@ -25,7 +20,13 @@ import (
 	httpserver "github.com/mainflux/mainflux/internal/server/http"
 	mflog "github.com/mainflux/mainflux/logger"
 	mfsdk "github.com/mainflux/mainflux/pkg/sdk/go"
+	"github.com/mainflux/mainflux/users/policies"
 	"golang.org/x/sync/errgroup"
+
+	r "github.com/go-redis/redis/v8"
+	"github.com/jmoiron/sqlx"
+	"github.com/mainflux/mainflux/bootstrap"
+	api "github.com/mainflux/mainflux/bootstrap/api"
 )
 
 const (
@@ -115,7 +116,7 @@ func main() {
 	}
 }
 
-func newService(auth mainflux.AuthServiceClient, db *sqlx.DB, logger mflog.Logger, esClient *r.Client, cfg config) bootstrap.Service {
+func newService(auth policies.AuthServiceClient, db *sqlx.DB, logger mflog.Logger, esClient *r.Client, cfg config) bootstrap.Service {
 	repoConfig := bootstrapPg.NewConfigRepository(db, logger)
 
 	config := mfsdk.Config{

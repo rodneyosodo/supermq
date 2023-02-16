@@ -16,10 +16,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mainflux/mainflux"
 	bsmocks "github.com/mainflux/mainflux/bootstrap/mocks"
 	"github.com/mainflux/mainflux/certs"
 	"github.com/mainflux/mainflux/certs/mocks"
+	"github.com/mainflux/mainflux/users/policies"
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 	mfsdk "github.com/mainflux/mainflux/pkg/sdk/go"
@@ -52,8 +52,9 @@ func newService(tokens map[string]string) (certs.Service, error) {
 	ac := bsmocks.NewAuthClient(map[string]string{token: email})
 	server := newThingsServer(newThingsService(ac))
 
-	policies := []thmocks.MockSubjectSet{{Object: "users", Relation: "member"}}
-	auth := thmocks.NewAuthService(tokens, map[string][]thmocks.MockSubjectSet{email: policies})
+	policies := []thmocks.MockSubjectSet{{Subject: "token", Relation: things.AdminRelationKey}}
+	auth := thmocks.NewAuthService(tokens, map[string][]thmocks.MockSubjectSet{token: policies})
+
 	config := mfsdk.Config{
 		ThingsURL: server.URL,
 	}
@@ -76,7 +77,7 @@ func newService(tokens map[string]string) (certs.Service, error) {
 	return certs.New(auth, repo, sdk, pki), nil
 }
 
-func newThingsService(auth mainflux.AuthServiceClient) things.Service {
+func newThingsService(auth policies.AuthServiceClient) things.Service {
 	ths := make(map[string]things.Thing, thingsNum)
 	for i := 0; i < thingsNum; i++ {
 		id := strconv.Itoa(i + 1)
