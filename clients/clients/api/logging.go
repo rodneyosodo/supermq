@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/mainflux/mainflux/clients/clients"
-	"github.com/mainflux/mainflux/clients/jwt"
 	log "github.com/mainflux/mainflux/logger"
 )
 
@@ -21,40 +20,16 @@ func LoggingMiddleware(svc clients.Service, logger log.Logger) clients.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) RegisterClient(ctx context.Context, token string, client clients.Client) (c clients.Client, err error) {
+func (lm *loggingMiddleware) CreateThing(ctx context.Context, token string, client clients.Client) (c clients.Client, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method register_client of identity %s with token %s took %s to complete", c.Credentials.Identity, token, time.Since(begin))
+		message := fmt.Sprintf("Method create_thing of identity %s with token %s took %s to complete", c.Credentials.Identity, token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
-	return lm.svc.RegisterClient(ctx, token, client)
-}
-
-func (lm *loggingMiddleware) IssueToken(ctx context.Context, identity, secret string) (token jwt.Token, err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method issue_token for client %s took %s to complete", identity, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-	return lm.svc.IssueToken(ctx, identity, secret)
-}
-
-func (lm *loggingMiddleware) RefreshToken(ctx context.Context, accessToken string) (token jwt.Token, err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method refresh_token for token %s took %s to complete", accessToken, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-	return lm.svc.RefreshToken(ctx, accessToken)
+	return lm.svc.CreateThing(ctx, token, client)
 }
 
 func (lm *loggingMiddleware) ViewClient(ctx context.Context, token, id string) (c clients.Client, err error) {
@@ -103,17 +78,6 @@ func (lm *loggingMiddleware) UpdateClientTags(ctx context.Context, token string,
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 	return lm.svc.UpdateClientTags(ctx, token, client)
-}
-func (lm *loggingMiddleware) UpdateClientIdentity(ctx context.Context, token, id, identity string) (c clients.Client, err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_client_identity for token %s and identity %s took %s to complete", token, identity, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-	return lm.svc.UpdateClientIdentity(ctx, token, id, identity)
 }
 
 func (lm *loggingMiddleware) UpdateClientSecret(ctx context.Context, token, oldSecret, newSecret string) (c clients.Client, err error) {
@@ -164,14 +128,38 @@ func (lm *loggingMiddleware) DisableClient(ctx context.Context, token string, id
 	return lm.svc.DisableClient(ctx, token, id)
 }
 
-func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID string, cp clients.Page) (mp clients.MembersPage, err error) {
+func (lm *loggingMiddleware) ListThingsByChannel(ctx context.Context, token, groupID string, cp clients.Page) (mp clients.MembersPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_members for group %s and token %s took %s to complete", groupID, token, time.Since(begin))
+		message := fmt.Sprintf("Method list_things_by_channel for group %s and token %s took %s to complete", groupID, token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
-	return lm.svc.ListMembers(ctx, token, groupID, cp)
+	return lm.svc.ListThingsByChannel(ctx, token, groupID, cp)
+}
+
+func (lm *loggingMiddleware) ShareThing(ctx context.Context, token, id string, actions, userIDs []string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method share_thing for client %s took %s to complete", id, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+	return lm.svc.ShareThing(ctx, token, id, actions, userIDs)
+}
+
+func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method share_thing for client %s took %s to complete", key, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+	return lm.svc.Identify(ctx, key)
 }

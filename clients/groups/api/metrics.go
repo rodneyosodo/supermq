@@ -80,3 +80,11 @@ func (ms *metricsMiddleware) ListMemberships(ctx context.Context, token, clientI
 	}(time.Now())
 	return ms.svc.ListMemberships(ctx, token, clientID, gp)
 }
+
+func (ms *metricsMiddleware) IsChannelOwner(ctx context.Context, owner string, id string) (err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "check_channel_owner").Add(1)
+		ms.latency.With("method", "check_channel_owner").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return ms.svc.IsChannelOwner(ctx, owner, id)
+}

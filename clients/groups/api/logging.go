@@ -103,3 +103,15 @@ func (lm *loggingMiddleware) ListMemberships(ctx context.Context, token, clientI
 	}(time.Now())
 	return lm.svc.ListMemberships(ctx, token, clientID, cp)
 }
+
+func (lm *loggingMiddleware) IsChannelOwner(ctx context.Context, owner string, id string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method check_channel_owner for client %s took %s to complete", id, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+	return lm.svc.IsChannelOwner(ctx, owner, id)
+}

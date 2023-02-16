@@ -13,7 +13,7 @@ func registrationEndpoint(svc clients.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return createClientRes{}, err
 		}
-		client, err := svc.RegisterClient(ctx, req.token, req.client)
+		client, err := svc.CreateThing(ctx, req.token, req.client)
 		if err != nil {
 			return createClientRes{}, err
 		}
@@ -23,6 +23,26 @@ func registrationEndpoint(svc clients.Service) endpoint.Endpoint {
 		}
 
 		return ucr, nil
+	}
+}
+
+func registrationsEndpoint(svc clients.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(createClientsReq)
+		if err := req.validate(); err != nil {
+			return createClientsRes{}, err
+		}
+
+		ccr := createClientsRes{}
+		for _, client := range req.Clients {
+			c, err := svc.CreateThing(ctx, req.token, client.client)
+			if err != nil {
+				return createClientsRes{}, err
+			}
+			ccr.clients = append(ccr.clients, c)
+		}
+		ccr.created = true
+		return ccr, nil
 	}
 }
 
@@ -85,7 +105,7 @@ func listMembersEndpoint(svc clients.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return memberPageRes{}, err
 		}
-		page, err := svc.ListMembers(ctx, req.token, req.groupID, req.Page)
+		page, err := svc.ListThingsByChannel(ctx, req.token, req.groupID, req.Page)
 		if err != nil {
 			return memberPageRes{}, err
 		}
@@ -132,17 +152,16 @@ func updateClientTagsEndpoint(svc clients.Service) endpoint.Endpoint {
 	}
 }
 
-func updateClientIdentityEndpoint(svc clients.Service) endpoint.Endpoint {
+func shareThingEndpoint(svc clients.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(updateClientCredentialsReq)
+		req := request.(shareThingReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		client, err := svc.UpdateClientIdentity(ctx, req.token, req.id, req.Identity)
-		if err != nil {
+		if err := svc.ShareThing(ctx, req.token, req.thingID, req.Policies, req.UserIDs); err != nil {
 			return nil, err
 		}
-		return updateClientRes{Client: client}, nil
+		return updateClientRes{}, nil
 	}
 }
 
@@ -152,7 +171,7 @@ func updateClientSecretEndpoint(svc clients.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		client, err := svc.UpdateClientSecret(ctx, req.token, req.OldSecret, req.NewSecret)
+		client, err := svc.UpdateClientSecret(ctx, req.token, req.id, req.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -177,46 +196,6 @@ func updateClientOwnerEndpoint(svc clients.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		return updateClientRes{Client: client}, nil
-	}
-}
-
-func issueTokenEndpoint(svc clients.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(loginClientReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		token, err := svc.IssueToken(ctx, req.Identity, req.Secret)
-		if err != nil {
-			return nil, err
-		}
-
-		return tokenRes{
-			AccessToken:  token.AccessToken,
-			RefreshToken: token.RefreshToken,
-			AccessType:   token.AccessType,
-		}, nil
-	}
-}
-
-func refreshTokenEndpoint(svc clients.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(tokenReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		token, err := svc.RefreshToken(ctx, req.RefreshToken)
-		if err != nil {
-			return nil, err
-		}
-
-		return tokenRes{
-			AccessToken:  token.AccessToken,
-			RefreshToken: token.RefreshToken,
-			AccessType:   token.AccessType,
-		}, nil
 	}
 }
 

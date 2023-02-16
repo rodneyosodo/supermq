@@ -56,3 +56,18 @@ func (tm *tracingMiddleware) ListPolicy(ctx context.Context, token string, pm po
 	return tm.psvc.ListPolicy(ctx, token, pm)
 
 }
+
+func (tm *tracingMiddleware) CanAccessByID(ctx context.Context, chanID, thingID string) error {
+	ctx, span := tm.tracer.Start(ctx, "svc_access_by_id", trace.WithAttributes(attribute.String("channelID", chanID), attribute.String("thingID", thingID)))
+	defer span.End()
+
+	return tm.psvc.CanAccessByID(ctx, chanID, thingID)
+
+}
+func (tm *tracingMiddleware) CanAccessByKey(ctx context.Context, chanID, thingKey string) (string, error) {
+	ctx, span := tm.tracer.Start(ctx, "svc_access_by_key", trace.WithAttributes(attribute.String("channelID", chanID), attribute.String("Key", thingKey)))
+	defer span.End()
+
+	return tm.psvc.CanAccessByKey(ctx, chanID, thingKey)
+
+}

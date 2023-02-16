@@ -95,6 +95,10 @@ type GroupService interface {
 
 	// DisableGroup logically disables the group identified with the provided ID.
 	DisableGroup(ctx context.Context, token, id string) (Group, error)
+
+	// IsChannelOwner determines whether the channel can be accessed by
+	// the given user and returns error if it cannot.
+	IsChannelOwner(ctx context.Context, owner, chanID string) error
 }
 
 // Custom Marshaller for Group

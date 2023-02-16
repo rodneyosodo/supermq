@@ -87,6 +87,38 @@ func (pr policyRepository) Evaluate(ctx context.Context, entityType string, poli
 	return nil
 }
 
+func (pr policyRepository) HasThing(ctx context.Context, chanID, thingKey string) (string, error) {
+	var thingID string
+	q := `SELECT id FROM clients WHERE key = $1`
+	if err := pr.db.QueryRowxContext(ctx, q, thingKey).Scan(&thingID); err != nil {
+		return "", errors.Wrap(errors.ErrViewEntity, err)
+	}
+
+	if err := pr.hasThing(ctx, chanID, thingID); err != nil {
+		return "", err
+	}
+
+	return thingID, nil
+}
+
+func (pr policyRepository) HasThingByID(ctx context.Context, chanID, thingID string) error {
+	return pr.hasThing(ctx, chanID, thingID)
+}
+
+func (pr policyRepository) hasThing(ctx context.Context, chanID, thingID string) error {
+	q := `SELECT EXISTS (SELECT 1 FROM policies WHERE object = $1 AND subject = $2);`
+	exists := false
+	if err := pr.db.QueryRowxContext(ctx, q, chanID, thingID).Scan(&exists); err != nil {
+		return errors.Wrap(errors.ErrViewEntity, err)
+	}
+
+	if !exists {
+		return errors.ErrNotFound
+	}
+
+	return nil
+}
+
 func (pr policyRepository) Update(ctx context.Context, policy policies.Policy) error {
 	if err := policy.Validate(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)

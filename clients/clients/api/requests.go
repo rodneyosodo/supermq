@@ -6,17 +6,51 @@ import (
 	"github.com/mainflux/mainflux/internal/apiutil"
 )
 
-const maxLimitSize = 100
-
 type createClientReq struct {
 	client clients.Client
 	token  string
 }
 
 func (req createClientReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
 	if len(req.client.Name) > api.MaxNameSize {
 		return apiutil.ErrNameSize
 	}
+	// Do the validation only if request contains ID
+	if req.client.ID != "" {
+		return api.ValidateUUID(req.client.ID)
+	}
+
+	return nil
+}
+
+type createClientsReq struct {
+	token   string
+	Clients []createClientReq
+}
+
+func (req createClientsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if len(req.Clients) <= 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, client := range req.Clients {
+		if client.client.ID != "" {
+			if err := api.ValidateUUID(client.client.ID); err != nil {
+				return err
+			}
+		}
+		if len(client.client.Name) > api.MaxNameSize {
+			return apiutil.ErrNameSize
+		}
+	}
+
 	return nil
 }
 
@@ -43,7 +77,7 @@ type listClientsReq struct {
 }
 
 func (req listClientsReq) validate() error {
-	if req.limit > maxLimitSize || req.limit < 1 {
+	if req.limit > api.MaxLimitSize || req.limit < 1 {
 		return apiutil.ErrLimitSize
 	}
 	if req.visibility != "" &&
@@ -52,6 +86,14 @@ func (req listClientsReq) validate() error {
 		req.visibility != api.SharedVisibility {
 		return apiutil.ErrInvalidVisibilityType
 	}
+	if req.limit > api.MaxLimitSize || req.limit < 1 {
+		return apiutil.ErrLimitSize
+	}
+
+	if len(req.name) > api.MaxNameSize {
+		return apiutil.ErrNameSize
+	}
+
 	return nil
 }
 
@@ -89,7 +131,9 @@ func (req updateClientReq) validate() error {
 	if req.id == "" {
 		return apiutil.ErrMissingID
 	}
-
+	if len(req.Name) > api.MaxNameSize {
+		return apiutil.ErrNameSize
+	}
 	return nil
 }
 
@@ -130,17 +174,23 @@ func (req updateClientOwnerReq) validate() error {
 }
 
 type updateClientCredentialsReq struct {
-	token     string
-	id        string
-	Identity  string `json:"identity,omitempty"`
-	OldSecret string `json:"old_secret,omitempty"`
-	NewSecret string `json:"new_secret,omitempty"`
+	token string
+	id    string
+	Key   string `json:"key,omitempty"`
 }
 
 func (req updateClientCredentialsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
+	if req.id == "" {
+		return apiutil.ErrMissingID
+	}
+
+	if req.Key == "" {
+		return apiutil.ErrBearerKey
+	}
+
 	return nil
 }
 
@@ -156,28 +206,30 @@ func (req changeClientStatusReq) validate() error {
 	return nil
 }
 
-type loginClientReq struct {
-	Identity string `json:"identity,omitempty"`
-	Secret   string `json:"secret,omitempty"`
+type shareThingReq struct {
+	token    string
+	thingID  string
+	UserIDs  []string `json:"user_ids"`
+	Policies []string `json:"policies"`
 }
 
-func (req loginClientReq) validate() error {
-	if req.Identity == "" {
-		return apiutil.ErrMissingIdentity
-	}
-	if req.Secret == "" {
-		return apiutil.ErrMissingSecret
-	}
-	return nil
-}
-
-type tokenReq struct {
-	RefreshToken string `json:"refresh_token,omitempty"`
-}
-
-func (req tokenReq) validate() error {
-	if req.RefreshToken == "" {
+func (req shareThingReq) validate() error {
+	if req.token == "" {
 		return apiutil.ErrBearerToken
+	}
+
+	if req.thingID == "" || len(req.UserIDs) == 0 {
+		return apiutil.ErrMissingID
+	}
+
+	if len(req.Policies) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, p := range req.Policies {
+		if p != api.ReadPolicy && p != api.WritePolicy && p != api.DeletePolicy {
+			return apiutil.ErrMalformedPolicy
+		}
 	}
 	return nil
 }

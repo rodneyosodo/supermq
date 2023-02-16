@@ -46,6 +46,10 @@ type PolicyRepository interface {
 
 	// Delete deletes the policy
 	Delete(ctx context.Context, p Policy) error
+
+	HasThingByID(ctx context.Context, chanID, thingID string) error
+
+	HasThing(ctx context.Context, chanID, thingKey string) (string, error)
 }
 
 // PolicyService represents a authorization service. It exposes
@@ -71,6 +75,41 @@ type PolicyService interface {
 
 	// DeletePolicy removes a policy.
 	DeletePolicy(ctx context.Context, token string, p Policy) error
+
+	// CanAccessByKey determines whether the channel can be accessed using the
+	// provided key and returns thing's id if access is allowed.
+	CanAccessByKey(ctx context.Context, chanID, key string) (string, error)
+
+	// CanAccessByID determines whether the channel can be accessed by
+	// the given thing and returns error if it cannot.
+	CanAccessByID(ctx context.Context, chanID, thingID string) error
+}
+
+// ChannelCache contains channel-thing connection caching interface.
+type ChannelCache interface {
+	// Connect channel thing connection.
+	Connect(context.Context, string, string) error
+
+	// HasThing checks if thing is connected to channel.
+	HasThing(context.Context, string, string) bool
+
+	// Disconnects thing from channel.
+	Disconnect(context.Context, string, string) error
+
+	// Removes channel from cache.
+	Remove(context.Context, string) error
+}
+
+// ThingCache contains thing caching interface.
+type ThingCache interface {
+	// Save stores pair thing key, thing id.
+	Save(context.Context, string, string) error
+
+	// ID returns thing ID for given key.
+	ID(context.Context, string) (string, error)
+
+	// Removes thing from cache.
+	Remove(context.Context, string) error
 }
 
 // Validate returns an error if policy representation is invalid.

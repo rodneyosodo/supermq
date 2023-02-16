@@ -12,6 +12,7 @@ var (
 	_ mainflux.Response = (*tokenRes)(nil)
 	_ mainflux.Response = (*viewClientRes)(nil)
 	_ mainflux.Response = (*createClientRes)(nil)
+	_ mainflux.Response = (*createClientsRes)(nil)
 	_ mainflux.Response = (*deleteClientRes)(nil)
 	_ mainflux.Response = (*clientsPageRes)(nil)
 	_ mainflux.Response = (*viewMembersRes)(nil)
@@ -50,6 +51,27 @@ func (res createClientRes) Headers() map[string]string {
 }
 
 func (res createClientRes) Empty() bool {
+	return false
+}
+
+type createClientsRes struct {
+	clients []clients.Client
+	created bool
+}
+
+func (res createClientsRes) Code() int {
+	if res.created {
+		return http.StatusCreated
+	}
+
+	return http.StatusOK
+}
+
+func (res createClientsRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res createClientsRes) Empty() bool {
 	return false
 }
 

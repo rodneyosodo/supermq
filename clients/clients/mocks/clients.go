@@ -55,10 +55,10 @@ func (m *ClientRepository) RetrieveByID(ctx context.Context, id string) (clients
 	return ret.Get(0).(clients.Client), ret.Error(1)
 }
 
-func (m *ClientRepository) RetrieveByIdentity(ctx context.Context, identity string) (clients.Client, error) {
-	ret := m.Called(ctx, identity)
+func (m *ClientRepository) RetrieveBySecret(ctx context.Context, secret string) (clients.Client, error) {
+	ret := m.Called(ctx, secret)
 
-	if identity == "" {
+	if secret == "" {
 		return clients.Client{}, errors.ErrMalformedEntity
 	}
 

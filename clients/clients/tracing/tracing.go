@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/mainflux/mainflux/clients/clients"
-	"github.com/mainflux/mainflux/clients/jwt"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -20,26 +19,13 @@ func TracingMiddleware(svc clients.Service, tracer trace.Tracer) clients.Service
 	return &tracingMiddleware{tracer, svc}
 }
 
-func (tm *tracingMiddleware) RegisterClient(ctx context.Context, token string, client clients.Client) (clients.Client, error) {
-	ctx, span := tm.tracer.Start(ctx, "svc_register_client", trace.WithAttributes(attribute.String("identity", client.Credentials.Identity)))
+func (tm *tracingMiddleware) CreateThing(ctx context.Context, token string, client clients.Client) (clients.Client, error) {
+	ctx, span := tm.tracer.Start(ctx, "svc_create_client", trace.WithAttributes(attribute.String("identity", client.Credentials.Identity)))
 	defer span.End()
 
-	return tm.svc.RegisterClient(ctx, token, client)
+	return tm.svc.CreateThing(ctx, token, client)
 }
 
-func (tm *tracingMiddleware) IssueToken(ctx context.Context, identity, secret string) (jwt.Token, error) {
-	ctx, span := tm.tracer.Start(ctx, "svc_issue_token", trace.WithAttributes(attribute.String("identity", identity)))
-	defer span.End()
-
-	return tm.svc.IssueToken(ctx, identity, secret)
-}
-
-func (tm *tracingMiddleware) RefreshToken(ctx context.Context, accessToken string) (jwt.Token, error) {
-	ctx, span := tm.tracer.Start(ctx, "svc_refresh_token", trace.WithAttributes(attribute.String("access_token", accessToken)))
-	defer span.End()
-
-	return tm.svc.RefreshToken(ctx, accessToken)
-}
 func (tm *tracingMiddleware) ViewClient(ctx context.Context, token string, id string) (clients.Client, error) {
 	ctx, span := tm.tracer.Start(ctx, "svc_view_client", trace.WithAttributes(attribute.String("ID", id)))
 	defer span.End()
@@ -64,13 +50,6 @@ func (tm *tracingMiddleware) UpdateClientTags(ctx context.Context, token string,
 	defer span.End()
 
 	return tm.svc.UpdateClientTags(ctx, token, cli)
-}
-func (tm *tracingMiddleware) UpdateClientIdentity(ctx context.Context, token, id, identity string) (clients.Client, error) {
-	ctx, span := tm.tracer.Start(ctx, "svc_update_client_identity", trace.WithAttributes(attribute.String("Identity", identity)))
-	defer span.End()
-
-	return tm.svc.UpdateClientIdentity(ctx, token, id, identity)
-
 }
 
 func (tm *tracingMiddleware) UpdateClientSecret(ctx context.Context, token, oldSecret, newSecret string) (clients.Client, error) {
@@ -102,10 +81,22 @@ func (tm *tracingMiddleware) DisableClient(ctx context.Context, token, id string
 	return tm.svc.DisableClient(ctx, token, id)
 }
 
-func (tm *tracingMiddleware) ListMembers(ctx context.Context, token, groupID string, pm clients.Page) (clients.MembersPage, error) {
-	ctx, span := tm.tracer.Start(ctx, "svc_list_members")
+func (tm *tracingMiddleware) ListThingsByChannel(ctx context.Context, token, groupID string, pm clients.Page) (clients.MembersPage, error) {
+	ctx, span := tm.tracer.Start(ctx, "svc_list_things_by_channel")
 	defer span.End()
 
-	return tm.svc.ListMembers(ctx, token, groupID, pm)
+	return tm.svc.ListThingsByChannel(ctx, token, groupID, pm)
 
+}
+
+func (tm *tracingMiddleware) ShareThing(ctx context.Context, token string, thingID string, actions, userIDs []string) error {
+	ctx, span := tm.tracer.Start(ctx, "svc_view_client", trace.WithAttributes(attribute.String("ID", thingID)))
+	defer span.End()
+	return tm.svc.ShareThing(ctx, token, thingID, actions, userIDs)
+}
+
+func (tm *tracingMiddleware) Identify(ctx context.Context, key string) (string, error) {
+	ctx, span := tm.tracer.Start(ctx, "svc_view_client", trace.WithAttributes(attribute.String("Key", key)))
+	defer span.End()
+	return tm.svc.Identify(ctx, key)
 }

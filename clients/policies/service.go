@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/clients/jwt"
 	"github.com/mainflux/mainflux/internal/apiutil"
 	"github.com/mainflux/mainflux/pkg/errors"
 )
@@ -21,17 +20,21 @@ type Service interface {
 }
 
 type service struct {
-	policies   PolicyRepository
-	idProvider mainflux.IDProvider
-	tokens     jwt.TokenRepository
+	auth         mainflux.AuthServiceClient
+	policies     PolicyRepository
+	channelCache ChannelCache
+	thingCache   ThingCache
+	idProvider   mainflux.IDProvider
 }
 
 // NewService returns a new Clients service implementation.
-func NewService(p PolicyRepository, t jwt.TokenRepository, idp mainflux.IDProvider) Service {
+func NewService(auth mainflux.AuthServiceClient, p PolicyRepository, tcache ThingCache, ccache ChannelCache, idp mainflux.IDProvider) Service {
 	return service{
-		policies:   p,
-		tokens:     t,
-		idProvider: idp,
+		auth:         auth,
+		policies:     p,
+		thingCache:   tcache,
+		channelCache: ccache,
+		idProvider:   idp,
 	}
 }
 
@@ -39,22 +42,22 @@ func (svc service) Authorize(ctx context.Context, entityType string, p Policy) e
 	if err := p.Validate(); err != nil {
 		return err
 	}
-	id, err := svc.identify(ctx, p.Subject)
+	res, err := svc.auth.Identify(ctx, &mainflux.Token{Value: p.Subject})
 	if err != nil {
-		return err
+		return errors.Wrap(errors.ErrAuthentication, err)
 	}
-	p.Subject = id
+	p.Subject = res.GetId()
 	return svc.policies.Evaluate(ctx, entityType, p)
 }
 func (svc service) UpdatePolicy(ctx context.Context, token string, p Policy) error {
-	id, err := svc.identify(ctx, token)
+	res, err := svc.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
-		return err
+		return errors.Wrap(errors.ErrAuthentication, err)
 	}
 	if err := p.Validate(); err != nil {
 		return err
 	}
-	if err := svc.checkActionRank(ctx, id, p); err != nil {
+	if err := svc.checkActionRank(ctx, res.GetId(), p); err != nil {
 		return err
 	}
 	p.UpdatedAt = time.Now()
@@ -63,25 +66,16 @@ func (svc service) UpdatePolicy(ctx context.Context, token string, p Policy) err
 }
 
 func (svc service) AddPolicy(ctx context.Context, token string, p Policy) error {
-	id, err := svc.identify(ctx, token)
+	res, err := svc.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
-		return err
+		return errors.Wrap(errors.ErrAuthentication, err)
 	}
+
 	if err := p.Validate(); err != nil {
 		return err
 	}
 
-	page, err := svc.policies.Retrieve(ctx, Page{Subject: p.Subject, Object: p.Object})
-	if err != nil {
-		return err
-	}
-	if len(page.Policies) != 0 {
-		return svc.policies.Update(ctx, p)
-	}
-	if err := svc.checkActionRank(ctx, id, p); err != nil {
-		return err
-	}
-	p.OwnerID = id
+	p.OwnerID = res.GetId()
 	p.CreatedAt = time.Now()
 	p.UpdatedAt = p.CreatedAt
 
@@ -89,11 +83,11 @@ func (svc service) AddPolicy(ctx context.Context, token string, p Policy) error 
 }
 
 func (svc service) DeletePolicy(ctx context.Context, token string, p Policy) error {
-	id, err := svc.identify(ctx, token)
-	if err != nil {
-		return err
+	if _, err := svc.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+		return errors.Wrap(errors.ErrAuthentication, err)
 	}
-	if err := svc.checkActionRank(ctx, id, p); err != nil {
+
+	if err := svc.channelCache.Disconnect(ctx, p.Object, p.Subject); err != nil {
 		return err
 	}
 
@@ -101,8 +95,8 @@ func (svc service) DeletePolicy(ctx context.Context, token string, p Policy) err
 }
 
 func (svc service) ListPolicy(ctx context.Context, token string, pm Page) (PolicyPage, error) {
-	if _, err := svc.identify(ctx, token); err != nil {
-		return PolicyPage{}, err
+	if _, err := svc.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+		return PolicyPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 	if err := pm.Validate(); err != nil {
 		return PolicyPage{}, err
@@ -141,14 +135,49 @@ func (svc service) checkActionRank(ctx context.Context, clientID string, p Polic
 
 }
 
-func (svc service) identify(ctx context.Context, tkn string) (string, error) {
-	claims, err := svc.tokens.Parse(ctx, tkn)
-	if err != nil {
-		return "", errors.Wrap(errors.ErrAuthentication, err)
-	}
-	if claims.Type != AccessToken {
-		return "", errors.ErrAuthentication
+func (svc service) CanAccessByKey(ctx context.Context, chanID, thingKey string) (string, error) {
+	thingID, err := svc.hasThing(ctx, chanID, thingKey)
+	if err == nil {
+		return thingID, nil
 	}
 
-	return claims.ClientID, nil
+	thingID, err = svc.policies.HasThing(ctx, chanID, thingKey)
+	if err != nil {
+		return "", err
+	}
+
+	if err := svc.thingCache.Save(ctx, thingKey, thingID); err != nil {
+		return "", err
+	}
+	if err := svc.channelCache.Connect(ctx, chanID, thingID); err != nil {
+		return "", err
+	}
+	return thingID, nil
+}
+
+func (svc service) CanAccessByID(ctx context.Context, chanID, thingID string) error {
+	if connected := svc.channelCache.HasThing(ctx, chanID, thingID); connected {
+		return nil
+	}
+
+	if err := svc.policies.HasThingByID(ctx, chanID, thingID); err != nil {
+		return err
+	}
+
+	if err := svc.channelCache.Connect(ctx, chanID, thingID); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (svc service) hasThing(ctx context.Context, chanID, thingKey string) (string, error) {
+	thingID, err := svc.thingCache.ID(ctx, thingKey)
+	if err != nil {
+		return "", err
+	}
+
+	if connected := svc.channelCache.HasThing(ctx, chanID, thingID); !connected {
+		return "", errors.ErrAuthorization
+	}
+	return thingID, nil
 }

@@ -79,3 +79,27 @@ func (lm *loggingMiddleware) DeletePolicy(ctx context.Context, token string, p p
 	}(time.Now())
 	return lm.svc.DeletePolicy(ctx, token, p)
 }
+
+func (lm *loggingMiddleware) CanAccessByKey(ctx context.Context, chanID, key string) (id string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method access_by_id for channel %s in key %s took %s to complete", chanID, key, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+	return lm.svc.CanAccessByKey(ctx, chanID, key)
+}
+
+func (lm *loggingMiddleware) CanAccessByID(ctx context.Context, chanID, thingID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method access_by_id for channel %s in thing %s took %s to complete", chanID, thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+	return lm.svc.CanAccessByID(ctx, chanID, thingID)
+}

@@ -29,23 +29,47 @@ func (req authorizeReq) validate() error {
 
 type createPolicyReq struct {
 	token   string
-	Owner   string   `json:"owner,omitempty"`
-	Subject string   `json:"subject,omitempty"`
-	Object  string   `json:"object,omitempty"`
-	Actions []string `json:"actions,omitempty"`
+	Owner   string `json:"owner,omitempty"`
+	thingID string `json:"thing,omitempty"`
+	chanID  string `json:"channel,omitempty"`
 }
 
 func (req createPolicyReq) validate() error {
-	for _, a := range req.Actions {
-		if ok := policies.ValidateAction(a); !ok {
-			return apiutil.ErrMissingPolicyAct
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.chanID == "" || req.thingID == "" {
+		return apiutil.ErrMissingID
+	}
+	return nil
+}
+
+type createPoliciesReq struct {
+	token      string
+	Owner      string   `json:"owner,omitempty"`
+	ThingIDs   []string `json:"thing_ids,omitempty"`
+	ChannelIDs []string `json:"channel_ids,omitempty"`
+}
+
+func (req createPoliciesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if len(req.ChannelIDs) == 0 || len(req.ThingIDs) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, chID := range req.ChannelIDs {
+		if chID == "" {
+			return apiutil.ErrMissingID
 		}
 	}
-	if req.Subject == "" {
-		return apiutil.ErrMissingPolicySub
-	}
-	if req.Object == "" {
-		return apiutil.ErrMissingPolicyObj
+	for _, thingID := range req.ThingIDs {
+		if thingID == "" {
+			return apiutil.ErrMissingID
+		}
 	}
 	return nil
 }

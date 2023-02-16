@@ -15,6 +15,41 @@ func (req createGroupReq) validate() error {
 	if len(req.Name) > api.MaxNameSize || req.Name == "" {
 		return apiutil.ErrNameSize
 	}
+	if len(req.Name) > api.MaxNameSize {
+		return apiutil.ErrNameSize
+	}
+
+	// Do the validation only if request contains ID
+	if req.ID != "" {
+		return api.ValidateUUID(req.ID)
+	}
+	return nil
+}
+
+type createGroupsReq struct {
+	token    string
+	Channels []createGroupReq
+}
+
+func (req createGroupsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if len(req.Channels) <= 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, channel := range req.Channels {
+		if channel.ID != "" {
+			if err := api.ValidateUUID(channel.ID); err != nil {
+				return err
+			}
+		}
+		if len(channel.Name) > api.MaxNameSize {
+			return apiutil.ErrNameSize
+		}
+	}
 
 	return nil
 }
@@ -36,6 +71,9 @@ func (req updateGroupReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
+	if len(req.Name) > api.MaxNameSize {
+		return apiutil.ErrNameSize
+	}
 	return nil
 }
 
@@ -70,6 +108,23 @@ func (req listMembershipReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
+	if req.Limit > api.MaxLimitSize || req.Limit < 1 {
+		return apiutil.ErrLimitSize
+	}
+
+	if len(req.Name) > api.MaxNameSize {
+		return apiutil.ErrNameSize
+	}
+
+	if req.Order != "" &&
+		req.Order != api.NameOrder && req.Order != api.IDOrder {
+		return apiutil.ErrInvalidOrder
+	}
+
+	if req.Dir != "" &&
+		req.Dir != api.AscDir && req.Dir != api.DescDir {
+		return apiutil.ErrInvalidDirection
+	}
 	return nil
 }
 
@@ -79,6 +134,9 @@ type groupReq struct {
 }
 
 func (req groupReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
 	if req.id == "" {
 		return apiutil.ErrMissingID
 	}

@@ -195,7 +195,7 @@ func (repo groupRepository) Update(ctx context.Context, g groups.Group) (groups.
 		upq = strings.Join(query, " ")
 	}
 	q := fmt.Sprintf(`UPDATE groups SET %s updated_at = :updated_at
-		WHERE id = :id AND status = %d
+		WHERE owner = :owner AND id = :id AND status = %d
 		RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, status`, upq, groups.EnabledStatus)
 
 	dbu, err := toDBGroup(g)

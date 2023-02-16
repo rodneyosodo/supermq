@@ -10,6 +10,7 @@ import (
 	"time"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	"github.com/go-redis/redis/v8"
 	"github.com/go-zoo/bone"
 	"github.com/jmoiron/sqlx"
 	"github.com/mainflux/mainflux"
@@ -21,17 +22,18 @@ import (
 	gapi "github.com/mainflux/mainflux/clients/groups/api"
 	gpostgres "github.com/mainflux/mainflux/clients/groups/postgres"
 	gtracing "github.com/mainflux/mainflux/clients/groups/tracing"
-	"github.com/mainflux/mainflux/clients/hasher"
-	"github.com/mainflux/mainflux/clients/jwt"
 	"github.com/mainflux/mainflux/clients/policies"
 	grpcapi "github.com/mainflux/mainflux/clients/policies/api/grpc"
 	papi "github.com/mainflux/mainflux/clients/policies/api/http"
 	ppostgres "github.com/mainflux/mainflux/clients/policies/postgres"
 	ppracing "github.com/mainflux/mainflux/clients/policies/tracing"
 	"github.com/mainflux/mainflux/clients/postgres"
+	authClient "github.com/mainflux/mainflux/internal/clients/grpc/auth"
+	redisClient "github.com/mainflux/mainflux/internal/clients/redis"
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/uuid"
+	rediscache "github.com/mainflux/mainflux/things/redis"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -47,22 +49,25 @@ import (
 )
 
 const (
-	svcName      = "clients"
-	stopWaitTime = 5 * time.Second
+	stopWaitTime       = 5 * time.Second
+	svcName            = "things"
+	envPrefix          = "MF_THINGS_"
+	envPrefixCache     = "MF_THINGS_CACHE_"
+	envPrefixES        = "MF_THINGS_ES_"
+	envPrefixHttp      = "MF_THINGS_HTTP_"
+	envPrefixAuthHttp  = "MF_THINGS_AUTH_HTTP_"
+	envPrefixAuthGrpc  = "MF_THINGS_AUTH_GRPC_"
+	defDB              = "things"
+	defSvcHttpPort     = "8182"
+	defSvcAuthHttpPort = "8989"
+	defSvcAuthGrpcPort = "8181"
+)
 
+const (
 	defLogLevel      = "debug"
 	defSecretKey     = "clientsecret"
 	defAdminIdentity = "admin@example.com"
 	defAdminSecret   = "12345678"
-	defDBHost        = "localhost"
-	defDBPort        = "5432"
-	defDBUser        = "mainflux"
-	defDBPass        = "mainflux"
-	defDB            = "clients"
-	defDBSSLMode     = "disable"
-	defDBSSLCert     = ""
-	defDBSSLKey      = ""
-	defDBSSLRootCert = ""
 	defHTTPPort      = "9191"
 	defGRPCPort      = "9192"
 	defServerCert    = ""
@@ -73,15 +78,6 @@ const (
 	envSecretKey     = "MF_CLIENTS_SECRET_KEY"
 	envAdminIdentity = "MF_CLIENTS_ADMIN_EMAIL"
 	envAdminSecret   = "MF_CLIENTS_ADMIN_PASSWORD"
-	envDBHost        = "MF_CLIENTS_DB_HOST"
-	envDBPort        = "MF_CLIENTS_DB_PORT"
-	envDBUser        = "MF_CLIENTS_DB_USER"
-	envDBPass        = "MF_CLIENTS_DB_PASS"
-	envDB            = "MF_CLIENTS_DB"
-	envDBSSLMode     = "MF_CLIENTS_DB_SSL_MODE"
-	envDBSSLCert     = "MF_CLIENTS_DB_SSL_CERT"
-	envDBSSLKey      = "MF_CLIENTS_DB_SSL_KEY"
-	envDBSSLRootCert = "MF_CLIENTS_DB_SSL_ROOT_CERT"
 	envHTTPPort      = "MF_CLIENTS_HTTP_PORT"
 	envGRPCPort      = "MF_CLIENTS_GRPC_PORT"
 	envServerCert    = "MF_CLIENTS_SERVER_CERT"
@@ -125,7 +121,22 @@ func main() {
 	}()
 	tracer := otel.Tracer(svcName)
 
-	csvc, gsvc, psvc := newService(db, tracer, cfg, logger)
+	// Setup new redis cache client
+	cacheClient, err := redisClient.Setup(envPrefixCache)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer cacheClient.Close()
+
+	// Setup new auth grpc client
+	auth, authHandler, err := authClient.Setup(envPrefix, cfg.jaegerURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer authHandler.Close()
+	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
+
+	csvc, gsvc, psvc := newService(db, auth, cacheClient, tracer, cfg, logger)
 
 	g.Go(func() error {
 		return startHTTPServer(ctx, csvc, gsvc, psvc, cfg.httpPort, cfg.serverCert, cfg.serverKey, logger)
@@ -148,24 +159,11 @@ func main() {
 }
 
 func loadConfig() config {
-	dbConfig := postgres.Config{
-		Host:        mainflux.Env(envDBHost, defDBHost),
-		Port:        mainflux.Env(envDBPort, defDBPort),
-		User:        mainflux.Env(envDBUser, defDBUser),
-		Pass:        mainflux.Env(envDBPass, defDBPass),
-		Name:        mainflux.Env(envDB, defDB),
-		SSLMode:     mainflux.Env(envDBSSLMode, defDBSSLMode),
-		SSLCert:     mainflux.Env(envDBSSLCert, defDBSSLCert),
-		SSLKey:      mainflux.Env(envDBSSLKey, defDBSSLKey),
-		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
-	}
-
 	return config{
 		logLevel:      mainflux.Env(envLogLevel, defLogLevel),
 		secretKey:     mainflux.Env(envSecretKey, defSecretKey),
 		adminIdentity: mainflux.Env(envAdminIdentity, defAdminIdentity),
 		adminSecret:   mainflux.Env(envAdminSecret, defAdminSecret),
-		dbConfig:      dbConfig,
 		httpPort:      mainflux.Env(envHTTPPort, defHTTPPort),
 		grpcPort:      mainflux.Env(envGRPCPort, defGRPCPort),
 		serverCert:    mainflux.Env(envServerCert, defServerCert),
@@ -204,21 +202,21 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, tracer trace.Tracer, c config, logger logger.Logger) (clients.Service, groups.GroupService, policies.PolicyService) {
+func newService(db *sqlx.DB, auth mainflux.AuthServiceClient, cacheClient *redis.Client, tracer trace.Tracer, c config, logger logger.Logger) (clients.Service, groups.GroupService, policies.PolicyService) {
 	database := postgres.NewDatabase(db, tracer)
 	cRepo := cpostgres.NewClientRepo(database)
 	gRepo := gpostgres.NewGroupRepo(database)
 	pRepo := ppostgres.NewPolicyRepo(database)
 
 	idp := uuid.New()
-	hsr := hasher.New()
 
-	tokenizer := jwt.NewTokenRepo([]byte(c.secretKey))
-	tokenizer = jwt.NewTokenRepoMiddleware(tokenizer, tracer)
+	chanCache := rediscache.NewChannelCache(cacheClient)
 
-	csvc := clients.NewService(cRepo, pRepo, tokenizer, hsr, idp)
-	gsvc := groups.NewService(gRepo, pRepo, tokenizer, idp)
-	psvc := policies.NewService(pRepo, tokenizer, idp)
+	thingCache := rediscache.NewThingCache(cacheClient)
+
+	csvc := clients.NewService(auth, cRepo, thingCache, pRepo, idp)
+	gsvc := groups.NewService(auth, gRepo, pRepo, idp)
+	psvc := policies.NewService(auth, pRepo, thingCache, chanCache, idp)
 
 	csvc = ctracing.TracingMiddleware(csvc, tracer)
 	csvc = capi.LoggingMiddleware(csvc, logger)
@@ -274,10 +272,6 @@ func newService(db *sqlx.DB, tracer trace.Tracer, c config, logger logger.Logger
 		}, []string{"method"}),
 	)
 
-	if err := createAdmin(c, cRepo, hsr, csvc); err != nil {
-		logger.Error(fmt.Sprintf("Failed to create admin client: %s", err))
-		os.Exit(1)
-	}
 	return csvc, gsvc, psvc
 }
 
@@ -365,45 +359,4 @@ func startGRPCServer(ctx context.Context, svc policies.Service, port string, cer
 	case err := <-errCh:
 		return err
 	}
-}
-
-func createAdmin(c config, crepo clients.ClientRepository, hsr clients.Hasher, svc clients.Service) error {
-	id, err := uuid.New().ID()
-	if err != nil {
-		return err
-	}
-	hash, err := hsr.Hash(c.adminSecret)
-	if err != nil {
-		return err
-	}
-
-	client := clients.Client{
-		ID:   id,
-		Name: "admin",
-		Credentials: clients.Credentials{
-			Identity: c.adminIdentity,
-			Secret:   hash,
-		},
-		Metadata: clients.Metadata{
-			"role": "admin",
-		},
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		Status:    clients.EnabledStatus,
-	}
-
-	if _, err := crepo.RetrieveByIdentity(context.Background(), client.Credentials.Identity); err == nil {
-		return nil
-	}
-
-	// Create an admin
-	if _, err = crepo.Save(context.Background(), client); err != nil {
-		return err
-	}
-	_, err = svc.IssueToken(context.Background(), c.adminIdentity, c.adminSecret)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

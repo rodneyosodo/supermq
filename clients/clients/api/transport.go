@@ -24,98 +24,91 @@ func MakeClientsHandler(svc clients.Service, mux *bone.Mux, logger logger.Logger
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, api.EncodeError)),
 	}
 
-	mux.Post("/clients", kithttp.NewServer(
-		otelkit.EndpointMiddleware(otelkit.WithOperation("register_client"))(registrationEndpoint(svc)),
+	mux.Post("/things", kithttp.NewServer(
+		otelkit.EndpointMiddleware(otelkit.WithOperation("create_thing"))(registrationEndpoint(svc)),
 		decodeCreateClientReq,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Get("/clients/:id", kithttp.NewServer(
+	mux.Post("/things/bulk", kithttp.NewServer(
+		otelkit.EndpointMiddleware(otelkit.WithOperation("create_things"))(registrationsEndpoint(svc)),
+		decodeCreateClientsReq,
+		api.EncodeResponse,
+		opts...,
+	))
+
+	mux.Get("/things/:id", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("view_client"))(viewClientEndpoint(svc)),
 		decodeViewClient,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Get("/clients", kithttp.NewServer(
+	mux.Get("/things", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("list_clients"))(listClientsEndpoint(svc)),
 		decodeListClients,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Get("/clients/groups/:groupID/members", kithttp.NewServer(
+	mux.Get("/channels/:id/things", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("list_members"))(listMembersEndpoint(svc)),
 		decodeListMembersRequest,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Patch("/clients/:id", kithttp.NewServer(
+	mux.Patch("/things/:id", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("update_client_name_and_metadata"))(updateClientEndpoint(svc)),
 		decodeUpdateClient,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Patch("/clients/:id/tags", kithttp.NewServer(
+	mux.Patch("/things/:id/tags", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("update_client_tags"))(updateClientTagsEndpoint(svc)),
 		decodeUpdateClientTags,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Patch("/clients/:id/identity", kithttp.NewServer(
-		otelkit.EndpointMiddleware(otelkit.WithOperation("update_client_identity"))(updateClientIdentityEndpoint(svc)),
+	mux.Post("/things/:id/share", kithttp.NewServer(
+		otelkit.EndpointMiddleware(otelkit.WithOperation("share_thing"))(shareThingEndpoint(svc)),
+		decodeShareThing,
+		api.EncodeResponse,
+		opts...,
+	))
+
+	mux.Patch("/things/:id/key", kithttp.NewServer(
+		otelkit.EndpointMiddleware(otelkit.WithOperation("update_client_key"))(updateClientSecretEndpoint(svc)),
 		decodeUpdateClientCredentials,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Patch("/clients/:id/secret", kithttp.NewServer(
-		otelkit.EndpointMiddleware(otelkit.WithOperation("update_client_secret"))(updateClientSecretEndpoint(svc)),
-		decodeUpdateClientCredentials,
-		api.EncodeResponse,
-		opts...,
-	))
-
-	mux.Patch("/clients/:id/owner", kithttp.NewServer(
+	mux.Patch("/things/:id/owner", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("update_client_owner"))(updateClientOwnerEndpoint(svc)),
 		decodeUpdateClientOwner,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Post("/clients/tokens/issue", kithttp.NewServer(
-		otelkit.EndpointMiddleware(otelkit.WithOperation("issue_token"))(issueTokenEndpoint(svc)),
-		decodeCredentials,
-		api.EncodeResponse,
-		opts...,
-	))
-
-	mux.Post("/clients/tokens/refresh", kithttp.NewServer(
-		otelkit.EndpointMiddleware(otelkit.WithOperation("refresh_token"))(refreshTokenEndpoint(svc)),
-		decodeRefreshToken,
-		api.EncodeResponse,
-		opts...,
-	))
-
-	mux.Post("/clients/:id/enable", kithttp.NewServer(
+	mux.Post("/things/:id/enable", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("enable_client"))(enableClientEndpoint(svc)),
 		decodeChangeClientStatus,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Post("/clients/:id/disable", kithttp.NewServer(
+	mux.Post("/things/:id/disable", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("disable_client"))(disableClientEndpoint(svc)),
 		decodeChangeClientStatus,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.GetFunc("/health", mainflux.Health("clients"))
+	mux.GetFunc("/health", mainflux.Health("things"))
 	mux.Handle("/metrics", promhttp.Handler())
 }
 
@@ -123,6 +116,22 @@ func decodeViewClient(_ context.Context, r *http.Request) (interface{}, error) {
 	req := viewClientReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, "id"),
+	}
+
+	return req, nil
+}
+
+func decodeShareThing(ctx context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
+		return nil, errors.ErrUnsupportedContentType
+	}
+
+	req := shareThingReq{
+		token:   apiutil.ExtractBearerToken(r),
+		thingID: bone.GetValue(r, "id"),
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -191,6 +200,9 @@ func decodeListClients(_ context.Context, r *http.Request) (interface{}, error) 
 }
 
 func decodeUpdateClient(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
+		return nil, errors.ErrUnsupportedContentType
+	}
 	req := updateClientReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, "id"),
@@ -203,6 +215,9 @@ func decodeUpdateClient(_ context.Context, r *http.Request) (interface{}, error)
 }
 
 func decodeUpdateClientTags(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
+		return nil, errors.ErrUnsupportedContentType
+	}
 	req := updateClientTagsReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, "id"),
@@ -215,6 +230,9 @@ func decodeUpdateClientTags(_ context.Context, r *http.Request) (interface{}, er
 }
 
 func decodeUpdateClientCredentials(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
+		return nil, errors.ErrUnsupportedContentType
+	}
 	req := updateClientCredentialsReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, "id"),
@@ -227,6 +245,9 @@ func decodeUpdateClientCredentials(_ context.Context, r *http.Request) (interfac
 }
 
 func decodeUpdateClientOwner(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
+		return nil, errors.ErrUnsupportedContentType
+	}
 	req := updateClientOwnerReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, "id"),
@@ -238,23 +259,6 @@ func decodeUpdateClientOwner(_ context.Context, r *http.Request) (interface{}, e
 	return req, nil
 }
 
-func decodeCredentials(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
-		return nil, errors.ErrUnsupportedContentType
-	}
-	req := loginClientReq{}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeRefreshToken(_ context.Context, r *http.Request) (interface{}, error) {
-	req := tokenReq{RefreshToken: apiutil.ExtractBearerToken(r)}
-
-	return req, nil
-}
 func decodeCreateClientReq(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
 		return nil, errors.ErrUnsupportedContentType
@@ -270,6 +274,19 @@ func decodeCreateClientReq(_ context.Context, r *http.Request) (interface{}, err
 	}
 
 	return req, nil
+}
+
+func decodeCreateClientsReq(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
+		return nil, errors.ErrUnsupportedContentType
+	}
+
+	var c createClientsReq
+	if err := json.NewDecoder(r.Body).Decode(&c.Clients); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return c, nil
 }
 
 func decodeChangeClientStatus(_ context.Context, r *http.Request) (interface{}, error) {
@@ -310,7 +327,7 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 			Limit:    l,
 			Metadata: m,
 		},
-		groupID: bone.GetValue(r, "groupID"),
+		groupID: bone.GetValue(r, "id"),
 	}
 	return req, nil
 }

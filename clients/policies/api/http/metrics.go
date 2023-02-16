@@ -64,3 +64,19 @@ func (ms *metricsMiddleware) DeletePolicy(ctx context.Context, token string, p p
 	}(time.Now())
 	return ms.svc.DeletePolicy(ctx, token, p)
 }
+
+func (ms *metricsMiddleware) CanAccessByKey(ctx context.Context, chanID, key string) (id string, err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "access_by_key").Add(1)
+		ms.latency.With("method", "access_by_key").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return ms.svc.CanAccessByKey(ctx, chanID, key)
+}
+
+func (ms *metricsMiddleware) CanAccessByID(ctx context.Context, chanID, thingID string) (err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "access_by_id").Add(1)
+		ms.latency.With("method", "access_by_id").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return ms.svc.CanAccessByID(ctx, chanID, thingID)
+}

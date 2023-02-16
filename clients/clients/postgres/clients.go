@@ -78,16 +78,16 @@ func (repo clientRepo) RetrieveByID(ctx context.Context, id string) (clients.Cli
 	return toClient(dbc)
 }
 
-func (repo clientRepo) RetrieveByIdentity(ctx context.Context, identity string) (clients.Client, error) {
+func (repo clientRepo) RetrieveBySecret(ctx context.Context, key string) (clients.Client, error) {
 	q := fmt.Sprintf(`SELECT id, name, tags, COALESCE(owner, '') AS owner, identity, secret, metadata, created_at, updated_at, status
         FROM clients
-        WHERE identity = $1 AND status = %d`, clients.EnabledStatus)
+        WHERE secret = $1 AND status = %d`, clients.EnabledStatus)
 
 	dbc := dbClient{
-		Identity: identity,
+		Secret: key,
 	}
 
-	if err := repo.db.QueryRowxContext(ctx, q, identity).StructScan(&dbc); err != nil {
+	if err := repo.db.QueryRowxContext(ctx, q, key).StructScan(&dbc); err != nil {
 		if err == sql.ErrNoRows {
 			return clients.Client{}, errors.Wrap(errors.ErrNotFound, err)
 
@@ -298,7 +298,7 @@ func (repo clientRepo) UpdateIdentity(ctx context.Context, client clients.Client
 
 func (repo clientRepo) UpdateSecret(ctx context.Context, client clients.Client) (clients.Client, error) {
 	q := fmt.Sprintf(`UPDATE clients SET secret = :secret, updated_at = :updated_at
-        WHERE identity = :identity AND status = %d
+        WHERE owner = :owner AND status = %d
         RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`,
 		clients.EnabledStatus)
 
