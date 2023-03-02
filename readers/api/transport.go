@@ -14,7 +14,9 @@ import (
 	"github.com/mainflux/mainflux/internal/apiutil"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/readers"
-	"github.com/mainflux/mainflux/users/policies"
+	"github.com/mainflux/mainflux/things/policies"
+	tpolicies "github.com/mainflux/mainflux/things/policies"
+	upolicies "github.com/mainflux/mainflux/users/policies"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -47,7 +49,7 @@ var (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc readers.MessageRepository, tc mainflux.ThingsServiceClient, ac policies.AuthServiceClient, svcName string) http.Handler {
+func MakeHandler(svc readers.MessageRepository, tc tpolicies.ThingsServiceClient, ac upolicies.AuthServiceClient, svcName string) http.Handler {
 
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(encodeError),
@@ -211,10 +213,10 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	}
 }
 
-func authorize(ctx context.Context, req listMessagesReq, tc mainflux.ThingsServiceClient, ac policies.AuthServiceClient) (err error) {
+func authorize(ctx context.Context, req listMessagesReq, tc tpolicies.ThingsServiceClient, ac upolicies.AuthServiceClient) (err error) {
 	switch {
 	case req.token != "":
-		user, err := ac.Identify(ctx, &policies.Token{Value: req.token})
+		user, err := ac.Identify(ctx, &upolicies.Token{Value: req.token})
 		if err != nil {
 			e, ok := status.FromError(err)
 			if ok && e.Code() == codes.PermissionDenied {
@@ -222,7 +224,7 @@ func authorize(ctx context.Context, req listMessagesReq, tc mainflux.ThingsServi
 			}
 			return err
 		}
-		if _, err = tc.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Owner: user.Email, ChanID: req.chanID}); err != nil {
+		if _, err = tc.Authorize(ctx, &tpolicies.TAuthorizeReq{Sub: user.GetId(), Obj: req.chanID, Act: policies.ReadAction, EntityType: policies.GroupEntityType}); err != nil {
 			e, ok := status.FromError(err)
 			if ok && e.Code() == codes.PermissionDenied {
 				return errors.Wrap(errUserAccess, err)
@@ -231,7 +233,7 @@ func authorize(ctx context.Context, req listMessagesReq, tc mainflux.ThingsServi
 		}
 		return nil
 	default:
-		if _, err := tc.CanAccessByKey(ctx, &mainflux.AccessByKeyReq{Token: req.key, ChanID: req.chanID}); err != nil {
+		if _, err := tc.AuthorizeByKey(ctx, &tpolicies.TAuthorizeReq{Sub: req.key, Obj: req.chanID, Act: policies.ReadAction, EntityType: policies.GroupEntityType}); err != nil {
 			return errors.Wrap(errThingAccess, err)
 		}
 		return nil

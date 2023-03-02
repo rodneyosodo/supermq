@@ -3,15 +3,15 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"math"
 	"net/http"
 
+	"github.com/gofrs/uuid"
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/internal/apiutil"
+	"github.com/mainflux/mainflux/internal/postgres"
 	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/users/clients"
-	"github.com/mainflux/mainflux/users/groups"
-	"github.com/mainflux/mainflux/users/postgres"
+	uclients "github.com/mainflux/mainflux/users/clients"
+	ugroups "github.com/mainflux/mainflux/users/groups"
 )
 
 const (
@@ -21,6 +21,9 @@ const (
 	MetadataKey      = "metadata"
 	ParentKey        = "parent_id"
 	OwnerKey         = "owner_id"
+	ClientKey        = "client"
+	GroupKey         = "group"
+	ActionKey        = "action"
 	IdentifierKey    = "identifier"
 	TagKey           = "tag"
 	NameKey          = "name"
@@ -38,8 +41,8 @@ const (
 	DefLimit         = 10
 	DefLevel         = 0
 	DefStatus        = "enabled"
-	DefClientStatus  = clients.Enabled
-	DefGroupStatus   = groups.Enabled
+	DefClientStatus  = uclients.Enabled
+	DefGroupStatus   = ugroups.Enabled
 	SharedVisibility = "shared"
 	MyVisibility     = "mine"
 	AllVisibility    = "all"
@@ -47,8 +50,22 @@ const (
 	ContentType = "application/json"
 
 	// MaxNameSize limits name size to prevent making them too complex.
-	MaxNameSize = math.MaxUint8
+	MaxLimitSize = 100
+	MaxNameSize  = 1024
+	NameOrder    = "name"
+	IDOrder      = "id"
+	AscDir       = "asc"
+	DescDir      = "desc"
 )
+
+func ValidateUUID(extID string) (err error) {
+	id, err := uuid.FromString(extID)
+	if id.String() != extID || err != nil {
+		return apiutil.ErrInvalidIDFormat
+	}
+
+	return nil
+}
 
 // EncodeResponse encodes successful response.
 func EncodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
