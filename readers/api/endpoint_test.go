@@ -11,16 +11,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/internal/apiutil"
 	"github.com/mainflux/mainflux/pkg/transformers/senml"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	"github.com/mainflux/mainflux/readers"
 	"github.com/mainflux/mainflux/readers/api"
 	"github.com/mainflux/mainflux/readers/mocks"
-	"github.com/mainflux/mainflux/things"
+	"github.com/mainflux/mainflux/things/clients"
+	tpolicies "github.com/mainflux/mainflux/things/policies"
 	authmocks "github.com/mainflux/mainflux/users/clients/mocks"
-	"github.com/mainflux/mainflux/users/policies"
+	upolicies "github.com/mainflux/mainflux/users/policies"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,7 +49,7 @@ var (
 	idProvider = uuid.New()
 )
 
-func newServer(repo readers.MessageRepository, tc mainflux.ThingsServiceClient, ac policies.AuthServiceClient) *httptest.Server {
+func newServer(repo readers.MessageRepository, tc tpolicies.ThingsServiceClient, ac upolicies.AuthServiceClient) *httptest.Server {
 	mux := api.MakeHandler(repo, tc, ac, svcName)
 	return httptest.NewServer(mux)
 }
@@ -132,7 +132,7 @@ func TestReadAll(t *testing.T) {
 
 	thSvc := mocks.NewThingsService(map[string]string{email: chanID})
 	mockAuthzDB := map[string][]authmocks.SubjectSet{}
-	mockAuthzDB["token"] = append(mockAuthzDB[email], authmocks.SubjectSet{Subject: "token", Relation: things.AdminRelationKey})
+	mockAuthzDB["token"] = append(mockAuthzDB[email], authmocks.SubjectSet{Subject: "token", Relation: clients.AdminRelationKey})
 
 	usrSvc := authmocks.NewAuthService(map[string]string{userToken: email}, mockAuthzDB)
 
