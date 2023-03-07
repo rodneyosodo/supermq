@@ -160,9 +160,6 @@ type SDK interface {
 	// UpdateThingTags updates the client's tags.
 	UpdateThingTags(thing Thing, token string) (Thing, errors.SDKError)
 
-	// UpdateThingIdentity updates the client's identity
-	UpdateThingIdentity(thing Thing, token string) (Thing, errors.SDKError)
-
 	// UpdateThingSecret updates the client's secret
 	UpdateThingSecret(id, secret, token string) (Thing, errors.SDKError)
 
@@ -306,7 +303,6 @@ type SDK interface {
 }
 
 type mfSDK struct {
-	authURL        string
 	bootstrapURL   string
 	certsURL       string
 	httpAdapterURL string
@@ -320,7 +316,6 @@ type mfSDK struct {
 
 // Config contains sdk configuration parameters.
 type Config struct {
-	AuthURL        string
 	BootstrapURL   string
 	CertsURL       string
 	HTTPAdapterURL string
@@ -335,7 +330,6 @@ type Config struct {
 // NewSDK returns new mainflux SDK instance.
 func NewSDK(conf Config) SDK {
 	return &mfSDK{
-		authURL:        conf.AuthURL,
 		bootstrapURL:   conf.BootstrapURL,
 		certsURL:       conf.CertsURL,
 		httpAdapterURL: conf.HTTPAdapterURL,
@@ -401,9 +395,15 @@ func (sdk mfSDK) withQueryParams(baseURL, endpoint string, pm PageMetadata) (str
 
 func (pm PageMetadata) query() (string, error) {
 	q := url.Values{}
-	q.Add("total", strconv.FormatUint(pm.Total, 10))
-	q.Add("offset", strconv.FormatUint(pm.Offset, 10))
-	q.Add("limit", strconv.FormatUint(pm.Limit, 10))
+	if pm.Offset != 0 {
+		q.Add("offset", strconv.FormatUint(pm.Offset, 10))
+	}
+	if pm.Limit != 0 {
+		q.Add("limit", strconv.FormatUint(pm.Limit, 10))
+	}
+	if pm.Total != 0 {
+		q.Add("total", strconv.FormatUint(pm.Total, 10))
+	}
 	if pm.Level != 0 {
 		q.Add("level", strconv.FormatUint(pm.Level, 10))
 	}
@@ -415,6 +415,9 @@ func (pm PageMetadata) query() (string, error) {
 	}
 	if pm.Type != "" {
 		q.Add("type", pm.Type)
+	}
+	if pm.Visibility != "" {
+		q.Add("visibility", pm.Visibility)
 	}
 	if pm.Status != "" {
 		q.Add("status", pm.Status)
