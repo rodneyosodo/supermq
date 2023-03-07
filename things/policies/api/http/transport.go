@@ -45,7 +45,7 @@ func MakePolicyHandler(csvc clients.Service, psvc policies.Service, mux *bone.Mu
 
 	mux.Delete("/channels/:chanId/things/:thingId", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("disconnect_thing"))(disconnectEndpoint(psvc)),
-		decodeDisconnectThing,
+		decodeConnectThing,
 		api.EncodeResponse,
 		opts...,
 	))
@@ -94,18 +94,10 @@ func decodeConnectThing(_ context.Context, r *http.Request) (interface{}, error)
 		GroupID:  bone.GetValue(r, "chanId"),
 		ClientID: bone.GetValue(r, "thingId"),
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeDisconnectThing(_ context.Context, r *http.Request) (interface{}, error) {
-	req := createPolicyReq{
-		token:    apiutil.ExtractBearerToken(r),
-		GroupID:  bone.GetValue(r, "chanId"),
-		ClientID: bone.GetValue(r, "thingId"),
+	if r.Body != http.NoBody {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		}
 	}
 
 	return req, nil
