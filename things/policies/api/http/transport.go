@@ -94,8 +94,10 @@ func decodeConnectThing(_ context.Context, r *http.Request) (interface{}, error)
 		GroupID:  bone.GetValue(r, "chanId"),
 		ClientID: bone.GetValue(r, "thingId"),
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	if r.Body != http.NoBody {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		}
 	}
 
 	return req, nil
