@@ -195,8 +195,8 @@ type SDK interface {
 	// Connect bulk connects things to channels specified by id.
 	Connect(conns ConnectionIDs, token string) errors.SDKError
 
-	// DisConnect bulk disconnects things to channels specified by id.
-	DisConnect(connIDs ConnectionIDs, token string) errors.SDKError
+	// Disconnect bulk disconnects things to channels specified by id.
+	Disconnect(connIDs ConnectionIDs, token string) errors.SDKError
 
 	// ConnectThing connect thing from specified channel by id.
 	ConnectThing(thingID, chanID, token string) errors.SDKError

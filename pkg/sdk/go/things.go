@@ -237,7 +237,7 @@ func (sdk mfSDK) Connect(connIDs ConnectionIDs, token string) errors.SDKError {
 	return sdkerr
 }
 
-func (sdk mfSDK) DisConnect(connIDs ConnectionIDs, token string) errors.SDKError {
+func (sdk mfSDK) Disconnect(connIDs ConnectionIDs, token string) errors.SDKError {
 	data, err := json.Marshal(connIDs)
 	if err != nil {
 		return errors.NewSDKError(err)
