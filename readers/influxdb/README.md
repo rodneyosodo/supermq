@@ -11,7 +11,7 @@ default values.
 | Variable                     | Description                                         | Default        |
 |------------------------------|-----------------------------------------------------|----------------|
 | MF_INFLUX_READER_LOG_LEVEL   | Service log level                                   | info           |
-| MF_INFLUX_READER_PORT        | Service HTTP port                                   | 8180           |
+| MF_INFLUX_READER_PORT        | Service HTTP port                                   | 9005           |
 | MF_INFLUXDB_HOST             | InfluxDB host                                       | localhost      |
 | MF_INFLUXDB_PORT             | Default port of InfluxDB database                   | 8086           |
 | MF_INFLUXDB_ADMIN_USER       | Default user of InfluxDB database                   | mainflux       |
@@ -22,9 +22,9 @@ default values.
 | MF_INFLUX_READER_SERVER_CERT | Path to server certificate in pem format            |                |
 | MF_INFLUX_READER_SERVER_KEY  | Path to server key in pem format                    |                |
 | MF_JAEGER_URL                | Jaeger server URL                                   | localhost:6831 |
-| MF_THINGS_AUTH_GRPC_URL      | Things service Auth gRPC URL                        | localhost:8183 |
+| MF_THINGS_AUTH_GRPC_URL      | Things service Auth gRPC URL                        | localhost:7000 |
 | MF_THINGS_AUTH_GRPC_TIMEOUT  | Things service Auth gRPC request timeout in seconds | 1s             |
-| MF_AUTH_GRPC_URL             | Auth service gRPC URL                               | localhost:8181 |
+| MF_AUTH_GRPC_URL             | Auth service gRPC URL                               | localhost:7001 |
 | MF_AUTH_GRPC_TIMEOUT         | Auth service gRPC request timeout in seconds        | 1s             |
 
 
