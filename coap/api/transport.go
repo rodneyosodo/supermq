@@ -79,19 +79,17 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 		Context: m.Context,
 		Options: make(message.Options, 0, 16),
 	}
-
+	defer sendResp(w, &resp)
 	msg, err := decodeMessage(m)
 	if err != nil {
 		logger.Warn(fmt.Sprintf("Error decoding message: %s", err))
 		resp.Code = codes.BadRequest
-		sendResp(w, &resp)
 		return
 	}
 	key, err := parseKey(m)
 	if err != nil {
 		logger.Warn(fmt.Sprintf("Error parsing auth: %s", err))
 		resp.Code = codes.Unauthorized
-		sendResp(w, &resp)
 		return
 	}
 	switch m.Code {
@@ -115,7 +113,6 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 			resp.Code = codes.InternalServerError
 		}
 	}
-	sendResp(w, &resp)
 }
 
 func handleGet(m *mux.Message, c mux.Client, msg *messaging.Message, key string) error {
