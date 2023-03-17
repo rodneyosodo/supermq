@@ -1,3 +1,3 @@
-module github.com/mainflux/mainflux/pkg/sdk/go
+module github.com/rodneyosodo/mainflux/pkg/sdk/go
 
 go 1.19
