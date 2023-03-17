@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	"github.com/mainflux/mainflux/pkg/errors"
 )
 
 const certsEndpoint = "certs"
@@ -23,14 +21,14 @@ type Cert struct {
 	Expiration time.Time `json:"expiration,omitempty"`
 }
 
-func (sdk mfSDK) IssueCert(thingID, valid, token string) (Cert, errors.SDKError) {
+func (sdk mfSDK) IssueCert(thingID, valid, token string) (Cert, SDKError) {
 	r := certReq{
 		ThingID: thingID,
 		Valid:   valid,
 	}
 	d, err := json.Marshal(r)
 	if err != nil {
-		return Cert{}, errors.NewSDKError(err)
+		return Cert{}, NewSDKError(err)
 	}
 
 	url := fmt.Sprintf("%s/%s", sdk.certsURL, certsEndpoint)
@@ -41,12 +39,12 @@ func (sdk mfSDK) IssueCert(thingID, valid, token string) (Cert, errors.SDKError)
 
 	var c Cert
 	if err := json.Unmarshal(body, &c); err != nil {
-		return Cert{}, errors.NewSDKError(err)
+		return Cert{}, NewSDKError(err)
 	}
 	return c, nil
 }
 
-func (sdk mfSDK) ViewCert(id, token string) (Cert, errors.SDKError) {
+func (sdk mfSDK) ViewCert(id, token string) (Cert, SDKError) {
 	url := fmt.Sprintf("%s/%s/%s", sdk.certsURL, certsEndpoint, id)
 	_, body, err := sdk.processRequest(http.MethodGet, url, token, string(CTJSON), nil, http.StatusOK)
 	if err != nil {
@@ -55,13 +53,13 @@ func (sdk mfSDK) ViewCert(id, token string) (Cert, errors.SDKError) {
 
 	var cert Cert
 	if err := json.Unmarshal(body, &cert); err != nil {
-		return Cert{}, errors.NewSDKError(err)
+		return Cert{}, NewSDKError(err)
 	}
 
 	return cert, nil
 }
 
-func (sdk mfSDK) RevokeCert(id, token string) (time.Time, errors.SDKError) {
+func (sdk mfSDK) RevokeCert(id, token string) (time.Time, SDKError) {
 	url := fmt.Sprintf("%s/%s/%s", sdk.certsURL, certsEndpoint, id)
 	_, body, err := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), nil, http.StatusOK)
 	if err != nil {
@@ -70,7 +68,7 @@ func (sdk mfSDK) RevokeCert(id, token string) (time.Time, errors.SDKError) {
 
 	var rcr revokeCertsRes
 	if err := json.Unmarshal(body, &rcr); err != nil {
-		return time.Time{}, errors.NewSDKError(err)
+		return time.Time{}, NewSDKError(err)
 	}
 
 	return rcr.RevocationTime, nil

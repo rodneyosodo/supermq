@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	"github.com/mainflux/mainflux/pkg/errors"
 )
 
 // Channel represents mainflux channel.
@@ -30,10 +28,10 @@ type Channel struct {
 
 const channelsEndpoint = "channels"
 
-func (sdk mfSDK) CreateChannel(c Channel, token string) (Channel, errors.SDKError) {
+func (sdk mfSDK) CreateChannel(c Channel, token string) (Channel, SDKError) {
 	data, err := json.Marshal(c)
 	if err != nil {
-		return Channel{}, errors.NewSDKError(err)
+		return Channel{}, NewSDKError(err)
 	}
 	url := fmt.Sprintf("%s/%s", sdk.thingsURL, channelsEndpoint)
 
@@ -44,16 +42,16 @@ func (sdk mfSDK) CreateChannel(c Channel, token string) (Channel, errors.SDKErro
 
 	c = Channel{}
 	if err := json.Unmarshal(body, &c); err != nil {
-		return Channel{}, errors.NewSDKError(err)
+		return Channel{}, NewSDKError(err)
 	}
 
 	return c, nil
 }
 
-func (sdk mfSDK) CreateChannels(chs []Channel, token string) ([]Channel, errors.SDKError) {
+func (sdk mfSDK) CreateChannels(chs []Channel, token string) ([]Channel, SDKError) {
 	data, err := json.Marshal(chs)
 	if err != nil {
-		return []Channel{}, errors.NewSDKError(err)
+		return []Channel{}, NewSDKError(err)
 	}
 
 	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, channelsEndpoint, "bulk")
@@ -65,16 +63,16 @@ func (sdk mfSDK) CreateChannels(chs []Channel, token string) ([]Channel, errors.
 
 	var ccr createChannelsRes
 	if err := json.Unmarshal(body, &ccr); err != nil {
-		return []Channel{}, errors.NewSDKError(err)
+		return []Channel{}, NewSDKError(err)
 	}
 
 	return ccr.Channels, nil
 }
 
-func (sdk mfSDK) Channels(pm PageMetadata, token string) (ChannelsPage, errors.SDKError) {
+func (sdk mfSDK) Channels(pm PageMetadata, token string) (ChannelsPage, SDKError) {
 	url, err := sdk.withQueryParams(sdk.thingsURL, channelsEndpoint, pm)
 	if err != nil {
-		return ChannelsPage{}, errors.NewSDKError(err)
+		return ChannelsPage{}, NewSDKError(err)
 	}
 
 	_, body, sdkerr := sdk.processRequest(http.MethodGet, url, token, string(CTJSON), nil, http.StatusOK)
@@ -84,16 +82,16 @@ func (sdk mfSDK) Channels(pm PageMetadata, token string) (ChannelsPage, errors.S
 
 	var cp ChannelsPage
 	if err = json.Unmarshal(body, &cp); err != nil {
-		return ChannelsPage{}, errors.NewSDKError(err)
+		return ChannelsPage{}, NewSDKError(err)
 	}
 
 	return cp, nil
 }
 
-func (sdk mfSDK) ChannelsByThing(thingID string, pm PageMetadata, token string) (ChannelsPage, errors.SDKError) {
+func (sdk mfSDK) ChannelsByThing(thingID string, pm PageMetadata, token string) (ChannelsPage, SDKError) {
 	url, err := sdk.withQueryParams(fmt.Sprintf("%s/things/%s", sdk.thingsURL, thingID), channelsEndpoint, pm)
 	if err != nil {
-		return ChannelsPage{}, errors.NewSDKError(err)
+		return ChannelsPage{}, NewSDKError(err)
 	}
 	_, body, sdkerr := sdk.processRequest(http.MethodGet, url, token, string(CTJSON), nil, http.StatusOK)
 	if sdkerr != nil {
@@ -102,13 +100,13 @@ func (sdk mfSDK) ChannelsByThing(thingID string, pm PageMetadata, token string) 
 
 	var cp ChannelsPage
 	if err := json.Unmarshal(body, &cp); err != nil {
-		return ChannelsPage{}, errors.NewSDKError(err)
+		return ChannelsPage{}, NewSDKError(err)
 	}
 
 	return cp, nil
 }
 
-func (sdk mfSDK) Channel(id, token string) (Channel, errors.SDKError) {
+func (sdk mfSDK) Channel(id, token string) (Channel, SDKError) {
 	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, channelsEndpoint, id)
 
 	_, body, err := sdk.processRequest(http.MethodGet, url, token, string(CTJSON), nil, http.StatusOK)
@@ -118,16 +116,16 @@ func (sdk mfSDK) Channel(id, token string) (Channel, errors.SDKError) {
 
 	var c Channel
 	if err := json.Unmarshal(body, &c); err != nil {
-		return Channel{}, errors.NewSDKError(err)
+		return Channel{}, NewSDKError(err)
 	}
 
 	return c, nil
 }
 
-func (sdk mfSDK) UpdateChannel(c Channel, token string) (Channel, errors.SDKError) {
+func (sdk mfSDK) UpdateChannel(c Channel, token string) (Channel, SDKError) {
 	data, err := json.Marshal(c)
 	if err != nil {
-		return Channel{}, errors.NewSDKError(err)
+		return Channel{}, NewSDKError(err)
 	}
 
 	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, channelsEndpoint, c.ID)
@@ -139,23 +137,23 @@ func (sdk mfSDK) UpdateChannel(c Channel, token string) (Channel, errors.SDKErro
 
 	c = Channel{}
 	if err := json.Unmarshal(body, &c); err != nil {
-		return Channel{}, errors.NewSDKError(err)
+		return Channel{}, NewSDKError(err)
 	}
 
 	return c, nil
 }
 
 // EnableChannel enables the channel identified with the provided ID.
-func (sdk mfSDK) EnableChannel(id, token string) (Channel, errors.SDKError) {
+func (sdk mfSDK) EnableChannel(id, token string) (Channel, SDKError) {
 	return sdk.changeChannelStatus(id, enableEndpoint, token)
 }
 
 // DisableChannel enabled the channel identified with the provided ID.
-func (sdk mfSDK) DisableChannel(id, token string) (Channel, errors.SDKError) {
+func (sdk mfSDK) DisableChannel(id, token string) (Channel, SDKError) {
 	return sdk.changeChannelStatus(id, disableEndpoint, token)
 }
 
-func (sdk mfSDK) changeChannelStatus(id, status, token string) (Channel, errors.SDKError) {
+func (sdk mfSDK) changeChannelStatus(id, status, token string) (Channel, SDKError) {
 	url := fmt.Sprintf("%s/%s/%s/%s", sdk.thingsURL, channelsEndpoint, id, status)
 
 	_, body, err := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), nil, http.StatusOK)
@@ -164,7 +162,7 @@ func (sdk mfSDK) changeChannelStatus(id, status, token string) (Channel, errors.
 	}
 	c := Channel{}
 	if err := json.Unmarshal(body, &c); err != nil {
-		return Channel{}, errors.NewSDKError(err)
+		return Channel{}, NewSDKError(err)
 	}
 
 	return c, nil

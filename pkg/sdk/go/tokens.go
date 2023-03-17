@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/mainflux/mainflux/pkg/errors"
 )
 
 // Token is used for authentication purposes.
@@ -17,14 +15,14 @@ type Token struct {
 }
 
 // CreateToken receives credentials and returns user token.
-func (sdk mfSDK) CreateToken(user User) (Token, errors.SDKError) {
+func (sdk mfSDK) CreateToken(user User) (Token, SDKError) {
 	var treq = tokenReq{
 		Identity: user.Credentials.Identity,
 		Secret:   user.Credentials.Secret,
 	}
 	data, err := json.Marshal(treq)
 	if err != nil {
-		return Token{}, errors.NewSDKError(err)
+		return Token{}, NewSDKError(err)
 	}
 
 	url := fmt.Sprintf("%s/%s/%s", sdk.usersURL, usersEndpoint, issueTokenEndpoint)
@@ -35,14 +33,14 @@ func (sdk mfSDK) CreateToken(user User) (Token, errors.SDKError) {
 	}
 	var token Token
 	if err := json.Unmarshal(body, &token); err != nil {
-		return Token{}, errors.NewSDKError(err)
+		return Token{}, NewSDKError(err)
 	}
 
 	return token, nil
 }
 
 // RefreshToken refreshes expired access tokens.
-func (sdk mfSDK) RefreshToken(token string) (Token, errors.SDKError) {
+func (sdk mfSDK) RefreshToken(token string) (Token, SDKError) {
 	url := fmt.Sprintf("%s/%s/%s", sdk.usersURL, usersEndpoint, refreshTokenEndpoint)
 
 	_, body, sdkerr := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), []byte{}, http.StatusCreated)
@@ -52,7 +50,7 @@ func (sdk mfSDK) RefreshToken(token string) (Token, errors.SDKError) {
 
 	var t = Token{}
 	if err := json.Unmarshal(body, &t); err != nil {
-		return Token{}, errors.NewSDKError(err)
+		return Token{}, NewSDKError(err)
 	}
 
 	return t, nil

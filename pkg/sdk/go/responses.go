@@ -6,8 +6,6 @@ package sdk
 import (
 	"net/http"
 	"time"
-
-	"github.com/mainflux/mainflux/pkg/transformers/senml"
 )
 
 type createThingsRes struct {
@@ -33,12 +31,6 @@ type ThingsPage struct {
 // ChannelsPage contains list of channels in a page with proper metadata.
 type ChannelsPage struct {
 	Channels []Channel `json:"channels"`
-	pageRes
-}
-
-// MessagesPage contains list of messages in a page with proper metadata.
-type MessagesPage struct {
-	Messages []senml.Message `json:"messages,omitempty"`
 	pageRes
 }
 

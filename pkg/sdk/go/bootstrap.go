@@ -8,9 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-
-	"github.com/mainflux/mainflux/internal/apiutil"
-	"github.com/mainflux/mainflux/pkg/errors"
 )
 
 const configsEndpoint = "configs"
@@ -45,10 +42,10 @@ type ConfigUpdateCertReq struct {
 	CACert     string `json:"ca_cert"`
 }
 
-func (sdk mfSDK) AddBootstrap(cfg BootstrapConfig, token string) (string, errors.SDKError) {
+func (sdk mfSDK) AddBootstrap(cfg BootstrapConfig, token string) (string, SDKError) {
 	data, err := json.Marshal(cfg)
 	if err != nil {
-		return "", errors.NewSDKError(err)
+		return "", NewSDKError(err)
 	}
 
 	url := fmt.Sprintf("%s/%s", sdk.bootstrapURL, configsEndpoint)
@@ -62,14 +59,14 @@ func (sdk mfSDK) AddBootstrap(cfg BootstrapConfig, token string) (string, errors
 	return id, nil
 }
 
-func (sdk mfSDK) Whitelist(cfg BootstrapConfig, token string) errors.SDKError {
+func (sdk mfSDK) Whitelist(cfg BootstrapConfig, token string) SDKError {
 	data, err := json.Marshal(BootstrapConfig{State: cfg.State})
 	if err != nil {
-		return errors.NewSDKError(err)
+		return NewSDKError(err)
 	}
 
 	if cfg.MFThing == "" {
-		return errors.NewSDKError(errors.ErrNotFoundParam)
+		return NewSDKError(ErrNotFoundParam)
 	}
 
 	url := fmt.Sprintf("%s/%s/%s", sdk.bootstrapURL, whitelistEndpoint, cfg.MFThing)
@@ -78,7 +75,7 @@ func (sdk mfSDK) Whitelist(cfg BootstrapConfig, token string) errors.SDKError {
 	return sdkerr
 }
 
-func (sdk mfSDK) ViewBootstrap(id, token string) (BootstrapConfig, errors.SDKError) {
+func (sdk mfSDK) ViewBootstrap(id, token string) (BootstrapConfig, SDKError) {
 	url := fmt.Sprintf("%s/%s/%s", sdk.bootstrapURL, configsEndpoint, id)
 	_, body, err := sdk.processRequest(http.MethodGet, url, token, string(CTJSON), nil, http.StatusOK)
 	if err != nil {
@@ -87,23 +84,23 @@ func (sdk mfSDK) ViewBootstrap(id, token string) (BootstrapConfig, errors.SDKErr
 
 	var bc BootstrapConfig
 	if err := json.Unmarshal(body, &bc); err != nil {
-		return BootstrapConfig{}, errors.NewSDKError(err)
+		return BootstrapConfig{}, NewSDKError(err)
 	}
 
 	return bc, nil
 }
 
-func (sdk mfSDK) UpdateBootstrap(cfg BootstrapConfig, token string) errors.SDKError {
+func (sdk mfSDK) UpdateBootstrap(cfg BootstrapConfig, token string) SDKError {
 	data, err := json.Marshal(cfg)
 	if err != nil {
-		return errors.NewSDKError(err)
+		return NewSDKError(err)
 	}
 
 	url := fmt.Sprintf("%s/%s/%s", sdk.bootstrapURL, configsEndpoint, cfg.MFThing)
 	_, _, sdkerr := sdk.processRequest(http.MethodPut, url, token, string(CTJSON), data, http.StatusOK)
 	return sdkerr
 }
-func (sdk mfSDK) UpdateBootstrapCerts(id, clientCert, clientKey, ca, token string) errors.SDKError {
+func (sdk mfSDK) UpdateBootstrapCerts(id, clientCert, clientKey, ca, token string) SDKError {
 	url := fmt.Sprintf("%s/%s/%s", sdk.bootstrapURL, bootstrapCertsEndpoint, id)
 	request := ConfigUpdateCertReq{
 		ClientCert: clientCert,
@@ -113,30 +110,15 @@ func (sdk mfSDK) UpdateBootstrapCerts(id, clientCert, clientKey, ca, token strin
 
 	data, err := json.Marshal(request)
 	if err != nil {
-		return errors.NewSDKError(err)
+		return NewSDKError(err)
 	}
 
 	_, _, sdkerr := sdk.processRequest(http.MethodPatch, url, token, string(CTJSON), data, http.StatusOK)
 	return sdkerr
 }
 
-func (sdk mfSDK) RemoveBootstrap(id, token string) errors.SDKError {
+func (sdk mfSDK) RemoveBootstrap(id, token string) SDKError {
 	url := fmt.Sprintf("%s/%s/%s", sdk.bootstrapURL, configsEndpoint, id)
 	_, _, err := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), nil, http.StatusNoContent)
 	return err
-}
-
-func (sdk mfSDK) Bootstrap(externalID, externalKey string) (BootstrapConfig, errors.SDKError) {
-	url := fmt.Sprintf("%s/%s/%s", sdk.bootstrapURL, bootstrapEndpoint, externalID)
-	_, body, err := sdk.processRequest(http.MethodGet, url, apiutil.ThingPrefix+externalKey, string(CTJSON), nil, http.StatusOK)
-	if err != nil {
-		return BootstrapConfig{}, err
-	}
-
-	var bc BootstrapConfig
-	if err := json.Unmarshal(body, &bc); err != nil {
-		return BootstrapConfig{}, errors.NewSDKError(err)
-	}
-
-	return bc, nil
 }
