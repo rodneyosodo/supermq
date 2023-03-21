@@ -11,13 +11,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/opentracing/opentracing-go/mocktracer"
-
 	adapter "github.com/mainflux/mainflux/http"
 	"github.com/mainflux/mainflux/http/api"
 	"github.com/mainflux/mainflux/http/mocks"
 	"github.com/mainflux/mainflux/internal/apiutil"
-	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/things/policies"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,8 +25,7 @@ func newService(cc policies.ThingsServiceClient) adapter.Service {
 }
 
 func newHTTPServer(svc adapter.Service) *httptest.Server {
-	logger := logger.NewMock()
-	mux := api.MakeHandler(svc, mocktracer.New(), logger)
+	mux := api.MakeHandler(svc)
 	return httptest.NewServer(mux)
 }
 
