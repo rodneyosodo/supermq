@@ -21,6 +21,7 @@ const (
 
 type service struct {
 	auth        upolicies.AuthServiceClient
+	things      clients.Repository
 	policies    Repository
 	policyCache Cache
 	thingCache  clients.ClientCache
@@ -28,9 +29,10 @@ type service struct {
 }
 
 // NewService returns a new Clients service implementation.
-func NewService(auth upolicies.AuthServiceClient, p Repository, tcache clients.ClientCache, ccache Cache, idp mainflux.IDProvider) Service {
+func NewService(auth upolicies.AuthServiceClient, t clients.Repository, p Repository, tcache clients.ClientCache, ccache Cache, idp mainflux.IDProvider) Service {
 	return service{
 		auth:        auth,
+		things:      t,
 		policies:    p,
 		thingCache:  tcache,
 		policyCache: ccache,
@@ -57,12 +59,12 @@ func (svc service) Authorize(ctx context.Context, entityType string, p Policy) e
 func (svc service) AuthorizeByKey(ctx context.Context, entityType string, p Policy) (string, error) {
 	thingID, err := svc.hasThing(ctx, p)
 	if err == nil {
+		if err := svc.thingCache.Save(ctx, p.Subject, thingID); err != nil {
+			return "", err
+		}
 		return thingID, nil
 	}
-	if err := svc.thingCache.Save(ctx, p.Subject, thingID); err != nil {
-		return "", err
-	}
-	p.Subject = thingID
+
 	if err := svc.Authorize(ctx, entityType, p); err != nil {
 		return "", err
 	}
@@ -159,6 +161,13 @@ func (svc service) checkActionRank(ctx context.Context, clientID string, p Polic
 
 func (svc service) hasThing(ctx context.Context, p Policy) (string, error) {
 	thingID, err := svc.thingCache.ID(ctx, p.Subject)
+	if errors.Contains(err, errors.ErrNotFound) {
+		thing, err := svc.things.RetrieveBySecret(ctx, p.Subject)
+		if err != nil {
+			return "", err
+		}
+		return thing.ID, nil
+	}
 	if err != nil {
 		return "", err
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/mainflux/mainflux/pkg/uuid"
 	"github.com/mainflux/mainflux/things/clients"
 	"github.com/mainflux/mainflux/things/clients/mocks"
+	cmocks "github.com/mainflux/mainflux/things/clients/mocks"
 	"github.com/mainflux/mainflux/things/policies"
 	pmocks "github.com/mainflux/mainflux/things/policies/mocks"
 	"github.com/stretchr/testify/assert"
@@ -33,9 +34,10 @@ func newService(tokens map[string]string) (policies.Service, *pmocks.PolicyRepos
 	idProvider := uuid.NewMock()
 	thingsCache := mocks.NewClientCache()
 	policiesCache := pmocks.NewChannelCache()
+	cRepo := new(cmocks.ClientRepository)
 	pRepo := new(pmocks.PolicyRepository)
 
-	return policies.NewService(auth, pRepo, thingsCache, policiesCache, idProvider), pRepo
+	return policies.NewService(auth, cRepo, pRepo, thingsCache, policiesCache, idProvider), pRepo
 }
 
 func TestAddPolicy(t *testing.T) {

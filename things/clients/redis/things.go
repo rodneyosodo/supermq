@@ -49,7 +49,9 @@ func (tc *thingCache) ID(ctx context.Context, thingKey string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(errors.ErrNotFound, err)
 	}
-
+	if thingID == "" {
+		return "", errors.ErrNotFound
+	}
 	return thingID, nil
 }
 

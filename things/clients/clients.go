@@ -52,7 +52,7 @@ type Repository interface {
 	RetrieveByID(ctx context.Context, id string) (Client, error)
 
 	// RetrieveBySecret retrieves client by its unique credentials
-	RetrieveBySecret(ctx context.Context, identity string) (Client, error)
+	RetrieveBySecret(ctx context.Context, secret string) (Client, error)
 
 	// RetrieveAll retrieves all clients.
 	RetrieveAll(ctx context.Context, pm Page) (ClientsPage, error)
