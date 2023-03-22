@@ -65,7 +65,7 @@ var cmdSubscription = []cobra.Command{
 		},
 	},
 	{
-		Use:   "remove <thing_id> <user_auth_token>",
+		Use:   "remove <sub_id> <user_auth_token>",
 		Short: "Remove subscription",
 		Long:  `Removes removes a subscription with the provided id`,
 		Run: func(cmd *cobra.Command, args []string) {
