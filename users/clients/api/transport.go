@@ -11,7 +11,7 @@ import (
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/internal/api"
 	"github.com/mainflux/mainflux/internal/apiutil"
-	"github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/users/clients"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -19,7 +19,7 @@ import (
 )
 
 // MakeClientsHandler returns a HTTP handler for API endpoints.
-func MakeClientsHandler(svc clients.Service, mux *bone.Mux, logger logger.Logger) http.Handler {
+func MakeClientsHandler(svc clients.Service, mux *bone.Mux, logger mflog.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, api.EncodeError)),
 	}

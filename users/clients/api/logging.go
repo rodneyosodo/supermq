@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/users/clients"
 	"github.com/mainflux/mainflux/users/jwt"
 )
@@ -13,11 +13,11 @@ import (
 var _ clients.Service = (*loggingMiddleware)(nil)
 
 type loggingMiddleware struct {
-	logger log.Logger
+	logger mflog.Logger
 	svc    clients.Service
 }
 
-func LoggingMiddleware(svc clients.Service, logger log.Logger) clients.Service {
+func LoggingMiddleware(svc clients.Service, logger mflog.Logger) clients.Service {
 	return &loggingMiddleware{logger, svc}
 }
 

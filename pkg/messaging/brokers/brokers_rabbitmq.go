@@ -9,7 +9,7 @@ package brokers
 import (
 	"log"
 
-	"github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"ogger"ogger"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/rabbitmq"
 )

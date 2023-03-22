@@ -11,18 +11,18 @@ import (
 	"time"
 
 	notifiers "github.com/mainflux/mainflux/consumers/notifiers"
-	log "github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 )
 
 var _ notifiers.Service = (*loggingMiddleware)(nil)
 
 type loggingMiddleware struct {
-	logger log.Logger
+	logger mflog.Logger
 	svc    notifiers.Service
 }
 
 // LoggingMiddleware adds logging facilities to the core service.
-func LoggingMiddleware(svc notifiers.Service, logger log.Logger) notifiers.Service {
+func LoggingMiddleware(svc notifiers.Service, logger mflog.Logger) notifiers.Service {
 	return &loggingMiddleware{logger, svc}
 }
 

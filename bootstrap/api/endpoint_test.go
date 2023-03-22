@@ -24,7 +24,7 @@ import (
 	bsapi "github.com/mainflux/mainflux/bootstrap/api"
 	"github.com/mainflux/mainflux/bootstrap/mocks"
 	"github.com/mainflux/mainflux/internal/apiutil"
-	"github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 	mfsdk "github.com/mainflux/mainflux/pkg/sdk/go"
 	"github.com/mainflux/mainflux/things/clients"
@@ -199,7 +199,7 @@ func newThingsService(auth upolicies.AuthServiceClient) (clients.Service, groups
 }
 
 func newThingsServer(csvc clients.Service, gsvc groups.Service, psvc tpolicies.Service) *httptest.Server {
-	logger := logger.NewMock()
+	logger := mflog.NewMock()
 	mux := bone.New()
 	capi.MakeHandler(csvc, mux, logger)
 	gapi.MakeHandler(gsvc, mux, logger)
@@ -208,7 +208,7 @@ func newThingsServer(csvc clients.Service, gsvc groups.Service, psvc tpolicies.S
 }
 
 func newBootstrapServer(svc bootstrap.Service) *httptest.Server {
-	logger := logger.NewMock()
+	logger := mflog.NewMock()
 	mux := bsapi.MakeHandler(svc, bootstrap.NewConfigReader(encKey), logger)
 	return httptest.NewServer(mux)
 }

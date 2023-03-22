@@ -12,7 +12,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	log "github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/things/policies"
 	"github.com/mainflux/mainflux/ws"
 
@@ -37,7 +37,7 @@ func newService(cc policies.ThingsServiceClient) (ws.Service, mocks.MockPubSub) 
 }
 
 func newHTTPServer(svc ws.Service) *httptest.Server {
-	logger := log.NewMock()
+	logger := mflog.NewMock()
 	mux := api.MakeHandler(svc, logger)
 	return httptest.NewServer(mux)
 }

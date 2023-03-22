@@ -11,7 +11,7 @@ import (
 	"github.com/go-zoo/bone"
 	"github.com/mainflux/mainflux/internal/apiutil"
 	"github.com/mainflux/mainflux/internal/testsutil"
-	"github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
 	"github.com/mainflux/mainflux/users/clients"
@@ -27,7 +27,7 @@ import (
 var id = generateUUID(&testing.T{})
 
 func newClientServer(svc clients.Service) *httptest.Server {
-	logger := logger.NewMock()
+	logger := mflog.NewMock()
 	mux := bone.New()
 	api.MakeClientsHandler(svc, mux, logger)
 	return httptest.NewServer(mux)

@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/things/policies"
 )
 
 var _ policies.Service = (*loggingMiddleware)(nil)
 
 type loggingMiddleware struct {
-	logger log.Logger
+	logger mflog.Logger
 	svc    policies.Service
 }
 
-func LoggingMiddleware(svc policies.Service, logger log.Logger) policies.Service {
+func LoggingMiddleware(svc policies.Service, logger mflog.Logger) policies.Service {
 	return &loggingMiddleware{logger, svc}
 }
 

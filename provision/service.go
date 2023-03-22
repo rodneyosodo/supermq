@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 	SDK "github.com/mainflux/mainflux/pkg/sdk/go"
 	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
@@ -66,7 +66,7 @@ type Service interface {
 }
 
 type provisionService struct {
-	logger logger.Logger
+	logger mflog.Logger
 	sdk    SDK.SDK
 	conf   Config
 }
@@ -83,7 +83,7 @@ type Result struct {
 }
 
 // New returns new provision service.
-func New(cfg Config, sdk SDK.SDK, logger logger.Logger) Service {
+func New(cfg Config, sdk SDK.SDK, logger mflog.Logger) Service {
 	return &provisionService{
 		logger: logger,
 		conf:   cfg,

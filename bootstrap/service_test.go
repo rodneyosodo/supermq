@@ -20,7 +20,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/mainflux/mainflux/bootstrap"
 	"github.com/mainflux/mainflux/bootstrap/mocks"
-	"github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 	mfsdk "github.com/mainflux/mainflux/pkg/sdk/go"
 	"github.com/mainflux/mainflux/things/clients"
@@ -88,7 +88,7 @@ func newThingsService(auth upolicies.AuthServiceClient) (clients.Service, groups
 }
 
 func newThingsServer(csvc clients.Service, gsvc groups.Service, psvc tpolicies.Service) *httptest.Server {
-	logger := logger.NewMock()
+	logger := mflog.NewMock()
 	mux := bone.New()
 	capi.MakeHandler(csvc, mux, logger)
 	gapi.MakeHandler(gsvc, mux, logger)
