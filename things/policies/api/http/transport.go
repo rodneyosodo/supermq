@@ -36,7 +36,7 @@ func MakePolicyHandler(csvc clients.Service, psvc policies.Service, mux *bone.Mu
 		opts...,
 	))
 
-	mux.Put("/channels/:chanId/things/:thingId", kithttp.NewServer(
+	mux.Post("/channels/:chanId/things/:thingId", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("connect_thing"))(connectEndpoint(psvc)),
 		decodeConnectThing,
 		api.EncodeResponse,
