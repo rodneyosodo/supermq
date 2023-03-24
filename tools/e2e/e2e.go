@@ -6,10 +6,12 @@ package e2e
 import (
 	"fmt"
 	"log"
+	"os/exec"
 	"time"
 
 	"github.com/goombaio/namegenerator"
 	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -20,14 +22,14 @@ const (
 var (
 	seed           = time.Now().UTC().UnixNano()
 	namesgenerator = namegenerator.NewNameGenerator(seed)
+	msg            = "[{'bn':'demo', 'bu':'V','bver':5, 'n':'voltage','u':'V','v':120}]"
 )
 
 // Config - test configuration
 type Config struct {
 	Host     string
-	Username string
-	Password string
-	Num      int
+	Num      uint64
+	NumOfMsg uint64
 	SSL      bool
 	CA       string
 	CAKey    string
@@ -70,62 +72,63 @@ func Test(conf Config) {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	fmt.Printf("Created admin with token %s\n", token)
+	fmt.Printf("created admin with token %s\n", token)
 
 	//  Create users, groups, things and channels
 	users, groups, things, channels, err := create(s, conf, token)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	fmt.Println("Created users, groups, things and channels")
+	fmt.Println("created users, groups, things and channels")
 
 	if err := createPolicies(s, conf, token, owner, users, groups, things, channels); err != nil {
 		log.Fatalf(err.Error())
 	}
-	fmt.Println("Created policies for users, groups, things and channels")
+	fmt.Println("created policies for users, groups, things and channels")
 	// List users, groups, things and channels
 	if err := read(s, conf, token, users, groups, things, channels); err != nil {
 		log.Fatalf(err.Error())
 	}
-	fmt.Println("Viewed users, groups, things and channels")
+	fmt.Println("viewed users, groups, things and channels")
 
 	// Update users, groups, things and channels
 	if err := update(s, token, users, groups, things, channels); err != nil {
 		log.Fatalf(err.Error())
 	}
-	fmt.Println("Updated users, groups, things and channels")
+	fmt.Println("updated users, groups, things and channels")
+
+	// Send and Receive messages from channels
+	if err := messaging(s, conf, token, things, channels); err != nil {
+		log.Fatalf(err.Error())
+	}
+	fmt.Println("sent and received messages from channels")
 }
 
 func createUser(s sdk.SDK, conf Config) (string, string, error) {
-	adminUser := sdk.User{
-		Name: namesgenerator.Generate(),
+	user := sdk.User{
+		Name: fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.Generate()),
 		Credentials: sdk.Credentials{
-			Identity: conf.Username,
-			Secret:   conf.Password,
+			Identity: fmt.Sprintf("%s-%s@email.com", conf.Prefix, namesgenerator.Generate()),
+			Secret:   defPass,
 		},
 		Status: "enabled",
 	}
 
-	if adminUser.Credentials.Identity == "" {
-		adminUser.Credentials.Identity = fmt.Sprintf("%s@email.com", namesgenerator.Generate())
-		adminUser.Credentials.Secret = defPass
-	}
-	fmt.Println(adminUser)
-	pass := adminUser.Credentials.Secret
+	pass := user.Credentials.Secret
 
 	// Create new user
-	adminUser, err := s.CreateUser(adminUser, "")
+	user, err := s.CreateUser(user, "")
 	if err != nil {
-		return "", "", fmt.Errorf("Unable to create admin user: %s", err.Error())
+		return "", "", fmt.Errorf("unable to create user: %s", err.Error())
 	}
 
-	adminUser.Credentials.Secret = pass
+	user.Credentials.Secret = pass
 	// Login user
-	token, err := s.CreateToken(adminUser)
+	token, err := s.CreateToken(user)
 	if err != nil {
-		return "", "", fmt.Errorf("Unable to login admin user: %s", err.Error())
+		return "", "", fmt.Errorf("unable to login user: %s", err.Error())
 	}
-	return token.AccessToken, adminUser.ID, nil
+	return token.AccessToken, user.ID, nil
 }
 
 func create(s sdk.SDK, conf Config, token string) ([]sdk.User, []sdk.Group, []sdk.Thing, []sdk.Channel, error) {
@@ -136,7 +139,7 @@ func create(s sdk.SDK, conf Config, token string) ([]sdk.User, []sdk.Group, []sd
 	channels := make([]sdk.Channel, conf.Num)
 
 	parentID := ""
-	for i := 0; i < conf.Num; i++ {
+	for i := uint64(0); i < conf.Num; i++ {
 		user := sdk.User{
 			Name: fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.Generate()),
 			Credentials: sdk.Credentials{
@@ -185,7 +188,7 @@ func create(s sdk.SDK, conf Config, token string) ([]sdk.User, []sdk.Group, []sd
 }
 
 func createPolicies(s sdk.SDK, conf Config, token, owner string, users []sdk.User, groups []sdk.Group, things []sdk.Thing, channels []sdk.Channel) error {
-	for i := 0; i < conf.Num; i++ {
+	for i := uint64(0); i < conf.Num; i++ {
 		upolicy := sdk.Policy{
 			Subject: owner,
 			Object:  users[i].ID,
@@ -429,6 +432,60 @@ func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, thing
 		if rChannel.Status != "enabled" {
 			return fmt.Errorf("failed to enable channel before %s after %s", channel.Status, rChannel.Status)
 		}
+	}
+	return nil
+}
+
+func messaging(s sdk.SDK, conf Config, token string, things []sdk.Thing, channels []sdk.Channel) error {
+	for _, thing := range things {
+		for _, channel := range channels {
+			if err := s.ConnectThing(thing.ID, channel.ID, token); err != nil {
+				return fmt.Errorf("failed to connect thing %s to channel %s", thing.ID, channel.ID)
+			}
+		}
+	}
+	g := new(errgroup.Group)
+
+	for i := uint64(0); i < conf.NumOfMsg; i++ {
+		for _, thing := range things {
+			thing := thing
+			for _, channel := range channels {
+				channel := channel
+				g.Go(func() error {
+					return sendHTTPMessage(s, thing, channel.ID)
+				})
+				g.Go(func() error {
+					return sendCOAPMessage(thing, channel.ID)
+				})
+				g.Go(func() error {
+					return sendMQTTMessage(thing, channel.ID)
+				})
+			}
+		}
+	}
+
+	return g.Wait()
+}
+
+func sendHTTPMessage(s sdk.SDK, thing sdk.Thing, chanID string) error {
+	if err := s.SendMessage(chanID, msg, thing.Credentials.Secret); err != nil {
+		return fmt.Errorf("http failed to send message from thing %s to channel %s", thing.ID, chanID)
+	}
+	return nil
+}
+
+func sendCOAPMessage(thing sdk.Thing, chanID string) error {
+	cmd := exec.Command("coap-cli", "post", fmt.Sprintf("channels/%s/messages", chanID), "-auth", thing.Credentials.Secret, "-d", msg)
+	if _, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("coap failed to send message from thing %s to channel %s", thing.ID, chanID)
+	}
+	return nil
+}
+
+func sendMQTTMessage(thing sdk.Thing, chanID string) error {
+	cmd := exec.Command("mosquitto_pub", "--id-prefix", "mainflux", "-u", thing.ID, "-P", thing.Credentials.Secret, "-t", fmt.Sprintf("channels/%s/messages", chanID), "-h", "localhost", "-m", msg)
+	if _, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("mqtt failed to send message from thing %s to channel %s", thing.ID, chanID)
 	}
 	return nil
 }
