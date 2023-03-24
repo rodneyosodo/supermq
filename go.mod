@@ -15,6 +15,7 @@ require (
 	github.com/go-zoo/bone v1.3.0
 	github.com/gocql/gocql v1.2.1
 	github.com/gofrs/uuid v4.3.0+incompatible
+	github.com/goombaio/namegenerator v0.0.0-20181006234301-989e774b106e
 	github.com/gopcua/opcua v0.1.6
 	github.com/gorilla/websocket v1.5.0
 	github.com/hashicorp/vault/api v1.8.1

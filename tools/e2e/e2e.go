@@ -6,14 +6,20 @@ package e2e
 import (
 	"fmt"
 	"log"
+	"time"
 
-	"github.com/docker/docker/pkg/namesgenerator"
+	"github.com/goombaio/namegenerator"
 	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
 )
 
 const (
 	defPass      = "12345678"
 	defReaderURL = "http://localhost:8905"
+)
+
+var (
+	seed           = time.Now().UTC().UnixNano()
+	namesgenerator = namegenerator.NewNameGenerator(seed)
 )
 
 // Config - test configuration
@@ -30,6 +36,7 @@ type Config struct {
 
 // Test - function that does actual end to end testing
 func Test(conf Config) {
+
 	sdkConf := sdk.Config{
 		ThingsURL:       conf.Host,
 		UsersURL:        conf.Host,
@@ -91,7 +98,7 @@ func Test(conf Config) {
 
 func createUser(s sdk.SDK, conf Config) (string, string, error) {
 	adminUser := sdk.User{
-		Name: namesgenerator.GetRandomName(0),
+		Name: namesgenerator.Generate(),
 		Credentials: sdk.Credentials{
 			Identity: conf.Username,
 			Secret:   conf.Password,
@@ -100,10 +107,10 @@ func createUser(s sdk.SDK, conf Config) (string, string, error) {
 	}
 
 	if adminUser.Credentials.Identity == "" {
-		adminUser.Credentials.Identity = fmt.Sprintf("%s@email.com", namesgenerator.GetRandomName(0))
+		adminUser.Credentials.Identity = fmt.Sprintf("%s@email.com", namesgenerator.Generate())
 		adminUser.Credentials.Secret = defPass
 	}
-
+	fmt.Println(adminUser)
 	pass := adminUser.Credentials.Secret
 
 	// Create new user
@@ -131,23 +138,23 @@ func create(s sdk.SDK, conf Config, token string) ([]sdk.User, []sdk.Group, []sd
 	parentID := ""
 	for i := 0; i < conf.Num; i++ {
 		user := sdk.User{
-			Name: fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.GetRandomName(0)),
+			Name: fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.Generate()),
 			Credentials: sdk.Credentials{
-				Identity: fmt.Sprintf("%s-%s@email.com", conf.Prefix, namesgenerator.GetRandomName(0)),
+				Identity: fmt.Sprintf("%s-%s@email.com", conf.Prefix, namesgenerator.Generate()),
 				Secret:   defPass},
 			Status: "enabled",
 		}
 		group := sdk.Group{
-			Name:     fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.GetRandomName(0)),
+			Name:     fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.Generate()),
 			ParentID: parentID,
 			Status:   "enabled",
 		}
 		things[i] = sdk.Thing{
-			Name:   fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.GetRandomName(0)),
+			Name:   fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.Generate()),
 			Status: "enabled",
 		}
 		channels[i] = sdk.Channel{
-			Name:   fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.GetRandomName(0)),
+			Name:   fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.Generate()),
 			Status: "enabled",
 		}
 
@@ -269,8 +276,8 @@ func read(s sdk.SDK, conf Config, token string, users []sdk.User, groups []sdk.G
 
 func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, things []sdk.Thing, channels []sdk.Channel) error {
 	for _, user := range users {
-		user.Name = namesgenerator.GetRandomName(0)
-		user.Metadata = sdk.Metadata{"Update": namesgenerator.GetRandomName(0)}
+		user.Name = namesgenerator.Generate()
+		user.Metadata = sdk.Metadata{"Update": namesgenerator.Generate()}
 		rUser, err := s.UpdateUser(user, token)
 		if err != nil {
 			return fmt.Errorf("failed to update user %s", err)
@@ -282,7 +289,7 @@ func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, thing
 			return fmt.Errorf("failed to update user metadata before %s after %s", user.Metadata["Update"], rUser.Metadata["Update"])
 		}
 		user = rUser
-		user.Credentials.Identity = namesgenerator.GetRandomName(0)
+		user.Credentials.Identity = namesgenerator.Generate()
 		rUser, err = s.UpdateUserIdentity(user, token)
 		if err != nil {
 			return fmt.Errorf("failed to update user idenitity %s", err)
@@ -291,7 +298,7 @@ func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, thing
 			return fmt.Errorf("failed to update user identity before %s after %s", user.Credentials.Identity, rUser.Credentials.Identity)
 		}
 		user = rUser
-		user.Tags = []string{namesgenerator.GetRandomName(0)}
+		user.Tags = []string{namesgenerator.Generate()}
 		rUser, err = s.UpdateUserTags(user, token)
 		if err != nil {
 			return fmt.Errorf("failed to update user tags %s", err)
@@ -317,8 +324,8 @@ func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, thing
 		}
 	}
 	for _, group := range groups {
-		group.Name = namesgenerator.GetRandomName(0)
-		group.Metadata = sdk.Metadata{"Update": namesgenerator.GetRandomName(0)}
+		group.Name = namesgenerator.Generate()
+		group.Metadata = sdk.Metadata{"Update": namesgenerator.Generate()}
 		rGroup, err := s.UpdateGroup(group, token)
 		if err != nil {
 			return fmt.Errorf("failed to update group %s", err)
@@ -347,8 +354,8 @@ func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, thing
 		}
 	}
 	for _, thing := range things {
-		thing.Name = namesgenerator.GetRandomName(0)
-		thing.Metadata = sdk.Metadata{"Update": namesgenerator.GetRandomName(0)}
+		thing.Name = namesgenerator.Generate()
+		thing.Metadata = sdk.Metadata{"Update": namesgenerator.Generate()}
 		rThing, err := s.UpdateThing(thing, token)
 		if err != nil {
 			return fmt.Errorf("failed to update thing %s", err)
@@ -368,7 +375,7 @@ func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, thing
 			return fmt.Errorf("failed to update thing secret before %s after %s", thing.Credentials.Secret, rThing.Credentials.Secret)
 		}
 		thing = rThing
-		thing.Tags = []string{namesgenerator.GetRandomName(0)}
+		thing.Tags = []string{namesgenerator.Generate()}
 		rThing, err = s.UpdateThingTags(thing, token)
 		if err != nil {
 			return fmt.Errorf("failed to update thing tags %s", err)
@@ -394,8 +401,8 @@ func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, thing
 		}
 	}
 	for _, channel := range channels {
-		channel.Name = namesgenerator.GetRandomName(0)
-		channel.Metadata = sdk.Metadata{"Update": namesgenerator.GetRandomName(0)}
+		channel.Name = namesgenerator.Generate()
+		channel.Metadata = sdk.Metadata{"Update": namesgenerator.Generate()}
 		rChannel, err := s.UpdateChannel(channel, token)
 		if err != nil {
 			return fmt.Errorf("failed to update channel %s", err)
