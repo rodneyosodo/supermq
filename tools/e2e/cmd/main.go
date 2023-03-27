@@ -24,7 +24,7 @@ Complete documentation is available at https://docs.mainflux.io`,
 	}
 
 	// Root Flags
-	rootCmd.PersistentFlags().StringVarP(&econf.Host, "host", "H", "https://localhost", "address for mainflux instance")
+	rootCmd.PersistentFlags().StringVarP(&econf.Host, "host", "H", "localhost", "address for mainflux instance")
 	rootCmd.PersistentFlags().StringVarP(&econf.Prefix, "prefix", "p", "", "name prefix for users, groups, things and channels")
 	rootCmd.PersistentFlags().Uint64VarP(&econf.Num, "num", "n", uint64(10), "number of users, groups, channels and things to create and connect")
 	rootCmd.PersistentFlags().Uint64VarP(&econf.NumOfMsg, "num_of_messages", "N", uint64(10), "number of messages to send")

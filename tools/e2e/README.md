@@ -21,7 +21,7 @@ Usage:
 
 Flags:
   -h, --help                   help for e2e
-  -H, --host string            address for mainflux instance (default "https://localhost")
+  -H, --host string            address for mainflux instance (default "localhost")
   -n, --num uint               number of users, groups, channels and things to create and connect (default 10)
   -N, --num_of_messages uint   number of messages to send (default 10)
   -p, --prefix string          name prefix for users, groups, things and channels
@@ -30,21 +30,22 @@ Flags:
 Example:
 
 ```bash
-go run tools/e2e/cmd/main.go --host https://142.93.118.47
+go run tools/e2e/cmd/main.go --host 142.93.118.47
 ```
 
 If you want to create a list of channels with certificates:
 
 ```bash
-go run tools/provision/cmd/main.go --host http://localhost --num 10 --num_of_messages 100
+go run tools/e2e/cmd/main.go --host localhost --num 10 --num_of_messages 100 --prefix e2e
 ```
 
 Example of output:
 
 ```bash
-Created user with token eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NzgxOTc5NDAsImlhdCI6MTY3ODE5NzA0MCwiaWRlbnRpdHkiOiJwb2xpc2hlZC1sYWtlQGVtYWlsLmNvbSIsImlzcyI6ImNsaWVudHMuYXV0aCIsInN1YiI6IjE5NmU4N2M5LTllMjItNDRmNC1hZmY0LTM0OWM5YzcwMGFlNiIsInR5cGUiOiJhY2Nlc3MifQ.61miO5nKNhhivntR99DVIab_sPMnm8IgZ9pkrPIUkxvGN1pe80DiI0k148Lf7Ty-4KFUsd4i0Ikv5Dd0qVpmuQ
-Created users, groups, things and channels
-Created policies for users, groups, things and channels
-Viewed users, groups, things and channels
-Updated users, groups, things and channels
+created user with token eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2Nzk5MTE2NjQsImlhdCI6MTY3OTkxMDc2NCwiaWRlbnRpdHkiOiItZHJ5LWJyZWV6ZUBlbWFpbC5jb20iLCJpc3MiOiJjbGllbnRzLmF1dGgiLCJzdWIiOiI3OTRiOWZjNS1jM2MwLTQ4NGQtYWFkZi1hMWU0NjUyMjU5ZmEiLCJ0eXBlIjoiYWNjZXNzIn0.4MG0D_6vBleUAR9sbOOm1VHaIucrbTZYK_KMSkyg6a1uZyzpS6zK-oeD6jmGmQvwR1ALfjtZ0VRZiN0q4eQv_w
+created users, groups, things and channels
+created policies for users, groups, things and channels
+viewed users, groups, things and channels
+updated users, groups, things and channels
+sent and received messages from channels 
 ```

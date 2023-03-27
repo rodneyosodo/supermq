@@ -6,10 +6,12 @@ package e2e
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os/exec"
 	"time"
 
 	"github.com/goombaio/namegenerator"
+	"github.com/gorilla/websocket"
 	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
 	"golang.org/x/sync/errgroup"
 )
@@ -17,6 +19,7 @@ import (
 const (
 	defPass      = "12345678"
 	defReaderURL = "http://localhost:8905"
+	defWSPort    = "8186"
 )
 
 var (
@@ -40,12 +43,12 @@ type Config struct {
 func Test(conf Config) {
 
 	sdkConf := sdk.Config{
-		ThingsURL:       conf.Host,
-		UsersURL:        conf.Host,
+		ThingsURL:       fmt.Sprintf("http://%s", conf.Host),
+		UsersURL:        fmt.Sprintf("http://%s", conf.Host),
 		ReaderURL:       defReaderURL,
-		HTTPAdapterURL:  fmt.Sprintf("%s/http", conf.Host),
-		BootstrapURL:    conf.Host,
-		CertsURL:        conf.Host,
+		HTTPAdapterURL:  fmt.Sprintf("http://%s/http", conf.Host),
+		BootstrapURL:    fmt.Sprintf("http://%s", conf.Host),
+		CertsURL:        fmt.Sprintf("http://%s", conf.Host),
 		MsgContentType:  sdk.CTJSONSenML,
 		TLSVerification: false,
 	}
@@ -53,26 +56,24 @@ func Test(conf Config) {
 	s := sdk.NewSDK(sdkConf)
 
 	/*
-		Using Admin user
+		- Create user
+		- Create another user
+		- Do CRUD on them
 
-			- Create admin user
-			- Create another user
-			- Do CRUD on them
+		- Create groups using hierachy
+		- Do CRUD on them
 
-			- Create groups using hierachy
-			- Do CRUD on them
+		- Do CRUD on things
+		- Do CRUD on channels
 
-			- Do CRUD on things
-			- Do CRUD on channels
-
-			- Connect thing to channel
-			- Test messaging
+		- Connect thing to channel
+		- Test messaging
 	*/
 	token, owner, err := createUser(s, conf)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	fmt.Printf("created admin with token %s\n", token)
+	fmt.Printf("created user with token %s\n", token)
 
 	//  Create users, groups, things and channels
 	users, groups, things, channels, err := create(s, conf, token)
@@ -460,6 +461,9 @@ func messaging(s sdk.SDK, conf Config, token string, things []sdk.Thing, channel
 				g.Go(func() error {
 					return sendMQTTMessage(thing, channel.ID)
 				})
+				g.Go(func() error {
+					return sendWSMessage(conf, thing, channel.ID)
+				})
 			}
 		}
 	}
@@ -469,7 +473,7 @@ func messaging(s sdk.SDK, conf Config, token string, things []sdk.Thing, channel
 
 func sendHTTPMessage(s sdk.SDK, thing sdk.Thing, chanID string) error {
 	if err := s.SendMessage(chanID, msg, thing.Credentials.Secret); err != nil {
-		return fmt.Errorf("http failed to send message from thing %s to channel %s", thing.ID, chanID)
+		return fmt.Errorf("http failed to send message from thing %s to channel %s: %v", thing.ID, chanID, err)
 	}
 	return nil
 }
@@ -477,7 +481,7 @@ func sendHTTPMessage(s sdk.SDK, thing sdk.Thing, chanID string) error {
 func sendCOAPMessage(thing sdk.Thing, chanID string) error {
 	cmd := exec.Command("coap-cli", "post", fmt.Sprintf("channels/%s/messages", chanID), "-auth", thing.Credentials.Secret, "-d", msg)
 	if _, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("coap failed to send message from thing %s to channel %s", thing.ID, chanID)
+		return fmt.Errorf("coap failed to send message from thing %s to channel %s: %v", thing.ID, chanID, err)
 	}
 	return nil
 }
@@ -485,7 +489,21 @@ func sendCOAPMessage(thing sdk.Thing, chanID string) error {
 func sendMQTTMessage(thing sdk.Thing, chanID string) error {
 	cmd := exec.Command("mosquitto_pub", "--id-prefix", "mainflux", "-u", thing.ID, "-P", thing.Credentials.Secret, "-t", fmt.Sprintf("channels/%s/messages", chanID), "-h", "localhost", "-m", msg)
 	if _, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("mqtt failed to send message from thing %s to channel %s", thing.ID, chanID)
+		return fmt.Errorf("mqtt failed to send message from thing %s to channel %s: %v", thing.ID, chanID, err)
+	}
+	return nil
+}
+
+func sendWSMessage(conf Config, thing sdk.Thing, chanID string) error {
+	socketUrl := fmt.Sprintf("ws://%s:%s/channels/%s/messages", conf.Host, defWSPort, chanID)
+	header := http.Header{"authorization": []string{thing.Credentials.Secret}}
+	conn, _, err := websocket.DefaultDialer.Dial(socketUrl, header)
+	if err != nil {
+		return fmt.Errorf("unable to connect to websocket: %v", err)
+	}
+	defer conn.Close()
+	if err := conn.WriteMessage(websocket.TextMessage, []byte(msg)); err != nil {
+		return fmt.Errorf("mqtt failed to send message from thing %s to channel %s: %v", thing.ID, chanID, err)
 	}
 	return nil
 }
