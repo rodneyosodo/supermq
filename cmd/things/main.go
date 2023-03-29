@@ -52,7 +52,6 @@ const (
 	envPrefixAuthGrpc  = "MF_THINGS_AUTH_GRPC_"
 	defDB              = "things"
 	defSvcHttpPort     = "9000"
-	defSvcAuthHttpPort = "9001"
 	defSvcAuthGrpcPort = "7000"
 )
 
