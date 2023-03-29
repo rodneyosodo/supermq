@@ -182,7 +182,7 @@ func (sdk mfSDK) UpdateThingSecret(id, secret, token string) (Thing, errors.SDKE
 		return Thing{}, errors.NewSDKError(err)
 	}
 
-	url := fmt.Sprintf("%s/%s/%s/key", sdk.thingsURL, thingsEndpoint, id)
+	url := fmt.Sprintf("%s/%s/%s/secret", sdk.thingsURL, thingsEndpoint, id)
 
 	_, body, sdkerr := sdk.processRequest(http.MethodPatch, url, token, string(CTJSON), data, http.StatusOK)
 	if sdkerr != nil {

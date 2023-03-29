@@ -10,7 +10,7 @@ type updateClientSecretReq struct {
 }
 
 type updateThingSecretReq struct {
-	Secret string `json:"key,omitempty"`
+	Secret string `json:"secret,omitempty"`
 }
 
 // updateClientIdentityReq is used to update the client identity

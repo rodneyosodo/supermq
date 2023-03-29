@@ -16,8 +16,8 @@ var (
 )
 
 type policyRes struct {
-	policies.Policy
-	created bool
+	Policies []policies.Policy `json:"policies"`
+	created  bool
 }
 
 func (res policyRes) Code() int {
