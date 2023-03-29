@@ -59,6 +59,13 @@ func MakeClientsHandler(svc clients.Service, mux *bone.Mux, logger mflog.Logger)
 		opts...,
 	))
 
+	mux.Patch("/users/secret", kithttp.NewServer(
+		otelkit.EndpointMiddleware(otelkit.WithOperation("update_client_secret"))(updateClientSecretEndpoint(svc)),
+		decodeUpdateClientSecret,
+		api.EncodeResponse,
+		opts...,
+	))
+
 	mux.Patch("/users/:id", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("update_client_name_and_metadata"))(updateClientEndpoint(svc)),
 		decodeUpdateClient,
@@ -90,13 +97,6 @@ func MakeClientsHandler(svc clients.Service, mux *bone.Mux, logger mflog.Logger)
 	mux.Put("/password/reset", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("password_reset"))(passwordResetEndpoint(svc)),
 		decodePasswordReset,
-		api.EncodeResponse,
-		opts...,
-	))
-
-	mux.Patch("/users/:id/secret", kithttp.NewServer(
-		otelkit.EndpointMiddleware(otelkit.WithOperation("update_client_secret"))(updateClientSecretEndpoint(svc)),
-		decodeUpdateClientCredentials,
 		api.EncodeResponse,
 		opts...,
 	))
