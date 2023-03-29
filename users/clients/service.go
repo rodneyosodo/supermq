@@ -273,7 +273,7 @@ func (svc service) ResetSecret(ctx context.Context, resetToken, secret string) e
 	if c.Credentials.Identity == "" {
 		return errors.ErrNotFound
 	}
-	if svc.passRegex.MatchString(secret) {
+	if !svc.passRegex.MatchString(secret) {
 		return ErrPasswordFormat
 	}
 	secret, err = svc.hasher.Hash(secret)
