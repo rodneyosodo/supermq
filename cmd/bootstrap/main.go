@@ -23,10 +23,10 @@ import (
 	"github.com/mainflux/mainflux/users/policies"
 	"golang.org/x/sync/errgroup"
 
-	r "github.com/go-redis/redis/v8"
+	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
 	"github.com/mainflux/mainflux/bootstrap"
-	api "github.com/mainflux/mainflux/bootstrap/api"
+	"github.com/mainflux/mainflux/bootstrap/api"
 )
 
 const (
@@ -116,7 +116,7 @@ func main() {
 	}
 }
 
-func newService(auth policies.AuthServiceClient, db *sqlx.DB, logger mflog.Logger, esClient *r.Client, cfg config) bootstrap.Service {
+func newService(auth policies.AuthServiceClient, db *sqlx.DB, logger mflog.Logger, esClient *redis.Client, cfg config) bootstrap.Service {
 	repoConfig := bootstrapPg.NewConfigRepository(db, logger)
 
 	config := mfsdk.Config{
@@ -134,7 +134,7 @@ func newService(auth policies.AuthServiceClient, db *sqlx.DB, logger mflog.Logge
 	return svc
 }
 
-func subscribeToThingsES(svc bootstrap.Service, client *r.Client, consumer string, logger mflog.Logger) {
+func subscribeToThingsES(svc bootstrap.Service, client *redis.Client, consumer string, logger mflog.Logger) {
 	eventStore := rediscons.NewEventStore(svc, client, consumer, logger)
 	logger.Info("Subscribed to Redis Event Store")
 	if err := eventStore.Subscribe(context.Background(), "mainflux.things"); err != nil {
