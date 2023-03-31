@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
+	"reflect"
 	"time"
 
 	"github.com/goombaio/namegenerator"
@@ -75,12 +76,29 @@ func Test(conf Config) {
 	}
 	fmt.Printf("created user with token %s\n", token)
 
-	//  Create users, groups, things and channels
-	users, groups, things, channels, err := create(s, conf, token)
+	users, err := createUsers(s, conf, token)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	fmt.Println("created users, groups, things and channels")
+	fmt.Println("created users of ids: ", getIDS(users))
+
+	groups, err := createGroups(s, conf, token)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	fmt.Println("created groups of ids: ", getIDS(groups))
+
+	things, err := createThings(s, conf, token)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	fmt.Println("created things of ids: ", getIDS(things))
+
+	channels, err := createChannels(s, conf, token)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	fmt.Println("created channels of ids: ", getIDS(channels))
 
 	if err := createPolicies(s, conf, token, owner, users, groups, things, channels); err != nil {
 		log.Fatalf(err.Error())
@@ -132,14 +150,10 @@ func createUser(s sdk.SDK, conf Config) (string, string, error) {
 	return token.AccessToken, user.ID, nil
 }
 
-func create(s sdk.SDK, conf Config, token string) ([]sdk.User, []sdk.Group, []sdk.Thing, []sdk.Channel, error) {
+func createUsers(s sdk.SDK, conf Config, token string) ([]sdk.User, error) {
 	var err error
 	users := []sdk.User{}
-	groups := []sdk.Group{}
-	things := make([]sdk.Thing, conf.Num)
-	channels := make([]sdk.Channel, conf.Num)
 
-	parentID := ""
 	for i := uint64(0); i < conf.Num; i++ {
 		user := sdk.User{
 			Name: fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.Generate()),
@@ -148,44 +162,76 @@ func create(s sdk.SDK, conf Config, token string) ([]sdk.User, []sdk.Group, []sd
 				Secret:   defPass},
 			Status: "enabled",
 		}
+
+		user, err = s.CreateUser(user, token)
+		if err != nil {
+			return []sdk.User{}, fmt.Errorf("Failed to create the users: %s", err.Error())
+		}
+		users = append(users, user)
+
+	}
+
+	return users, nil
+}
+
+func createGroups(s sdk.SDK, conf Config, token string) ([]sdk.Group, error) {
+	var err error
+	groups := []sdk.Group{}
+
+	parentID := ""
+	for i := uint64(0); i < conf.Num; i++ {
 		group := sdk.Group{
 			Name:     fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.Generate()),
 			ParentID: parentID,
 			Status:   "enabled",
 		}
-		things[i] = sdk.Thing{
-			Name:   fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.Generate()),
-			Status: "enabled",
-		}
-		channels[i] = sdk.Channel{
-			Name:   fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.Generate()),
-			Status: "enabled",
-		}
-
-		user, err = s.CreateUser(user, token)
-		if err != nil {
-			return []sdk.User{}, []sdk.Group{}, []sdk.Thing{}, []sdk.Channel{}, fmt.Errorf("Failed to create the users: %s", err.Error())
-		}
-		users = append(users, user)
 
 		group, err = s.CreateGroup(group, token)
 		if err != nil {
-			return []sdk.User{}, []sdk.Group{}, []sdk.Thing{}, []sdk.Channel{}, fmt.Errorf("Failed to create the group: %s", err.Error())
+			return []sdk.Group{}, fmt.Errorf("Failed to create the group: %s", err.Error())
 		}
 		groups = append(groups, group)
 		parentID = group.ID
 	}
+
+	return groups, nil
+}
+
+func createThings(s sdk.SDK, conf Config, token string) ([]sdk.Thing, error) {
+	var err error
+	things := make([]sdk.Thing, conf.Num)
+
+	for i := uint64(0); i < conf.Num; i++ {
+		things[i] = sdk.Thing{
+			Name:   fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.Generate()),
+			Status: "enabled",
+		}
+	}
 	things, err = s.CreateThings(things, token)
 	if err != nil {
-		return []sdk.User{}, []sdk.Group{}, []sdk.Thing{}, []sdk.Channel{}, fmt.Errorf("Failed to create the things: %s", err.Error())
+		return []sdk.Thing{}, fmt.Errorf("Failed to create the things: %s", err.Error())
+	}
+
+	return things, nil
+}
+
+func createChannels(s sdk.SDK, conf Config, token string) ([]sdk.Channel, error) {
+	var err error
+	channels := make([]sdk.Channel, conf.Num)
+
+	for i := uint64(0); i < conf.Num; i++ {
+		channels[i] = sdk.Channel{
+			Name:   fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.Generate()),
+			Status: "enabled",
+		}
 	}
 
 	channels, err = s.CreateChannels(channels, token)
 	if err != nil {
-		return []sdk.User{}, []sdk.Group{}, []sdk.Thing{}, []sdk.Channel{}, fmt.Errorf("Failed to create the chennels: %s", err.Error())
+		return []sdk.Channel{}, fmt.Errorf("Failed to create the chennels: %s", err.Error())
 	}
 
-	return users, groups, things, channels, nil
+	return channels, nil
 }
 
 func createPolicies(s sdk.SDK, conf Config, token, owner string, users []sdk.User, groups []sdk.Group, things []sdk.Thing, channels []sdk.Channel) error {
@@ -506,4 +552,17 @@ func sendWSMessage(conf Config, thing sdk.Thing, chanID string) error {
 		return fmt.Errorf("mqtt failed to send message from thing %s to channel %s: %v", thing.ID, chanID, err)
 	}
 	return nil
+}
+
+func getIDS(objects interface{}) []string {
+	v := reflect.ValueOf(objects)
+	if v.Kind() != reflect.Slice {
+		panic("objects argument must be a slice")
+	}
+	ids := make([]string, v.Len())
+	for i := 0; i < v.Len(); i++ {
+		id := v.Index(i).FieldByName("ID").String()
+		ids[i] = id
+	}
+	return ids
 }
