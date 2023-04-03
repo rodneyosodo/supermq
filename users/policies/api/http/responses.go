@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -41,7 +40,6 @@ func (res authorizeRes) Empty() bool {
 }
 
 type addPolicyRes struct {
-	id      string
 	created bool
 }
 
@@ -54,12 +52,6 @@ func (res addPolicyRes) Code() int {
 }
 
 func (res addPolicyRes) Headers() map[string]string {
-	if res.created {
-		return map[string]string{
-			"Location": fmt.Sprintf("/groups/%s", res.id),
-		}
-	}
-
 	return map[string]string{}
 }
 
