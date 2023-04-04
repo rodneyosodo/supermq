@@ -244,7 +244,28 @@ func (svc service) changeClientStatus(ctx context.Context, token, id string, sta
 	return svc.clients.ChangeStatus(ctx, id, status)
 }
 
+func (svc service) identifyUser(ctx context.Context, token string) (string, error) {
+	req := &policies.Token{Value: token}
+	res, err := svc.auth.Identify(ctx, req)
+	if err != nil {
+		return "", errors.Wrap(errors.ErrAuthorization, err)
+	}
+	return res.GetId(), nil
+}
+
 func (svc service) authorize(ctx context.Context, subject, object string, relation string) error {
+	// Check if the client is the owner of the thing.
+	userID, err := svc.identifyUser(ctx, subject)
+	if err != nil {
+		return err
+	}
+	dbThing, err := svc.clients.RetrieveByID(ctx, object)
+	if err != nil {
+		return err
+	}
+	if dbThing.Owner == userID {
+		return nil
+	}
 	req := &policies.AuthorizeReq{
 		Sub:        subject,
 		Obj:        object,
