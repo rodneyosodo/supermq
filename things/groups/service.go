@@ -122,9 +122,7 @@ func (svc service) ListMemberships(ctx context.Context, token, clientID string, 
 		return svc.groups.Memberships(ctx, clientID, gm)
 	}
 
-	gm.Subject = res.GetId()
 	gm.OwnerID = res.GetId()
-	gm.Action = "g_list"
 	return svc.groups.Memberships(ctx, clientID, gm)
 }
 

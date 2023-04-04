@@ -208,8 +208,7 @@ func (svc service) ListClientsByGroup(ctx context.Context, token, groupID string
 	if err := svc.authorize(ctx, token, thingsObjectKey, listRelationKey); err == nil {
 		return svc.clients.Members(ctx, groupID, pm)
 	}
-	pm.Subject = res.GetId()
-	pm.Action = "g_list"
+	pm.Owner = res.GetId()
 
 	return svc.clients.Members(ctx, groupID, pm)
 }
