@@ -20,7 +20,6 @@ type pageRes struct {
 	Limit  uint64 `json:"limit,omitempty"`
 	Offset uint64 `json:"offset,omitempty"`
 	Total  uint64 `json:"total"`
-	Level  uint64 `json:"level"`
 }
 
 type authorizeRes struct {
