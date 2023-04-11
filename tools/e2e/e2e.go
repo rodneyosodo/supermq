@@ -5,6 +5,7 @@ package e2e
 
 import (
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -28,7 +29,8 @@ const (
 var (
 	seed           = time.Now().UTC().UnixNano()
 	namesgenerator = namegen.NewNameGenerator(seed)
-	msg            = "[{'bn':'demo', 'bu':'V','bver':5, 'n':'voltage','u':'V','v':120}]"
+	msgFormat      = `[{"bn":"demo", "bu":"V", "t": %d, "bver":5, "n":"voltage", "u":"V", "v":%d}]`
+	messages       = make(chan string)
 )
 
 // Config - test configuration.
@@ -40,6 +42,10 @@ type Config struct {
 	CA       string
 	CAKey    string
 	Prefix   string
+}
+
+func init() {
+	rand.Seed(seed)
 }
 
 // Test - function that does actual end to end testing.
@@ -56,6 +62,9 @@ func Test(conf Config) {
 	}
 
 	s := sdk.NewSDK(sdkConf)
+
+	// start generating messages before hand to avoid duplicate messages
+	go generateMsgs(conf)
 
 	/*
 		- Create user
@@ -514,16 +523,24 @@ func messaging(s sdk.SDK, conf Config, token string, things []sdk.Thing, channel
 			for _, channel := range channels {
 				channel := channel
 				g.Go(func() error {
-					return sendHTTPMessage(s, thing, channel.ID)
+					msg := <-messages
+
+					return sendHTTPMessage(s, msg, thing, channel.ID)
 				})
 				g.Go(func() error {
-					return sendCoAPMessage(thing, channel.ID)
+					msg := <-messages
+
+					return sendCoAPMessage(msg, thing, channel.ID)
 				})
 				g.Go(func() error {
-					return sendMQTTMessage(thing, channel.ID)
+					msg := <-messages
+
+					return sendMQTTMessage(msg, thing, channel.ID)
 				})
 				g.Go(func() error {
-					return sendWSMessage(conf, thing, channel.ID)
+					msg := <-messages
+
+					return sendWSMessage(conf, msg, thing, channel.ID)
 				})
 			}
 		}
@@ -532,7 +549,7 @@ func messaging(s sdk.SDK, conf Config, token string, things []sdk.Thing, channel
 	return g.Wait()
 }
 
-func sendHTTPMessage(s sdk.SDK, thing sdk.Thing, chanID string) error {
+func sendHTTPMessage(s sdk.SDK, msg string, thing sdk.Thing, chanID string) error {
 	if err := s.SendMessage(chanID, msg, thing.Credentials.Secret); err != nil {
 		return fmt.Errorf("HTTP failed to send message from thing %s to channel %s: %w", thing.ID, chanID, err)
 	}
@@ -540,7 +557,7 @@ func sendHTTPMessage(s sdk.SDK, thing sdk.Thing, chanID string) error {
 	return nil
 }
 
-func sendCoAPMessage(thing sdk.Thing, chanID string) error {
+func sendCoAPMessage(msg string, thing sdk.Thing, chanID string) error {
 	cmd := exec.Command("coap-cli", "post", fmt.Sprintf("channels/%s/messages", chanID), "-auth", thing.Credentials.Secret, "-d", msg)
 	if _, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("CoAP failed to send message from thing %s to channel %s: %w", thing.ID, chanID, err)
@@ -549,7 +566,7 @@ func sendCoAPMessage(thing sdk.Thing, chanID string) error {
 	return nil
 }
 
-func sendMQTTMessage(thing sdk.Thing, chanID string) error {
+func sendMQTTMessage(msg string, thing sdk.Thing, chanID string) error {
 	cmd := exec.Command("mosquitto_pub", "--id-prefix", "mainflux", "-u", thing.ID, "-P", thing.Credentials.Secret, "-t", fmt.Sprintf("channels/%s/messages", chanID), "-h", "localhost", "-m", msg)
 	if _, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("MQTT failed to send message from thing %s to channel %s: %w", thing.ID, chanID, err)
@@ -558,7 +575,7 @@ func sendMQTTMessage(thing sdk.Thing, chanID string) error {
 	return nil
 }
 
-func sendWSMessage(conf Config, thing sdk.Thing, chanID string) error {
+func sendWSMessage(conf Config, msg string, thing sdk.Thing, chanID string) error {
 	socketURL := fmt.Sprintf("ws://%s:%s/channels/%s/messages", conf.Host, defWSPort, chanID)
 	header := http.Header{"authorization": []string{thing.Credentials.Secret}}
 	conn, _, err := websocket.DefaultDialer.Dial(socketURL, header)
@@ -571,6 +588,16 @@ func sendWSMessage(conf Config, thing sdk.Thing, chanID string) error {
 	}
 
 	return nil
+}
+
+func generateMsgs(conf Config) {
+	defer close(messages)
+
+	bt := time.Now().Unix()
+	for i := uint64(0); i < conf.Num*conf.Num*conf.NumOfMsg*4; i++ {
+		msg := fmt.Sprintf(msgFormat, bt+int64(i), rand.Int())
+		messages <- msg
+	}
 }
 
 func getIDS(objects interface{}) string {
