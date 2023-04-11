@@ -5,12 +5,13 @@ package e2e
 
 import (
 	"fmt"
-	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"reflect"
 	"time"
 
+	"github.com/gookit/color"
 	"github.com/goombaio/namegenerator"
 	"github.com/gorilla/websocket"
 	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
@@ -70,57 +71,68 @@ func Test(conf Config) {
 		- Connect thing to channel
 		- Test messaging
 	*/
+	magenta := color.FgLightMagenta.Render
+
 	token, owner, err := createUser(s, conf)
 	if err != nil {
-		log.Fatalf(err.Error())
+		color.Error.Println(err.Error())
+		os.Exit(1)
 	}
-	fmt.Printf("created user with token %s\n", token)
+	color.Success.Printf("created user with token %s\n", magenta(token))
 
 	users, err := createUsers(s, conf, token)
 	if err != nil {
-		log.Fatalf(err.Error())
+		color.Error.Println(err.Error())
+		os.Exit(1)
 	}
-	fmt.Println("created users of ids: ", getIDS(users))
+	color.Success.Println("created users of ids: ", magenta(getIDS(users)))
 
 	groups, err := createGroups(s, conf, token)
 	if err != nil {
-		log.Fatalf(err.Error())
+		color.Error.Println(err.Error())
+		os.Exit(1)
 	}
-	fmt.Println("created groups of ids: ", getIDS(groups))
+	color.Success.Println("created groups of ids: ", magenta(getIDS(groups)))
 
 	things, err := createThings(s, conf, token)
 	if err != nil {
-		log.Fatalf(err.Error())
+		color.Error.Println(err.Error())
+		os.Exit(1)
 	}
-	fmt.Println("created things of ids: ", getIDS(things))
+	color.Success.Println("created things of ids: ", magenta(getIDS(things)))
 
 	channels, err := createChannels(s, conf, token)
 	if err != nil {
-		log.Fatalf(err.Error())
+		color.Error.Println(err.Error())
+		os.Exit(1)
 	}
-	fmt.Println("created channels of ids: ", getIDS(channels))
+	color.Success.Println("created channels of ids: ", magenta(getIDS(channels)))
 
 	if err := createPolicies(s, conf, token, owner, users, groups, things, channels); err != nil {
-		log.Fatalf(err.Error())
+		color.Error.Println(err.Error())
+		os.Exit(1)
 	}
-	fmt.Println("created policies for users, groups, things and channels")
+	color.Success.Println("created policies for users, groups, things and channels")
 	// List users, groups, things and channels
 	if err := read(s, conf, token, users, groups, things, channels); err != nil {
-		log.Fatalf(err.Error())
+		color.Error.Println(err.Error())
+		os.Exit(1)
 	}
-	fmt.Println("viewed users, groups, things and channels")
+	color.Success.Println("viewed users, groups, things and channels")
 
 	// Update users, groups, things and channels
 	if err := update(s, token, users, groups, things, channels); err != nil {
-		log.Fatalf(err.Error())
+		color.Error.Println(err.Error())
+		os.Exit(1)
 	}
-	fmt.Println("updated users, groups, things and channels")
+	color.Success.Println("updated users, groups, things and channels")
 
 	// Send and Receive messages from channels
 	if err := messaging(s, conf, token, things, channels); err != nil {
-		log.Fatalf(err.Error())
+		color.Error.Println(err.Error())
+		os.Exit(1)
 	}
-	fmt.Println("sent and received messages from channels")
+	color.Success.Println("sent and received messages from channels")
 }
 
 func createUser(s sdk.SDK, conf Config) (string, string, error) {
