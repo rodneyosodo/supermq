@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const defNum = uint64(10)
+
 func main() {
 	econf := e2e.Config{}
 
@@ -43,8 +45,8 @@ Complete documentation is available at https://docs.mainflux.io`,
 	// Root Flags
 	rootCmd.PersistentFlags().StringVarP(&econf.Host, "host", "H", "localhost", "address for a running mainflux instance")
 	rootCmd.PersistentFlags().StringVarP(&econf.Prefix, "prefix", "p", "", "name prefix for users, groups, things and channels")
-	rootCmd.PersistentFlags().Uint64VarP(&econf.Num, "num", "n", uint64(10), "number of users, groups, channels and things to create and connect")
-	rootCmd.PersistentFlags().Uint64VarP(&econf.NumOfMsg, "num_of_messages", "N", uint64(10), "number of messages to send")
+	rootCmd.PersistentFlags().Uint64VarP(&econf.Num, "num", "n", defNum, "number of users, groups, channels and things to create and connect")
+	rootCmd.PersistentFlags().Uint64VarP(&econf.NumOfMsg, "num_of_messages", "N", defNum, "number of messages to send")
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
