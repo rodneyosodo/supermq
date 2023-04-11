@@ -103,7 +103,7 @@ func main() {
 	defer cacheClient.Close()
 
 	// Setup new auth grpc client
-	auth, authHandler, err := authClient.Setup(envPrefix, "localhost:6831")
+	auth, authHandler, err := authClient.Setup(envPrefix, cfg.JaegerURL)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
