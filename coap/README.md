@@ -9,17 +9,17 @@ The service is configured using the environment variables presented in the
 following table. Note that any unset variables will be replaced with their
 default values.
 
-| Variable                       | Description                                            | Default                           |
-|--------------------------------|--------------------------------------------------------|-----------------------------------|
-| MF_COAP_ADAPTER_PORT           | Service listening port                                 | 5683                              |
-| MF_BROKER_URL                  | Message broker instance URL                            | nats://localhost:4222             |
-| MF_COAP_ADAPTER_LOG_LEVEL      | Service log level                                      | info                              |
-| MF_COAP_ADAPTER_CLIENT_TLS     | Flag that indicates if TLS should be turned on         | false                             |
-| MF_COAP_ADAPTER_CA_CERTS       | Path to trusted CAs in PEM format                      |                                   |
-| MF_COAP_ADAPTER_PING_PERIOD    | Hours between 1 and 24 to ping client with ACK message | 12                                |
-| MF_JAEGER_URL                  | Jaeger server URL                                      | http://localhost:14268/api/traces |
-| MF_THINGS_AUTH_GRPC_URL        | Things service Auth gRPC URL                           | localhost:8181                    |
-| MF_THINGS_AUTH_GRPC_TIMEOUT    | Things service Auth gRPC request timeout in seconds    | 1s                                |
+| Variable                       | Description                                            | Default               |
+|--------------------------------|--------------------------------------------------------|-----------------------|
+| MF_COAP_ADAPTER_PORT           | Service listening port                                 | 5683                  |
+| MF_BROKER_URL                  | Message broker instance URL                            | nats://localhost:4222 |
+| MF_COAP_ADAPTER_LOG_LEVEL      | Service log level                                      | info                  |
+| MF_COAP_ADAPTER_CLIENT_TLS     | Flag that indicates if TLS should be turned on         | false                 |
+| MF_COAP_ADAPTER_CA_CERTS       | Path to trusted CAs in PEM format                      |                       |
+| MF_COAP_ADAPTER_PING_PERIOD    | Hours between 1 and 24 to ping client with ACK message | 12                    |
+| MF_JAEGER_URL                  | Jaeger server URL                                      | localhost:6831        |
+| MF_THINGS_AUTH_GRPC_URL        | Things service Auth gRPC URL                           | localhost:7000        |
+| MF_THINGS_AUTH_GRPC_TIMEOUT    | Things service Auth gRPC request timeout in seconds    | 1s                    |
 
 ## Deployment
 

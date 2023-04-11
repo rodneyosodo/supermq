@@ -35,35 +35,35 @@ Thing configuration also contains the so-called `external ID` and `external key`
 
 The service is configured using the environment variables presented in the following table. Note that any unset variables will be replaced with their default values.
 
-| Variable                      | Description                                                             | Default                           |
-|-------------------------------|-------------------------------------------------------------------------|-----------------------------------|
-| MF_BOOTSTRAP_LOG_LEVEL        | Log level for Bootstrap (debug, info, warn, error)                      | info                              |
-| MF_BOOTSTRAP_DB_HOST          | Database host address                                                   | localhost                         |
-| MF_BOOTSTRAP_DB_PORT          | Database host port                                                      | 5432                              |
-| MF_BOOTSTRAP_DB_USER          | Database user                                                           | mainflux                          |
-| MF_BOOTSTRAP_DB_PASS          | Database password                                                       | mainflux                          |
-| MF_BOOTSTRAP_DB               | Name of the database used by the service                                | bootstrap                         |
-| MF_BOOTSTRAP_DB_SSL_MODE      | Database connection SSL mode (disable, require, verify-ca, verify-full) | disable                           |
-| MF_BOOTSTRAP_DB_SSL_CERT      | Path to the PEM encoded certificate file                                |                                   |
-| MF_BOOTSTRAP_DB_SSL_KEY       | Path to the PEM encoded key file                                        |                                   |
-| MF_BOOTSTRAP_DB_SSL_ROOT_CERT | Path to the PEM encoded root certificate file                           |                                   |
-| MF_BOOTSTRAP_ENCRYPT_KEY      | Secret key for secure bootstrapping encryption                          | 12345678910111213141516171819202  |
-| MF_BOOTSTRAP_CLIENT_TLS       | Flag that indicates if TLS should be turned on                          | false                             |
-| MF_BOOTSTRAP_CA_CERTS         | Path to trusted CAs in PEM format                                       |                                   |
-| MF_BOOTSTRAP_PORT             | Bootstrap service HTTP port                                             | 8180                              |
-| MF_BOOTSTRAP_SERVER_CERT      | Path to server certificate in pem format                                |                                   |
-| MF_BOOTSTRAP_SERVER_KEY       | Path to server key in pem format                                        |                                   |
-| MF_THINGS_URL                 | Base url for Mainflux Things                                            | http://localhost                  |
-| MF_THINGS_ES_URL              | Things service event source URL                                         | localhost:6379                    |
-| MF_THINGS_ES_PASS             | Things service event source password                                    |                                   |
-| MF_THINGS_ES_DB               | Things service event source database                                    | 0                                 |
-| MF_BOOTSTRAP_ES_URL           | Bootstrap service event source URL                                      | localhost:6379                    |
-| MF_BOOTSTRAP_ES_PASS          | Bootstrap service event source password                                 |                                   |
-| MF_BOOTSTRAP_ES_DB            | Bootstrap service event source database                                 | 0                                 |
-| MF_BOOTSTRAP_EVENT_CONSUMER   | Bootstrap service event source consumer name                            | bootstrap                         |
-| MF_JAEGER_URL                 | Jaeger server URL                                                       | http://localhost:14268/api/traces |
-| MF_AUTH_GRPC_URL              | Auth service gRPC URL                                                   | localhost:8181                    |
-| MF_AUTH_GRPC_TIMEOUT          | Auth service gRPC request timeout in seconds                            | 1s                                |
+| Variable                      | Description                                                             | Default                          |
+|-------------------------------|-------------------------------------------------------------------------|----------------------------------|
+| MF_BOOTSTRAP_LOG_LEVEL        | Log level for Bootstrap (debug, info, warn, error)                      | info                             |
+| MF_BOOTSTRAP_DB_HOST          | Database host address                                                   | localhost                        |
+| MF_BOOTSTRAP_DB_PORT          | Database host port                                                      | 5432                             |
+| MF_BOOTSTRAP_DB_USER          | Database user                                                           | mainflux                         |
+| MF_BOOTSTRAP_DB_PASS          | Database password                                                       | mainflux                         |
+| MF_BOOTSTRAP_DB               | Name of the database used by the service                                | bootstrap                        |
+| MF_BOOTSTRAP_DB_SSL_MODE      | Database connection SSL mode (disable, require, verify-ca, verify-full) | disable                          |
+| MF_BOOTSTRAP_DB_SSL_CERT      | Path to the PEM encoded certificate file                                |                                  |
+| MF_BOOTSTRAP_DB_SSL_KEY       | Path to the PEM encoded key file                                        |                                  |
+| MF_BOOTSTRAP_DB_SSL_ROOT_CERT | Path to the PEM encoded root certificate file                           |                                  |
+| MF_BOOTSTRAP_ENCRYPT_KEY      | Secret key for secure bootstrapping encryption                          | 12345678910111213141516171819202 |
+| MF_BOOTSTRAP_CLIENT_TLS       | Flag that indicates if TLS should be turned on                          | false                            |
+| MF_BOOTSTRAP_CA_CERTS         | Path to trusted CAs in PEM format                                       |                                  |
+| MF_BOOTSTRAP_PORT             | Bootstrap service HTTP port                                             | 9013                             |
+| MF_BOOTSTRAP_SERVER_CERT      | Path to server certificate in pem format                                |                                  |
+| MF_BOOTSTRAP_SERVER_KEY       | Path to server key in pem format                                        |                                  |
+| MF_THINGS_URL                 | Base url for Mainflux Things                                            | http://localhost:9000                 |
+| MF_THINGS_ES_URL              | Things service event source URL                                         | localhost:6379                   |
+| MF_THINGS_ES_PASS             | Things service event source password                                    |                                  |
+| MF_THINGS_ES_DB               | Things service event source database                                    | 0                                |
+| MF_BOOTSTRAP_ES_URL           | Bootstrap service event source URL                                      | localhost:6379                   |
+| MF_BOOTSTRAP_ES_PASS          | Bootstrap service event source password                                 |                                  |
+| MF_BOOTSTRAP_ES_DB            | Bootstrap service event source database                                 | 0                                |
+| MF_BOOTSTRAP_EVENT_CONSUMER   | Bootstrap service event source consumer name                            | bootstrap                        |
+| MF_JAEGER_URL                 | Jaeger server URL                                                       | localhost:6831                   |
+| MF_AUTH_GRPC_URL              | Auth service gRPC URL                                                   | localhost:7001                   |
+| MF_AUTH_GRPC_TIMEOUT          | Auth service gRPC request timeout in seconds                            | 1s                               |
 
 ## Deployment
 
