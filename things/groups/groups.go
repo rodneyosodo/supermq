@@ -43,8 +43,8 @@ type Group struct {
 	Name        string    `json:"name"`
 	Description string    `json:"description,omitempty"`
 	Metadata    Metadata  `json:"metadata,omitempty"`
-	Level       int       `json:"level"`
-	Path        string    `json:"path"`
+	Level       int       `json:"level,omitempty"`
+	Path        string    `json:"path,omitempty"`
 	Children    []*Group  `json:"children,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`

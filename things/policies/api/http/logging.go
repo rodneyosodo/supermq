@@ -34,7 +34,7 @@ func (lm *loggingMiddleware) Authorize(ctx context.Context, entityType string, p
 
 func (lm *loggingMiddleware) AuthorizeByKey(ctx context.Context, entityType string, p policies.Policy) (id string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method authorize_by_key for channel with id %s by client with id %s took %s to complete", p.Object, p.Subject, time.Since(begin))
+		message := fmt.Sprintf("Method authorize_by_key for channel with id %s by client with secret %s took %s to complete", p.Object, p.Subject, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

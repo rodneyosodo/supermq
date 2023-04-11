@@ -15,11 +15,14 @@ require (
 	github.com/go-zoo/bone v1.3.0
 	github.com/gocql/gocql v1.2.1
 	github.com/gofrs/uuid v4.3.0+incompatible
+	github.com/gookit/color v1.5.3
+	github.com/goombaio/namegenerator v0.0.0-20181006234301-989e774b106e
 	github.com/gopcua/opcua v0.1.6
 	github.com/gorilla/websocket v1.5.0
 	github.com/hashicorp/vault/api v1.8.1
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f
 	github.com/influxdata/influxdb-client-go/v2 v2.12.2
+	github.com/ivanpirog/coloredcobra v1.0.1
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
 	github.com/jackc/pgtype v1.13.0
 	github.com/jackc/pgx/v5 v5.2.0
@@ -159,11 +162,12 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
+	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.opentelemetry.io/otel/metric v0.37.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/mod v0.6.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.1.0 // indirect
 	golang.org/x/tools v0.2.0 // indirect

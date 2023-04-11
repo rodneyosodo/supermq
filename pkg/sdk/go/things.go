@@ -173,30 +173,6 @@ func (sdk mfSDK) UpdateThingTags(t Thing, token string) (Thing, errors.SDKError)
 	return t, nil
 }
 
-// UpdateThingIdentity updates the thing's identity
-func (sdk mfSDK) UpdateThingIdentity(t Thing, token string) (Thing, errors.SDKError) {
-	ucir := updateClientIdentityReq{token: token, id: t.ID, Identity: t.Credentials.Identity}
-
-	data, err := json.Marshal(ucir)
-	if err != nil {
-		return Thing{}, errors.NewSDKError(err)
-	}
-
-	url := fmt.Sprintf("%s/%s/%s/identity", sdk.thingsURL, thingsEndpoint, t.ID)
-
-	_, body, sdkerr := sdk.processRequest(http.MethodPatch, url, token, string(CTJSON), data, http.StatusOK)
-	if sdkerr != nil {
-		return Thing{}, sdkerr
-	}
-
-	t = Thing{}
-	if err := json.Unmarshal(body, &t); err != nil {
-		return Thing{}, errors.NewSDKError(err)
-	}
-
-	return t, nil
-}
-
 // UpdateThingSecret updates the client's secret
 func (sdk mfSDK) UpdateThingSecret(id, secret, token string) (Thing, errors.SDKError) {
 	var ucsr = updateThingSecretReq{Secret: secret}

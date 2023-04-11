@@ -52,7 +52,6 @@ const (
 	envPrefixAuthGrpc  = "MF_THINGS_AUTH_GRPC_"
 	defDB              = "things"
 	defSvcHttpPort     = "9000"
-	defSvcAuthHttpPort = "9001"
 	defSvcAuthGrpcPort = "7000"
 )
 
@@ -162,7 +161,7 @@ func newService(db *sqlx.DB, auth upolicies.AuthServiceClient, cacheClient *redi
 
 	csvc := clients.NewService(auth, cRepo, thingCache, idp)
 	gsvc := groups.NewService(auth, gRepo, idp)
-	psvc := tpolicies.NewService(auth, pRepo, thingCache, policyCache, idp)
+	psvc := tpolicies.NewService(auth, cRepo, pRepo, thingCache, policyCache, idp)
 
 	csvc = ctracing.TracingMiddleware(csvc, tracer)
 	csvc = capi.LoggingMiddleware(csvc, logger)

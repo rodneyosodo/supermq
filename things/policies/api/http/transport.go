@@ -36,7 +36,7 @@ func MakePolicyHandler(csvc clients.Service, psvc policies.Service, mux *bone.Mu
 		opts...,
 	))
 
-	mux.Put("/channels/:chanId/things/:thingId", kithttp.NewServer(
+	mux.Post("/channels/:chanId/things/:thingId", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("connect_thing"))(connectEndpoint(psvc)),
 		decodeConnectThing,
 		api.EncodeResponse,
@@ -94,8 +94,10 @@ func decodeConnectThing(_ context.Context, r *http.Request) (interface{}, error)
 		GroupID:  bone.GetValue(r, "chanId"),
 		ClientID: bone.GetValue(r, "thingId"),
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	if r.Body != http.NoBody {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		}
 	}
 
 	return req, nil

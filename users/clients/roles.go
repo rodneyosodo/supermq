@@ -1,5 +1,7 @@
 package clients
 
+import "github.com/mainflux/mainflux/internal/apiutil"
+
 // Role represents Client role.
 type Role uint8
 
@@ -25,4 +27,15 @@ func (cs Role) String() string {
 	default:
 		return Unknown
 	}
+}
+
+// ToRole converts string value to a valid Client role.
+func ToRole(status string) (Role, error) {
+	switch status {
+	case "", User:
+		return UserRole, nil
+	case Admin:
+		return AdminRole, nil
+	}
+	return Role(0), apiutil.ErrInvalidRole
 }

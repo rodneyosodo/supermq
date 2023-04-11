@@ -147,31 +147,6 @@ var cmdThings = []cobra.Command{
 		},
 	},
 	{
-		Use:   "updateidentity <thing_id> <identity> <user_auth_token>",
-		Short: "Update thing identity",
-		Long:  `Update thing record`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 3 {
-				logUsage(cmd.Use)
-				return
-			}
-
-			var thing mfxsdk.Thing
-			if err := json.Unmarshal([]byte(args[1]), &thing.Credentials.Identity); err != nil {
-				logError(err)
-				return
-			}
-			thing.ID = args[0]
-			thing, err := sdk.UpdateThingIdentity(thing, args[2])
-			if err != nil {
-				logError(err)
-				return
-			}
-
-			logJSON(thing)
-		},
-	},
-	{
 		Use:   "updatesecret <thing_id> <secret> <user_auth_token>",
 		Short: "Update thing tags",
 		Long:  `Update thing record`,

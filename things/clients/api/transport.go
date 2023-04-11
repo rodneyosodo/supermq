@@ -139,7 +139,7 @@ func decodeShareClient(_ context.Context, r *http.Request) (interface{}, error) 
 }
 
 func decodeListClients(_ context.Context, r *http.Request) (interface{}, error) {
-	var sid string
+	var sid, oid string
 	s, err := apiutil.ReadStringQuery(r, api.StatusKey, api.DefClientStatus)
 	if err != nil {
 		return nil, err
@@ -161,10 +161,6 @@ func decodeListClients(_ context.Context, r *http.Request) (interface{}, error) 
 		return nil, err
 	}
 	t, err := apiutil.ReadStringQuery(r, api.TagKey, "")
-	if err != nil {
-		return nil, err
-	}
-	oid, err := apiutil.ReadStringQuery(r, api.OwnerKey, "")
 	if err != nil {
 		return nil, err
 	}

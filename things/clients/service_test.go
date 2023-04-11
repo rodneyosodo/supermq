@@ -568,10 +568,12 @@ func TestListClients(t *testing.T) {
 	}
 
 	for _, tc := range cases {
+		repoCall := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(clients.Client{}, tc.err)
 		repoCall1 := cRepo.On("RetrieveAll", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		page, err := svc.ListClients(context.Background(), tc.token, tc.page)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, page))
+		repoCall.Unset()
 		repoCall1.Unset()
 	}
 }
@@ -632,11 +634,13 @@ func TestUpdateClient(t *testing.T) {
 	}
 
 	for _, tc := range cases {
+		repoCall := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(clients.Client{}, tc.err)
 		repoCall1 := cRepo.On("Update", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		updatedClient, err := svc.UpdateClient(context.Background(), tc.token, tc.client)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, updatedClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, updatedClient))
 		repoCall1.Unset()
+		repoCall.Unset()
 	}
 }
 
@@ -679,11 +683,13 @@ func TestUpdateClientTags(t *testing.T) {
 	}
 
 	for _, tc := range cases {
+		repoCall := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(clients.Client{}, tc.err)
 		repoCall1 := cRepo.On("UpdateTags", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		updatedClient, err := svc.UpdateClientTags(context.Background(), tc.token, tc.client)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, updatedClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, updatedClient))
 		repoCall1.Unset()
+		repoCall.Unset()
 	}
 }
 
@@ -726,11 +732,13 @@ func TestUpdateClientOwner(t *testing.T) {
 	}
 
 	for _, tc := range cases {
+		repoCall := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(clients.Client{}, tc.err)
 		repoCall1 := cRepo.On("UpdateOwner", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		updatedClient, err := svc.UpdateClientOwner(context.Background(), tc.token, tc.client)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, updatedClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, updatedClient))
 		repoCall1.Unset()
+		repoCall.Unset()
 	}
 }
 
@@ -814,7 +822,7 @@ func TestEnableClient(t *testing.T) {
 			token:    token,
 			client:   clients.Client{},
 			response: clients.Client{},
-			err:      errors.ErrAuthorization,
+			err:      errors.ErrNotFound,
 		},
 	}
 
@@ -880,12 +888,14 @@ func TestEnableClient(t *testing.T) {
 			Limit:  100,
 			Status: tc.status,
 		}
+		repoCall := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(clients.Client{}, nil)
 		repoCall1 := cRepo.On("RetrieveAll", context.Background(), mock.Anything).Return(tc.response, nil)
 		page, err := svc.ListClients(context.Background(), token, pm)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		size := uint64(len(page.Clients))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", tc.desc, tc.size, size))
 		repoCall1.Unset()
+		repoCall.Unset()
 	}
 }
 
@@ -927,7 +937,7 @@ func TestDisableClient(t *testing.T) {
 			client:   clients.Client{},
 			token:    token,
 			response: clients.Client{},
-			err:      errors.ErrAuthorization,
+			err:      errors.ErrNotFound,
 		},
 	}
 
@@ -992,12 +1002,14 @@ func TestDisableClient(t *testing.T) {
 			Limit:  100,
 			Status: tc.status,
 		}
+		repoCall := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(clients.Client{}, nil)
 		repoCall1 := cRepo.On("RetrieveAll", context.Background(), mock.Anything).Return(tc.response, nil)
 		page, err := svc.ListClients(context.Background(), token, pm)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		size := uint64(len(page.Clients))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", tc.desc, tc.size, size))
 		repoCall1.Unset()
+		repoCall.Unset()
 	}
 }
 
@@ -1036,6 +1048,7 @@ func TestListMembers(t *testing.T) {
 			groupID: testsutil.GenerateUUID(t, idProvider),
 			page: clients.Page{
 				Subject: adminEmail,
+				Owner:   adminEmail,
 				Action:  "g_list",
 			},
 			response: clients.MembersPage{
@@ -1057,6 +1070,7 @@ func TestListMembers(t *testing.T) {
 				Limit:   nClients,
 				Status:  clients.AllStatus,
 				Subject: adminEmail,
+				Owner:   adminEmail,
 				Action:  "g_list",
 			},
 			response: clients.MembersPage{
@@ -1073,6 +1087,7 @@ func TestListMembers(t *testing.T) {
 			page: clients.Page{
 				Subject: adminEmail,
 				Action:  "g_list",
+				Owner:   adminEmail,
 			},
 			response: clients.MembersPage{
 				Page: clients.Page{
@@ -1090,6 +1105,7 @@ func TestListMembers(t *testing.T) {
 			page: clients.Page{
 				Subject: adminEmail,
 				Action:  "g_list",
+				Owner:   adminEmail,
 			},
 			response: clients.MembersPage{
 				Page: clients.Page{
@@ -1103,10 +1119,12 @@ func TestListMembers(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		repoCall := cRepo.On("Members", context.Background(), tc.groupID, tc.page).Return(tc.response, tc.err)
+		repoCall := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(clients.Client{}, tc.err)
+		repoCall1 := cRepo.On("Members", context.Background(), tc.groupID, tc.page).Return(tc.response, tc.err)
 		page, err := svc.ListClientsByGroup(context.Background(), tc.token, tc.groupID, tc.page)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, page))
 		repoCall.Unset()
+		repoCall1.Unset()
 	}
 }

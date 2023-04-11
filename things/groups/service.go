@@ -7,6 +7,7 @@ import (
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/internal/apiutil"
 	"github.com/mainflux/mainflux/pkg/errors"
+	"github.com/mainflux/mainflux/users/policies"
 	upolicies "github.com/mainflux/mainflux/users/policies"
 )
 
@@ -121,9 +122,7 @@ func (svc service) ListMemberships(ctx context.Context, token, clientID string, 
 		return svc.groups.Memberships(ctx, clientID, gm)
 	}
 
-	gm.Subject = res.GetId()
 	gm.OwnerID = res.GetId()
-	gm.Action = "g_list"
 	return svc.groups.Memberships(ctx, clientID, gm)
 }
 
@@ -175,7 +174,28 @@ func (svc service) changeGroupStatus(ctx context.Context, token, id string, stat
 	return svc.groups.ChangeStatus(ctx, id, status)
 }
 
+func (svc service) identifyUser(ctx context.Context, token string) (string, error) {
+	req := &policies.Token{Value: token}
+	res, err := svc.auth.Identify(ctx, req)
+	if err != nil {
+		return "", errors.Wrap(errors.ErrAuthorization, err)
+	}
+	return res.GetId(), nil
+}
+
 func (svc service) authorize(ctx context.Context, subject, object string, relation string) error {
+	// Check if the client is the owner of the group.
+	userID, err := svc.identifyUser(ctx, subject)
+	if err != nil {
+		return err
+	}
+	dbGroup, err := svc.groups.RetrieveByID(ctx, object)
+	if err != nil {
+		return err
+	}
+	if dbGroup.Owner == userID {
+		return nil
+	}
 	req := &upolicies.AuthorizeReq{
 		Sub:        subject,
 		Obj:        object,
