@@ -44,31 +44,31 @@ go run tools/e2e/cmd/main.go --host localhost --num 10 --num_of_messages 100 --p
 Example of output:
 
 ```bash
-created user with token eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODEyMDQ4ODIsImlhdCI6MTY4MTIwMzk4MiwiaWRlbnRpdHkiOiJlMmUtYmlsbG93aW5nLWdsaXR0ZXJAZW1haWwuY29tIiwiaXNzIjoiY2xpZW50cy5hdXRoIiwic3ViIjoiMTRlOTNmYmMtOGM2NC00Y2VmLWJjOTAtMzVhNzY4OGMxNGRmIiwidHlwZSI6ImFjY2VzcyJ9.MgmRGQyfVuALxazSdlvSpfknpUygLRBNikqPddm2_A0W6_ejhbmKx6_4YaekJc7q_MIOWwyu2dcbVMTof48Q2A
+created user with token eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODEyMDYwMjMsImlhdCI6MTY4MTIwNTEyMywiaWRlbnRpdHkiOiJlMmUtbGF0ZS1zaWxlbmNlQGVtYWlsLmNvbSIsImlzcyI6ImNsaWVudHMuYXV0aCIsInN1YiI6IjdlZDIyY2IyLTRlMzQtNDhiZi04Y2RlLTIxMjZiYzYyYzY4MyIsInR5cGUiOiJhY2Nlc3MifQ.AdExNYs5mVQNpo_ejJDq7KTC5dKkZWmgM9FJvTM2T_GM2LE9ASQv0ymC4wS3PDXKWf-OcaR8DJIxE6WiG3fztQ
 created users of ids:
-         3bf53687-f332-4ba0-8d54-fc35051bf59a,
-         ee737c0c-902b-4d23-b6b6-3e9294215078,
-         8d0daca6-74f4-4358-a933-237b167820f4,
-         2ec92797-3fab-4375-ad08-31c6abea42ff,
-         a58d55ff-cc04-4748-bfdc-f612829670c8
+9e87bc1d-0889-4252-a3df-36e02edfc859
+c1e4901a-fb7f-45e9-b934-c55194b1d028
+c341a9cb-542b-4c3b-afd6-c98e04ed5e7e
+8cfc886b-21fa-4205-80b4-3601827b94ff
+334984d7-30eb-4b06-92b8-5ec182bebac5
 created groups of ids:
-         1f503500-e2a4-4c59-92d2-670312813e94,
-         7839aed9-0696-4e99-98e1-0896ec630fb0,
-         9889a07e-6e6f-42a0-b9ff-ccfd3f62b5e9,
-         72bcf0b3-0361-463b-b1ed-cdd6556748d0,
-         624e1670-0d47-40ff-b746-9442cdad82f3
+7744ec55-c767-4137-be96-0d79699772a4
+c8fe4d9d-3ad6-4687-83c0-171356f3e4f6
+513f7295-0923-4e21-b41a-3cfd1cb7b9b9
+54bd71ea-3c22-401e-89ea-d58162b983c0
+ae91b327-4c40-4e68-91fe-cd6223ee4e99
 created things of ids:
-         69aefa74-96c5-4c67-b06c-c43f4e7eb3ba,
-         29a71d9c-8574-44af-a8a3-8a42ae34eedd,
-         aeeaa6d3-61b0-4e88-8118-0e2ddffab43f,
-         f374967a-9488-440e-b88d-d5fb1e0ed684,
-         c42550e2-6b50-470b-901d-9ca0cae956ee
+5909a907-7413-47d4-b793-e1eb36988a5f
+f9b6bc18-1862-4a24-8973-adde11cb3303
+c2bd6eed-6f38-464c-989c-fe8ec8c084ba
+8c76702c-0534-4246-8ed7-21816b4f91cf
+25005ca8-e886-465f-9cd1-4f3c4a95c6c1
 created channels of ids:
-         a72899ea-8394-4fa6-a534-5619e2f7e2d4,
-         8f9dfb41-c11b-46e1-a340-ea1d4da20ebc,
-         93e8e4f9-a7e1-4888-80a6-c50d424c0968,
-         21c21fb9-f4e4-476f-947e-8858a192b003,
-         96f7acee-fcc6-413f-ad70-aa95f5422e2a
+ebb0e5f3-2241-4770-a7cc-f4bbd06134ca
+d654948d-d6c1-4eae-b69a-29c853282c3d
+2c2a5496-89cf-47e6-9d38-5fd5542337bd
+7ab3319d-269c-4b07-9dc5-f9906693e894
+5d8fa139-10e7-4683-94f3-4e881b4db041
 created policies for users, groups, things and channels
 viewed users, groups, things and channels
 updated users, groups, things and channels

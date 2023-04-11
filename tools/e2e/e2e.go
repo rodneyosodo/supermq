@@ -86,28 +86,28 @@ func Test(conf Config) {
 		color.Error.Println(err.Error())
 		os.Exit(1)
 	}
-	color.Success.Println("created users of ids:\n\t", magenta(getIDS(users)))
+	color.Success.Printf("created users of ids:\n%s\n", magenta(getIDS(users)))
 
 	groups, err := createGroups(s, conf, token)
 	if err != nil {
 		color.Error.Println(err.Error())
 		os.Exit(1)
 	}
-	color.Success.Println("created groups of ids:\n\t", magenta(getIDS(groups)))
+	color.Success.Printf("created groups of ids:\n%s\n", magenta(getIDS(groups)))
 
 	things, err := createThings(s, conf, token)
 	if err != nil {
 		color.Error.Println(err.Error())
 		os.Exit(1)
 	}
-	color.Success.Println("created things of ids:\n\t", magenta(getIDS(things)))
+	color.Success.Printf("created things of ids:\n%s\n", magenta(getIDS(things)))
 
 	channels, err := createChannels(s, conf, token)
 	if err != nil {
 		color.Error.Println(err.Error())
 		os.Exit(1)
 	}
-	color.Success.Println("created channels of ids:\n\t", magenta(getIDS(channels)))
+	color.Success.Printf("created channels of ids:\n%s\n", magenta(getIDS(channels)))
 
 	if err := createPolicies(s, conf, token, owner, users, groups, things, channels); err != nil {
 		color.Error.Println(err.Error())
@@ -577,8 +577,6 @@ func getIDS(objects interface{}) string {
 		id := v.Index(i).FieldByName("ID").String()
 		ids[i] = id
 	}
-	// Format ids for printing as list
-	idList := strings.Join(ids, ", ")
-	idList = strings.ReplaceAll(idList, ",", ",\n\t")
+	idList := strings.Join(ids, "\n")
 	return idList
 }
