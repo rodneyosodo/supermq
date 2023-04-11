@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/gookit/color"
@@ -85,28 +86,28 @@ func Test(conf Config) {
 		color.Error.Println(err.Error())
 		os.Exit(1)
 	}
-	color.Success.Println("created users of ids: ", magenta(getIDS(users)))
+	color.Success.Println("created users of ids:\n\t", magenta(getIDS(users)))
 
 	groups, err := createGroups(s, conf, token)
 	if err != nil {
 		color.Error.Println(err.Error())
 		os.Exit(1)
 	}
-	color.Success.Println("created groups of ids: ", magenta(getIDS(groups)))
+	color.Success.Println("created groups of ids:\n\t", magenta(getIDS(groups)))
 
 	things, err := createThings(s, conf, token)
 	if err != nil {
 		color.Error.Println(err.Error())
 		os.Exit(1)
 	}
-	color.Success.Println("created things of ids: ", magenta(getIDS(things)))
+	color.Success.Println("created things of ids:\n\t", magenta(getIDS(things)))
 
 	channels, err := createChannels(s, conf, token)
 	if err != nil {
 		color.Error.Println(err.Error())
 		os.Exit(1)
 	}
-	color.Success.Println("created channels of ids: ", magenta(getIDS(channels)))
+	color.Success.Println("created channels of ids:\n\t", magenta(getIDS(channels)))
 
 	if err := createPolicies(s, conf, token, owner, users, groups, things, channels); err != nil {
 		color.Error.Println(err.Error())
@@ -566,7 +567,7 @@ func sendWSMessage(conf Config, thing sdk.Thing, chanID string) error {
 	return nil
 }
 
-func getIDS(objects interface{}) []string {
+func getIDS(objects interface{}) string {
 	v := reflect.ValueOf(objects)
 	if v.Kind() != reflect.Slice {
 		panic("objects argument must be a slice")
@@ -576,5 +577,8 @@ func getIDS(objects interface{}) []string {
 		id := v.Index(i).FieldByName("ID").String()
 		ids[i] = id
 	}
-	return ids
+	// Format ids for printing as list
+	idList := strings.Join(ids, ", ")
+	idList = strings.ReplaceAll(idList, ",", ",\n\t")
+	return idList
 }
