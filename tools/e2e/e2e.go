@@ -52,16 +52,16 @@ func init() {
 // The operations are:
 // - Create a user
 // - Create other users
-// - Do CRUD on them
+// - Do Read, Update and Change of Status operations on users
 
 // - Create groups using hierarchy
-// - Do CRUD on them
+// - Do Read, Update and Change of Status operations on groups
 
 // - Create things
-// - Do CRUD on them
+// - Do Read, Update and Change of Status operations on things
 
 // - Create channels
-// - Do CRUD on them
+// - Do Read, Update and Change of Status operations on channels
 
 // - Connect thing to channel
 // - Publish message from HTTP, MQTT, WS and CoAP Adapters
@@ -83,65 +83,63 @@ func Test(conf Config) {
 
 	token, owner, err := createUser(s, conf)
 	if err != nil {
-		exit(err)
+		errExit(err)
 	}
 	color.Success.Printf("created user with token %s\n", magenta(token))
 
 	users, err := createUsers(s, conf, token)
 	if err != nil {
-		exit(err)
+		errExit(err)
 	}
 	color.Success.Printf("created users of ids:\n%s\n", magenta(getIDS(users)))
 
 	groups, err := createGroups(s, conf, token)
 	if err != nil {
-		exit(err)
+		errExit(err)
 	}
 	color.Success.Printf("created groups of ids:\n%s\n", magenta(getIDS(groups)))
 
 	things, err := createThings(s, conf, token)
 	if err != nil {
-		exit(err)
+		errExit(err)
 	}
 	color.Success.Printf("created things of ids:\n%s\n", magenta(getIDS(things)))
 
 	channels, err := createChannels(s, conf, token)
 	if err != nil {
-		exit(err)
+		errExit(err)
 	}
 	color.Success.Printf("created channels of ids:\n%s\n", magenta(getIDS(channels)))
 
 	if err := createPolicies(s, conf, token, owner, users, groups, things, channels); err != nil {
-		exit(err)
+		errExit(err)
 	}
 	color.Success.Println("created policies for users, groups, things and channels")
 
 	// List users, groups, things and channels
 	if err := read(s, conf, token, users, groups, things, channels); err != nil {
-		exit(err)
+		errExit(err)
 	}
 	color.Success.Println("viewed users, groups, things and channels")
 
 	// Update users, groups, things and channels
 	if err := update(s, token, users, groups, things, channels); err != nil {
-		exit(err)
+		errExit(err)
 	}
 	color.Success.Println("updated users, groups, things and channels")
 
 	// Send messages to channels
 	if err := messaging(s, conf, token, things, channels); err != nil {
-		exit(err)
+		errExit(err)
 	}
 	color.Success.Println("sent messages to channels")
 }
 
-// exit exits the program with an error
-func exit(err error) {
+func errExit(err error) {
 	color.Error.Println(err.Error())
 	os.Exit(1)
 }
 
-// createUser creates user.
 func createUser(s sdk.SDK, conf Config) (string, string, error) {
 	user := sdk.User{
 		Name: fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.Generate()),
@@ -168,7 +166,6 @@ func createUser(s sdk.SDK, conf Config) (string, string, error) {
 	return token.AccessToken, user.ID, nil
 }
 
-// createUsers creates users.
 func createUsers(s sdk.SDK, conf Config, token string) ([]sdk.User, error) {
 	var err error
 	users := []sdk.User{}
@@ -192,7 +189,6 @@ func createUsers(s sdk.SDK, conf Config, token string) ([]sdk.User, error) {
 	return users, nil
 }
 
-// createGroups creates groups.
 func createGroups(s sdk.SDK, conf Config, token string) ([]sdk.Group, error) {
 	var err error
 	groups := []sdk.Group{}
@@ -216,7 +212,6 @@ func createGroups(s sdk.SDK, conf Config, token string) ([]sdk.Group, error) {
 	return groups, nil
 }
 
-// createThings creates things.
 func createThings(s sdk.SDK, conf Config, token string) ([]sdk.Thing, error) {
 	var err error
 	things := make([]sdk.Thing, conf.Num)
@@ -235,7 +230,6 @@ func createThings(s sdk.SDK, conf Config, token string) ([]sdk.Thing, error) {
 	return things, nil
 }
 
-// createChannels creates channels.
 func createChannels(s sdk.SDK, conf Config, token string) ([]sdk.Channel, error) {
 	var err error
 	channels := make([]sdk.Channel, conf.Num)
@@ -255,7 +249,6 @@ func createChannels(s sdk.SDK, conf Config, token string) ([]sdk.Channel, error)
 	return channels, nil
 }
 
-// createPolicies creates policies for users, groups, things and channels.
 func createPolicies(s sdk.SDK, conf Config, token, owner string, users []sdk.User, groups []sdk.Group, things []sdk.Thing, channels []sdk.Channel) error {
 	for i := uint64(0); i < conf.Num; i++ {
 		upolicy := sdk.Policy{
@@ -295,7 +288,6 @@ func createPolicies(s sdk.SDK, conf Config, token, owner string, users []sdk.Use
 	return nil
 }
 
-// read reads all created entities and checks if they are equal to the number of created entities.
 func read(s sdk.SDK, conf Config, token string, users []sdk.User, groups []sdk.Group, things []sdk.Thing, channels []sdk.Channel) error {
 	for _, user := range users {
 		if _, err := s.User(user.ID, token); err != nil {
@@ -349,7 +341,6 @@ func read(s sdk.SDK, conf Config, token string, users []sdk.User, groups []sdk.G
 	return nil
 }
 
-// update updates the users, groups, things and channels
 func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, things []sdk.Thing, channels []sdk.Channel) error {
 	for _, user := range users {
 		user.Name = namesgenerator.Generate()
@@ -510,7 +501,6 @@ func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, thing
 	return nil
 }
 
-// messaging sends messages to the given channels.
 func messaging(s sdk.SDK, conf Config, token string, things []sdk.Thing, channels []sdk.Channel) error {
 	for _, thing := range things {
 		for _, channel := range channels {
@@ -551,7 +541,6 @@ func messaging(s sdk.SDK, conf Config, token string, things []sdk.Thing, channel
 	return g.Wait()
 }
 
-// sendHTTPMessage sends a message to the given channel via HTTP.
 func sendHTTPMessage(s sdk.SDK, msg string, thing sdk.Thing, chanID string) error {
 	if err := s.SendMessage(chanID, msg, thing.Credentials.Secret); err != nil {
 		return fmt.Errorf("HTTP failed to send message from thing %s to channel %s: %w", thing.ID, chanID, err)
@@ -560,7 +549,6 @@ func sendHTTPMessage(s sdk.SDK, msg string, thing sdk.Thing, chanID string) erro
 	return nil
 }
 
-// sendCoAPMessage sends a message to the given channel via CoAP.
 func sendCoAPMessage(msg string, thing sdk.Thing, chanID string) error {
 	cmd := exec.Command("coap-cli", "post", fmt.Sprintf("channels/%s/messages", chanID), "-auth", thing.Credentials.Secret, "-d", msg)
 	if _, err := cmd.CombinedOutput(); err != nil {
@@ -570,7 +558,6 @@ func sendCoAPMessage(msg string, thing sdk.Thing, chanID string) error {
 	return nil
 }
 
-// sendMQTTMessage sends a message to the given channel via MQTT.
 func sendMQTTMessage(msg string, thing sdk.Thing, chanID string) error {
 	cmd := exec.Command("mosquitto_pub", "--id-prefix", "mainflux", "-u", thing.ID, "-P", thing.Credentials.Secret, "-t", fmt.Sprintf("channels/%s/messages", chanID), "-h", "localhost", "-m", msg)
 	if _, err := cmd.CombinedOutput(); err != nil {
@@ -580,7 +567,6 @@ func sendMQTTMessage(msg string, thing sdk.Thing, chanID string) error {
 	return nil
 }
 
-// sendWSMessage sends a message to the given channel via websocket.
 func sendWSMessage(conf Config, msg string, thing sdk.Thing, chanID string) error {
 	socketURL := fmt.Sprintf("ws://%s:%s/channels/%s/messages", conf.Host, defWSPort, chanID)
 	header := http.Header{"authorization": []string{thing.Credentials.Secret}}

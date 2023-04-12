@@ -13,7 +13,7 @@ make
 
 ```bash
 ./e2e --help
-Tool for testing end to end flow of mainflux by doing a couple of operations namely:
+Tool for testing end-to-end flow of mainflux by doing a couple of operations namely:
 1. Creating, viewing, updating and changing status of users, groups, things and channels.
 2. Connecting users and groups to each other and things and channels to each other.
 3. Sending messages from things to channels on all 4 protocol adapters (HTTP, WS, CoAP and MQTT).
