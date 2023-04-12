@@ -517,22 +517,18 @@ func messaging(s sdk.SDK, conf Config, token string, things []sdk.Thing, channel
 				func(num int64, thing sdk.Thing, channel sdk.Channel) {
 					g.Go(func() error {
 						msg := fmt.Sprintf(msgFormat, num+1, rand.Int())
-
 						return sendHTTPMessage(s, msg, thing, channel.ID)
 					})
 					g.Go(func() error {
 						msg := fmt.Sprintf(msgFormat, num+2, rand.Int())
-
 						return sendCoAPMessage(msg, thing, channel.ID)
 					})
 					g.Go(func() error {
 						msg := fmt.Sprintf(msgFormat, num+3, rand.Int())
-
 						return sendMQTTMessage(msg, thing, channel.ID)
 					})
 					g.Go(func() error {
 						msg := fmt.Sprintf(msgFormat, num+4, rand.Int())
-
 						return sendWSMessage(conf, msg, thing, channel.ID)
 					})
 				}(bt, thing, channel)
