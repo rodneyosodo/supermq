@@ -31,7 +31,6 @@ var (
 	seed           = time.Now().UTC().UnixNano()
 	namesgenerator = namegen.NewNameGenerator(seed)
 	msgFormat      = `[{"bn":"demo", "bu":"V", "t": %d, "bver":5, "n":"voltage", "u":"V", "v":%d}]`
-	messages       = make(chan string)
 )
 
 // Config - test configuration.
@@ -64,12 +63,6 @@ func Test(conf Config) {
 
 	s := sdk.NewSDK(sdkConf)
 
-	// start generating messages before hand to avoid duplicate messages
-	stop := make(chan struct{})
-	defer close(stop)
-
-	go generateMsgs(conf, stop)
-
 	/*
 		- Create user
 		- Create another user
@@ -88,59 +81,58 @@ func Test(conf Config) {
 
 	token, owner, err := createUser(s, conf)
 	if err != nil {
-		exit(stop, err)
+		exit(err)
 	}
 	color.Success.Printf("created user with token %s\n", magenta(token))
 
 	users, err := createUsers(s, conf, token)
 	if err != nil {
-		exit(stop, err)
+		exit(err)
 	}
 	color.Success.Printf("created users of ids:\n%s\n", magenta(getIDS(users)))
 
 	groups, err := createGroups(s, conf, token)
 	if err != nil {
-		exit(stop, err)
+		exit(err)
 	}
 	color.Success.Printf("created groups of ids:\n%s\n", magenta(getIDS(groups)))
 
 	things, err := createThings(s, conf, token)
 	if err != nil {
-		exit(stop, err)
+		exit(err)
 	}
 	color.Success.Printf("created things of ids:\n%s\n", magenta(getIDS(things)))
 
 	channels, err := createChannels(s, conf, token)
 	if err != nil {
-		exit(stop, err)
+		exit(err)
 	}
 	color.Success.Printf("created channels of ids:\n%s\n", magenta(getIDS(channels)))
 
 	if err := createPolicies(s, conf, token, owner, users, groups, things, channels); err != nil {
-		exit(stop, err)
+		exit(err)
 	}
 	color.Success.Println("created policies for users, groups, things and channels")
 	// List users, groups, things and channels
 	if err := read(s, conf, token, users, groups, things, channels); err != nil {
-		exit(stop, err)
+		exit(err)
 	}
 	color.Success.Println("viewed users, groups, things and channels")
 
 	// Update users, groups, things and channels
 	if err := update(s, token, users, groups, things, channels); err != nil {
-		exit(stop, err)
+		exit(err)
 	}
 	color.Success.Println("updated users, groups, things and channels")
 
 	// Send and Receive messages from channels
 	if err := messaging(s, conf, token, things, channels); err != nil {
-		exit(stop, err)
+		exit(err)
 	}
 	color.Success.Println("sent and received messages from channels")
 }
 
-func exit(stop chan struct{}, err error) {
-	close(stop)
+func exit(err error) {
 	color.Error.Println(err.Error())
 	os.Exit(1)
 }
@@ -518,31 +510,33 @@ func messaging(s sdk.SDK, conf Config, token string, things []sdk.Thing, channel
 	}
 	g := new(errgroup.Group)
 
+	bt := time.Now().Unix()
 	for i := uint64(0); i < conf.NumOfMsg; i++ {
 		for _, thing := range things {
-			thing := thing
 			for _, channel := range channels {
-				channel := channel
-				g.Go(func() error {
-					msg := <-messages
+				func(num int64, thing sdk.Thing, channel sdk.Channel) {
+					g.Go(func() error {
+						msg := fmt.Sprintf(msgFormat, num+1, rand.Int())
 
-					return sendHTTPMessage(s, msg, thing, channel.ID)
-				})
-				g.Go(func() error {
-					msg := <-messages
+						return sendHTTPMessage(s, msg, thing, channel.ID)
+					})
+					g.Go(func() error {
+						msg := fmt.Sprintf(msgFormat, num+2, rand.Int())
 
-					return sendCoAPMessage(msg, thing, channel.ID)
-				})
-				g.Go(func() error {
-					msg := <-messages
+						return sendCoAPMessage(msg, thing, channel.ID)
+					})
+					g.Go(func() error {
+						msg := fmt.Sprintf(msgFormat, num+3, rand.Int())
 
-					return sendMQTTMessage(msg, thing, channel.ID)
-				})
-				g.Go(func() error {
-					msg := <-messages
+						return sendMQTTMessage(msg, thing, channel.ID)
+					})
+					g.Go(func() error {
+						msg := fmt.Sprintf(msgFormat, num+4, rand.Int())
 
-					return sendWSMessage(conf, msg, thing, channel.ID)
-				})
+						return sendWSMessage(conf, msg, thing, channel.ID)
+					})
+				}(bt, thing, channel)
+				bt += numAdapters
 			}
 		}
 	}
@@ -589,27 +583,6 @@ func sendWSMessage(conf Config, msg string, thing sdk.Thing, chanID string) erro
 	}
 
 	return nil
-}
-
-func generateMsgs(conf Config, stop chan struct{}) {
-	defer close(messages)
-
-	numMessages := conf.Num * conf.Num * conf.NumOfMsg * numAdapters
-	bt := time.Now().Unix()
-	for i := uint64(0); i < numMessages; i++ {
-		select {
-		case <-stop:
-			return
-		default:
-			msg := fmt.Sprintf(msgFormat, bt+int64(i), rand.Int())
-			select {
-			case messages <- msg:
-				// Message was sent successfully
-			default:
-				return
-			}
-		}
-	}
 }
 
 func getIDS(objects interface{}) string {
