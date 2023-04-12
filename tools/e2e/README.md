@@ -13,15 +13,32 @@ make
 
 ```bash
 ./e2e --help
-Tool for testing end to end flow of mainflux by creating groups and users and assigning the together andcreating channels and things and connecting them together.
+Tool for testing end to end flow of mainflux by doing a couple of operations namely:
+1. Creating, viewing, updating and changing status of users, groups, things and channels.
+2. Connecting users and groups to each other and things and channels to each other.
+3. Sending messages from things to channels on all 4 protocol adapters (HTTP, WS, CoAP and MQTT).
 Complete documentation is available at https://docs.mainflux.io
 
+
 Usage:
+
   e2e [flags]
 
+
+Examples:
+
+Here is a simple example of using e2e tool.
+Use the following commands from the root mainflux directory:
+
+go run tools/e2e/cmd/main.go
+go run tools/e2e/cmd/main.go --host 142.93.118.47
+go run tools/e2e/cmd/main.go --host localhost --num 10 --num_of_messages 100 --prefix e2e
+
+
 Flags:
+
   -h, --help                   help for e2e
-  -H, --host string            address for mainflux instance (default "localhost")
+  -H, --host string            address for a running mainflux instance (default "localhost")
   -n, --num uint               number of users, groups, channels and things to create and connect (default 10)
   -N, --num_of_messages uint   number of messages to send (default 10)
   -p, --prefix string          name prefix for users, groups, things and channels
@@ -72,5 +89,5 @@ d654948d-d6c1-4eae-b69a-29c853282c3d
 created policies for users, groups, things and channels
 viewed users, groups, things and channels
 updated users, groups, things and channels
-sent and received messages from channels
+sent messages to channels
 ```

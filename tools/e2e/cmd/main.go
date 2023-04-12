@@ -19,8 +19,11 @@ func main() {
 	var rootCmd = &cobra.Command{
 		Use:   "e2e",
 		Short: "e2e is end to end testing tool for Mainflux",
-		Long: `Tool for testing end to end flow of mainflux by creating groups and users and assigning the together andcreating channels and things and connecting them together.
-Complete documentation is available at https://docs.mainflux.io`,
+		Long: "Tool for testing end to end flow of mainflux by doing a couple of operations namely:\n" +
+			"1. Creating, viewing, updating and changing status of users, groups, things and channels.\n" +
+			"2. Connecting users and groups to each other and things and channels to each other.\n" +
+			"3. Sending messages from things to channels on all 4 protocol adapters (HTTP, WS, CoAP and MQTT).\n" +
+			"Complete documentation is available at https://docs.mainflux.io",
 		Example: "Here is a simple example of using e2e tool.\n" +
 			"Use the following commands from the root mainflux directory:\n\n" +
 			"go run tools/e2e/cmd/main.go\n" +
