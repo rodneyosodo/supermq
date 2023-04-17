@@ -7,7 +7,9 @@ type Status uint8
 
 // Possible Group status values
 const (
+	// EnabledStatus represents enabled Group.
 	EnabledStatus Status = iota
+	// DisabledStatus represents disabled Group.
 	DisabledStatus
 
 	// AllStatus is used for querying purposes to list groups irrespective
