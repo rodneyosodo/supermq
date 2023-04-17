@@ -176,7 +176,7 @@ func (req updateClientOwnerReq) validate() error {
 type updateClientCredentialsReq struct {
 	token  string
 	id     string
-	Secret string `json:"key,omitempty"`
+	Secret string `json:"secret,omitempty"`
 }
 
 func (req updateClientCredentialsReq) validate() error {

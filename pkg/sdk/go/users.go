@@ -194,7 +194,7 @@ func (sdk mfSDK) UpdateUserIdentity(user User, token string) (User, errors.SDKEr
 }
 
 // UpdatePassword updates user password.
-func (sdk mfSDK) UpdatePassword(id, oldPass, newPass, token string) (User, errors.SDKError) {
+func (sdk mfSDK) UpdatePassword(oldPass, newPass, token string) (User, errors.SDKError) {
 	var ucsr = updateClientSecretReq{OldSecret: oldPass, NewSecret: newPass}
 
 	data, err := json.Marshal(ucsr)
@@ -202,7 +202,7 @@ func (sdk mfSDK) UpdatePassword(id, oldPass, newPass, token string) (User, error
 		return User{}, errors.NewSDKError(err)
 	}
 
-	url := fmt.Sprintf("%s/%s/%s/secret", sdk.usersURL, usersEndpoint, id)
+	url := fmt.Sprintf("%s/%s/secret", sdk.usersURL, usersEndpoint)
 
 	_, body, sdkerr := sdk.processRequest(http.MethodPatch, url, token, string(CTJSON), data, http.StatusOK)
 	if sdkerr != nil {

@@ -10,11 +10,11 @@ type Page struct {
 	Total    uint64
 	Offset   uint64
 	Limit    uint64
-	OwnerID  string
-	Subject  string
-	Object   string
-	Action   string
-	Metadata Metadata
+	OwnerID  string   `json:"owner,omitempty"`
+	Subject  string   `json:"subject,omitempty"`
+	Object   string   `json:"object,omitempty"`
+	Action   string   `json:"action,omitempty"`
+	Metadata Metadata `json:"metadata,omitempty"`
 }
 
 // Validate check page actions.

@@ -59,6 +59,13 @@ func MakeClientsHandler(svc clients.Service, mux *bone.Mux, logger mflog.Logger)
 		opts...,
 	))
 
+	mux.Patch("/users/secret", kithttp.NewServer(
+		otelkit.EndpointMiddleware(otelkit.WithOperation("update_client_secret"))(updateClientSecretEndpoint(svc)),
+		decodeUpdateClientSecret,
+		api.EncodeResponse,
+		opts...,
+	))
+
 	mux.Patch("/users/:id", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("update_client_name_and_metadata"))(updateClientEndpoint(svc)),
 		decodeUpdateClient,
@@ -75,7 +82,7 @@ func MakeClientsHandler(svc clients.Service, mux *bone.Mux, logger mflog.Logger)
 
 	mux.Patch("/users/:id/identity", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("update_client_identity"))(updateClientIdentityEndpoint(svc)),
-		decodeUpdateClientCredentials,
+		decodeUpdateClientIdentity,
 		api.EncodeResponse,
 		opts...,
 	))
@@ -90,13 +97,6 @@ func MakeClientsHandler(svc clients.Service, mux *bone.Mux, logger mflog.Logger)
 	mux.Put("/password/reset", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("password_reset"))(passwordResetEndpoint(svc)),
 		decodePasswordReset,
-		api.EncodeResponse,
-		opts...,
-	))
-
-	mux.Patch("/users/:id/secret", kithttp.NewServer(
-		otelkit.EndpointMiddleware(otelkit.WithOperation("update_client_secret"))(updateClientSecretEndpoint(svc)),
-		decodeUpdateClientCredentials,
 		api.EncodeResponse,
 		opts...,
 	))
@@ -254,13 +254,27 @@ func decodeUpdateClientTags(_ context.Context, r *http.Request) (interface{}, er
 	return req, nil
 }
 
-func decodeUpdateClientCredentials(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeUpdateClientIdentity(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
 		return nil, errors.ErrUnsupportedContentType
 	}
-	req := updateClientCredentialsReq{
+	req := updateClientIdentityReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, "id"),
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeUpdateClientSecret(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
+		return nil, errors.ErrUnsupportedContentType
+	}
+	req := updateClientSecretReq{
+		token: apiutil.ExtractBearerToken(r),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)

@@ -83,7 +83,7 @@ func connectEndpoint(svc policies.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return policyRes{policy, true}, nil
+		return policyRes{[]policies.Policy{policy}, true}, nil
 	}
 }
 
@@ -94,6 +94,7 @@ func connectThingsEndpoint(svc policies.Service) endpoint.Endpoint {
 		if err := cr.validate(); err != nil {
 			return nil, err
 		}
+		ps := []policies.Policy{}
 		for _, tid := range cr.ClientIDs {
 			for _, cid := range cr.GroupIDs {
 				if len(cr.Actions) == 0 {
@@ -107,10 +108,11 @@ func connectThingsEndpoint(svc policies.Service) endpoint.Endpoint {
 				if _, err := svc.AddPolicy(ctx, cr.token, policy); err != nil {
 					return nil, err
 				}
+				ps = append(ps, policy)
 			}
 		}
 
-		return policyRes{created: true}, nil
+		return policyRes{created: true, Policies: ps}, nil
 	}
 }
 
@@ -131,7 +133,7 @@ func updatePolicyEndpoint(svc policies.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return policyRes{policy, true}, nil
+		return policyRes{[]policies.Policy{policy}, true}, nil
 	}
 }
 

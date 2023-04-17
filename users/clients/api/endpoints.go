@@ -151,7 +151,7 @@ func updateClientTagsEndpoint(svc clients.Service) endpoint.Endpoint {
 
 func updateClientIdentityEndpoint(svc clients.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(updateClientCredentialsReq)
+		req := request.(updateClientIdentityReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -209,7 +209,7 @@ func passwordResetEndpoint(svc clients.Service) endpoint.Endpoint {
 
 func updateClientSecretEndpoint(svc clients.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(updateClientCredentialsReq)
+		req := request.(updateClientSecretReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}

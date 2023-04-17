@@ -124,7 +124,7 @@ type SDK interface {
 	UpdateUserOwner(user User, token string) (User, errors.SDKError)
 
 	// UpdatePassword updates user password.
-	UpdatePassword(id, oldPass, newPass, token string) (User, errors.SDKError)
+	UpdatePassword(oldPass, newPass, token string) (User, errors.SDKError)
 
 	// EnableUser changes the status of the user to enabled.
 	EnableUser(id, token string) (User, errors.SDKError)

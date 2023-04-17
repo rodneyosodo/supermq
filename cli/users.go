@@ -250,16 +250,16 @@ var cmdUsers = []cobra.Command{
 		},
 	},
 	{
-		Use:   "password <user_id> <old_password> <password> <user_auth_token>",
+		Use:   "password <old_password> <password> <user_auth_token>",
 		Short: "Update password",
 		Long:  `Update user password`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 4 {
+			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
 
-			user, err := sdk.UpdatePassword(args[0], args[1], args[2], args[3])
+			user, err := sdk.UpdatePassword(args[0], args[1], args[2])
 			if err != nil {
 				logError(err)
 				return

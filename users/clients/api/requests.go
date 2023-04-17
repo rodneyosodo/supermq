@@ -134,20 +134,31 @@ func (req updateClientOwnerReq) validate() error {
 	return nil
 }
 
-type updateClientCredentialsReq struct {
-	token     string
-	id        string
-	Identity  string `json:"identity,omitempty"`
-	OldSecret string `json:"old_secret,omitempty"`
-	NewSecret string `json:"new_secret,omitempty"`
+type updateClientIdentityReq struct {
+	token    string
+	id       string
+	Identity string `json:"identity,omitempty"`
 }
 
-func (req updateClientCredentialsReq) validate() error {
+func (req updateClientIdentityReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 	if req.id == "" {
 		return apiutil.ErrMissingID
+	}
+	return nil
+}
+
+type updateClientSecretReq struct {
+	token     string
+	OldSecret string `json:"old_secret,omitempty"`
+	NewSecret string `json:"new_secret,omitempty"`
+}
+
+func (req updateClientSecretReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
 	}
 	return nil
 }

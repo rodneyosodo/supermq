@@ -80,7 +80,7 @@ func MakeHandler(svc clients.Service, mux *bone.Mux, logger mflog.Logger) http.H
 		opts...,
 	))
 
-	mux.Patch("/things/:id/key", kithttp.NewServer(
+	mux.Patch("/things/:id/secret", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("update_thing_secret"))(updateClientSecretEndpoint(svc)),
 		decodeUpdateClientCredentials,
 		api.EncodeResponse,

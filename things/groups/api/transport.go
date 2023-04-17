@@ -62,6 +62,7 @@ func MakeHandler(svc groups.Service, mux *bone.Mux, logger logger.Logger) http.H
 		api.EncodeResponse,
 		opts...,
 	))
+
 	mux.Post("/channels/:id/enable", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("enable_channel"))(enableGroupEndpoint(svc)),
 		decodeChangeGroupStatus,
