@@ -21,7 +21,7 @@ tags:
   - name: Users
     description: Everything about your Users
     externalDocs:
-      description: Find out more abour users
+      description: Find out more about users
       url: http://docs.mainflux.io/
   - name: Groups
     description: Everything about your Groups
