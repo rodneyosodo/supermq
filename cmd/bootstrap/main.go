@@ -26,7 +26,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
 	"github.com/mainflux/mainflux/bootstrap"
-	api "github.com/mainflux/mainflux/bootstrap/api"
+	"github.com/mainflux/mainflux/bootstrap/api"
 )
 
 const (
