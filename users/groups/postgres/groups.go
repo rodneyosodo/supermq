@@ -271,14 +271,14 @@ func buildHierachy(gm groups.GroupsPage) string {
 	switch {
 	case gm.Direction >= 0: // ancestors
 		query = `WITH RECURSIVE groups_cte as (
-			SELECT id, COALESCE(parent_id, '') AS parent_id, owner_id, name, description, metadata, created_at, updated_at, status, 1 as level from groups WHERE id = :id
+			SELECT id, COALESCE(parent_id, '') AS parent_id, owner_id, name, description, metadata, created_at, updated_at, status, 0 as level from groups WHERE id = :id
 			UNION SELECT x.id, COALESCE(x.parent_id, '') AS parent_id, x.owner_id, x.name, x.description, x.metadata, x.created_at, x.updated_at, x.status, level - 1 from groups x
 			INNER JOIN groups_cte a ON a.parent_id = x.id
 		) SELECT * FROM groups_cte g`
 
 	case gm.Direction < 0: // descendants
 		query = `WITH RECURSIVE groups_cte as (
-			SELECT id, COALESCE(parent_id, '') AS parent_id, owner_id, name, description, metadata, created_at, updated_at, status, 1 as level, CONCAT('', '', id) as path from groups WHERE id = :id
+			SELECT id, COALESCE(parent_id, '') AS parent_id, owner_id, name, description, metadata, created_at, updated_at, status, 0 as level, CONCAT('', '', id) as path from groups WHERE id = :id
 			UNION SELECT x.id, COALESCE(x.parent_id, '') AS parent_id, x.owner_id, x.name, x.description, x.metadata, x.created_at, x.updated_at, x.status, level + 1, CONCAT(path, '.', x.id) as path from groups x
 			INNER JOIN groups_cte d ON d.id = x.parent_id
 		) SELECT * FROM groups_cte g`
