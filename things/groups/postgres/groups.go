@@ -137,7 +137,7 @@ func (repo grepo) Memberships(ctx context.Context, clientID string, gm groups.Gr
 	aq := ""
 	// If not admin, the client needs to have a g_list action on the group
 	if gm.Subject != "" {
-		aq = fmt.Sprintf("AND policies.object IN (SELECT object FROM policies WHERE subject = '%s' AND '%s'=ANY(actions))", gm.Subject, gm.Action)
+		aq = "AND policies.object IN (SELECT object FROM policies WHERE subject = :subject AND :action=ANY(actions))"
 	}
 	q = fmt.Sprintf(`%s INNER JOIN policies ON g.id=policies.object %s AND policies.subject = :client_id %s 
 					ORDER BY g.updated_at LIMIT :limit OFFSET :offset;`, q, query, aq)
@@ -253,14 +253,14 @@ func buildHierachy(gm groups.GroupsPage) string {
 	switch {
 	case gm.Direction >= 0: // ancestors
 		query = `WITH RECURSIVE groups_cte as (
-			SELECT id, COALESCE(parent_id, '') AS parent_id, owner_id, name, description, metadata, created_at, updated_at, status, 1 as level from groups WHERE id = :id
+			SELECT id, COALESCE(parent_id, '') AS parent_id, owner_id, name, description, metadata, created_at, updated_at, status, 0 as level from groups WHERE id = :id
 			UNION SELECT x.id, COALESCE(x.parent_id, '') AS parent_id, x.owner_id, x.name, x.description, x.metadata, x.created_at, x.updated_at, x.status, level - 1 from groups x
 			INNER JOIN groups_cte a ON a.parent_id = x.id
 		) SELECT * FROM groups_cte g`
 
 	case gm.Direction < 0: // descendants
 		query = `WITH RECURSIVE groups_cte as (
-			SELECT id, COALESCE(parent_id, '') AS parent_id, owner_id, name, description, metadata, created_at, updated_at, status, 1 as level, CONCAT('', '', id) as path from groups WHERE id = :id
+			SELECT id, COALESCE(parent_id, '') AS parent_id, owner_id, name, description, metadata, created_at, updated_at, status, 0 as level, CONCAT('', '', id) as path from groups WHERE id = :id
 			UNION SELECT x.id, COALESCE(x.parent_id, '') AS parent_id, x.owner_id, x.name, x.description, x.metadata, x.created_at, x.updated_at, x.status, level + 1, CONCAT(path, '.', x.id) as path from groups x
 			INNER JOIN groups_cte d ON d.id = x.parent_id
 		) SELECT * FROM groups_cte g`
@@ -274,11 +274,11 @@ func buildQuery(gm groups.GroupsPage) (string, error) {
 		queries = append(queries, "g.name = :name")
 	}
 	if gm.Status != groups.AllStatus {
-		queries = append(queries, fmt.Sprintf("g.status = %d", gm.Status))
+		queries = append(queries, "g.status = :status")
 	}
 
 	if gm.Subject != "" {
-		queries = append(queries, fmt.Sprintf("(g.owner_id = '%s' OR id IN (SELECT object as id FROM policies WHERE subject = '%s' AND '%s'=ANY(actions)))", gm.OwnerID, gm.Subject, gm.Action))
+		queries = append(queries, "(g.owner_id = :owner_id OR id IN (SELECT object as id FROM policies WHERE subject = :subject AND :action=ANY(actions)))")
 	}
 	if len(gm.Metadata) > 0 {
 		queries = append(queries, "'g.metadata @> :metadata'")
@@ -388,6 +388,8 @@ func toDBGroupPage(pm groups.GroupsPage) (dbGroupPage, error) {
 		Limit:    pm.Limit,
 		ParentID: pm.ID,
 		Owner:    pm.OwnerID,
+		Subject:  pm.Subject,
+		Action:   pm.Action,
 	}, nil
 }
 
@@ -403,4 +405,6 @@ type dbGroupPage struct {
 	Total    uint64 `db:"total"`
 	Limit    uint64 `db:"limit"`
 	Offset   uint64 `db:"offset"`
+	Subject  string `db:"subject"`
+	Action   string `db:"action"`
 }
