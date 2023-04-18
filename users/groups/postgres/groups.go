@@ -155,7 +155,7 @@ func (repo groupRepository) Memberships(ctx context.Context, clientID string, gm
 	aq := ""
 	// If not admin, the client needs to have a g_list action on the group
 	if gm.Subject != "" {
-		aq = fmt.Sprintf(`AND policies.object IN (SELECT object FROM policies WHERE subject = '%s' AND '%s'=ANY(actions))`, gm.Subject, gm.Action)
+		aq = `AND policies.object IN (SELECT object FROM policies WHERE subject = :subject AND :action=ANY(actions))`
 	}
 	q = fmt.Sprintf(`%s INNER JOIN policies ON g.id=policies.object %s AND policies.subject = :client_id %s
 			ORDER BY g.updated_at LIMIT :limit OFFSET :offset;`, q, query, aq)
