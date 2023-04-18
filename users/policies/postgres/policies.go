@@ -70,13 +70,16 @@ func (pr policyRepository) Evaluate(ctx context.Context, entityType string, poli
 	case "client":
 		// Evaluates if two clients are connected to the same group and the subject has the specified action
 		// or subject is the owner of the object
-		q = fmt.Sprintf(`(SELECT subject FROM policies WHERE (subject = :subject AND object IN (
-				SELECT object FROM policies WHERE subject = '%s') AND '%s'=ANY(actions))) UNION
-				(SELECT id as subject FROM clients WHERE owner = :subject AND id = '%s') LIMIT 1`, policy.Object, policy.Actions[0], policy.Object)
+		q = fmt.Sprintf(`SELECT COALESCE(p.subject, c.id) as subject FROM policies p
+		JOIN policies p2 ON p.object = p2.object LEFT JOIN clients c ON c.owner = :subject AND c.id = :object
+		WHERE (p.subject = :subject AND p2.subject = :object AND '%s' = ANY(p.actions)) OR (c.id IS NOT NULL) LIMIT 1;`,
+			policy.Actions[0])
 	case "group":
 		// Evaluates if client is connected to the specified group and has the required action
-		q = fmt.Sprintf(`(SELECT subject FROM policies WHERE subject = :subject AND object = :object AND '%s'=ANY(actions))
-				UNION (SELECT id as subject FROM groups WHERE owner_id = :subject AND id = :object) LIMIT 1`, policy.Actions[0])
+		q = fmt.Sprintf(`SELECT DISTINCT policies.subject FROM policies
+		LEFT JOIN groups ON groups.owner_id = policies.subject AND groups.id = policies.object
+		WHERE policies.subject = :subject AND policies.object = :object AND '%s' = ANY(policies.actions)
+		LIMIT 1`, policy.Actions[0])
 	default:
 		return ErrInvalidEntityType
 	}
@@ -126,16 +129,16 @@ func (pr policyRepository) Retrieve(ctx context.Context, pm policies.Page) (poli
 	var emq string
 
 	if pm.OwnerID != "" {
-		query = append(query, fmt.Sprintf("owner_id = '%s'", pm.OwnerID))
+		query = append(query, "owner_id = :owner_id")
 	}
 	if pm.Subject != "" {
-		query = append(query, fmt.Sprintf("subject = '%s'", pm.Subject))
+		query = append(query, "subject = :subject")
 	}
 	if pm.Object != "" {
-		query = append(query, fmt.Sprintf("object = '%s'", pm.Object))
+		query = append(query, "object = :object")
 	}
 	if pm.Action != "" {
-		query = append(query, fmt.Sprintf("'%s' = ANY (actions)", pm.Action))
+		query = append(query, ":action = ANY (actions)")
 	}
 
 	if len(query) > 0 {
@@ -144,11 +147,12 @@ func (pr policyRepository) Retrieve(ctx context.Context, pm policies.Page) (poli
 
 	q := fmt.Sprintf(`SELECT owner_id, subject, object, actions
 		FROM policies %s ORDER BY updated_at LIMIT :limit OFFSET :offset;`, emq)
-	params := map[string]interface{}{
-		"limit":  pm.Limit,
-		"offset": pm.Offset,
+
+	dbPage, err := toDBPoliciesPage(pm)
+	if err != nil {
+		return policies.PolicyPage{}, errors.Wrap(errors.ErrViewEntity, err)
 	}
-	rows, err := pr.db.NamedQueryContext(ctx, q, params)
+	rows, err := pr.db.NamedQueryContext(ctx, q, dbPage)
 	if err != nil {
 		return policies.PolicyPage{}, errors.Wrap(errors.ErrViewEntity, err)
 	}
@@ -171,7 +175,7 @@ func (pr policyRepository) Retrieve(ctx context.Context, pm policies.Page) (poli
 
 	cq := fmt.Sprintf(`SELECT COUNT(*) FROM policies %s;`, emq)
 
-	total, err := postgres.Total(ctx, pr.db, cq, params)
+	total, err := postgres.Total(ctx, pr.db, cq, dbPage)
 	if err != nil {
 		return policies.PolicyPage{}, errors.Wrap(errors.ErrViewEntity, err)
 	}
@@ -239,4 +243,26 @@ func toPolicy(dbp dbPolicy) (policies.Policy, error) {
 		CreatedAt: dbp.CreatedAt,
 		UpdatedAt: dbp.UpdatedAt,
 	}, nil
+}
+
+func toDBPoliciesPage(pm policies.Page) (dbPoliciesPage, error) {
+	return dbPoliciesPage{
+		Total:   pm.Total,
+		Offset:  pm.Offset,
+		Limit:   pm.Limit,
+		OwnerID: pm.OwnerID,
+		Subject: pm.Subject,
+		Object:  pm.Object,
+		Action:  pm.Action,
+	}, nil
+}
+
+type dbPoliciesPage struct {
+	Total   uint64 `db:"total"`
+	Limit   uint64 `db:"limit"`
+	Offset  uint64 `db:"offset"`
+	OwnerID string `db:"owner_id"`
+	Subject string `db:"subject"`
+	Object  string `db:"object"`
+	Action  string `db:"action"`
 }
