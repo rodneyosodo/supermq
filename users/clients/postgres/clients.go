@@ -232,55 +232,53 @@ func (repo clientRepo) Update(ctx context.Context, client clients.Client) (clien
 	if len(query) > 0 {
 		upq = strings.Join(query, " ")
 	}
+	client.Status = clients.EnabledStatus
 	q := fmt.Sprintf(`UPDATE clients SET %s updated_at = :updated_at
-        WHERE id = :id AND status = %d
+        WHERE id = :id AND status = :status
         RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`,
-		upq, clients.EnabledStatus)
+		upq)
 
 	return repo.update(ctx, client, q)
 }
 
 func (repo clientRepo) UpdateTags(ctx context.Context, client clients.Client) (clients.Client, error) {
-	q := fmt.Sprintf(`UPDATE clients SET tags = :tags, updated_at = :updated_at
-        WHERE id = :id AND status = %d
-        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`,
-		clients.EnabledStatus)
+	client.Status = clients.EnabledStatus
+	q := `UPDATE clients SET tags = :tags, updated_at = :updated_at
+        WHERE id = :id AND status = :status
+        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`
 
 	return repo.update(ctx, client, q)
 }
 
 func (repo clientRepo) UpdateIdentity(ctx context.Context, client clients.Client) (clients.Client, error) {
-	q := fmt.Sprintf(`UPDATE clients SET identity = :identity, updated_at = :updated_at
-        WHERE id = :id AND status = %d
-        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`,
-		clients.EnabledStatus)
+	q := `UPDATE clients SET identity = :identity, updated_at = :updated_at
+        WHERE id = :id AND status = :status
+        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`
 
 	return repo.update(ctx, client, q)
 }
 
 func (repo clientRepo) UpdateSecret(ctx context.Context, client clients.Client) (clients.Client, error) {
-	q := fmt.Sprintf(`UPDATE clients SET secret = :secret, updated_at = :updated_at
-        WHERE identity = :identity AND status = %d
-        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`,
-		clients.EnabledStatus)
+	q := `UPDATE clients SET secret = :secret, updated_at = :updated_at
+        WHERE identity = :identity AND status = :status
+        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`
 
 	return repo.update(ctx, client, q)
 }
 
 func (repo clientRepo) UpdateOwner(ctx context.Context, client clients.Client) (clients.Client, error) {
-	q := fmt.Sprintf(`UPDATE clients SET owner = :owner, updated_at = :updated_at
-        WHERE id = :id AND status = %d
-        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`,
-		clients.EnabledStatus)
+	q := `UPDATE clients SET owner = :owner, updated_at = :updated_at
+        WHERE id = :id AND status = :status
+        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`
 
 	return repo.update(ctx, client, q)
 }
 
 func (repo clientRepo) ChangeStatus(ctx context.Context, id string, status clients.Status) (clients.Client, error) {
-	q := fmt.Sprintf(`UPDATE clients SET status = %d WHERE id = :id
-        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`, status)
+	q := `UPDATE clients SET status = :status WHERE id = :id
+        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`
 
-	client := clients.Client{ID: id}
+	client := clients.Client{ID: id, Status: status}
 
 	return repo.update(ctx, client, q)
 }

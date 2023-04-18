@@ -198,9 +198,10 @@ func (repo grepo) Update(ctx context.Context, g groups.Group) (groups.Group, err
 	if len(query) > 0 {
 		upq = strings.Join(query, " ")
 	}
+	g.Status = groups.EnabledStatus
 	q := fmt.Sprintf(`UPDATE groups SET %s updated_at = :updated_at
-		WHERE owner_id = :owner_id AND id = :id AND status = %d
-		RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, status`, upq, groups.EnabledStatus)
+		WHERE owner_id = :owner_id AND id = :id AND status = :status
+		RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, status`, upq)
 
 	dbu, err := toDBGroup(g)
 	if err != nil {
@@ -224,10 +225,11 @@ func (repo grepo) Update(ctx context.Context, g groups.Group) (groups.Group, err
 }
 
 func (repo grepo) ChangeStatus(ctx context.Context, id string, status groups.Status) (groups.Group, error) {
-	qc := fmt.Sprintf(`UPDATE groups SET status = %d WHERE id = :id RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, status`, status)
+	qc := `UPDATE groups SET status = :status WHERE id = :id RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, status`
 
 	dbg := dbGroup{
-		ID: id,
+		ID:     id,
+		Status: status,
 	}
 	row, err := repo.db.NamedQueryContext(ctx, qc, dbg)
 	if err != nil {

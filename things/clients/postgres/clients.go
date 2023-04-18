@@ -218,125 +218,70 @@ func (repo clientRepo) Update(ctx context.Context, client clients.Client) (clien
 	if len(query) > 0 {
 		upq = strings.Join(query, " ")
 	}
+	client.Status = clients.EnabledStatus
 	q := fmt.Sprintf(`UPDATE clients SET %s updated_at = :updated_at
-        WHERE id = :id AND status = %d
+        WHERE id = :id AND status = :status
         RETURNING id, name, tags, identity, secret,  metadata, COALESCE(owner_id, '') AS owner_id, status, created_at, updated_at`,
-		upq, clients.EnabledStatus)
+		upq)
 
-	dbu, err := toDBClient(client)
-	if err != nil {
-		return clients.Client{}, errors.Wrap(errors.ErrUpdateEntity, err)
-	}
-
-	row, err := repo.db.NamedQueryContext(ctx, q, dbu)
-	if err != nil {
-		return clients.Client{}, postgres.HandleError(err, errors.ErrCreateEntity)
-	}
-
-	defer row.Close()
-	if ok := row.Next(); !ok {
-		return clients.Client{}, errors.Wrap(errors.ErrNotFound, row.Err())
-	}
-	var rClient dbClient
-	if err := row.StructScan(&rClient); err != nil {
-		return clients.Client{}, err
-	}
-
-	return toClient(rClient)
+	return repo.update(ctx, client, q)
 }
 
 func (repo clientRepo) UpdateTags(ctx context.Context, client clients.Client) (clients.Client, error) {
-	q := fmt.Sprintf(`UPDATE clients SET tags = :tags, updated_at = :updated_at
-        WHERE id = :id AND status = %d
-        RETURNING id, name, tags, identity, secret, metadata, COALESCE(owner_id, '') AS owner_id, status, created_at, updated_at`,
-		clients.EnabledStatus)
+	client.Status = clients.EnabledStatus
+	q := `UPDATE clients SET tags = :tags, updated_at = :updated_at
+        WHERE id = :id AND status = :status
+        RETURNING id, name, tags, identity, secret, metadata, COALESCE(owner_id, '') AS owner_id, status, created_at, updated_at`
 
-	dbu, err := toDBClient(client)
-	if err != nil {
-		return clients.Client{}, errors.Wrap(errors.ErrUpdateEntity, err)
-	}
-	row, err := repo.db.NamedQueryContext(ctx, q, dbu)
-	if err != nil {
-		return clients.Client{}, postgres.HandleError(err, errors.ErrUpdateEntity)
-	}
-
-	defer row.Close()
-	if ok := row.Next(); !ok {
-		return clients.Client{}, errors.Wrap(errors.ErrNotFound, row.Err())
-	}
-	var rClient dbClient
-	if err := row.StructScan(&rClient); err != nil {
-		return clients.Client{}, err
-	}
-
-	return toClient(rClient)
+	return repo.update(ctx, client, q)
 }
 
 func (repo clientRepo) UpdateIdentity(ctx context.Context, client clients.Client) (clients.Client, error) {
-	q := fmt.Sprintf(`UPDATE clients SET identity = :identity, updated_at = :updated_at
-        WHERE id = :id AND status = %d
-        RETURNING id, name, tags, identity, secret, metadata, COALESCE(owner_id, '') AS owner_id, status, created_at, updated_at`,
-		clients.EnabledStatus)
+	client.Status = clients.EnabledStatus
+	q := `UPDATE clients SET identity = :identity, updated_at = :updated_at
+        WHERE id = :id AND status = :status
+        RETURNING id, name, tags, identity, secret, metadata, COALESCE(owner_id, '') AS owner_id, status, created_at, updated_at`
 
-	dbc, err := toDBClient(client)
-	if err != nil {
-		return clients.Client{}, errors.Wrap(errors.ErrUpdateEntity, err)
-	}
-	row, err := repo.db.NamedQueryContext(ctx, q, dbc)
-	if err != nil {
-		return clients.Client{}, postgres.HandleError(err, errors.ErrUpdateEntity)
-	}
-
-	defer row.Close()
-	if ok := row.Next(); !ok {
-		return clients.Client{}, errors.Wrap(errors.ErrNotFound, row.Err())
-	}
-	var rClient dbClient
-	if err := row.StructScan(&rClient); err != nil {
-		return clients.Client{}, err
-	}
-
-	return toClient(rClient)
+	return repo.update(ctx, client, q)
 }
 
 func (repo clientRepo) UpdateSecret(ctx context.Context, client clients.Client) (clients.Client, error) {
-	q := fmt.Sprintf(`UPDATE clients SET secret = :secret, updated_at = :updated_at
-        WHERE id = :id AND status = %d
-        RETURNING id, name, tags, identity, secret, metadata, COALESCE(owner_id, '') AS owner_id, status, created_at, updated_at`,
-		clients.EnabledStatus)
+	client.Status = clients.EnabledStatus
+	q := `UPDATE clients SET secret = :secret, updated_at = :updated_at
+        WHERE id = :id AND status = :status
+        RETURNING id, name, tags, identity, secret, metadata, COALESCE(owner_id, '') AS owner_id, status, created_at, updated_at`
 
-	dbc, err := toDBClient(client)
-	if err != nil {
-		return clients.Client{}, errors.Wrap(errors.ErrUpdateEntity, err)
-	}
-	row, err := repo.db.NamedQueryContext(ctx, q, dbc)
-	if err != nil {
-		return clients.Client{}, postgres.HandleError(err, errors.ErrUpdateEntity)
-	}
-
-	defer row.Close()
-	if ok := row.Next(); !ok {
-		return clients.Client{}, errors.Wrap(errors.ErrNotFound, row.Err())
-	}
-	var rClient dbClient
-	if err := row.StructScan(&rClient); err != nil {
-		return clients.Client{}, err
-	}
-
-	return toClient(rClient)
+	return repo.update(ctx, client, q)
 }
 
 func (repo clientRepo) UpdateOwner(ctx context.Context, client clients.Client) (clients.Client, error) {
-	q := fmt.Sprintf(`UPDATE clients SET owner_id = :owner_id, updated_at = :updated_at
-        WHERE id = :id AND status = %d
-        RETURNING id, name, tags, identity, secret, metadata, COALESCE(owner_id, '') AS owner_id, status, created_at, updated_at`,
-		clients.EnabledStatus)
+	client.Status = clients.EnabledStatus
+	q := `UPDATE clients SET owner_id = :owner_id, updated_at = :updated_at
+        WHERE id = :id AND status = :status
+        RETURNING id, name, tags, identity, secret, metadata, COALESCE(owner_id, '') AS owner_id, status, created_at, updated_at`
 
+	return repo.update(ctx, client, q)
+}
+
+func (repo clientRepo) ChangeStatus(ctx context.Context, id string, status clients.Status) (clients.Client, error) {
+	q := `UPDATE clients SET status = :status WHERE id = :id
+        RETURNING id, name, tags, identity, secret, metadata, COALESCE(owner_id, '') AS owner_id, status, created_at, updated_at`
+
+	client := clients.Client{
+		ID:     id,
+		Status: status,
+	}
+	return repo.update(ctx, client, q)
+}
+
+// generic update function
+func (repo clientRepo) update(ctx context.Context, client clients.Client, query string) (clients.Client, error) {
 	dbc, err := toDBClient(client)
 	if err != nil {
 		return clients.Client{}, errors.Wrap(errors.ErrUpdateEntity, err)
 	}
-	row, err := repo.db.NamedQueryContext(ctx, q, dbc)
+
+	row, err := repo.db.NamedQueryContext(ctx, query, dbc)
 	if err != nil {
 		return clients.Client{}, postgres.HandleError(err, errors.ErrUpdateEntity)
 	}
@@ -345,36 +290,12 @@ func (repo clientRepo) UpdateOwner(ctx context.Context, client clients.Client) (
 	if ok := row.Next(); !ok {
 		return clients.Client{}, errors.Wrap(errors.ErrNotFound, row.Err())
 	}
-	var rClient dbClient
-	if err := row.StructScan(&rClient); err != nil {
+	dbc = dbClient{}
+	if err := row.StructScan(&dbc); err != nil {
 		return clients.Client{}, err
 	}
 
-	return toClient(rClient)
-}
-
-func (repo clientRepo) ChangeStatus(ctx context.Context, id string, status clients.Status) (clients.Client, error) {
-	q := fmt.Sprintf(`UPDATE clients SET status = %d WHERE id = :id
-        RETURNING id, name, tags, identity, secret, metadata, COALESCE(owner_id, '') AS owner_id, status, created_at, updated_at`, status)
-
-	dbc := dbClient{
-		ID: id,
-	}
-	row, err := repo.db.NamedQueryContext(ctx, q, dbc)
-	if err != nil {
-		return clients.Client{}, postgres.HandleError(err, errors.ErrUpdateEntity)
-	}
-
-	defer row.Close()
-	if ok := row.Next(); !ok {
-		return clients.Client{}, errors.Wrap(errors.ErrNotFound, row.Err())
-	}
-	var rClient dbClient
-	if err := row.StructScan(&rClient); err != nil {
-		return clients.Client{}, errors.Wrap(errors.ErrUpdateEntity, err)
-	}
-
-	return toClient(rClient)
+	return toClient(dbc)
 }
 
 type dbClient struct {
