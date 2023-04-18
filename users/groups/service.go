@@ -17,9 +17,9 @@ const (
 	AccessToken       = "access"
 	MyKey             = "mine"
 	groupsObjectKey   = "groups"
-	updateRelationKey = "c_update"
-	listRelationKey   = "c_list"
-	deleteRelationKey = "c_delete"
+	updateRelationKey = "g_update"
+	listRelationKey   = "g_list"
+	deleteRelationKey = "g_delete"
 	entityType        = "group"
 )
 
