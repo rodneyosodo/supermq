@@ -406,7 +406,7 @@ func pageQuery(pm clients.Page) (string, error) {
 
 	// For listing clients that the specified client owns and that are shared with the specified client
 	if pm.Owner != "" && pm.SharedBy != "" {
-		query = append(query, "(c.owner = :owner OR policies.object IN (SELECT object FROM policies WHERE subject = :shared_by AND :action=ANY(actions)))")
+		query = append(query, "(c.owner = :owner OR EXISTS (SELECT 1 FROM policies WHERE subject = :shared_by AND :action=ANY(actions) AND object = policies.object))")
 	}
 	// For listing clients that the specified client is shared with
 	if pm.SharedBy != "" && pm.Owner == "" {
@@ -415,7 +415,7 @@ func pageQuery(pm clients.Page) (string, error) {
 	if len(query) > 0 {
 		emq = fmt.Sprintf("WHERE %s", strings.Join(query, " AND "))
 		if strings.Contains(emq, "policies") {
-			emq = fmt.Sprintf("JOIN policies ON policies.subject = c.id %s", emq)
+			emq = fmt.Sprintf("LEFT JOIN policies ON policies.subject = c.id %s", emq)
 		}
 	}
 	return emq, nil
