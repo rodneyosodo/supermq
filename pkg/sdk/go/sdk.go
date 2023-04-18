@@ -34,7 +34,7 @@ const (
 	EnabledStatus = "enabled"
 
 	// DisabledStatus represents disabled status for a client
-	DisabledStatus = "enabled"
+	DisabledStatus = "disabled"
 )
 
 // ContentType represents all possible content types.
