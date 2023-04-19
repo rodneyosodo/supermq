@@ -1,0 +1,67 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+$script = <<SCRIPT
+echo "Installing Docker..."
+sudo apt-get update && sudo apt-get upgrade -y
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh ./get-docker.sh
+
+# Restart docker to make sure we get the latest version of the daemon if there is an upgrade
+sudo service docker restart
+
+# Make sure we can actually use docker as the vagrant user
+sudo usermod -aG docker vagrant
+sudo docker --version
+
+# Packages required for mainflux
+sudo apt-get install make -y
+
+# Install Go
+curl -OL https://go.dev/dl/go1.20.3.linux-amd64.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.20.3.linux-amd64.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+go version
+rm go1.20.3.linux-amd64.tar.gz
+
+# Install CoAP CLI
+curl -OL https://github.com/mainflux/coap-cli/releases/download/v0.3.3/coap-cli-linux
+mv coap-cli-linux coap-cli
+chmod +x coap-cli
+sudo rm -rf /usr/local/coap-cli && sudo mv coap-cli /usr/local
+
+# Install mosquitto-clients
+sudo apt install -y mosquitto-clients
+
+# Install hyperfine
+wget https://github.com/sharkdp/hyperfine/releases/download/v1.16.1/hyperfine_1.16.1_amd64.deb
+sudo dpkg -i hyperfine_1.16.1_amd64.deb
+rm hyperfine_1.16.1_amd64.deb
+
+# Clone mainflux repo
+if [ -d "mainflux" ]; then
+  rm -rf mainflux
+fi
+git clone https://github.com/mainflux/mainflux/
+cd mainflux
+git fetch --all --tags
+git checkout tags/0.13.0 -b v0.13.0
+docker compose -f docker/docker-compose.yml pull
+make all && make dockers_dev
+
+SCRIPT
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "hashicorp/bionic64"
+  config.vm.hostname = "mainflux13"
+  config.vm.provision "shell", inline: $script, privileged: false
+
+  config.vm.network "forwarded_port", guest: 80, host: 1013, auto_correct: true, host_ip: "127.0.0.1"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.gui = false
+    vb.memory = "3072"
+    vb.cpus = 1
+  end
+  
+end
