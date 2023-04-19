@@ -32,7 +32,7 @@ While inside the 0.13.0 instance, run the following commands:
    hyperfine --prepare 'echo "delete from things; delete from channels; delete from connections;" | docker exec -i mainflux-things-db psql -U mainflux -d things && echo "delete from users;" | docker exec -i mainflux-users-db psql -U mainflux -d users && echo "delete from groups;" | docker exec -i mainflux-auth-db psql -U mainflux -d auth' './e2e --num 10 --num_of_messages 10' --export-json ../../../13e2e.json -r 10
    ```
 
-   The above command will run the e2e test 10 times and export the result to `13e2e.json` file linked [here](13e2e.json).
+   The above command will run the e2e test 10 times and export the result to the `13e2e.json` file linked [here](13e2e.json).
 
 ### Fine-Grained Access Control
 
@@ -62,7 +62,7 @@ While inside the 0.13.0 instance, run the following commands:
    hyperfine --prepare 'echo "delete from policies; delete from groups; delete from clients;" | docker exec -i mainflux-things-db psql -U mainflux -d things && echo "delete from policies; delete from groups; delete from clients;" | docker exec -i mainflux-users-db psql -U mainflux -d users' './e2e --num 10 --num_of_messages 10' --export-json ../../../14e2e.json -r 10
    ```
 
-   The above command will run the e2e test 10 times and export the result to `13e2e.json` file linked [here](13e2e.json).
+   The above command will run the e2e test 10 times and export the result to the `13e2e.json` file linked [here](13e2e.json).
 
 ### Fine-Grained Access Control
 
@@ -86,7 +86,7 @@ While inside the 0.14.0 instance, run the following commands:
    hyperfine --prepare 'echo "delete from policies; delete from groups; delete from clients;" | docker exec -i mainflux-users-db psql -U mainflux -d users' './policies-test' --export-json ../../../14.json
    ```
 
-   The above command will run the e2e test 10 times and export the result to `13e2e.json` file linked [here](13e2e.json).
+   The above command will run the e2e test 10 times and export the result to the `13e2e.json` file linked [here](13e2e.json).
 
 ## Results
 
