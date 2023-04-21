@@ -72,11 +72,13 @@ func (svc service) CreateGroup(ctx context.Context, token string, g Group) (Grou
 	g.ID = groupID
 	g.CreatedAt = time.Now()
 	g.UpdatedAt = g.CreatedAt
+	g.UpdatedBy = ownerID
+
 	return svc.groups.Save(ctx, g)
 }
 
 func (svc service) ViewGroup(ctx context.Context, token string, id string) (Group, error) {
-	if err := svc.authorize(ctx, entityType, policies.Policy{Subject: token, Object: id, Actions: []string{listRelationKey}}); err != nil {
+	if err := svc.authorizeByToken(ctx, entityType, policies.Policy{Subject: token, Object: id, Actions: []string{listRelationKey}}); err != nil {
 		return Group{}, err
 	}
 
@@ -100,7 +102,7 @@ func (svc service) ListMemberships(ctx context.Context, token, clientID string, 
 		return MembershipsPage{}, err
 	}
 	// If the user is admin, fetch all members from the database.
-	if err := svc.authorize(ctx, entityType, policies.Policy{Subject: token, Object: groupsObjectKey, Actions: []string{listRelationKey}}); err == nil {
+	if err := svc.authorizeByID(ctx, entityType, policies.Policy{Subject: id, Object: groupsObjectKey, Actions: []string{listRelationKey}}); err == nil {
 		return svc.groups.Memberships(ctx, clientID, gm)
 	}
 
@@ -110,7 +112,11 @@ func (svc service) ListMemberships(ctx context.Context, token, clientID string, 
 }
 
 func (svc service) UpdateGroup(ctx context.Context, token string, g Group) (Group, error) {
-	if err := svc.authorize(ctx, entityType, policies.Policy{Subject: token, Object: g.ID, Actions: []string{updateRelationKey}}); err != nil {
+	id, err := svc.identify(ctx, token)
+	if err != nil {
+		return Group{}, err
+	}
+	if err := svc.authorizeByID(ctx, entityType, policies.Policy{Subject: id, Object: g.ID, Actions: []string{updateRelationKey}}); err != nil {
 		return Group{}, err
 	}
 	g.UpdatedAt = time.Now()
@@ -119,10 +125,7 @@ func (svc service) UpdateGroup(ctx context.Context, token string, g Group) (Grou
 }
 
 func (svc service) EnableGroup(ctx context.Context, token, id string) (Group, error) {
-	if err := svc.authorize(ctx, entityType, policies.Policy{Subject: token, Object: id, Actions: []string{deleteRelationKey}}); err != nil {
-		return Group{}, err
-	}
-	group, err := svc.changeGroupStatus(ctx, id, EnabledStatus)
+	group, err := svc.changeGroupStatus(ctx, token, id, EnabledStatus)
 	if err != nil {
 		return Group{}, err
 	}
@@ -130,17 +133,24 @@ func (svc service) EnableGroup(ctx context.Context, token, id string) (Group, er
 }
 
 func (svc service) DisableGroup(ctx context.Context, token, id string) (Group, error) {
-	if err := svc.authorize(ctx, entityType, policies.Policy{Subject: token, Object: id, Actions: []string{deleteRelationKey}}); err != nil {
-		return Group{}, err
-	}
-	group, err := svc.changeGroupStatus(ctx, id, DisabledStatus)
+	group, err := svc.changeGroupStatus(ctx, token, id, DisabledStatus)
 	if err != nil {
 		return Group{}, err
 	}
 	return group, nil
 }
 
-func (svc service) authorize(ctx context.Context, entityType string, p policies.Policy) error {
+func (svc service) authorizeByID(ctx context.Context, entityType string, p policies.Policy) error {
+	if err := p.Validate(); err != nil {
+		return err
+	}
+	if err := svc.policies.CheckAdmin(ctx, p.Subject); err == nil {
+		return nil
+	}
+	return svc.policies.Evaluate(ctx, entityType, p)
+}
+
+func (svc service) authorizeByToken(ctx context.Context, entityType string, p policies.Policy) error {
 	if err := p.Validate(); err != nil {
 		return err
 	}
@@ -155,7 +165,10 @@ func (svc service) authorize(ctx context.Context, entityType string, p policies.
 	return svc.policies.Evaluate(ctx, entityType, p)
 }
 
-func (svc service) changeGroupStatus(ctx context.Context, id string, status Status) (Group, error) {
+func (svc service) changeGroupStatus(ctx context.Context, token, id string, status Status) (Group, error) {
+	if err := svc.authorizeByToken(ctx, entityType, policies.Policy{Subject: token, Object: id, Actions: []string{deleteRelationKey}}); err != nil {
+		return Group{}, err
+	}
 	dbGroup, err := svc.groups.RetrieveByID(ctx, id)
 	if err != nil {
 		return Group{}, err

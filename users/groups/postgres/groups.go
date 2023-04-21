@@ -29,13 +29,13 @@ func NewGroupRepo(db postgres.Database) groups.GroupRepository {
 
 // TODO - check parent group write access.
 func (repo groupRepository) Save(ctx context.Context, g groups.Group) (groups.Group, error) {
-	q := `INSERT INTO groups (name, description, id, owner_id, metadata, created_at, updated_at, status)
-		VALUES (:name, :description, :id, :owner_id, :metadata, :created_at, :updated_at, :status)
-		RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, status;`
+	q := `INSERT INTO groups (name, description, id, owner_id, metadata, created_at, updated_at, updated_by, status)
+		VALUES (:name, :description, :id, :owner_id, :metadata, :created_at, :updated_at, :updated_by, :status)
+		RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, updated_by, status;`
 	if g.ParentID != "" {
-		q = `INSERT INTO groups (name, description, id, owner_id, parent_id, metadata, created_at, updated_at, status)
-		VALUES (:name, :description, :id, :owner_id, :parent_id, :metadata, :created_at, :updated_at, :status)
-		RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, status;`
+		q = `INSERT INTO groups (name, description, id, owner_id, parent_id, metadata, created_at, updated_at, updated_by, status)
+		VALUES (:name, :description, :id, :owner_id, :parent_id, :metadata, :created_at, :updated_at, :updated_by, :status)
+		RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, updated_by, status;`
 	}
 	dbg, err := toDBGroup(g)
 	if err != nil {
@@ -57,7 +57,7 @@ func (repo groupRepository) Save(ctx context.Context, g groups.Group) (groups.Gr
 }
 
 func (repo groupRepository) RetrieveByID(ctx context.Context, id string) (groups.Group, error) {
-	q := `SELECT id, name, owner_id, COALESCE(parent_id, '') AS parent_id, description, metadata, created_at, updated_at, status FROM groups
+	q := `SELECT id, name, owner_id, COALESCE(parent_id, '') AS parent_id, description, metadata, created_at, updated_at, updated_by, status FROM groups
 	    WHERE id = :id`
 
 	dbg := dbGroup{
@@ -95,7 +95,7 @@ func (repo groupRepository) RetrieveAll(ctx context.Context, gm groups.GroupsPag
 	}
 	if gm.ID == "" {
 		q = `SELECT g.id, g.owner_id, COALESCE(g.parent_id, '') AS parent_id, g.name, g.description,
-		g.metadata, g.created_at, g.updated_at, g.status FROM groups g`
+		g.metadata, g.created_at, g.updated_at, g.updated_by, g.status FROM groups g`
 	}
 	q = fmt.Sprintf("%s %s ORDER BY g.updated_at LIMIT :limit OFFSET :offset;", q, query)
 
@@ -150,7 +150,7 @@ func (repo groupRepository) Memberships(ctx context.Context, clientID string, gm
 	}
 	if gm.ID == "" {
 		q = `SELECT g.id, g.owner_id, COALESCE(g.parent_id, '') AS parent_id, g.name, g.description,
-		g.metadata, g.created_at, g.updated_at, g.status FROM groups g`
+		g.metadata, g.created_at, g.updated_at, g.updated_by, g.status FROM groups g`
 	}
 	aq := ""
 	// If not admin, the client needs to have a g_list action on the group
@@ -217,9 +217,9 @@ func (repo groupRepository) Update(ctx context.Context, g groups.Group) (groups.
 		upq = strings.Join(query, " ")
 	}
 	g.Status = groups.EnabledStatus
-	q := fmt.Sprintf(`UPDATE groups SET %s updated_at = :updated_at
+	q := fmt.Sprintf(`UPDATE groups SET %s updated_at = :updated_at, updated_by = :updated_by
 		WHERE id = :id AND status = :status
-		RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, status`, upq)
+		RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, updated_by, status`, upq)
 
 	dbu, err := toDBGroup(g)
 	if err != nil {
@@ -243,7 +243,7 @@ func (repo groupRepository) Update(ctx context.Context, g groups.Group) (groups.
 }
 
 func (repo groupRepository) ChangeStatus(ctx context.Context, id string, status groups.Status) (groups.Group, error) {
-	qc := `UPDATE groups SET status = :status WHERE id = :id RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, status`
+	qc := `UPDATE groups SET status = :status WHERE id = :id RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, updated_by, status`
 
 	dbg := dbGroup{
 		ID:     id,
@@ -271,15 +271,15 @@ func buildHierachy(gm groups.GroupsPage) string {
 	switch {
 	case gm.Direction >= 0: // ancestors
 		query = `WITH RECURSIVE groups_cte as (
-			SELECT id, COALESCE(parent_id, '') AS parent_id, owner_id, name, description, metadata, created_at, updated_at, status, 0 as level from groups WHERE id = :id
-			UNION SELECT x.id, COALESCE(x.parent_id, '') AS parent_id, x.owner_id, x.name, x.description, x.metadata, x.created_at, x.updated_at, x.status, level - 1 from groups x
+			SELECT id, COALESCE(parent_id, '') AS parent_id, owner_id, name, description, metadata, created_at, updated_at, updated_by, status, 0 as level from groups WHERE id = :id
+			UNION SELECT x.id, COALESCE(x.parent_id, '') AS parent_id, x.owner_id, x.name, x.description, x.metadata, x.created_at, x.updated_at, x.updated_by, x.status, level - 1 from groups x
 			INNER JOIN groups_cte a ON a.parent_id = x.id
 		) SELECT * FROM groups_cte g`
 
 	case gm.Direction < 0: // descendants
 		query = `WITH RECURSIVE groups_cte as (
-			SELECT id, COALESCE(parent_id, '') AS parent_id, owner_id, name, description, metadata, created_at, updated_at, status, 0 as level, CONCAT('', '', id) as path from groups WHERE id = :id
-			UNION SELECT x.id, COALESCE(x.parent_id, '') AS parent_id, x.owner_id, x.name, x.description, x.metadata, x.created_at, x.updated_at, x.status, level + 1, CONCAT(path, '.', x.id) as path from groups x
+			SELECT id, COALESCE(parent_id, '') AS parent_id, owner_id, name, description, metadata, created_at, updated_at, updated_by, status, 0 as level, CONCAT('', '', id) as path from groups WHERE id = :id
+			UNION SELECT x.id, COALESCE(x.parent_id, '') AS parent_id, x.owner_id, x.name, x.description, x.metadata, x.created_at, x.updated_at, x.updated_by, x.status, level + 1, CONCAT(path, '.', x.id) as path from groups x
 			INNER JOIN groups_cte d ON d.id = x.parent_id
 		) SELECT * FROM groups_cte g`
 	}
@@ -318,6 +318,7 @@ type dbGroup struct {
 	Metadata    []byte        `db:"metadata"`
 	CreatedAt   time.Time     `db:"created_at"`
 	UpdatedAt   time.Time     `db:"updated_at"`
+	UpdatedBy   string        `db:"updated_by"`
 	Status      groups.Status `db:"status"`
 }
 

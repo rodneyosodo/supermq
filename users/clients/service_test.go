@@ -244,6 +244,7 @@ func TestRegisterClient(t *testing.T) {
 			tc.client.UpdatedAt = expected.UpdatedAt
 			tc.client.Credentials.Secret = expected.Credentials.Secret
 			tc.client.Owner = expected.Owner
+			tc.client.UpdatedBy = expected.UpdatedBy
 			assert.Equal(t, tc.client, expected, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.client, expected))
 			ok := repoCall.Parent.AssertCalled(t, "Save", context.Background(), mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("Save was not called on %s", tc.desc))

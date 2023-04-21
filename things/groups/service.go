@@ -74,6 +74,7 @@ func (svc service) CreateGroups(ctx context.Context, token string, gs ...Group) 
 
 		g.CreatedAt = time.Now()
 		g.UpdatedAt = g.CreatedAt
+		g.UpdatedBy = g.Owner
 		grp, err := svc.groups.Save(ctx, g)
 		if err != nil {
 			return []Group{}, err
@@ -138,6 +139,7 @@ func (svc service) UpdateGroup(ctx context.Context, token string, g Group) (Grou
 
 	g.Owner = res.GetId()
 	g.UpdatedAt = time.Now()
+	g.UpdatedBy = res.GetId()
 
 	return svc.groups.Update(ctx, g)
 }

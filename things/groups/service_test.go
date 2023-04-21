@@ -108,6 +108,7 @@ func TestCreateGroup(t *testing.T) {
 			tc.group.ID = expected[0].ID
 			tc.group.CreatedAt = expected[0].CreatedAt
 			tc.group.UpdatedAt = expected[0].UpdatedAt
+			tc.group.UpdatedBy = expected[0].UpdatedBy
 			tc.group.Owner = expected[0].Owner
 			assert.Equal(t, tc.group, expected[0], fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.group, expected[0]))
 		}

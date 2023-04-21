@@ -84,6 +84,7 @@ func (svc service) AddPolicy(ctx context.Context, token string, p Policy) (Polic
 	p.OwnerID = res.GetId()
 	p.CreatedAt = time.Now()
 	p.UpdatedAt = p.CreatedAt
+	p.UpdatedBy = res.GetId()
 
 	if err := svc.policyCache.AddPolicy(ctx, p); err != nil {
 		return Policy{}, err
@@ -103,6 +104,7 @@ func (svc service) UpdatePolicy(ctx context.Context, token string, p Policy) (Po
 		return Policy{}, err
 	}
 	p.UpdatedAt = time.Now()
+	p.UpdatedBy = res.GetId()
 
 	return svc.policies.Update(ctx, p)
 }

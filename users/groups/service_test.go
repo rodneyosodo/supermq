@@ -110,6 +110,7 @@ func TestCreateGroup(t *testing.T) {
 			tc.group.ID = expected.ID
 			tc.group.CreatedAt = expected.CreatedAt
 			tc.group.UpdatedAt = expected.UpdatedAt
+			tc.group.UpdatedBy = expected.UpdatedBy
 			tc.group.OwnerID = expected.OwnerID
 			assert.Equal(t, tc.group, expected, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.group, expected))
 			ok := repoCall.Parent.AssertCalled(t, "Save", context.Background(), mock.Anything)

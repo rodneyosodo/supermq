@@ -48,6 +48,7 @@ type Group struct {
 	Children    []*Group  `json:"children,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+	UpdatedBy   string    `json:"updated_by"`
 	Status      Status    `json:"status"`
 }
 

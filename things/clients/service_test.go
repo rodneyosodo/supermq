@@ -245,6 +245,7 @@ func TestRegisterClient(t *testing.T) {
 			tc.client.UpdatedAt = expected[0].UpdatedAt
 			tc.client.Credentials.Secret = expected[0].Credentials.Secret
 			tc.client.Owner = expected[0].Owner
+			tc.client.UpdatedBy = expected[0].UpdatedBy
 			assert.Equal(t, tc.client, expected[0], fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.client, expected[0]))
 		}
 		repoCall.Unset()

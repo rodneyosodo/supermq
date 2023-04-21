@@ -83,6 +83,7 @@ func (svc service) CreateThings(ctx context.Context, token string, clis ...Clien
 		}
 		cli.CreatedAt = time.Now()
 		cli.UpdatedAt = cli.CreatedAt
+		cli.UpdatedBy = cli.Owner
 		clients = append(clients, cli)
 	}
 	return svc.clients.Save(ctx, clients...)
@@ -123,6 +124,10 @@ func (svc service) ListClients(ctx context.Context, token string, pm Page) (Clie
 }
 
 func (svc service) UpdateClient(ctx context.Context, token string, cli Client) (Client, error) {
+	userID, err := svc.identifyUser(ctx, token)
+	if err != nil {
+		return Client{}, err
+	}
 	if err := svc.authorize(ctx, token, cli.ID, updateRelationKey); err != nil {
 		return Client{}, err
 	}
@@ -132,12 +137,17 @@ func (svc service) UpdateClient(ctx context.Context, token string, cli Client) (
 		Name:      cli.Name,
 		Metadata:  cli.Metadata,
 		UpdatedAt: time.Now(),
+		UpdatedBy: userID,
 	}
 
 	return svc.clients.Update(ctx, client)
 }
 
 func (svc service) UpdateClientTags(ctx context.Context, token string, cli Client) (Client, error) {
+	userID, err := svc.identifyUser(ctx, token)
+	if err != nil {
+		return Client{}, err
+	}
 	if err := svc.authorize(ctx, token, cli.ID, updateRelationKey); err != nil {
 		return Client{}, err
 	}
@@ -146,12 +156,17 @@ func (svc service) UpdateClientTags(ctx context.Context, token string, cli Clien
 		ID:        cli.ID,
 		Tags:      cli.Tags,
 		UpdatedAt: time.Now(),
+		UpdatedBy: userID,
 	}
 
 	return svc.clients.UpdateTags(ctx, client)
 }
 
 func (svc service) UpdateClientSecret(ctx context.Context, token, id, key string) (Client, error) {
+	userID, err := svc.identifyUser(ctx, token)
+	if err != nil {
+		return Client{}, err
+	}
 	if err := svc.authorize(ctx, token, id, updateRelationKey); err != nil {
 		return Client{}, err
 	}
@@ -162,12 +177,17 @@ func (svc service) UpdateClientSecret(ctx context.Context, token, id, key string
 			Secret: key,
 		},
 		UpdatedAt: time.Now(),
+		UpdatedBy: userID,
 	}
 
 	return svc.clients.UpdateSecret(ctx, client)
 }
 
 func (svc service) UpdateClientOwner(ctx context.Context, token string, cli Client) (Client, error) {
+	userID, err := svc.identifyUser(ctx, token)
+	if err != nil {
+		return Client{}, err
+	}
 	if err := svc.authorize(ctx, token, cli.ID, updateRelationKey); err != nil {
 		return Client{}, err
 	}
@@ -176,6 +196,7 @@ func (svc service) UpdateClientOwner(ctx context.Context, token string, cli Clie
 		ID:        cli.ID,
 		Owner:     cli.Owner,
 		UpdatedAt: time.Now(),
+		UpdatedBy: userID,
 	}
 
 	return svc.clients.UpdateOwner(ctx, client)

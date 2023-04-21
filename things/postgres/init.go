@@ -23,6 +23,7 @@ func Migration() *migrate.MemoryMigrationSource {
 						metadata	JSONB,
 						created_at	TIMESTAMP,
 						updated_at	TIMESTAMP,
+						updated_by  VARCHAR(254),
 						status		SMALLINT NOT NULL DEFAULT 0 CHECK (status >= 0),
 						UNIQUE		(owner_id, secret)
 					)`,
@@ -35,6 +36,7 @@ func Migration() *migrate.MemoryMigrationSource {
 						metadata	JSONB,
 						created_at	TIMESTAMP,
 						updated_at	TIMESTAMP,
+						updated_by  VARCHAR(254),						
 						status		SMALLINT NOT NULL DEFAULT 0 CHECK (status >= 0),
 						UNIQUE		(owner_id, name),
 						FOREIGN KEY	(parent_id) REFERENCES groups (id) ON DELETE CASCADE
@@ -46,6 +48,7 @@ func Migration() *migrate.MemoryMigrationSource {
 						actions		TEXT[] NOT NULL,
 						created_at	TIMESTAMP,
 						updated_at	TIMESTAMP,
+						updated_by  VARCHAR(254),
 						FOREIGN KEY	(object) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
 						PRIMARY KEY (subject, object, actions)
 					)`,

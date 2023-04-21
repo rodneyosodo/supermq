@@ -62,6 +62,7 @@ func (svc service) UpdatePolicy(ctx context.Context, token string, p Policy) err
 		return err
 	}
 	p.UpdatedAt = time.Now()
+	p.UpdatedBy = id
 
 	return svc.policies.Update(ctx, p)
 }
@@ -71,6 +72,7 @@ func (svc service) AddPolicy(ctx context.Context, token string, p Policy) error 
 	if err != nil {
 		return err
 	}
+	p.UpdatedBy = id
 	if err := p.Validate(); err != nil {
 		return err
 	}
