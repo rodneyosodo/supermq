@@ -36,10 +36,7 @@ func init() {
 }
 
 func init() {
-	// cmd := exec.Command("docker", "exec", "-it", "mainflux-users-db", "psql", "-U", "mainflux", "-d", "users", "-c", `"delete from policies; delete from groups; delete from clients;"`)
-	// if err := cmd.Run(); err != nil {
-	// 	log.Fatal("failed to remove esisting things in the database with error: ", err)
-	// }
+	// cmd := `docker exec -it mainflux-users-db psql -U mainflux -d users -c "DELETE FROM clients WHERE identity LIKE 'client%@policies.com';DELETE FROM groups WHERE name LIKE 'group%policies';"`
 }
 
 // Test - function that does actual end to end testing.
@@ -127,7 +124,7 @@ func createUser(s sdk.SDK) (string, error) {
 	user := sdk.User{
 		Name: "policies-admin",
 		Credentials: sdk.Credentials{
-			Identity: "admin@policies.com",
+			Identity: "clientadmin@policies.com",
 			Secret:   defPass,
 		},
 		Status: "enabled",
@@ -178,7 +175,7 @@ func createGroups(s sdk.SDK, token string) ([]sdk.Group, error) {
 	parentID := ""
 	for i := 'a'; i <= 'b'; i++ {
 		group := sdk.Group{
-			Name:     fmt.Sprintf("group%c", i),
+			Name:     fmt.Sprintf("group%cpolicies", i),
 			ParentID: parentID,
 			Status:   "enabled",
 		}
