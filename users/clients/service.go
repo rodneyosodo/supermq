@@ -409,21 +409,6 @@ func (svc service) changeClientStatus(ctx context.Context, token string, client 
 	return svc.clients.ChangeStatus(ctx, client)
 }
 
-func (svc service) authorizeByToken(ctx context.Context, entityType string, p policies.Policy) error {
-	if err := p.Validate(); err != nil {
-		return err
-	}
-	id, err := svc.Identify(ctx, p.Subject)
-	if err != nil {
-		return err
-	}
-	if err = svc.policies.CheckAdmin(ctx, id); err == nil {
-		return nil
-	}
-	p.Subject = id
-	return svc.policies.Evaluate(ctx, entityType, p)
-}
-
 func (svc service) authorizeByID(ctx context.Context, entityType string, p policies.Policy) error {
 	if err := p.Validate(); err != nil {
 		return err
