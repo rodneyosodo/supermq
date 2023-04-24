@@ -125,7 +125,12 @@ func (svc service) UpdateGroup(ctx context.Context, token string, g Group) (Grou
 }
 
 func (svc service) EnableGroup(ctx context.Context, token, id string) (Group, error) {
-	group, err := svc.changeGroupStatus(ctx, token, id, EnabledStatus)
+	group := Group{
+		ID:        id,
+		Status:    EnabledStatus,
+		UpdatedAt: time.Now(),
+	}
+	group, err := svc.changeGroupStatus(ctx, token, group)
 	if err != nil {
 		return Group{}, err
 	}
@@ -133,7 +138,12 @@ func (svc service) EnableGroup(ctx context.Context, token, id string) (Group, er
 }
 
 func (svc service) DisableGroup(ctx context.Context, token, id string) (Group, error) {
-	group, err := svc.changeGroupStatus(ctx, token, id, DisabledStatus)
+	group := Group{
+		ID:        id,
+		Status:    DisabledStatus,
+		UpdatedAt: time.Now(),
+	}
+	group, err := svc.changeGroupStatus(ctx, token, group)
 	if err != nil {
 		return Group{}, err
 	}
@@ -165,19 +175,24 @@ func (svc service) authorizeByToken(ctx context.Context, entityType string, p po
 	return svc.policies.Evaluate(ctx, entityType, p)
 }
 
-func (svc service) changeGroupStatus(ctx context.Context, token, id string, status Status) (Group, error) {
-	if err := svc.authorizeByToken(ctx, entityType, policies.Policy{Subject: token, Object: id, Actions: []string{deleteRelationKey}}); err != nil {
-		return Group{}, err
-	}
-	dbGroup, err := svc.groups.RetrieveByID(ctx, id)
+func (svc service) changeGroupStatus(ctx context.Context, token string, group Group) (Group, error) {
+	id, err := svc.identify(ctx, token)
 	if err != nil {
 		return Group{}, err
 	}
-	if dbGroup.Status == status {
+	if err := svc.authorizeByID(ctx, entityType, policies.Policy{Subject: id, Object: group.ID, Actions: []string{deleteRelationKey}}); err != nil {
+		return Group{}, err
+	}
+	dbGroup, err := svc.groups.RetrieveByID(ctx, group.ID)
+	if err != nil {
+		return Group{}, err
+	}
+	if dbGroup.Status == group.Status {
 		return Group{}, ErrStatusAlreadyAssigned
 	}
 
-	return svc.groups.ChangeStatus(ctx, id, status)
+	group.UpdatedBy = id
+	return svc.groups.ChangeStatus(ctx, group)
 }
 
 func (svc service) identify(ctx context.Context, tkn string) (string, error) {

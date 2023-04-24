@@ -242,12 +242,12 @@ func (trm *clientRepoMock) Members(_ context.Context, chID string, pm clients.Pa
 	return page, nil
 }
 
-func (trm *clientRepoMock) ChangeStatus(_ context.Context, id string, status clients.Status) (clients.Client, error) {
+func (trm *clientRepoMock) ChangeStatus(_ context.Context, client clients.Client) (clients.Client, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
-	th := trm.things[id]
-	th.Status = status
-	trm.things[id] = th
+	th := trm.things[client.ID]
+	th.Status = client.Status
+	trm.things[client.ID] = th
 	return th, nil
 }
 

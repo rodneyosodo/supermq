@@ -74,7 +74,7 @@ type Repository interface {
 	UpdateOwner(ctx context.Context, client Client) (Client, error)
 
 	// ChangeStatus changes client status to enabled or disabled
-	ChangeStatus(ctx context.Context, id string, status Status) (Client, error)
+	ChangeStatus(ctx context.Context, client Client) (Client, error)
 }
 
 // Service specifies an API that must be fullfiled by the domain service

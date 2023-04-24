@@ -829,7 +829,7 @@ func TestEnableClient(t *testing.T) {
 
 	for _, tc := range cases {
 		repoCall1 := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(tc.client, tc.err)
-		repoCall2 := cRepo.On("ChangeStatus", context.Background(), mock.Anything, mock.Anything).Return(tc.response, tc.err)
+		repoCall2 := cRepo.On("ChangeStatus", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		_, err := svc.EnableClient(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		repoCall1.Unset()
@@ -944,7 +944,7 @@ func TestDisableClient(t *testing.T) {
 
 	for _, tc := range cases {
 		_ = cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(tc.client, tc.err)
-		repoCall1 := cRepo.On("ChangeStatus", context.Background(), mock.Anything, mock.Anything).Return(tc.response, tc.err)
+		repoCall1 := cRepo.On("ChangeStatus", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		_, err := svc.DisableClient(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		repoCall1.Unset()

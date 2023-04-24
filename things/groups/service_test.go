@@ -422,7 +422,7 @@ func TestEnableGroup(t *testing.T) {
 
 	for _, tc := range casesEnabled {
 		repoCall1 := gRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(tc.group, tc.err)
-		repoCall2 := gRepo.On("ChangeStatus", context.Background(), mock.Anything, mock.Anything).Return(tc.response, tc.err)
+		repoCall2 := gRepo.On("ChangeStatus", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		_, err := svc.EnableGroup(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		repoCall1.Unset()
@@ -540,7 +540,7 @@ func TestDisableGroup(t *testing.T) {
 
 	for _, tc := range casesDisabled {
 		repoCall1 := gRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(tc.group, tc.err)
-		repoCall2 := gRepo.On("ChangeStatus", context.Background(), mock.Anything, mock.Anything).Return(tc.response, tc.err)
+		repoCall2 := gRepo.On("ChangeStatus", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		_, err := svc.DisableGroup(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		repoCall1.Unset()

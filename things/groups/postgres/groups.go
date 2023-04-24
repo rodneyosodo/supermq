@@ -224,12 +224,13 @@ func (repo grepo) Update(ctx context.Context, g groups.Group) (groups.Group, err
 	return toGroup(dbu)
 }
 
-func (repo grepo) ChangeStatus(ctx context.Context, id string, status groups.Status) (groups.Group, error) {
-	qc := `UPDATE groups SET status = :status WHERE id = :id RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, status`
+func (repo grepo) ChangeStatus(ctx context.Context, group groups.Group) (groups.Group, error) {
+	qc := `UPDATE groups SET status = :status WHERE id = :id RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, updated_by, status`
 
 	dbg := dbGroup{
-		ID:     id,
-		Status: status,
+		ID:        group.ID,
+		UpdatedAt: group.UpdatedAt,
+		UpdatedBy: group.UpdatedBy,
 	}
 	row, err := repo.db.NamedQueryContext(ctx, qc, dbg)
 	if err != nil {

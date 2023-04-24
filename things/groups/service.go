@@ -145,7 +145,12 @@ func (svc service) UpdateGroup(ctx context.Context, token string, g Group) (Grou
 }
 
 func (svc service) EnableGroup(ctx context.Context, token, id string) (Group, error) {
-	group, err := svc.changeGroupStatus(ctx, token, id, EnabledStatus)
+	group := Group{
+		ID:        id,
+		Status:    EnabledStatus,
+		UpdatedAt: time.Now(),
+	}
+	group, err := svc.changeGroupStatus(ctx, token, group)
 	if err != nil {
 		return Group{}, errors.Wrap(ErrEnableGroup, err)
 	}
@@ -153,27 +158,36 @@ func (svc service) EnableGroup(ctx context.Context, token, id string) (Group, er
 }
 
 func (svc service) DisableGroup(ctx context.Context, token, id string) (Group, error) {
-	group, err := svc.changeGroupStatus(ctx, token, id, DisabledStatus)
+	group := Group{
+		ID:        id,
+		Status:    DisabledStatus,
+		UpdatedAt: time.Now(),
+	}
+	group, err := svc.changeGroupStatus(ctx, token, group)
 	if err != nil {
 		return Group{}, errors.Wrap(ErrDisableGroup, err)
 	}
 	return group, nil
 }
 
-func (svc service) changeGroupStatus(ctx context.Context, token, id string, status Status) (Group, error) {
-	if err := svc.authorize(ctx, token, id, deleteRelationKey); err != nil {
+func (svc service) changeGroupStatus(ctx context.Context, token string, group Group) (Group, error) {
+	res, err := svc.auth.Identify(ctx, &upolicies.Token{Value: token})
+	if err != nil {
+		return Group{}, errors.Wrap(errors.ErrAuthentication, err)
+	}
+	if err := svc.authorize(ctx, token, group.ID, deleteRelationKey); err != nil {
 		return Group{}, errors.Wrap(errors.ErrNotFound, err)
 	}
-	dbGroup, err := svc.groups.RetrieveByID(ctx, id)
+	dbGroup, err := svc.groups.RetrieveByID(ctx, group.ID)
 	if err != nil {
 		return Group{}, err
 	}
 
-	if dbGroup.Status == status {
+	if dbGroup.Status == group.Status {
 		return Group{}, ErrStatusAlreadyAssigned
 	}
-
-	return svc.groups.ChangeStatus(ctx, id, status)
+	group.UpdatedBy = res.GetId()
+	return svc.groups.ChangeStatus(ctx, group)
 }
 
 func (svc service) identifyUser(ctx context.Context, token string) (string, error) {

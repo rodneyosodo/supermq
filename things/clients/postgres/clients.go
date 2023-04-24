@@ -264,14 +264,10 @@ func (repo clientRepo) UpdateOwner(ctx context.Context, client clients.Client) (
 	return repo.update(ctx, client, q)
 }
 
-func (repo clientRepo) ChangeStatus(ctx context.Context, id string, status clients.Status) (clients.Client, error) {
+func (repo clientRepo) ChangeStatus(ctx context.Context, client clients.Client) (clients.Client, error) {
 	q := `UPDATE clients SET status = :status WHERE id = :id
         RETURNING id, name, tags, identity, secret, metadata, COALESCE(owner_id, '') AS owner_id, status, created_at, updated_at, updated_by`
 
-	client := clients.Client{
-		ID:     id,
-		Status: status,
-	}
 	return repo.update(ctx, client, q)
 }
 

@@ -16,22 +16,13 @@ type GroupRepository struct {
 	mock.Mock
 }
 
-func (m *GroupRepository) Delete(ctx context.Context, id string) error {
-	ret := m.Called(ctx, id)
-	if id == WrongID {
-		return errors.ErrNotFound
-	}
+func (m *GroupRepository) ChangeStatus(ctx context.Context, group groups.Group) (groups.Group, error) {
+	ret := m.Called(ctx, group)
 
-	return ret.Error(0)
-}
-
-func (m *GroupRepository) ChangeStatus(ctx context.Context, id string, status groups.Status) (groups.Group, error) {
-	ret := m.Called(ctx, id, status)
-
-	if id == WrongID {
+	if group.ID == WrongID {
 		return groups.Group{}, errors.ErrNotFound
 	}
-	if status != groups.EnabledStatus && status != groups.DisabledStatus {
+	if group.Status != groups.EnabledStatus && group.Status != groups.DisabledStatus {
 		return groups.Group{}, errors.ErrMalformedEntity
 	}
 

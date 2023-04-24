@@ -586,7 +586,7 @@ func TestGroupChangeStatus(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		expected, err := repo.ChangeStatus(context.Background(), tc.group.ID, tc.group.Status)
+		expected, err := repo.ChangeStatus(context.Background(), tc.group)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if err == nil {
 			assert.Equal(t, tc.group.Status, expected.Status, fmt.Sprintf("%s: expected %d got %d\n", tc.desc, tc.group.Status, expected.Status))

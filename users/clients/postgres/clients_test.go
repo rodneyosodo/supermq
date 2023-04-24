@@ -1039,7 +1039,7 @@ func TestClientsChangeStatus(t *testing.T) {
 	}
 
 	for _, tc := range ucases {
-		expected, err := repo.ChangeStatus(context.Background(), tc.client.ID, tc.client.Status)
+		expected, err := repo.ChangeStatus(context.Background(), tc.client)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if err == nil {
 			assert.Equal(t, tc.client.Status, expected.Status, fmt.Sprintf("%s: expected %d got %d\n", tc.desc, tc.client.Status, expected.Status))

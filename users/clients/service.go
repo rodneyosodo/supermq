@@ -348,7 +348,12 @@ func (svc service) UpdateClientOwner(ctx context.Context, token string, cli Clie
 }
 
 func (svc service) EnableClient(ctx context.Context, token, id string) (Client, error) {
-	client, err := svc.changeClientStatus(ctx, token, id, EnabledStatus)
+	client := Client{
+		ID:        id,
+		UpdatedAt: time.Now(),
+		Status:    EnabledStatus,
+	}
+	client, err := svc.changeClientStatus(ctx, token, client)
 	if err != nil {
 		return Client{}, errors.Wrap(ErrEnableClient, err)
 	}
@@ -357,7 +362,12 @@ func (svc service) EnableClient(ctx context.Context, token, id string) (Client, 
 }
 
 func (svc service) DisableClient(ctx context.Context, token, id string) (Client, error) {
-	client, err := svc.changeClientStatus(ctx, token, id, DisabledStatus)
+	client := Client{
+		ID:        id,
+		UpdatedAt: time.Now(),
+		Status:    DisabledStatus,
+	}
+	client, err := svc.changeClientStatus(ctx, token, client)
 	if err != nil {
 		return Client{}, errors.Wrap(ErrDisableClient, err)
 	}
@@ -380,19 +390,23 @@ func (svc service) ListMembers(ctx context.Context, token, groupID string, pm Pa
 	return svc.clients.Members(ctx, groupID, pm)
 }
 
-func (svc service) changeClientStatus(ctx context.Context, token, id string, status Status) (Client, error) {
-	if err := svc.authorizeByToken(ctx, entityType, policies.Policy{Subject: token, Object: id, Actions: []string{deleteRelationKey}}); err != nil {
-		return Client{}, err
-	}
-	dbClient, err := svc.clients.RetrieveByID(ctx, id)
+func (svc service) changeClientStatus(ctx context.Context, token string, client Client) (Client, error) {
+	id, err := svc.Identify(ctx, token)
 	if err != nil {
 		return Client{}, err
 	}
-	if dbClient.Status == status {
+	if err := svc.authorizeByID(ctx, entityType, policies.Policy{Subject: id, Object: client.ID, Actions: []string{deleteRelationKey}}); err != nil {
+		return Client{}, err
+	}
+	dbClient, err := svc.clients.RetrieveByID(ctx, client.ID)
+	if err != nil {
+		return Client{}, err
+	}
+	if dbClient.Status == client.Status {
 		return Client{}, ErrStatusAlreadyAssigned
 	}
-
-	return svc.clients.ChangeStatus(ctx, id, status)
+	client.UpdatedBy = id
+	return svc.clients.ChangeStatus(ctx, client)
 }
 
 func (svc service) authorizeByToken(ctx context.Context, entityType string, p policies.Policy) error {
