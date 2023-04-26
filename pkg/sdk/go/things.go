@@ -10,8 +10,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-
-	"github.com/mainflux/mainflux/pkg/errors"
 )
 
 const thingsEndpoint = "things"
@@ -37,7 +35,7 @@ func (sdk mfSDK) CreateThing(t Thing, token string) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		return "", errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
+		return "", Wrap(ErrFailedCreation, New(resp.Status))
 	}
 
 	id := strings.TrimPrefix(resp.Header.Get("Location"), fmt.Sprintf("/%s/", thingsEndpoint))
@@ -64,7 +62,7 @@ func (sdk mfSDK) CreateThings(things []Thing, token string) ([]Thing, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		return []Thing{}, errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
+		return []Thing{}, Wrap(ErrFailedCreation, New(resp.Status))
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -101,7 +99,7 @@ func (sdk mfSDK) Things(token string, offset, limit uint64, name string) (Things
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return ThingsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return ThingsPage{}, Wrap(ErrFailedFetch, New(resp.Status))
 	}
 
 	var tp ThingsPage
@@ -131,7 +129,7 @@ func (sdk mfSDK) ThingsByChannel(token, chanID string, offset, limit uint64, dis
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return ThingsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return ThingsPage{}, Wrap(ErrFailedFetch, New(resp.Status))
 	}
 
 	var tp ThingsPage
@@ -162,7 +160,7 @@ func (sdk mfSDK) Thing(id, token string) (Thing, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return Thing{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return Thing{}, Wrap(ErrFailedFetch, New(resp.Status))
 	}
 
 	var t Thing
@@ -192,7 +190,7 @@ func (sdk mfSDK) UpdateThing(t Thing, token string) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Wrap(ErrFailedUpdate, errors.New(resp.Status))
+		return Wrap(ErrFailedUpdate, New(resp.Status))
 	}
 
 	return nil
@@ -212,7 +210,7 @@ func (sdk mfSDK) DeleteThing(id, token string) error {
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return errors.Wrap(ErrFailedRemoval, errors.New(resp.Status))
+		return Wrap(ErrFailedRemoval, New(resp.Status))
 	}
 
 	return nil
@@ -236,7 +234,7 @@ func (sdk mfSDK) Connect(connIDs ConnectionIDs, token string) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Wrap(ErrFailedConnect, errors.New(resp.Status))
+		return Wrap(ErrFailedConnect, New(resp.Status))
 	}
 
 	return nil
@@ -255,7 +253,7 @@ func (sdk mfSDK) DisconnectThing(thingID, chanID, token string) error {
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return errors.Wrap(ErrFailedDisconnect, errors.New(resp.Status))
+		return Wrap(ErrFailedDisconnect, New(resp.Status))
 	}
 
 	return nil

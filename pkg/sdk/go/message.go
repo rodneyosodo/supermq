@@ -9,8 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-
-	"github.com/mainflux/mainflux/pkg/errors"
 )
 
 func (sdk mfSDK) SendMessage(chanName, msg, key string) error {
@@ -34,7 +32,7 @@ func (sdk mfSDK) SendMessage(chanName, msg, key string) error {
 	}
 
 	if resp.StatusCode != http.StatusAccepted {
-		return errors.Wrap(ErrFailedPublish, errors.New(resp.Status))
+		return Wrap(ErrFailedPublish, New(resp.Status))
 	}
 
 	return nil
@@ -65,7 +63,7 @@ func (sdk mfSDK) ReadMessages(chanName, token string) (MessagesPage, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return MessagesPage{}, errors.Wrap(ErrFailedRead, errors.New(resp.Status))
+		return MessagesPage{}, Wrap(ErrFailedRead, New(resp.Status))
 	}
 
 	var mp MessagesPage

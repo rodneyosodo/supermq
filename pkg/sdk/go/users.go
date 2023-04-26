@@ -10,8 +10,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-
-	"github.com/mainflux/mainflux/pkg/errors"
 )
 
 const (
@@ -39,7 +37,7 @@ func (sdk mfSDK) CreateUser(token string, u User) (string, error) {
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return "", errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
+		return "", Wrap(ErrFailedCreation, New(resp.Status))
 	}
 
 	id := strings.TrimPrefix(resp.Header.Get("Location"), fmt.Sprintf("/%s/", usersEndpoint))
@@ -65,7 +63,7 @@ func (sdk mfSDK) User(token string) (User, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return User{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return User{}, Wrap(ErrFailedFetch, New(resp.Status))
 	}
 
 	var u User
@@ -95,7 +93,7 @@ func (sdk mfSDK) CreateToken(user User) (string, error) {
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return "", errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
+		return "", Wrap(ErrFailedCreation, New(resp.Status))
 	}
 
 	var tr tokenRes
@@ -124,7 +122,7 @@ func (sdk mfSDK) UpdateUser(u User, token string) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Wrap(ErrFailedUpdate, errors.New(resp.Status))
+		return Wrap(ErrFailedUpdate, New(resp.Status))
 	}
 
 	return nil
@@ -152,7 +150,7 @@ func (sdk mfSDK) UpdatePassword(oldPass, newPass, token string) error {
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return errors.Wrap(ErrFailedUpdate, errors.New(resp.Status))
+		return Wrap(ErrFailedUpdate, New(resp.Status))
 	}
 
 	return nil

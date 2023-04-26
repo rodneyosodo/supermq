@@ -5,12 +5,8 @@ package sdk
 
 import (
 	"crypto/tls"
-	"errors"
 	"net/http"
 	"time"
-
-	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/internal/apiutil"
 )
 
 const (
@@ -26,50 +22,50 @@ const (
 
 var (
 	// ErrFailedCreation indicates that entity creation failed.
-	ErrFailedCreation = errors.New("failed to create entity")
+	ErrFailedCreation = New("failed to create entity")
 
 	// ErrFailedUpdate indicates that entity update failed.
-	ErrFailedUpdate = errors.New("failed to update entity")
+	ErrFailedUpdate = New("failed to update entity")
 
 	// ErrFailedFetch indicates that fetching of entity data failed.
-	ErrFailedFetch = errors.New("failed to fetch entity")
+	ErrFailedFetch = New("failed to fetch entity")
 
 	// ErrFailedRemoval indicates that entity removal failed.
-	ErrFailedRemoval = errors.New("failed to remove entity")
+	ErrFailedRemoval = New("failed to remove entity")
 
 	// ErrFailedConnect indicates that connecting thing to channel failed.
-	ErrFailedConnect = errors.New("failed to connect thing to channel")
+	ErrFailedConnect = New("failed to connect thing to channel")
 
 	// ErrFailedDisconnect indicates that disconnecting thing from a channel failed.
-	ErrFailedDisconnect = errors.New("failed to disconnect thing from channel")
+	ErrFailedDisconnect = New("failed to disconnect thing from channel")
 
 	// ErrFailedPublish indicates that publishing message failed.
-	ErrFailedPublish = errors.New("failed to publish message")
+	ErrFailedPublish = New("failed to publish message")
 
 	// ErrFailedRead indicates that read messages failed.
-	ErrFailedRead = errors.New("failed to read messages")
+	ErrFailedRead = New("failed to read messages")
 
 	// ErrInvalidContentType indicates that non-existent message content type
 	// was passed.
-	ErrInvalidContentType = errors.New("Unknown Content Type")
+	ErrInvalidContentType = New("Unknown Content Type")
 
 	// ErrFetchHealth indicates that fetching of health check failed.
-	ErrFetchHealth = errors.New("failed to fetch health check")
+	ErrFetchHealth = New("failed to fetch health check")
 
 	// ErrFailedWhitelist failed to whitelist configs
-	ErrFailedWhitelist = errors.New("failed to whitelist")
+	ErrFailedWhitelist = New("failed to whitelist")
 
 	// ErrCerts indicates error fetching certificates.
-	ErrCerts = errors.New("failed to fetch certs data")
+	ErrCerts = New("failed to fetch certs data")
 
 	// ErrCertsRemove indicates failure while cleaning up from the Certs service.
-	ErrCertsRemove = errors.New("failed to remove certificate")
+	ErrCertsRemove = New("failed to remove certificate")
 
 	// ErrFailedCertUpdate failed to update certs in bootstrap config
-	ErrFailedCertUpdate = errors.New("failed to update certs in bootstrap config")
+	ErrFailedCertUpdate = New("failed to update certs in bootstrap config")
 
 	// ErrMemberAdd failed to add member to a group.
-	ErrMemberAdd = errors.New("failed to add member to group")
+	ErrMemberAdd = New("failed to add member to group")
 )
 
 // ContentType represents all possible content types.
@@ -235,7 +231,7 @@ type SDK interface {
 	SetContentType(ct ContentType) error
 
 	// Health returns things service health check.
-	Health() (mainflux.HealthInfo, error)
+	Health() (HealthInfo, error)
 
 	// AddBootstrap add bootstrap configuration
 	AddBootstrap(token string, cfg BootstrapConfig) (string, error)
@@ -328,7 +324,7 @@ func NewSDK(conf Config) SDK {
 
 func (sdk mfSDK) sendRequest(req *http.Request, token, contentType string) (*http.Response, error) {
 	if token != "" {
-		req.Header.Set("Authorization", apiutil.BearerPrefix+token)
+		req.Header.Set("Authorization", BearerPrefix+token)
 	}
 
 	if contentType != "" {
@@ -340,7 +336,7 @@ func (sdk mfSDK) sendRequest(req *http.Request, token, contentType string) (*htt
 
 func (sdk mfSDK) sendThingRequest(req *http.Request, key, contentType string) (*http.Response, error) {
 	if key != "" {
-		req.Header.Set("Authorization", apiutil.ThingPrefix+key)
+		req.Header.Set("Authorization", ThingPrefix+key)
 	}
 
 	if contentType != "" {

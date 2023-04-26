@@ -10,8 +10,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-
-	"github.com/mainflux/mainflux/pkg/errors"
 )
 
 const (
@@ -39,7 +37,7 @@ func (sdk mfSDK) CreateGroup(g Group, token string) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		return "", errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
+		return "", Wrap(ErrFailedCreation, New(resp.Status))
 	}
 
 	id := strings.TrimPrefix(resp.Header.Get("Location"), fmt.Sprintf("/%s/", groupsEndpoint))
@@ -59,7 +57,7 @@ func (sdk mfSDK) DeleteGroup(id, token string) error {
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return errors.Wrap(ErrFailedRemoval, errors.New(resp.Status))
+		return Wrap(ErrFailedRemoval, New(resp.Status))
 	}
 
 	return nil
@@ -90,7 +88,7 @@ func (sdk mfSDK) Assign(memberIDs []string, memberType, groupID string, token st
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Wrap(ErrMemberAdd, errors.New(resp.Status))
+		return Wrap(ErrMemberAdd, New(resp.Status))
 	}
 
 	return nil
@@ -120,7 +118,7 @@ func (sdk mfSDK) Unassign(token, groupID string, memberIDs ...string) error {
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return errors.Wrap(ErrFailedRemoval, errors.New(resp.Status))
+		return Wrap(ErrFailedRemoval, New(resp.Status))
 	}
 
 	return nil
@@ -145,7 +143,7 @@ func (sdk mfSDK) Members(groupID, token string, offset, limit uint64) (MembersPa
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return MembersPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return MembersPage{}, Wrap(ErrFailedFetch, New(resp.Status))
 	}
 
 	var tp MembersPage
@@ -189,7 +187,7 @@ func (sdk mfSDK) getGroups(token, url string) (GroupsPage, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return GroupsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return GroupsPage{}, Wrap(ErrFailedFetch, New(resp.Status))
 	}
 
 	var tp GroupsPage
@@ -218,7 +216,7 @@ func (sdk mfSDK) Group(id, token string) (Group, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return Group{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return Group{}, Wrap(ErrFailedFetch, New(resp.Status))
 	}
 
 	var t Group
@@ -247,7 +245,7 @@ func (sdk mfSDK) UpdateGroup(t Group, token string) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Wrap(ErrFailedUpdate, errors.New(resp.Status))
+		return Wrap(ErrFailedUpdate, New(resp.Status))
 	}
 
 	return nil
@@ -272,7 +270,7 @@ func (sdk mfSDK) Memberships(memberID, token string, offset, limit uint64) (Grou
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return GroupsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return GroupsPage{}, Wrap(ErrFailedFetch, New(resp.Status))
 	}
 
 	var tp GroupsPage

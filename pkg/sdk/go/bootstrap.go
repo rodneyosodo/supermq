@@ -10,8 +10,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-
-	"github.com/mainflux/mainflux/pkg/errors"
 )
 
 const configsEndpoint = "configs"
@@ -65,7 +63,7 @@ func (sdk mfSDK) AddBootstrap(token string, cfg BootstrapConfig) (string, error)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		return "", errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
+		return "", Wrap(ErrFailedCreation, New(resp.Status))
 	}
 
 	id := strings.TrimPrefix(resp.Header.Get("Location"), "/things/configs/")
@@ -75,7 +73,7 @@ func (sdk mfSDK) AddBootstrap(token string, cfg BootstrapConfig) (string, error)
 func (sdk mfSDK) Whitelist(token string, cfg BootstrapConfig) error {
 	data, err := json.Marshal(BootstrapConfig{State: cfg.State})
 	if err != nil {
-		return errors.Wrap(ErrFailedWhitelist, err)
+		return Wrap(ErrFailedWhitelist, err)
 	}
 
 	if cfg.MFThing == "" {
@@ -85,17 +83,17 @@ func (sdk mfSDK) Whitelist(token string, cfg BootstrapConfig) error {
 	url := fmt.Sprintf("%s/%s/%s", sdk.bootstrapURL, whitelistEndpoint, cfg.MFThing)
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 	if err != nil {
-		return errors.Wrap(ErrFailedWhitelist, err)
+		return Wrap(ErrFailedWhitelist, err)
 	}
 
 	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
-		return errors.Wrap(ErrFailedWhitelist, err)
+		return Wrap(ErrFailedWhitelist, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		return errors.Wrap(ErrFailedWhitelist, errors.New(resp.Status))
+		return Wrap(ErrFailedWhitelist, New(resp.Status))
 	}
 
 	return nil
@@ -120,7 +118,7 @@ func (sdk mfSDK) ViewBootstrap(token, id string) (BootstrapConfig, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return BootstrapConfig{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return BootstrapConfig{}, Wrap(ErrFailedFetch, New(resp.Status))
 	}
 
 	var bc BootstrapConfig
@@ -149,7 +147,7 @@ func (sdk mfSDK) UpdateBootstrap(token string, cfg BootstrapConfig) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Wrap(ErrFailedUpdate, errors.New(resp.Status))
+		return Wrap(ErrFailedUpdate, New(resp.Status))
 	}
 
 	return nil
@@ -164,7 +162,7 @@ func (sdk mfSDK) UpdateBootstrapCerts(token, id, clientCert, clientKey, ca strin
 
 	data, err := json.Marshal(request)
 	if err != nil {
-		return errors.Wrap(ErrFailedCertUpdate, err)
+		return Wrap(ErrFailedCertUpdate, err)
 	}
 	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewReader(data))
 	if err != nil {
@@ -177,7 +175,7 @@ func (sdk mfSDK) UpdateBootstrapCerts(token, id, clientCert, clientKey, ca strin
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Wrap(ErrFailedCertUpdate, errors.New(resp.Status))
+		return Wrap(ErrFailedCertUpdate, New(resp.Status))
 	}
 
 	return nil
@@ -196,7 +194,7 @@ func (sdk mfSDK) RemoveBootstrap(token, id string) error {
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return errors.Wrap(ErrFailedRemoval, errors.New(resp.Status))
+		return Wrap(ErrFailedRemoval, New(resp.Status))
 	}
 
 	return nil
@@ -221,7 +219,7 @@ func (sdk mfSDK) Bootstrap(externalKey, externalID string) (BootstrapConfig, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return BootstrapConfig{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return BootstrapConfig{}, Wrap(ErrFailedFetch, New(resp.Status))
 	}
 
 	var bc BootstrapConfig
