@@ -8,8 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-
-	"github.com/mainflux/mainflux"
 )
 
 const (
@@ -110,10 +108,10 @@ type ChannelsPage struct {
 
 // MessagesPage contains list of messages in a page with proper metadata.
 type MessagesPage struct {
-	Total    uint64             `json:"total"`
-	Offset   uint64             `json:"offset"`
-	Limit    uint64             `json:"limit"`
-	Messages []mainflux.Message `json:"messages,omitempty"`
+	Total    uint64    `json:"total"`
+	Offset   uint64    `json:"offset"`
+	Limit    uint64    `json:"limit"`
+	Messages []Message `json:"messages,omitempty"`
 }
 
 // ConnectionIDs contains ID lists of things and channels to be connected
