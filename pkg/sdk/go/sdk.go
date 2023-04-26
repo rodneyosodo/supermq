@@ -5,11 +5,8 @@ package sdk
 
 import (
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"net/http"
-
-	"github.com/mainflux/mainflux/auth"
 )
 
 const (
@@ -27,53 +24,53 @@ const minPassLen = 8
 
 var (
 	// ErrUnauthorized indicates that entity creation failed.
-	ErrUnauthorized = errors.New("unauthorized, missing credentials")
+	ErrUnauthorized = New("unauthorized, missing credentials")
 
 	// ErrFailedCreation indicates that entity creation failed.
-	ErrFailedCreation = errors.New("failed to create entity")
+	ErrFailedCreation = New("failed to create entity")
 
 	// ErrFailedUpdate indicates that entity update failed.
-	ErrFailedUpdate = errors.New("failed to update entity")
+	ErrFailedUpdate = New("failed to update entity")
 
 	// ErrFailedFetch indicates that fetching of entity data failed.
-	ErrFailedFetch = errors.New("failed to fetch entity")
+	ErrFailedFetch = New("failed to fetch entity")
 
 	// ErrFailedRemoval indicates that entity removal failed.
-	ErrFailedRemoval = errors.New("failed to remove entity")
+	ErrFailedRemoval = New("failed to remove entity")
 
 	// ErrFailedConnect indicates that connecting thing to channel failed.
-	ErrFailedConnect = errors.New("failed to connect thing to channel")
+	ErrFailedConnect = New("failed to connect thing to channel")
 
 	// ErrFailedDisconnect indicates that disconnecting thing from a channel failed.
-	ErrFailedDisconnect = errors.New("failed to disconnect thing from channel")
+	ErrFailedDisconnect = New("failed to disconnect thing from channel")
 
 	// ErrFailedPublish indicates that publishing message failed.
-	ErrFailedPublish = errors.New("failed to publish message")
+	ErrFailedPublish = New("failed to publish message")
 
 	// ErrFailedRead indicates that read messages failed.
-	ErrFailedRead = errors.New("failed to read messages")
+	ErrFailedRead = New("failed to read messages")
 
 	// ErrInvalidContentType indicates that non-existent message content type
 	// was passed.
-	ErrInvalidContentType = errors.New("Unknown Content Type")
+	ErrInvalidContentType = New("Unknown Content Type")
 
 	// ErrFetchVersion indicates that fetching of version failed.
-	ErrFetchVersion = errors.New("failed to fetch version")
+	ErrFetchVersion = New("failed to fetch version")
 
 	// ErrFailedWhitelist failed to whitelist configs
-	ErrFailedWhitelist = errors.New("failed to whitelist")
+	ErrFailedWhitelist = New("failed to whitelist")
 
 	// ErrCerts indicates error fetching certificates.
-	ErrCerts = errors.New("failed to fetch certs data")
+	ErrCerts = New("failed to fetch certs data")
 
 	// ErrCertsRemove indicates failure while cleaning up from the Certs service.
-	ErrCertsRemove = errors.New("failed to remove certificate")
+	ErrCertsRemove = New("failed to remove certificate")
 
 	// ErrFailedCertUpdate failed to update certs in bootstrap config
-	ErrFailedCertUpdate = errors.New("failed to update certs in bootstrap config")
+	ErrFailedCertUpdate = New("failed to update certs in bootstrap config")
 
 	// ErrMemberAdd failed to add member to a group.
-	ErrMemberAdd = errors.New("failed to add member to group")
+	ErrMemberAdd = New("failed to add member to group")
 )
 
 // ContentType represents all possible content types.
@@ -160,13 +157,13 @@ type SDK interface {
 	DeleteGroup(id, token string) error
 
 	// Groups returns page of users groups.
-	Groups(offset, limit uint64, token string) (auth.GroupPage, error)
+	Groups(offset, limit uint64, token string) (GroupPage, error)
 
 	// Parents returns page of users groups.
-	Parents(id string, offset, limit uint64, token string) (auth.GroupPage, error)
+	Parents(id string, offset, limit uint64, token string) (GroupPage, error)
 
 	// Children returns page of users groups.
-	Children(id string, offset, limit uint64, token string) (auth.GroupPage, error)
+	Children(id string, offset, limit uint64, token string) (GroupPage, error)
 
 	// Group returns users group object by id.
 	Group(id, token string) (Group, error)
@@ -178,7 +175,7 @@ type SDK interface {
 	Unassign(token, groupID string, memberIDs ...string) error
 
 	// Members lists members of a group.
-	Members(groupID, token string, offset, limit uint64) (auth.MemberPage, error)
+	Members(groupID, token string, offset, limit uint64) (MemberPage, error)
 
 	// Memberships lists groups for user.
 	Memberships(userID, token string, offset, limit uint64) (GroupsPage, error)
