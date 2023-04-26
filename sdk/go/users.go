@@ -8,8 +8,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/mainflux/mainflux/errors"
 )
 
 func (sdk mfSDK) CreateUser(u User) error {
@@ -26,7 +24,7 @@ func (sdk mfSDK) CreateUser(u User) error {
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
+		return Wrap(ErrFailedCreation, New(resp.Status))
 	}
 
 	return nil
@@ -52,7 +50,7 @@ func (sdk mfSDK) User(token string) (User, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return User{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return User{}, Wrap(ErrFailedFetch, New(resp.Status))
 	}
 
 	var u User
@@ -83,7 +81,7 @@ func (sdk mfSDK) CreateToken(user User) (string, error) {
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return "", errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
+		return "", Wrap(ErrFailedCreation, New(resp.Status))
 	}
 
 	var tr tokenRes
@@ -113,7 +111,7 @@ func (sdk mfSDK) UpdateUser(u User, token string) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Wrap(ErrFailedUpdate, errors.New(resp.Status))
+		return Wrap(ErrFailedUpdate, New(resp.Status))
 	}
 
 	return nil
@@ -142,7 +140,7 @@ func (sdk mfSDK) UpdatePassword(oldPass, newPass, token string) error {
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return errors.Wrap(ErrFailedUpdate, errors.New(resp.Status))
+		return Wrap(ErrFailedUpdate, New(resp.Status))
 	}
 
 	return nil

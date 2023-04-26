@@ -10,8 +10,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-
-	"github.com/mainflux/mainflux/errors"
 )
 
 const channelsEndpoint = "channels"
@@ -34,7 +32,7 @@ func (sdk mfSDK) CreateChannel(c Channel, token string) (string, error) {
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return "", errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
+		return "", Wrap(ErrFailedCreation, New(resp.Status))
 	}
 
 	id := strings.TrimPrefix(resp.Header.Get("Location"), fmt.Sprintf("/%s/", channelsEndpoint))
@@ -62,7 +60,7 @@ func (sdk mfSDK) CreateChannels(chs []Channel, token string) ([]Channel, error) 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		return []Channel{}, errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
+		return []Channel{}, Wrap(ErrFailedCreation, New(resp.Status))
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -99,7 +97,7 @@ func (sdk mfSDK) Channels(token string, offset, limit uint64, name string) (Chan
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return ChannelsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return ChannelsPage{}, Wrap(ErrFailedFetch, New(resp.Status))
 	}
 
 	var cp ChannelsPage
@@ -131,7 +129,7 @@ func (sdk mfSDK) ChannelsByThing(token, thingID string, offset, limit uint64) (C
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return ChannelsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return ChannelsPage{}, Wrap(ErrFailedFetch, New(resp.Status))
 	}
 
 	var cp ChannelsPage
@@ -163,7 +161,7 @@ func (sdk mfSDK) Channel(id, token string) (Channel, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return Channel{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return Channel{}, Wrap(ErrFailedFetch, New(resp.Status))
 	}
 
 	var c Channel
@@ -194,7 +192,7 @@ func (sdk mfSDK) UpdateChannel(c Channel, token string) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Wrap(ErrFailedUpdate, errors.New(resp.Status))
+		return Wrap(ErrFailedUpdate, New(resp.Status))
 	}
 
 	return nil
@@ -215,7 +213,7 @@ func (sdk mfSDK) DeleteChannel(id, token string) error {
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return errors.Wrap(ErrFailedRemoval, errors.New(resp.Status))
+		return Wrap(ErrFailedRemoval, New(resp.Status))
 	}
 
 	return nil

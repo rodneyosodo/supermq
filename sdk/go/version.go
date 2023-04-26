@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/mainflux/mainflux/errors"
 )
 
 type version struct {
@@ -31,7 +29,7 @@ func (sdk mfSDK) Version() (string, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "", errors.Wrap(ErrFetchVersion, errors.New(resp.Status))
+		return "", Wrap(ErrFetchVersion, New(resp.Status))
 	}
 
 	var ver version
