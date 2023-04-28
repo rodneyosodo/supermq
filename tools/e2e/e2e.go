@@ -147,7 +147,7 @@ func createUser(s sdk.SDK, conf Config) (string, string, error) {
 			Identity: fmt.Sprintf("%s-%s@email.com", conf.Prefix, namesgenerator.Generate()),
 			Secret:   defPass,
 		},
-		Status: "enabled",
+		Status: sdk.EnabledStatus,
 	}
 
 	pass := user.Credentials.Secret
@@ -176,7 +176,7 @@ func createUsers(s sdk.SDK, conf Config, token string) ([]sdk.User, error) {
 			Credentials: sdk.Credentials{
 				Identity: fmt.Sprintf("%s-%s@email.com", conf.Prefix, namesgenerator.Generate()),
 				Secret:   defPass},
-			Status: "enabled",
+			Status: sdk.EnabledStatus,
 		}
 
 		user, err = s.CreateUser(user, token)
@@ -198,7 +198,7 @@ func createGroups(s sdk.SDK, conf Config, token string) ([]sdk.Group, error) {
 		group := sdk.Group{
 			Name:     fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.Generate()),
 			ParentID: parentID,
-			Status:   "enabled",
+			Status:   sdk.EnabledStatus,
 		}
 
 		group, err = s.CreateGroup(group, token)
@@ -219,7 +219,7 @@ func createThings(s sdk.SDK, conf Config, token string) ([]sdk.Thing, error) {
 	for i := uint64(0); i < conf.Num; i++ {
 		things[i] = sdk.Thing{
 			Name:   fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.Generate()),
-			Status: "enabled",
+			Status: sdk.EnabledStatus,
 		}
 	}
 	things, err = s.CreateThings(things, token)
@@ -237,7 +237,7 @@ func createChannels(s sdk.SDK, conf Config, token string) ([]sdk.Channel, error)
 	for i := uint64(0); i < conf.Num; i++ {
 		channels[i] = sdk.Channel{
 			Name:   fmt.Sprintf("%s-%s", conf.Prefix, namesgenerator.Generate()),
-			Status: "enabled",
+			Status: sdk.EnabledStatus,
 		}
 	}
 
@@ -378,7 +378,7 @@ func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, thing
 		if err != nil {
 			return fmt.Errorf("failed to disable user %w", err)
 		}
-		if rUser.Status != "disabled" {
+		if rUser.Status != sdk.DisabledStatus {
 			return fmt.Errorf("failed to disable user before %s after %s", user.Status, rUser.Status)
 		}
 		user = rUser
@@ -386,7 +386,7 @@ func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, thing
 		if err != nil {
 			return fmt.Errorf("failed to enable user %w", err)
 		}
-		if rUser.Status != "enabled" {
+		if rUser.Status != sdk.EnabledStatus {
 			return fmt.Errorf("failed to enable user before %s after %s", user.Status, rUser.Status)
 		}
 	}
@@ -408,7 +408,7 @@ func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, thing
 		if err != nil {
 			return fmt.Errorf("failed to disable group %w", err)
 		}
-		if rGroup.Status != "disabled" {
+		if rGroup.Status != sdk.DisabledStatus {
 			return fmt.Errorf("failed to disable group before %s after %s", group.Status, rGroup.Status)
 		}
 		group = rGroup
@@ -416,7 +416,7 @@ func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, thing
 		if err != nil {
 			return fmt.Errorf("failed to enable group %w", err)
 		}
-		if rGroup.Status != "enabled" {
+		if rGroup.Status != sdk.EnabledStatus {
 			return fmt.Errorf("failed to enable group before %s after %s", group.Status, rGroup.Status)
 		}
 	}
@@ -455,7 +455,7 @@ func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, thing
 		if err != nil {
 			return fmt.Errorf("failed to disable thing %w", err)
 		}
-		if rThing.Status != "disabled" {
+		if rThing.Status != sdk.DisabledStatus {
 			return fmt.Errorf("failed to disable thing before %s after %s", thing.Status, rThing.Status)
 		}
 		thing = rThing
@@ -463,7 +463,7 @@ func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, thing
 		if err != nil {
 			return fmt.Errorf("failed to enable thing %w", err)
 		}
-		if rThing.Status != "enabled" {
+		if rThing.Status != sdk.EnabledStatus {
 			return fmt.Errorf("failed to enable thing before %s after %s", thing.Status, rThing.Status)
 		}
 	}
@@ -485,7 +485,7 @@ func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, thing
 		if err != nil {
 			return fmt.Errorf("failed to disable channel %w", err)
 		}
-		if rChannel.Status != "disabled" {
+		if rChannel.Status != sdk.DisabledStatus {
 			return fmt.Errorf("failed to disable channel before %s after %s", channel.Status, rChannel.Status)
 		}
 		channel = rChannel
@@ -493,7 +493,7 @@ func update(s sdk.SDK, token string, users []sdk.User, groups []sdk.Group, thing
 		if err != nil {
 			return fmt.Errorf("failed to enable channel %w", err)
 		}
-		if rChannel.Status != "enabled" {
+		if rChannel.Status != sdk.EnabledStatus {
 			return fmt.Errorf("failed to enable channel before %s after %s", channel.Status, rChannel.Status)
 		}
 	}
