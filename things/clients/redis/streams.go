@@ -48,7 +48,9 @@ func (es eventStore) CreateThings(ctx context.Context, token string, thing ...cl
 			MaxLenApprox: streamLen,
 			Values:       event.Encode(),
 		}
-		es.client.XAdd(ctx, record).Err()
+		if err := es.client.XAdd(ctx, record).Err(); err != nil {
+			return sths, err
+		}
 	}
 	return sths, nil
 }
@@ -69,7 +71,9 @@ func (es eventStore) UpdateClient(ctx context.Context, token string, thing clien
 		MaxLenApprox: streamLen,
 		Values:       event.Encode(),
 	}
-	es.client.XAdd(ctx, record).Err()
+	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+		return clients.Client{}, err
+	}
 
 	return cli, nil
 }
@@ -88,7 +92,9 @@ func (es eventStore) UpdateClientOwner(ctx context.Context, token string, thing 
 		MaxLenApprox: streamLen,
 		Values:       event.Encode(),
 	}
-	es.client.XAdd(ctx, record).Err()
+	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+		return clients.Client{}, err
+	}
 
 	return cli, nil
 }
@@ -107,7 +113,9 @@ func (es eventStore) UpdateClientTags(ctx context.Context, token string, thing c
 		MaxLenApprox: streamLen,
 		Values:       event.Encode(),
 	}
-	es.client.XAdd(ctx, record).Err()
+	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+		return clients.Client{}, err
+	}
 
 	return cli, nil
 }
@@ -149,7 +157,9 @@ func (es eventStore) EnableClient(ctx context.Context, token, id string) (client
 		MaxLenApprox: streamLen,
 		Values:       event.Encode(),
 	}
-	es.client.XAdd(ctx, record).Err()
+	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+		return clients.Client{}, err
+	}
 
 	return cli, nil
 }
@@ -168,7 +178,9 @@ func (es eventStore) DisableClient(ctx context.Context, token, id string) (clien
 		MaxLenApprox: streamLen,
 		Values:       event.Encode(),
 	}
-	es.client.XAdd(ctx, record).Err()
+	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+		return clients.Client{}, err
+	}
 
 	return cli, nil
 }

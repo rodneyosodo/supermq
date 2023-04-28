@@ -46,8 +46,9 @@ func (repo clientRepo) Save(ctx context.Context, cs ...clients.Client) ([]client
 		}
 
 		if _, err := tx.NamedExecContext(ctx, q, dbcli); err != nil {
-			tx.Rollback()
-			return []clients.Client{}, postgres.HandleError(err, errors.ErrCreateEntity)
+			if err := tx.Rollback(); err != nil {
+				return []clients.Client{}, postgres.HandleError(err, errors.ErrCreateEntity)
+			}
 		}
 	}
 	if err = tx.Commit(); err != nil {
