@@ -4,6 +4,7 @@
 package jaeger
 
 import (
+	"context"
 	"errors"
 
 	jaegerp "go.opentelemetry.io/contrib/propagators/jaeger"
@@ -33,13 +34,22 @@ func NewProvider(svcName, url string) (*tracesdk.TracerProvider, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	hostResource, err := resource.New(context.TODO(), resource.WithHost(), resource.WithOSDescription())
+	if err != nil {
+		return nil, err
+	}
+	hostAttr := hostResource.Attributes()
+
 	tp := tracesdk.NewTracerProvider(
+		// Sampler can be change to TraceIDRatioBased if the volume of traces generated is high
 		tracesdk.WithSampler(tracesdk.AlwaysSample()),
 		tracesdk.WithBatcher(exporter),
-		tracesdk.WithSpanProcessor(tracesdk.NewBatchSpanProcessor(exporter)),
 		tracesdk.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
 			semconv.ServiceNameKey.String(svcName),
+			hostAttr[0],
+			hostAttr[1],
 		)),
 	)
 	otel.SetTracerProvider(tp)
