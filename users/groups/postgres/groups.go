@@ -29,14 +29,10 @@ func NewGroupRepo(db postgres.Database) groups.GroupRepository {
 
 // TODO - check parent group write access.
 func (repo groupRepository) Save(ctx context.Context, g groups.Group) (groups.Group, error) {
-	q := `INSERT INTO groups (name, description, id, owner_id, metadata, created_at, updated_at, updated_by, status)
-		VALUES (:name, :description, :id, :owner_id, :metadata, :created_at, :updated_at, :updated_by, :status)
-		RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, updated_by, status;`
-	if g.ParentID != "" {
-		q = `INSERT INTO groups (name, description, id, owner_id, parent_id, metadata, created_at, updated_at, updated_by, status)
-		VALUES (:name, :description, :id, :owner_id, :parent_id, :metadata, :created_at, :updated_at, :updated_by, :status)
-		RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, updated_by, status;`
-	}
+	q := `INSERT INTO groups (name, description, id, owner_id, parent_id, metadata, created_at, status)
+		VALUES (:name, :description, :id, :owner_id, :parent_id, :metadata, :created_at, :status)
+		RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, status;`
+
 	dbg, err := toDBGroup(g)
 	if err != nil {
 		return groups.Group{}, err
@@ -243,12 +239,12 @@ func (repo groupRepository) Update(ctx context.Context, g groups.Group) (groups.
 }
 
 func (repo groupRepository) ChangeStatus(ctx context.Context, group groups.Group) (groups.Group, error) {
-	qc := `UPDATE groups SET status = :status WHERE id = :id RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, updated_by, status`
+	qc := `UPDATE groups SET status = :status WHERE id = :id
+	RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, updated_by, status`
 
-	dbg := dbGroup{
-		ID:        group.ID,
-		UpdatedAt: group.UpdatedAt,
-		UpdatedBy: group.UpdatedBy,
+	dbg, err := toDBGroup(group)
+	if err != nil {
+		return groups.Group{}, errors.Wrap(errors.ErrUpdateEntity, err)
 	}
 	row, err := repo.db.NamedQueryContext(ctx, qc, dbg)
 	if err != nil {
@@ -310,16 +306,16 @@ func buildQuery(gm groups.GroupsPage) (string, error) {
 
 type dbGroup struct {
 	ID          string        `db:"id"`
-	ParentID    string        `db:"parent_id"`
-	OwnerID     string        `db:"owner_id"`
+	ParentID    *string       `db:"parent_id,omitempty"`
+	OwnerID     string        `db:"owner_id,omitempty"`
 	Name        string        `db:"name"`
-	Description string        `db:"description"`
+	Description string        `db:"description,omitempty"`
 	Level       int           `db:"level"`
 	Path        string        `db:"path,omitempty"`
-	Metadata    []byte        `db:"metadata"`
+	Metadata    []byte        `db:"metadata,omitempty"`
 	CreatedAt   time.Time     `db:"created_at"`
-	UpdatedAt   time.Time     `db:"updated_at"`
-	UpdatedBy   string        `db:"updated_by"`
+	UpdatedAt   sql.NullTime  `db:"updated_at,omitempty"`
+	UpdatedBy   *string       `db:"updated_by,omitempty"`
 	Status      groups.Status `db:"status"`
 }
 
@@ -332,16 +328,29 @@ func toDBGroup(g groups.Group) (dbGroup, error) {
 		}
 		data = b
 	}
+	var parentID *string
+	if g.ParentID != "" {
+		parentID = &g.ParentID
+	}
+	var updatedAt sql.NullTime
+	if g.UpdatedAt != (time.Time{}) {
+		updatedAt = sql.NullTime{Time: g.UpdatedAt, Valid: true}
+	}
+	var updatedBy *string
+	if g.UpdatedBy != "" {
+		updatedBy = &g.UpdatedBy
+	}
 	return dbGroup{
 		ID:          g.ID,
 		Name:        g.Name,
-		ParentID:    g.ParentID,
+		ParentID:    parentID,
 		OwnerID:     g.OwnerID,
 		Description: g.Description,
 		Metadata:    data,
 		Path:        g.Path,
 		CreatedAt:   g.CreatedAt,
-		UpdatedAt:   g.UpdatedAt,
+		UpdatedAt:   updatedAt,
+		UpdatedBy:   updatedBy,
 		Status:      g.Status,
 	}, nil
 }
@@ -353,16 +362,30 @@ func toGroup(g dbGroup) (groups.Group, error) {
 			return groups.Group{}, errors.Wrap(errors.ErrMalformedEntity, err)
 		}
 	}
+	var parentID string
+	if g.ParentID != nil {
+		parentID = *g.ParentID
+	}
+	var updatedAt time.Time
+	if g.UpdatedAt.Valid {
+		updatedAt = g.UpdatedAt.Time
+	}
+	var updatedBy string
+	if g.UpdatedBy != nil {
+		updatedBy = *g.UpdatedBy
+	}
+
 	return groups.Group{
 		ID:          g.ID,
 		Name:        g.Name,
-		ParentID:    g.ParentID,
+		ParentID:    parentID,
 		OwnerID:     g.OwnerID,
 		Description: g.Description,
 		Metadata:    metadata,
 		Level:       g.Level,
 		Path:        g.Path,
-		UpdatedAt:   g.UpdatedAt,
+		UpdatedAt:   updatedAt,
+		UpdatedBy:   updatedBy,
 		CreatedAt:   g.CreatedAt,
 		Status:      g.Status,
 	}, nil

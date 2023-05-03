@@ -210,7 +210,6 @@ func TestGroupRetrieveByID(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	assert.True(t, retrieved.ID == group2.ID, fmt.Sprintf("Save group, ID: expected %s got %s\n", group2.ID, retrieved.ID))
 	assert.True(t, retrieved.CreatedAt.Equal(creationTime), fmt.Sprintf("Save group, CreatedAt: expected %s got %s\n", creationTime, retrieved.CreatedAt))
-	assert.True(t, retrieved.UpdatedAt.Equal(creationTime), fmt.Sprintf("Save group, UpdatedAt: expected %s got %s\n", creationTime, retrieved.UpdatedAt))
 	assert.True(t, retrieved.ParentID == group1.ID, fmt.Sprintf("Save group, Level: expected %s got %s\n", group1.ID, retrieved.ParentID))
 	assert.True(t, retrieved.Description == description, fmt.Sprintf("Save group, Description: expected %v got %v\n", retrieved.Description, description))
 
@@ -563,7 +562,7 @@ func TestGroupChangeStatus(t *testing.T) {
 			desc: "change group status for an active group",
 			group: groups.Group{
 				ID:     group1.ID,
-				Status: groups.DisabledStatus,
+				Status: groups.EnabledStatus,
 			},
 			err: nil,
 		},

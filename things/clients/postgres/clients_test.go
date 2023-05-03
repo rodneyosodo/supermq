@@ -84,7 +84,7 @@ func TestClientsSave(t *testing.T) {
 				Metadata: clients.Metadata{},
 				Status:   clients.EnabledStatus,
 			},
-			err: errors.ErrMalformedEntity,
+			err: errors.ErrCreateEntity,
 		},
 		{
 			desc: "add client with invalid client name",
@@ -98,7 +98,7 @@ func TestClientsSave(t *testing.T) {
 				Metadata: clients.Metadata{},
 				Status:   clients.EnabledStatus,
 			},
-			err: errors.ErrMalformedEntity,
+			err: errors.ErrCreateEntity,
 		},
 		{
 			desc: "add client with invalid client owner",
@@ -112,7 +112,7 @@ func TestClientsSave(t *testing.T) {
 				Metadata: clients.Metadata{},
 				Status:   clients.EnabledStatus,
 			},
-			err: errors.ErrMalformedEntity,
+			err: errors.ErrCreateEntity,
 		},
 		{
 			desc: "add client with invalid client identity",
@@ -126,7 +126,7 @@ func TestClientsSave(t *testing.T) {
 				Metadata: clients.Metadata{},
 				Status:   clients.EnabledStatus,
 			},
-			err: errors.ErrMalformedEntity,
+			err: errors.ErrCreateEntity,
 		},
 		{
 			desc: "add client with a missing client identity",

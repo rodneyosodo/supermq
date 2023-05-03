@@ -38,7 +38,7 @@ func (repo clientRepo) Save(ctx context.Context, cs ...clients.Client) ([]client
 	for _, cli := range cs {
 		q := `INSERT INTO clients (id, name, tags, owner_id, identity, secret, metadata, created_at, updated_at, updated_by, status)
         VALUES (:id, :name, :tags, :owner_id, :identity, :secret, :metadata, :created_at, :updated_at, :updated_by, :status)
-        RETURNING id, name, tags, owner_id, identity, secret, metadata, COALESCE(owner_id, '') AS owner_id, status, created_at, updated_at, updated_by`
+        RETURNING id, name, tags, identity, secret, metadata, COALESCE(owner_id, '') AS owner_id, status, created_at, updated_at, updated_by`
 
 		dbcli, err := toDBClient(cli)
 		if err != nil {
@@ -304,8 +304,8 @@ type dbClient struct {
 	Secret    string           `db:"secret"`
 	Metadata  []byte           `db:"metadata,omitempty"`
 	CreatedAt time.Time        `db:"created_at"`
-	UpdatedAt time.Time        `db:"updated_at"`
-	UpdatedBy string           `db:"updated_by"`
+	UpdatedAt sql.NullTime     `db:"updated_at,omitempty"`
+	UpdatedBy *string          `db:"updated_by,omitempty"`
 	Groups    []groups.Group   `db:"groups"`
 	Status    clients.Status   `db:"status"`
 }
@@ -323,6 +323,14 @@ func toDBClient(c clients.Client) (dbClient, error) {
 	if err := tags.Set(c.Tags); err != nil {
 		return dbClient{}, err
 	}
+	var updatedBy *string
+	if c.UpdatedBy != "" {
+		updatedBy = &c.UpdatedBy
+	}
+	var updatedAt sql.NullTime
+	if c.UpdatedAt != (time.Time{}) {
+		updatedAt = sql.NullTime{Time: c.UpdatedAt, Valid: true}
+	}
 
 	return dbClient{
 		ID:        c.ID,
@@ -333,8 +341,8 @@ func toDBClient(c clients.Client) (dbClient, error) {
 		Secret:    c.Credentials.Secret,
 		Metadata:  data,
 		CreatedAt: c.CreatedAt,
-		UpdatedAt: c.UpdatedAt,
-		UpdatedBy: c.UpdatedBy,
+		UpdatedAt: updatedAt,
+		UpdatedBy: updatedBy,
 		Status:    c.Status,
 	}, nil
 }
@@ -350,6 +358,14 @@ func toClient(c dbClient) (clients.Client, error) {
 	for _, e := range c.Tags.Elements {
 		tags = append(tags, e.String)
 	}
+	var updatedBy string
+	if c.UpdatedBy != nil {
+		updatedBy = *c.UpdatedBy
+	}
+	var updatedAt time.Time
+	if c.UpdatedAt.Valid {
+		updatedAt = c.UpdatedAt.Time
+	}
 
 	return clients.Client{
 		ID:    c.ID,
@@ -362,8 +378,8 @@ func toClient(c dbClient) (clients.Client, error) {
 		},
 		Metadata:  metadata,
 		CreatedAt: c.CreatedAt,
-		UpdatedAt: c.UpdatedAt,
-		UpdatedBy: c.UpdatedBy,
+		UpdatedAt: updatedAt,
+		UpdatedBy: updatedBy,
 		Status:    c.Status,
 	}, nil
 }

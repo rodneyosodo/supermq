@@ -104,8 +104,6 @@ func (svc service) RegisterClient(ctx context.Context, token string, cli Client)
 	}
 	cli.ID = clientID
 	cli.CreatedAt = time.Now()
-	cli.UpdatedAt = cli.CreatedAt
-	cli.UpdatedBy = clientID
 
 	return svc.clients.Save(ctx, cli)
 }
@@ -320,6 +318,7 @@ func (svc service) UpdateClientSecret(ctx context.Context, token, oldSecret, new
 	dbClient.Credentials.Secret = newSecret
 	dbClient.UpdatedAt = time.Now()
 	dbClient.UpdatedBy = id
+
 	return svc.clients.UpdateSecret(ctx, dbClient)
 }
 

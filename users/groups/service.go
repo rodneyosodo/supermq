@@ -71,8 +71,6 @@ func (svc service) CreateGroup(ctx context.Context, token string, g Group) (Grou
 
 	g.ID = groupID
 	g.CreatedAt = time.Now()
-	g.UpdatedAt = g.CreatedAt
-	g.UpdatedBy = ownerID
 
 	return svc.groups.Save(ctx, g)
 }
@@ -120,6 +118,7 @@ func (svc service) UpdateGroup(ctx context.Context, token string, g Group) (Grou
 		return Group{}, err
 	}
 	g.UpdatedAt = time.Now()
+	g.UpdatedBy = id
 
 	return svc.groups.Update(ctx, g)
 }

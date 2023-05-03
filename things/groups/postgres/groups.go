@@ -227,11 +227,11 @@ func (repo grepo) Update(ctx context.Context, g groups.Group) (groups.Group, err
 func (repo grepo) ChangeStatus(ctx context.Context, group groups.Group) (groups.Group, error) {
 	qc := `UPDATE groups SET status = :status WHERE id = :id RETURNING id, name, description, owner_id, COALESCE(parent_id, '') AS parent_id, metadata, created_at, updated_at, updated_by, status`
 
-	dbg := dbGroup{
-		ID:        group.ID,
-		UpdatedAt: group.UpdatedAt,
-		UpdatedBy: group.UpdatedBy,
+	dbg, err := toDBGroup(group)
+	if err != nil {
+		return groups.Group{}, errors.Wrap(errors.ErrUpdateEntity, err)
 	}
+
 	row, err := repo.db.NamedQueryContext(ctx, qc, dbg)
 	if err != nil {
 		return groups.Group{}, postgres.HandleError(err, errors.ErrUpdateEntity)
@@ -300,8 +300,8 @@ type dbGroup struct {
 	Path        string        `db:"path,omitempty"`
 	Metadata    []byte        `db:"metadata"`
 	CreatedAt   time.Time     `db:"created_at"`
-	UpdatedAt   time.Time     `db:"updated_at"`
-	UpdatedBy   string        `db:"updated_by"`
+	UpdatedAt   sql.NullTime  `db:"updated_at,omitempty"`
+	UpdatedBy   *string       `db:"updated_by,omitempty"`
 	Status      groups.Status `db:"status"`
 }
 
@@ -314,6 +314,14 @@ func toDBGroup(g groups.Group) (dbGroup, error) {
 		}
 		data = b
 	}
+	var updatedAt sql.NullTime
+	if g.UpdatedAt != (time.Time{}) {
+		updatedAt = sql.NullTime{Time: g.UpdatedAt, Valid: true}
+	}
+	var updatedBy *string
+	if g.UpdatedBy != "" {
+		updatedBy = &g.UpdatedBy
+	}
 	return dbGroup{
 		ID:          g.ID,
 		Name:        g.Name,
@@ -323,8 +331,8 @@ func toDBGroup(g groups.Group) (dbGroup, error) {
 		Metadata:    data,
 		Path:        g.Path,
 		CreatedAt:   g.CreatedAt,
-		UpdatedAt:   g.UpdatedAt,
-		UpdatedBy:   g.UpdatedBy,
+		UpdatedAt:   updatedAt,
+		UpdatedBy:   updatedBy,
 		Status:      g.Status,
 	}, nil
 }
@@ -336,6 +344,15 @@ func toGroup(g dbGroup) (groups.Group, error) {
 			return groups.Group{}, errors.Wrap(errors.ErrMalformedEntity, err)
 		}
 	}
+	var updatedAt time.Time
+	if g.UpdatedAt.Valid {
+		updatedAt = g.UpdatedAt.Time
+	}
+	var updatedBy string
+	if g.UpdatedBy != nil {
+		updatedBy = *g.UpdatedBy
+	}
+
 	return groups.Group{
 		ID:          g.ID,
 		Name:        g.Name,
@@ -345,9 +362,9 @@ func toGroup(g dbGroup) (groups.Group, error) {
 		Metadata:    metadata,
 		Level:       g.Level,
 		Path:        g.Path,
-		UpdatedAt:   g.UpdatedAt,
+		UpdatedAt:   updatedAt,
 		CreatedAt:   g.CreatedAt,
-		UpdatedBy:   g.UpdatedBy,
+		UpdatedBy:   updatedBy,
 		Status:      g.Status,
 	}, nil
 }

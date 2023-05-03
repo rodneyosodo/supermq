@@ -102,7 +102,6 @@ func (svc service) AddPolicy(ctx context.Context, token string, p Policy) error 
 	}
 	p.OwnerID = id
 	p.CreatedAt = time.Now()
-	p.UpdatedAt = p.CreatedAt
 
 	return svc.policies.Save(ctx, p)
 }

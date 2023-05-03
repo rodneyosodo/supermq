@@ -568,7 +568,7 @@ func TestGroupChangeStatus(t *testing.T) {
 			desc: "change group status for an active group",
 			group: groups.Group{
 				ID:     group1.ID,
-				Status: groups.DisabledStatus,
+				Status: groups.EnabledStatus,
 			},
 			err: nil,
 		},
