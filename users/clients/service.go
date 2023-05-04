@@ -143,7 +143,7 @@ func (svc service) ViewClient(ctx context.Context, token string, id string) (mfc
 		return svc.clients.RetrieveByID(ctx, id)
 	}
 
-	if err := svc.policies.Evaluate(ctx, entityType, policies.Policy{Subject: ir, Object: id, Actions: []string{listRelationKey}}); err != nil {
+	if err := svc.authorizeByID(ctx, entityType, policies.Policy{Subject: ir, Object: id, Actions: []string{listRelationKey}}); err != nil {
 		return mfclients.Client{}, err
 	}
 
