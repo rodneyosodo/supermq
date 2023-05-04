@@ -47,7 +47,7 @@ const (
 
 type config struct {
 	LogLevel        string `env:"MF_TWINS_LOG_LEVEL"          envDefault:"info"`
-	StandaloneEmail string `env:"MF_TWINS_STANDALONE_EMAIL"   envDefault:""`
+	StandaloneID    string `env:"MF_TWINS_STANDALONE_ID"      envDefault:""`
 	StandaloneToken string `env:"MF_TWINS_STANDALONE_TOKEN"   envDefault:""`
 	ChannelID       string `env:"MF_TWINS_CHANNEL_ID"         envDefault:""`
 	BrokerURL       string `env:"MF_BROKER_URL"               envDefault:"nats://localhost:4222"`
@@ -91,9 +91,9 @@ func main() {
 	tracer := tp.Tracer(svcName)
 
 	var auth policies.AuthServiceClient
-	switch cfg.StandaloneEmail != "" && cfg.StandaloneToken != "" {
+	switch cfg.StandaloneID != "" && cfg.StandaloneToken != "" {
 	case true:
-		auth = localusers.NewAuthService(cfg.StandaloneEmail, cfg.StandaloneToken)
+		auth = localusers.NewAuthService(cfg.StandaloneID, cfg.StandaloneToken)
 	default:
 		authServiceClient, authHandler, err := authClient.Setup(envPrefix, cfg.JaegerURL)
 		if err != nil {
