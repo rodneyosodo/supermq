@@ -69,7 +69,7 @@ func NewPubSub(url, _ string, logger log.Logger) (messaging.PubSub, error) {
 	return ret, nil
 }
 
-func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) error {
+func (ps *pubsub) Subscribe(ctx context.Context, id, topic string, handler messaging.MessageHandler) error {
 	if id == "" {
 		return ErrEmptyID
 	}
@@ -103,7 +103,7 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 	return nil
 }
 
-func (ps *pubsub) Unsubscribe(id, topic string) error {
+func (ps *pubsub) Unsubscribe(ctx context.Context, id, topic string) error {
 	if id == "" {
 		return ErrEmptyID
 	}

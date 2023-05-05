@@ -44,7 +44,7 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 
 }
 
-func (pub *publisher) Publish(topic string, msg *messaging.Message) error {
+func (pub *publisher) Publish(ctx context.Context, topic string, msg *messaging.Message) error {
 	if topic == "" {
 		return ErrEmptyTopic
 	}
@@ -63,7 +63,7 @@ func (pub *publisher) Publish(topic string, msg *messaging.Message) error {
 
 	writer, ok := pub.topics[subject]
 	if ok {
-		if err := writer.WriteMessages(context.Background(), kafkaMsg); err != nil {
+		if err := writer.WriteMessages(ctx, kafkaMsg); err != nil {
 			return err
 		}
 		return nil
@@ -87,7 +87,7 @@ func (pub *publisher) Publish(topic string, msg *messaging.Message) error {
 		BatchTimeout:           batchTimeout,
 		AllowAutoTopicCreation: true,
 	}
-	if err := writer.WriteMessages(context.Background(), kafkaMsg); err != nil {
+	if err := writer.WriteMessages(ctx, kafkaMsg); err != nil {
 		return err
 	}
 	pub.mu.Lock()

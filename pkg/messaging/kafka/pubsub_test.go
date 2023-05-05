@@ -4,6 +4,7 @@
 package kafka_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -27,7 +28,7 @@ var (
 )
 
 func TestPubsub(t *testing.T) {
-	err := pubsub.Subscribe(clientID, fmt.Sprintf("%s.*", chansPrefix), handler{})
+	err := pubsub.Subscribe(context.TODO(), clientID, fmt.Sprintf("%s.*", chansPrefix), handler{})
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -81,7 +82,7 @@ func TestPubsub(t *testing.T) {
 			Subtopic: tc.subtopic,
 			Payload:  tc.payload,
 		}
-		err := publisher.Publish(tc.topic, &expectedMsg)
+		err := publisher.Publish(context.TODO(), tc.topic, &expectedMsg)
 		if tc.err == nil {
 			require.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", tc.desc, err))
 		} else {
@@ -214,14 +215,14 @@ func TestPubsub(t *testing.T) {
 
 	for _, pc := range subcases {
 		if pc.pubsub == true {
-			err := pubsub.Subscribe(pc.topicID, pc.topic, handler{})
+			err := pubsub.Subscribe(context.TODO(), pc.topicID, pc.topic, handler{})
 			if pc.errorMessage == nil {
 				require.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", pc.desc, err))
 			} else {
 				assert.Equal(t, err, pc.errorMessage)
 			}
 		} else {
-			err := pubsub.Unsubscribe(pc.topicID, pc.topic)
+			err := pubsub.Unsubscribe(context.TODO(), pc.topicID, pc.topic)
 			if pc.errorMessage == nil {
 				require.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", pc.desc, err))
 			} else {
