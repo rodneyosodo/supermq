@@ -13,12 +13,14 @@ import (
 	"github.com/mainflux/mainflux/consumers/writers/api"
 	"github.com/mainflux/mainflux/consumers/writers/mongodb"
 	"github.com/mainflux/mainflux/internal"
+	jaegerClient "github.com/mainflux/mainflux/internal/clients/jaeger"
 	mongoClient "github.com/mainflux/mainflux/internal/clients/mongo"
 	"github.com/mainflux/mainflux/internal/env"
 	"github.com/mainflux/mainflux/internal/server"
 	httpserver "github.com/mainflux/mainflux/internal/server/http"
-	"github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
+	"github.com/mainflux/mainflux/pkg/messaging/tracing"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/sync/errgroup"
 )
@@ -28,13 +30,14 @@ const (
 	envPrefix      = "MF_MONGO_WRITER_"
 	envPrefixDB    = "MF_MONGO_WRITER_DB_"
 	envPrefixHttp  = "MF_MONGO_WRITER_HTTP_"
-	defSvcHttpPort = "8180"
+	defSvcHttpPort = "9008"
 )
 
 type config struct {
 	LogLevel   string `env:"MF_MONGO_WRITER_LOG_LEVEL"     envDefault:"info"`
 	ConfigPath string `env:"MF_MONGO_WRITER_CONFIG_PATH"   envDefault:"/config.toml"`
 	BrokerURL  string `env:"MF_BROKER_URL"                 envDefault:"nats://localhost:4222"`
+	JaegerURL  string `env:"MF_JAEGER_URL"                 envDefault:"localhost:6831"`
 }
 
 func main() {
@@ -43,34 +46,41 @@ func main() {
 
 	cfg := config{}
 	if err := env.Parse(&cfg); err != nil {
-		log.Fatalf("failed to load %s configuration : %s", svcName, err.Error())
+		log.Fatalf("failed to load %s configuration : %s", svcName, err)
 	}
 
-	logger, err := logger.New(os.Stdout, cfg.LogLevel)
+	logger, err := mflog.New(os.Stdout, cfg.LogLevel)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to init logger: %s", err)
 	}
+
+	tracer, traceCloser, err := jaegerClient.NewTracer(svcName, cfg.JaegerURL)
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("failed to init Jaeger: %s", err))
+	}
+	defer traceCloser.Close()
 
 	pubSub, err := brokers.NewPubSub(cfg.BrokerURL, "", logger)
 	if err != nil {
-		log.Fatalf("failed to connect to message broker: %s", err.Error())
+		logger.Fatal(fmt.Sprintf("failed to connect to message broker: %s", err))
 	}
+	pubSub = tracing.NewPubSub(tracer, pubSub)
 	defer pubSub.Close()
 
 	db, err := mongoClient.Setup(envPrefixDB)
 	if err != nil {
-		log.Fatalf("failed to setup mongo database : %s", err.Error())
+		logger.Fatal(fmt.Sprintf("failed to setup mongo database : %s", err))
 	}
 
 	repo := newService(db, logger)
 
-	if err := consumers.Start(svcName, pubSub, repo, cfg.ConfigPath, logger); err != nil {
-		log.Fatalf("failed to start MongoDB writer: %s", err.Error())
+	if err := consumers.Start(ctx, svcName, pubSub, repo, cfg.ConfigPath, logger); err != nil {
+		logger.Fatal(fmt.Sprintf("failed to start MongoDB writer: %s", err))
 	}
 
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
 	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
-		log.Fatalf("failed to load %s HTTP server configuration : %s", svcName, err.Error())
+		logger.Fatal(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 	}
 	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(svcName), logger)
 
@@ -87,7 +97,7 @@ func main() {
 	}
 }
 
-func newService(db *mongo.Database, logger logger.Logger) consumers.Consumer {
+func newService(db *mongo.Database, logger mflog.Logger) consumers.BlockingConsumer {
 	repo := mongodb.New(db)
 	repo = api.LoggingMiddleware(repo, logger)
 	counter, latency := internal.MakeMetrics("mongodb", "message_writer")

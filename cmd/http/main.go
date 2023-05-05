@@ -12,15 +12,18 @@ import (
 	"github.com/mainflux/mainflux"
 	adapter "github.com/mainflux/mainflux/http"
 	"github.com/mainflux/mainflux/http/api"
+	"github.com/mainflux/mainflux/http/tracing"
 	"github.com/mainflux/mainflux/internal"
 	thingsClient "github.com/mainflux/mainflux/internal/clients/grpc/things"
 	jaegerClient "github.com/mainflux/mainflux/internal/clients/jaeger"
 	"github.com/mainflux/mainflux/internal/env"
 	"github.com/mainflux/mainflux/internal/server"
 	httpserver "github.com/mainflux/mainflux/internal/server/http"
-	"github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
+	pstracing "github.com/mainflux/mainflux/pkg/messaging/tracing"
+	"github.com/opentracing/opentracing-go"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -28,7 +31,7 @@ const (
 	svcName        = "http_adapter"
 	envPrefix      = "MF_HTTP_ADAPTER_"
 	envPrefixHttp  = "MF_HTTP_ADAPTER_HTTP_"
-	defSvcHttpPort = "8180"
+	defSvcHttpPort = "80"
 )
 
 type config struct {
@@ -43,38 +46,39 @@ func main() {
 
 	cfg := config{}
 	if err := env.Parse(&cfg); err != nil {
-		log.Fatalf("failed to load %s service configuration : %s", svcName, err.Error())
+		log.Fatalf("failed to load %s configuration : %s", svcName, err)
 	}
 
-	logger, err := logger.New(os.Stdout, cfg.LogLevel)
+	logger, err := mflog.New(os.Stdout, cfg.LogLevel)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatalf("failed to init logger: %s", err)
 	}
 
 	tc, tcHandler, err := thingsClient.Setup(envPrefix, cfg.JaegerURL)
 	if err != nil {
-		log.Fatal(err.Error())
+		logger.Fatal(err.Error())
 	}
 	defer tcHandler.Close()
 	logger.Info("Successfully connected to things grpc server " + tcHandler.Secure())
 
-	pub, err := brokers.NewPublisher(cfg.BrokerURL)
+	tracer, closer, err := jaegerClient.NewTracer(svcName, cfg.JaegerURL)
 	if err != nil {
-		log.Fatalf("failed to connect to message broker: %s", err.Error())
-	}
-	defer pub.Close()
-
-	svc := newService(pub, tc, logger)
-
-	tracer, closer, err := jaegerClient.NewTracer("http_adapter", cfg.JaegerURL)
-	if err != nil {
-		log.Fatalf("failed to init Jaeger: %s", err.Error())
+		logger.Fatal(fmt.Sprintf("failed to init Jaeger: %s", err))
 	}
 	defer closer.Close()
 
+	pub, err := brokers.NewPublisher(cfg.BrokerURL)
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("failed to connect to message broker: %s", err))
+	}
+	pub = pstracing.New(tracer, pub)
+	defer pub.Close()
+
+	svc := newService(pub, tc, logger, tracer)
+
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
 	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
-		log.Fatalf("failed to load %s HTTP server configuration : %s", svcName, err.Error())
+		logger.Fatal(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 	}
 	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(svc, tracer, logger), logger)
 
@@ -91,8 +95,9 @@ func main() {
 	}
 }
 
-func newService(pub messaging.Publisher, tc mainflux.ThingsServiceClient, logger logger.Logger) adapter.Service {
+func newService(pub messaging.Publisher, tc mainflux.ThingsServiceClient, logger mflog.Logger, tracer opentracing.Tracer) adapter.Service {
 	svc := adapter.New(pub, tc)
+	svc = tracing.New(tracer, svc)
 	svc = api.LoggingMiddleware(svc, logger)
 	counter, latency := internal.MakeMetrics(svcName, "api")
 	svc = api.MetricsMiddleware(svc, counter, latency)

@@ -4,6 +4,7 @@
 package nats_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -11,7 +12,6 @@ import (
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/nats"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -29,8 +29,10 @@ var (
 )
 
 func TestPublisher(t *testing.T) {
-	err := pubsub.Subscribe(clientID, fmt.Sprintf("%s.>", chansPrefix), handler{})
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	err := pubsub.Subscribe(context.TODO(), clientID, fmt.Sprintf("%s.%s", chansPrefix, topic), handler{})
+	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	err = pubsub.Subscribe(context.TODO(), clientID, fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic), handler{})
+	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
 		desc     string
@@ -77,14 +79,18 @@ func TestPublisher(t *testing.T) {
 			Subtopic: tc.subtopic,
 			Payload:  tc.payload,
 		}
-		err = pubsub.Publish(tc.topic, &expectedMsg)
-		if tc.err == nil {
-			require.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", tc.desc, err))
-			receivedMsg := <-msgChan
-			assert.Equal(t, expectedMsg.Payload, receivedMsg.Payload, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &expectedMsg.Payload, receivedMsg.Payload))
-		} else {
-			assert.Equal(t, err, tc.err)
-		}
+		assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		err = pubsub.Publish(context.TODO(), topic, &expectedMsg)
+		assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		receivedMsg := <-msgChan
+		assert.Equal(t, expectedMsg.Channel, receivedMsg.Channel, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &expectedMsg, receivedMsg))
+		assert.Equal(t, expectedMsg.Created, receivedMsg.Created, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &expectedMsg, receivedMsg))
+		assert.Equal(t, expectedMsg.Protocol, receivedMsg.Protocol, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &expectedMsg, receivedMsg))
+		assert.Equal(t, expectedMsg.Publisher, receivedMsg.Publisher, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &expectedMsg, receivedMsg))
+		assert.Equal(t, expectedMsg.Subtopic, receivedMsg.Subtopic, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &expectedMsg, receivedMsg))
+		assert.Equal(t, expectedMsg.Payload, receivedMsg.Payload, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &expectedMsg, receivedMsg))
 	}
 }
 
@@ -262,16 +268,16 @@ func TestPubsub(t *testing.T) {
 
 	for _, pc := range subcases {
 		if pc.pubsub == true {
-			err := pubsub.Subscribe(pc.clientID, pc.topic, pc.handler)
+			err := pubsub.Subscribe(context.TODO(), pc.clientID, pc.topic, pc.handler)
 			if pc.errorMessage == nil {
-				require.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", pc.desc, err))
+				assert.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", pc.desc, err))
 			} else {
 				assert.Equal(t, err, pc.errorMessage)
 			}
 		} else {
-			err := pubsub.Unsubscribe(pc.clientID, pc.topic)
+			err := pubsub.Unsubscribe(context.TODO(), pc.clientID, pc.topic)
 			if pc.errorMessage == nil {
-				require.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", pc.desc, err))
+				assert.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", pc.desc, err))
 			} else {
 				assert.Equal(t, err, pc.errorMessage)
 			}

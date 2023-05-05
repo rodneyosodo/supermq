@@ -14,12 +14,14 @@ import (
 	"github.com/mainflux/mainflux/consumers/writers/api"
 	"github.com/mainflux/mainflux/consumers/writers/timescale"
 	"github.com/mainflux/mainflux/internal"
+	jaegerClient "github.com/mainflux/mainflux/internal/clients/jaeger"
 	pgClient "github.com/mainflux/mainflux/internal/clients/postgres"
 	"github.com/mainflux/mainflux/internal/env"
 	"github.com/mainflux/mainflux/internal/server"
 	httpserver "github.com/mainflux/mainflux/internal/server/http"
-	"github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
+	"github.com/mainflux/mainflux/pkg/messaging/tracing"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -28,13 +30,14 @@ const (
 	envPrefix      = "MF_TIMESCALE_WRITER_"
 	envPrefixHttp  = "MF_TIMESCALE_WRITER_HTTP_"
 	defDB          = "messages"
-	defSvcHttpPort = "8180"
+	defSvcHttpPort = "9012"
 )
 
 type config struct {
 	LogLevel   string `env:"MF_TIMESCALE_WRITER_LOG_LEVEL"   envDefault:"info"`
 	ConfigPath string `env:"MF_TIMESCALE_WRITER_CONFIG_PATH" envDefault:"/config.toml"`
 	BrokerURL  string `env:"MF_BROKER_URL"                   envDefault:"nats://localhost:4222"`
+	JaegerURL  string `env:"MF_JAEGER_URL"                   envDefault:"localhost:6831"`
 }
 
 func main() {
@@ -43,36 +46,43 @@ func main() {
 
 	cfg := config{}
 	if err := env.Parse(&cfg); err != nil {
-		log.Fatalf("failed to load %s service configuration : %s", svcName, err.Error())
+		log.Fatalf("failed to load %s service configuration : %s", svcName, err)
 	}
 
-	logger, err := logger.New(os.Stdout, cfg.LogLevel)
+	logger, err := mflog.New(os.Stdout, cfg.LogLevel)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	dbConfig := pgClient.Config{Name: defDB}
 	db, err := pgClient.SetupWithConfig(envPrefix, *timescale.Migration(), dbConfig)
 	if err != nil {
-		log.Fatal(err.Error())
+		logger.Fatal(err.Error())
 	}
 	defer db.Close()
+
+	tracer, traceCloser, err := jaegerClient.NewTracer(svcName, cfg.JaegerURL)
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("failed to init Jaeger: %s", err))
+	}
+	defer traceCloser.Close()
 
 	repo := newService(db, logger)
 
 	pubSub, err := brokers.NewPubSub(cfg.BrokerURL, "", logger)
 	if err != nil {
-		log.Fatalf("failed to connect to message broker: %s", err.Error())
+		logger.Fatal(fmt.Sprintf("failed to connect to message broker: %s", err))
 	}
+	pubSub = tracing.NewPubSub(tracer, pubSub)
 	defer pubSub.Close()
 
-	if err = consumers.Start(svcName, pubSub, repo, cfg.ConfigPath, logger); err != nil {
-		log.Fatalf("failed to create Timescale writer: %s", err.Error())
+	if err = consumers.Start(ctx, svcName, pubSub, repo, cfg.ConfigPath, logger); err != nil {
+		logger.Fatal(fmt.Sprintf("failed to create Timescale writer: %s", err))
 	}
 
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
 	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
-		log.Fatalf("failed to load %s HTTP server configuration : %s", svcName, err.Error())
+		logger.Fatal(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 	}
 	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(svcName), logger)
 
@@ -89,7 +99,7 @@ func main() {
 	}
 }
 
-func newService(db *sqlx.DB, logger logger.Logger) consumers.Consumer {
+func newService(db *sqlx.DB, logger mflog.Logger) consumers.BlockingConsumer {
 	svc := timescale.New(db)
 	svc = api.LoggingMiddleware(svc, logger)
 	counter, latency := internal.MakeMetrics("timescale", "message_writer")

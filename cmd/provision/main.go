@@ -31,13 +31,13 @@ const (
 	defServerKey       = ""
 	defThingsURL       = "http://localhost"
 	defUsersURL        = "http://localhost"
-	defHTTPPort        = "8190"
+	defHTTPPort        = "9016"
 	defMfUser          = "test@example.com"
 	defMfPass          = "test"
 	defMfAPIKey        = ""
-	defMfBSURL         = "http://localhost:8202/things/configs"
-	defMfWhiteListURL  = "http://localhost:8202/things/state"
-	defMfCertsURL      = "http://localhost:8204"
+	defMfBSURL         = "http://localhost:9000/things/configs"
+	defMfWhiteListURL  = "http://localhost:9000/things/state"
+	defMfCertsURL      = "http://localhost:9019"
 	defProvisionCerts  = "false"
 	defProvisionBS     = "true"
 	defBSAutoWhitelist = "true"
@@ -89,6 +89,7 @@ func main() {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
+
 	if cfgFromFile, err := loadConfigFromFile(cfg.File); err != nil {
 		logger.Warn(fmt.Sprintf("Continue with settings from env, failed to load from: %s: %s", cfg.File, err))
 	} else {
@@ -99,6 +100,7 @@ func main() {
 	}
 
 	SDKCfg := mfSDK.Config{
+		UsersURL:        cfg.Server.UsersURL,
 		ThingsURL:       cfg.Server.ThingsURL,
 		BootstrapURL:    cfg.Server.MfBSURL,
 		CertsURL:        cfg.Server.MfCertsURL,

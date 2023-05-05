@@ -11,6 +11,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	thingsClient "github.com/mainflux/mainflux/internal/clients/grpc/things"
+	jaegerClient "github.com/mainflux/mainflux/internal/clients/jaeger"
 	redisClient "github.com/mainflux/mainflux/internal/clients/redis"
 	"github.com/mainflux/mainflux/internal/env"
 	mflog "github.com/mainflux/mainflux/logger"
@@ -21,6 +22,7 @@ import (
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
 	mqttpub "github.com/mainflux/mainflux/pkg/messaging/mqtt"
+	"github.com/mainflux/mainflux/pkg/messaging/tracing"
 	mp "github.com/mainflux/mproxy/pkg/mqtt"
 	"github.com/mainflux/mproxy/pkg/session"
 	ws "github.com/mainflux/mproxy/pkg/websocket"
@@ -56,12 +58,12 @@ func main() {
 
 	cfg := config{}
 	if err := env.Parse(&cfg); err != nil {
-		log.Fatalf("failed to load %s configuration : %s", svcName, err.Error())
+		log.Fatalf("failed to load %s configuration : %s", svcName, err)
 	}
 
 	logger, err := mflog.New(os.Stdout, cfg.LogLevel)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatalf("failed to init logger: %s", err)
 	}
 
 	if cfg.MqttTargetHealthCheck != "" {
@@ -71,35 +73,44 @@ func main() {
 
 		err := backoff.RetryNotify(healthcheck(cfg), backoff.NewExponentialBackOff(), notify)
 		if err != nil {
-			log.Fatalf("MQTT healthcheck limit exceeded, exiting. %s ", err.Error())
+			logger.Fatal(fmt.Sprintf("MQTT healthcheck limit exceeded, exiting. %s ", err))
 		}
 	}
 
+	tracer, traceCloser, err := jaegerClient.NewTracer(svcName, cfg.JaegerURL)
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("failed to init Jaeger: %s", err))
+	}
+	defer traceCloser.Close()
+
 	nps, err := brokers.NewPubSub(cfg.BrokerURL, "mqtt", logger)
 	if err != nil {
-		log.Fatalf("failed to connect to message broker: %s", err.Error())
+		logger.Fatal(fmt.Sprintf("failed to connect to message broker: %s", err))
 	}
+	nps = tracing.NewPubSub(tracer, nps)
 	defer nps.Close()
 
 	mpub, err := mqttpub.NewPublisher(fmt.Sprintf("%s:%s", cfg.MqttTargetHost, cfg.MqttTargetPort), cfg.MqttForwarderTimeout)
 	if err != nil {
-		log.Fatalf("failed to create MQTT publisher: %s", err.Error())
+		logger.Fatal(fmt.Sprintf("failed to create MQTT publisher: %s", err))
 	}
+	mpub = tracing.New(tracer, mpub)
 
 	fwd := mqtt.NewForwarder(brokers.SubjectAllChannels, logger)
-	if err := fwd.Forward(svcName, nps, mpub); err != nil {
-		log.Fatalf("failed to forward message broker messages: %s", err)
+	if err := fwd.Forward(ctx, svcName, nps, mpub); err != nil {
+		logger.Fatal(fmt.Sprintf("failed to forward message broker messages: %s", err))
 	}
 
 	np, err := brokers.NewPublisher(cfg.BrokerURL)
 	if err != nil {
-		log.Fatalf("failed to connect to message broker: %s", err.Error())
+		logger.Fatal(fmt.Sprintf("failed to connect to message broker: %s", err))
 	}
+	np = tracing.New(tracer, np)
 	defer np.Close()
 
 	ec, err := redisClient.Setup(envPrefixES)
 	if err != nil {
-		log.Fatalf("failed to setup %s event store redis client : %s", svcName, err.Error())
+		logger.Fatal(fmt.Sprintf("failed to setup %s event store redis client : %s", svcName, err))
 	}
 	defer ec.Close()
 
@@ -107,13 +118,13 @@ func main() {
 
 	ac, err := redisClient.Setup(envPrefixAuthCache)
 	if err != nil {
-		log.Fatalf("failed to setup %s event store redis client : %s", svcName, err.Error())
+		logger.Fatal(fmt.Sprintf("failed to setup %s event store redis client : %s", svcName, err))
 	}
 	defer ac.Close()
 
 	tc, tcHandler, err := thingsClient.Setup(envPrefix, cfg.JaegerURL)
 	if err != nil {
-		log.Fatal(err.Error())
+		logger.Fatal(err.Error())
 	}
 	defer tcHandler.Close()
 	logger.Info("Successfully connected to things grpc server " + tcHandler.Secure())
