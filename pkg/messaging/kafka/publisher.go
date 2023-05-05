@@ -35,6 +35,7 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	if err != nil {
 		return &publisher{}, err
 	}
+
 	ret := &publisher{
 		url:    url,
 		conn:   conn,
@@ -60,6 +61,8 @@ func (pub *publisher) Publish(ctx context.Context, topic string, msg *messaging.
 	kafkaMsg := kafka.Message{
 		Value: data,
 	}
+	pub.mu.Lock()
+	defer pub.mu.Unlock()
 
 	writer, ok := pub.topics[subject]
 	if ok {
@@ -79,6 +82,7 @@ func (pub *publisher) Publish(ctx context.Context, topic string, msg *messaging.
 	if err := pub.conn.CreateTopics(topicConfigs...); err != nil {
 		return err
 	}
+
 	writer = &kafka.Writer{
 		Addr:                   kafka.TCP(pub.url),
 		Topic:                  subject,
@@ -90,8 +94,6 @@ func (pub *publisher) Publish(ctx context.Context, topic string, msg *messaging.
 	if err := writer.WriteMessages(ctx, kafkaMsg); err != nil {
 		return err
 	}
-	pub.mu.Lock()
-	defer pub.mu.Unlock()
 	pub.topics[subject] = writer
 	return nil
 }

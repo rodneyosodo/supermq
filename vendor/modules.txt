@@ -270,8 +270,6 @@ github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.0.1
 ## explicit; go 1.18
 github.com/inconshreveable/mousetrap
-# github.com/influxdata/influxdb-client-go v1.4.0
-## explicit; go 1.13
 # github.com/influxdata/influxdb-client-go/v2 v2.12.3
 ## explicit; go 1.17
 github.com/influxdata/influxdb-client-go/v2
@@ -554,6 +552,9 @@ github.com/rubenv/sql-migrate/sqlparse
 # github.com/ryanuber/go-glob v1.0.0
 ## explicit
 github.com/ryanuber/go-glob
+# github.com/samuel/go-zookeeper v0.0.0-20201211165307-7117e9ea2414
+## explicit
+github.com/samuel/go-zookeeper/zk
 # github.com/segmentio/kafka-go v0.4.38
 ## explicit; go 1.15
 github.com/segmentio/kafka-go

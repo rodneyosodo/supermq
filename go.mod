@@ -39,6 +39,7 @@ require (
 	github.com/prometheus/client_golang v1.13.0
 	github.com/rabbitmq/amqp091-go v1.5.0
 	github.com/rubenv/sql-migrate v1.2.0
+	github.com/samuel/go-zookeeper v0.0.0-20201211165307-7117e9ea2414
 	github.com/segmentio/kafka-go v0.4.38
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.13.0
