@@ -374,7 +374,7 @@ func (svc service) ListMembers(ctx context.Context, token, groupID string, pm mf
 		return mfclients.MembersPage{}, err
 	}
 	// If the user is admin, fetch all members from the database.
-	if err := svc.authorizeByID(ctx, entityType, policies.Policy{Subject: id, Object: clientsObjectKey, Actions: []string{listRelationKey}}); err == nil {
+	if err := svc.authorize(ctx, entityType, policies.Policy{Subject: id, Object: clientsObjectKey, Actions: []string{listRelationKey}}); err == nil {
 		return svc.clients.Members(ctx, groupID, pm)
 	}
 	pm.Subject = id
@@ -402,7 +402,7 @@ func (svc service) changeClientStatus(ctx context.Context, token string, client 
 	return svc.clients.ChangeStatus(ctx, client)
 }
 
-func (svc service) authorizeByID(ctx context.Context, entityType string, p policies.Policy) error {
+func (svc service) authorize(ctx context.Context, entityType string, p policies.Policy) error {
 	if err := p.Validate(); err != nil {
 		return err
 	}
