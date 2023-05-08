@@ -210,7 +210,6 @@ func TestGroupRetrieveByID(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	assert.True(t, retrieved.ID == group2.ID, fmt.Sprintf("Save group, ID: expected %s got %s\n", group2.ID, retrieved.ID))
 	assert.True(t, retrieved.CreatedAt.Equal(creationTime), fmt.Sprintf("Save group, CreatedAt: expected %s got %s\n", creationTime, retrieved.CreatedAt))
-	assert.True(t, retrieved.UpdatedAt.Equal(creationTime), fmt.Sprintf("Save group, UpdatedAt: expected %s got %s\n", creationTime, retrieved.UpdatedAt))
 	assert.True(t, retrieved.ParentID == group1.ID, fmt.Sprintf("Save group, Level: expected %s got %s\n", group1.ID, retrieved.ParentID))
 	assert.True(t, retrieved.Description == description, fmt.Sprintf("Save group, Description: expected %v got %v\n", retrieved.Description, description))
 
@@ -563,7 +562,7 @@ func TestGroupChangeStatus(t *testing.T) {
 			desc: "change group status for an active group",
 			group: groups.Group{
 				ID:     group1.ID,
-				Status: groups.DisabledStatus,
+				Status: groups.EnabledStatus,
 			},
 			err: nil,
 		},
@@ -586,7 +585,7 @@ func TestGroupChangeStatus(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		expected, err := repo.ChangeStatus(context.Background(), tc.group.ID, tc.group.Status)
+		expected, err := repo.ChangeStatus(context.Background(), tc.group)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if err == nil {
 			assert.Equal(t, tc.group.Status, expected.Status, fmt.Sprintf("%s: expected %d got %d\n", tc.desc, tc.group.Status, expected.Status))

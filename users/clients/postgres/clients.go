@@ -30,14 +30,9 @@ func NewClientRepo(db postgres.Database) clients.ClientRepository {
 }
 
 func (repo clientRepo) Save(ctx context.Context, c clients.Client) (clients.Client, error) {
-	q := `INSERT INTO clients (id, name, tags, owner, identity, secret, metadata, created_at, updated_at, status, role)
-        VALUES (:id, :name, :tags, :owner, :identity, :secret, :metadata, :created_at, :updated_at, :status, :role)
-        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`
-	if c.Owner == "" {
-		q = `INSERT INTO clients (id, name, tags, identity, secret, metadata, created_at, updated_at, status, role)
-        VALUES (:id, :name, :tags, :identity, :secret, :metadata, :created_at, :updated_at, :status, :role)
-        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`
-	}
+	q := `INSERT INTO clients (id, name, tags, owner, identity, secret, metadata, created_at, status, role)
+        VALUES (:id, :name, :tags, :owner, :identity, :secret, :metadata, :created_at, :status, :role)
+        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at`
 	dbc, err := toDBClient(c)
 	if err != nil {
 		return clients.Client{}, errors.Wrap(errors.ErrCreateEntity, err)
@@ -59,7 +54,7 @@ func (repo clientRepo) Save(ctx context.Context, c clients.Client) (clients.Clie
 }
 
 func (repo clientRepo) RetrieveByID(ctx context.Context, id string) (clients.Client, error) {
-	q := `SELECT id, name, tags, COALESCE(owner, '') AS owner, identity, secret, metadata, created_at, updated_at, status 
+	q := `SELECT id, name, tags, COALESCE(owner, '') AS owner, identity, secret, metadata, created_at, updated_at, updated_by, status 
         FROM clients WHERE id = :id`
 
 	dbc := dbClient{
@@ -85,7 +80,7 @@ func (repo clientRepo) RetrieveByID(ctx context.Context, id string) (clients.Cli
 }
 
 func (repo clientRepo) RetrieveByIdentity(ctx context.Context, identity string) (clients.Client, error) {
-	q := `SELECT id, name, tags, COALESCE(owner, '') AS owner, identity, secret, metadata, created_at, updated_at, status
+	q := `SELECT id, name, tags, COALESCE(owner, '') AS owner, identity, secret, metadata, created_at, updated_at, updated_by, status
         FROM clients WHERE identity = :identity AND status = :status`
 
 	dbc := dbClient{
@@ -117,8 +112,8 @@ func (repo clientRepo) RetrieveAll(ctx context.Context, pm clients.Page) (client
 		return clients.ClientsPage{}, errors.Wrap(errors.ErrViewEntity, err)
 	}
 
-	q := fmt.Sprintf(`SELECT c.id, c.name, c.tags, c.identity, c.metadata, COALESCE(c.owner, '') AS owner, c.status, c.created_at
-						FROM clients c %s ORDER BY c.created_at LIMIT :limit OFFSET :offset;`, query)
+	q := fmt.Sprintf(`SELECT c.id, c.name, c.tags, c.identity, c.metadata, COALESCE(c.owner, '') AS owner, c.status,
+					c.created_at, c.updated_at, COALESCE(c.updated_by, '') AS updated_by FROM clients c %s ORDER BY c.created_at LIMIT :limit OFFSET :offset;`, query)
 
 	dbPage, err := toDBClientsPage(pm)
 	if err != nil {
@@ -174,7 +169,8 @@ func (repo clientRepo) Members(ctx context.Context, groupID string, pm clients.P
 	if pm.Subject != "" {
 		aq = `AND EXISTS (SELECT 1 FROM policies WHERE policies.subject = :subject AND :action=ANY(actions))`
 	}
-	q := fmt.Sprintf(`SELECT c.id, c.name, c.tags, c.metadata, c.identity, c.status, c.created_at FROM clients c
+	q := fmt.Sprintf(`SELECT c.id, c.name, c.tags, c.metadata, c.identity, c.status,
+		c.created_at, c.updated_at FROM clients c
 		INNER JOIN policies ON c.id=policies.subject %s AND policies.object = :group_id %s
 	  	ORDER BY c.created_at LIMIT :limit OFFSET :offset;`, emq, aq)
 	dbPage, err := toDBClientsPage(pm)
@@ -233,9 +229,9 @@ func (repo clientRepo) Update(ctx context.Context, client clients.Client) (clien
 		upq = strings.Join(query, " ")
 	}
 	client.Status = clients.EnabledStatus
-	q := fmt.Sprintf(`UPDATE clients SET %s updated_at = :updated_at
+	q := fmt.Sprintf(`UPDATE clients SET %s updated_at = :updated_at, updated_by = :updated_by
         WHERE id = :id AND status = :status
-        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`,
+        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at, updated_by`,
 		upq)
 
 	return repo.update(ctx, client, q)
@@ -243,42 +239,40 @@ func (repo clientRepo) Update(ctx context.Context, client clients.Client) (clien
 
 func (repo clientRepo) UpdateTags(ctx context.Context, client clients.Client) (clients.Client, error) {
 	client.Status = clients.EnabledStatus
-	q := `UPDATE clients SET tags = :tags, updated_at = :updated_at
+	q := `UPDATE clients SET tags = :tags, updated_at = :updated_at, updated_by = :updated_by
         WHERE id = :id AND status = :status
-        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`
+        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at, updated_by`
 
 	return repo.update(ctx, client, q)
 }
 
 func (repo clientRepo) UpdateIdentity(ctx context.Context, client clients.Client) (clients.Client, error) {
-	q := `UPDATE clients SET identity = :identity, updated_at = :updated_at
+	q := `UPDATE clients SET identity = :identity, updated_at = :updated_at, updated_by = :updated_by
         WHERE id = :id AND status = :status
-        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`
+        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at, updated_by`
 
 	return repo.update(ctx, client, q)
 }
 
 func (repo clientRepo) UpdateSecret(ctx context.Context, client clients.Client) (clients.Client, error) {
-	q := `UPDATE clients SET secret = :secret, updated_at = :updated_at
+	q := `UPDATE clients SET secret = :secret, updated_at = :updated_at, updated_by = :updated_by
         WHERE identity = :identity AND status = :status
-        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`
+        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at, updated_by`
 
 	return repo.update(ctx, client, q)
 }
 
 func (repo clientRepo) UpdateOwner(ctx context.Context, client clients.Client) (clients.Client, error) {
-	q := `UPDATE clients SET owner = :owner, updated_at = :updated_at
+	q := `UPDATE clients SET owner = :owner, updated_at = :updated_at, updated_by = :updated_by
         WHERE id = :id AND status = :status
-        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`
+        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at, updated_by`
 
 	return repo.update(ctx, client, q)
 }
 
-func (repo clientRepo) ChangeStatus(ctx context.Context, id string, status clients.Status) (clients.Client, error) {
+func (repo clientRepo) ChangeStatus(ctx context.Context, client clients.Client) (clients.Client, error) {
 	q := `UPDATE clients SET status = :status WHERE id = :id
-        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at`
-
-	client := clients.Client{ID: id, Status: status}
+        RETURNING id, name, tags, identity, metadata, COALESCE(owner, '') AS owner, status, created_at, updated_at, updated_by`
 
 	return repo.update(ctx, client, q)
 }
@@ -309,12 +303,13 @@ type dbClient struct {
 	ID        string           `db:"id"`
 	Name      string           `db:"name,omitempty"`
 	Tags      pgtype.TextArray `db:"tags,omitempty"`
-	Identity  string           `db:"identity,omitempty"`
-	Owner     string           `db:"owner,omitempty"` // nullable
+	Identity  string           `db:"identity"`
+	Owner     *string          `db:"owner,omitempty"` // nullable
 	Secret    string           `db:"secret"`
 	Metadata  []byte           `db:"metadata,omitempty"`
 	CreatedAt time.Time        `db:"created_at"`
-	UpdatedAt time.Time        `db:"updated_at"`
+	UpdatedAt sql.NullTime     `db:"updated_at,omitempty"`
+	UpdatedBy *string          `db:"updated_by,omitempty"`
 	Groups    []groups.Group   `db:"groups,omitempty"`
 	Status    clients.Status   `db:"status"`
 	Role      clients.Role     `db:"role"`
@@ -333,17 +328,30 @@ func toDBClient(c clients.Client) (dbClient, error) {
 	if err := tags.Set(c.Tags); err != nil {
 		return dbClient{}, err
 	}
+	var owner *string
+	if c.Owner != "" {
+		owner = &c.Owner
+	}
+	var updatedBy *string
+	if c.UpdatedBy != "" {
+		updatedBy = &c.UpdatedBy
+	}
+	var updatedAt sql.NullTime
+	if c.UpdatedAt != (time.Time{}) {
+		updatedAt = sql.NullTime{Time: c.UpdatedAt, Valid: true}
+	}
 
 	return dbClient{
 		ID:        c.ID,
 		Name:      c.Name,
 		Tags:      tags,
-		Owner:     c.Owner,
+		Owner:     owner,
 		Identity:  c.Credentials.Identity,
 		Secret:    c.Credentials.Secret,
 		Metadata:  data,
 		CreatedAt: c.CreatedAt,
-		UpdatedAt: c.UpdatedAt,
+		UpdatedAt: updatedAt,
+		UpdatedBy: updatedBy,
 		Status:    c.Status,
 		Role:      c.Role,
 	}, nil
@@ -360,19 +368,32 @@ func toClient(c dbClient) (clients.Client, error) {
 	for _, e := range c.Tags.Elements {
 		tags = append(tags, e.String)
 	}
+	var owner string
+	if c.Owner != nil {
+		owner = *c.Owner
+	}
+	var updatedBy string
+	if c.UpdatedBy != nil {
+		updatedBy = *c.UpdatedBy
+	}
+	var updatedAt time.Time
+	if c.UpdatedAt.Valid {
+		updatedAt = c.UpdatedAt.Time
+	}
 
 	return clients.Client{
 		ID:    c.ID,
 		Name:  c.Name,
 		Tags:  tags,
-		Owner: c.Owner,
+		Owner: owner,
 		Credentials: clients.Credentials{
 			Identity: c.Identity,
 			Secret:   c.Secret,
 		},
 		Metadata:  metadata,
 		CreatedAt: c.CreatedAt,
-		UpdatedAt: c.UpdatedAt,
+		UpdatedAt: updatedAt,
+		UpdatedBy: updatedBy,
 		Status:    c.Status,
 	}, nil
 }

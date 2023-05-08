@@ -25,6 +25,7 @@ type Client struct {
 	Metadata    Metadata    `json:"metadata,omitempty"`
 	CreatedAt   time.Time   `json:"created_at"`
 	UpdatedAt   time.Time   `json:"updated_at"`
+	UpdatedBy   string      `json:"updated_by"`
 	Status      Status      `json:"status"` // 1 for enabled, 0 for disabled
 }
 
@@ -73,7 +74,7 @@ type Repository interface {
 	UpdateOwner(ctx context.Context, client Client) (Client, error)
 
 	// ChangeStatus changes client status to enabled or disabled
-	ChangeStatus(ctx context.Context, id string, status Status) (Client, error)
+	ChangeStatus(ctx context.Context, client Client) (Client, error)
 }
 
 // Service specifies an API that must be fullfiled by the domain service

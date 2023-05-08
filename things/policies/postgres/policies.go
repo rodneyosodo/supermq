@@ -31,9 +31,9 @@ func NewRepository(db postgres.Database) policies.Repository {
 }
 
 func (pr prepo) Save(ctx context.Context, policy policies.Policy) (policies.Policy, error) {
-	q := `INSERT INTO policies (owner_id, subject, object, actions, created_at, updated_at)
-		VALUES (:owner_id, :subject, :object, :actions, :created_at, :updated_at)
-		RETURNING owner_id, subject, object, actions, created_at, updated_at;`
+	q := `INSERT INTO policies (owner_id, subject, object, actions, created_at, updated_at, updated_by)
+		VALUES (:owner_id, :subject, :object, :actions, :created_at, :updated_at, :updated_by)
+		RETURNING owner_id, subject, object, actions, created_at, updated_at, updated_by;`
 
 	dbp, err := toDBPolicy(policy)
 	if err != nil {
@@ -97,7 +97,7 @@ func (pr prepo) Evaluate(ctx context.Context, entityType string, policy policies
 }
 
 func (pr prepo) Update(ctx context.Context, policy policies.Policy) (policies.Policy, error) {
-	q := `UPDATE policies SET actions = :actions, updated_at = :updated_at
+	q := `UPDATE policies SET actions = :actions, updated_at = :updated_at, updated_by = :updated_by
 		WHERE subject = :subject AND object = :object
 		RETURNING owner_id, subject, object, actions, created_at, updated_at;`
 
@@ -210,6 +210,7 @@ type dbPolicy struct {
 	Actions   pgtype.TextArray `db:"actions"`
 	CreatedAt time.Time        `db:"created_at"`
 	UpdatedAt time.Time        `db:"updated_at"`
+	UpdatedBy string           `db:"updated_by"`
 }
 
 func toDBPolicy(p policies.Policy) (dbPolicy, error) {
@@ -225,6 +226,7 @@ func toDBPolicy(p policies.Policy) (dbPolicy, error) {
 		Actions:   ps,
 		CreatedAt: p.CreatedAt,
 		UpdatedAt: p.UpdatedAt,
+		UpdatedBy: p.UpdatedBy,
 	}, nil
 }
 
@@ -241,6 +243,7 @@ func toPolicy(dbp dbPolicy) (policies.Policy, error) {
 		Actions:   ps,
 		CreatedAt: dbp.CreatedAt,
 		UpdatedAt: dbp.UpdatedAt,
+		UpdatedBy: dbp.UpdatedBy,
 	}, nil
 }
 

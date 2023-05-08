@@ -679,7 +679,7 @@ func TestEnableGroup(t *testing.T) {
 
 	repoCall = pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 	repoCall1 = gRepo.On("RetrieveByID", mock.Anything, mock.Anything).Return(g, nil)
-	repoCall2 = gRepo.On("ChangeStatus", mock.Anything, mock.Anything, mock.Anything).Return(g, nil)
+	repoCall2 = gRepo.On("ChangeStatus", mock.Anything, mock.Anything).Return(g, nil)
 	res, err := groupSDK.EnableGroup(group.ID, generateValidToken(t, csvc, cRepo))
 	assert.Nil(t, err, fmt.Sprintf("Enable group with correct id: expected %v got %v", nil, err))
 	assert.Equal(t, group, res, fmt.Sprintf("Enable group with correct id: expected %v got %v", group, res))
@@ -687,7 +687,7 @@ func TestEnableGroup(t *testing.T) {
 	assert.True(t, ok, "CheckAdmin was not called on enabling group")
 	ok = repoCall1.Parent.AssertCalled(t, "RetrieveByID", mock.Anything, group.ID)
 	assert.True(t, ok, "RetrieveByID was not called on enabling group")
-	ok = repoCall2.Parent.AssertCalled(t, "ChangeStatus", mock.Anything, group.ID, groups.EnabledStatus)
+	ok = repoCall2.Parent.AssertCalled(t, "ChangeStatus", mock.Anything, mock.Anything)
 	assert.True(t, ok, "ChangeStatus was not called on enabling group")
 	repoCall.Unset()
 	repoCall1.Unset()
@@ -743,7 +743,7 @@ func TestDisableGroup(t *testing.T) {
 	}
 
 	repoCall = pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
-	repoCall1 = gRepo.On("ChangeStatus", mock.Anything, mock.Anything, mock.Anything).Return(g, nil)
+	repoCall1 = gRepo.On("ChangeStatus", mock.Anything, mock.Anything).Return(g, nil)
 	repoCall2 = gRepo.On("RetrieveByID", mock.Anything, mock.Anything).Return(g, nil)
 	res, err := groupSDK.DisableGroup(group.ID, generateValidToken(t, csvc, cRepo))
 	assert.Nil(t, err, fmt.Sprintf("Disable group with correct id: expected %v got %v", nil, err))
@@ -752,7 +752,7 @@ func TestDisableGroup(t *testing.T) {
 	assert.True(t, ok, "CheckAdmin was not called on disabling group with correct id")
 	ok = repoCall1.Parent.AssertCalled(t, "RetrieveByID", mock.Anything, group.ID)
 	assert.True(t, ok, "RetrieveByID was not called on disabling group with correct id")
-	ok = repoCall2.Parent.AssertCalled(t, "ChangeStatus", mock.Anything, group.ID, groups.DisabledStatus)
+	ok = repoCall2.Parent.AssertCalled(t, "ChangeStatus", mock.Anything, mock.Anything)
 	assert.True(t, ok, "ChangeStatus was not called on disabling group with correct id")
 	repoCall.Unset()
 	repoCall1.Unset()

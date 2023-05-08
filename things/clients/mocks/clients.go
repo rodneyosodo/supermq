@@ -16,14 +16,14 @@ type ClientRepository struct {
 	mock.Mock
 }
 
-func (m *ClientRepository) ChangeStatus(ctx context.Context, id string, status clients.Status) (clients.Client, error) {
-	ret := m.Called(ctx, id, status)
+func (m *ClientRepository) ChangeStatus(ctx context.Context, client clients.Client) (clients.Client, error) {
+	ret := m.Called(ctx, client)
 
-	if id == WrongID {
+	if client.ID == WrongID {
 		return clients.Client{}, errors.ErrNotFound
 	}
 
-	if status != clients.EnabledStatus && status != clients.DisabledStatus {
+	if client.Status != clients.EnabledStatus && client.Status != clients.DisabledStatus {
 		return clients.Client{}, errors.ErrMalformedEntity
 	}
 

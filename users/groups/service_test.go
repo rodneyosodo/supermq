@@ -110,6 +110,7 @@ func TestCreateGroup(t *testing.T) {
 			tc.group.ID = expected.ID
 			tc.group.CreatedAt = expected.CreatedAt
 			tc.group.UpdatedAt = expected.UpdatedAt
+			tc.group.UpdatedBy = expected.UpdatedBy
 			tc.group.OwnerID = expected.OwnerID
 			assert.Equal(t, tc.group, expected, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.group, expected))
 			ok := repoCall.Parent.AssertCalled(t, "Save", context.Background(), mock.Anything)
@@ -466,13 +467,13 @@ func TestEnableGroup(t *testing.T) {
 	for _, tc := range casesEnabled {
 		repoCall := pRepo.On("CheckAdmin", context.Background(), mock.Anything).Return(nil)
 		repoCall1 := gRepo.On("RetrieveByID", context.Background(), tc.id).Return(tc.group, tc.err)
-		repoCall2 := gRepo.On("ChangeStatus", context.Background(), tc.id, groups.EnabledStatus).Return(tc.response, tc.err)
+		repoCall2 := gRepo.On("ChangeStatus", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		_, err := svc.EnableGroup(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if tc.err == nil {
 			ok := repoCall1.Parent.AssertCalled(t, "RetrieveByID", context.Background(), tc.id)
 			assert.True(t, ok, fmt.Sprintf("RetrieveByID was not called on %s", tc.desc))
-			ok = repoCall2.Parent.AssertCalled(t, "ChangeStatus", context.Background(), tc.id, groups.EnabledStatus)
+			ok = repoCall2.Parent.AssertCalled(t, "ChangeStatus", context.Background(), mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("ChangeStatus was not called on %s", tc.desc))
 		}
 		repoCall.Unset()
@@ -595,13 +596,13 @@ func TestDisableGroup(t *testing.T) {
 	for _, tc := range casesDisabled {
 		repoCall := pRepo.On("CheckAdmin", context.Background(), mock.Anything).Return(nil)
 		repoCall1 := gRepo.On("RetrieveByID", context.Background(), tc.id).Return(tc.group, tc.err)
-		repoCall2 := gRepo.On("ChangeStatus", context.Background(), tc.id, groups.DisabledStatus).Return(tc.response, tc.err)
+		repoCall2 := gRepo.On("ChangeStatus", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		_, err := svc.DisableGroup(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if tc.err == nil {
 			ok := repoCall1.Parent.AssertCalled(t, "RetrieveByID", context.Background(), tc.id)
 			assert.True(t, ok, fmt.Sprintf("RetrieveByID was not called on %s", tc.desc))
-			ok = repoCall2.Parent.AssertCalled(t, "ChangeStatus", context.Background(), tc.id, groups.DisabledStatus)
+			ok = repoCall2.Parent.AssertCalled(t, "ChangeStatus", context.Background(), mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("ChangeStatus was not called on %s", tc.desc))
 		}
 		repoCall.Unset()

@@ -19,6 +19,7 @@ type Policy struct {
 	Actions   []string  `json:"actions"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+	UpdatedBy string    `json:"updated_by"`
 }
 
 // PolicyPage contains a page of policies.

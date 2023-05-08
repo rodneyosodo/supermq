@@ -245,6 +245,7 @@ func TestRegisterClient(t *testing.T) {
 			tc.client.UpdatedAt = expected[0].UpdatedAt
 			tc.client.Credentials.Secret = expected[0].Credentials.Secret
 			tc.client.Owner = expected[0].Owner
+			tc.client.UpdatedBy = expected[0].UpdatedBy
 			assert.Equal(t, tc.client, expected[0], fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.client, expected[0]))
 		}
 		repoCall.Unset()
@@ -828,7 +829,7 @@ func TestEnableClient(t *testing.T) {
 
 	for _, tc := range cases {
 		repoCall1 := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(tc.client, tc.err)
-		repoCall2 := cRepo.On("ChangeStatus", context.Background(), mock.Anything, mock.Anything).Return(tc.response, tc.err)
+		repoCall2 := cRepo.On("ChangeStatus", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		_, err := svc.EnableClient(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		repoCall1.Unset()
@@ -943,7 +944,7 @@ func TestDisableClient(t *testing.T) {
 
 	for _, tc := range cases {
 		_ = cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(tc.client, tc.err)
-		repoCall1 := cRepo.On("ChangeStatus", context.Background(), mock.Anything, mock.Anything).Return(tc.response, tc.err)
+		repoCall1 := cRepo.On("ChangeStatus", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		_, err := svc.DisableClient(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		repoCall1.Unset()

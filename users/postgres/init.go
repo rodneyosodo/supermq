@@ -25,7 +25,8 @@ func Migration() *migrate.MemoryMigrationSource {
 						metadata    JSONB,
 						created_at  TIMESTAMP,
 						updated_at  TIMESTAMP,
-						status      SMALLINT NOT NULL DEFAULT 0 CHECK (status >= 0) ,
+						updated_by  VARCHAR(254),
+						status      SMALLINT NOT NULL DEFAULT 0 CHECK (status >= 0),
 						role        SMALLINT DEFAULT 0 CHECK (status >= 0)						
 					)`,
 					`CREATE TABLE IF NOT EXISTS groups (
@@ -37,6 +38,7 @@ func Migration() *migrate.MemoryMigrationSource {
 						metadata    JSONB,
 						created_at  TIMESTAMP,
 						updated_at  TIMESTAMP,
+						updated_by  VARCHAR(254),
 						status      SMALLINT NOT NULL DEFAULT 0 CHECK (status >= 0),
 						UNIQUE (owner_id, name),
 						FOREIGN KEY (parent_id) REFERENCES groups (id) ON DELETE CASCADE
@@ -48,6 +50,7 @@ func Migration() *migrate.MemoryMigrationSource {
 						actions     TEXT[] NOT NULL,
 						created_at  TIMESTAMP,
 						updated_at  TIMESTAMP,
+						updated_by  VARCHAR(254),
 						FOREIGN KEY (subject) REFERENCES clients (id) ON DELETE CASCADE ON UPDATE CASCADE,
 						PRIMARY KEY (subject, object, actions)
 					)`,

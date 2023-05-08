@@ -48,6 +48,7 @@ type Group struct {
 	Children    []*Group  `json:"children,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+	UpdatedBy   string    `json:"updated_by"`
 	Status      Status    `json:"status"`
 }
 
@@ -69,7 +70,7 @@ type Repository interface {
 	Memberships(ctx context.Context, clientID string, gm GroupsPage) (MembershipsPage, error)
 
 	// ChangeStatus changes groups status to active or inactive
-	ChangeStatus(ctx context.Context, id string, status Status) (Group, error)
+	ChangeStatus(ctx context.Context, group Group) (Group, error)
 }
 
 // Service specifies an API that must be fulfilled by the domain service

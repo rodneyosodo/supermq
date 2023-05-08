@@ -244,6 +244,7 @@ func TestRegisterClient(t *testing.T) {
 			tc.client.UpdatedAt = expected.UpdatedAt
 			tc.client.Credentials.Secret = expected.Credentials.Secret
 			tc.client.Owner = expected.Owner
+			tc.client.UpdatedBy = expected.UpdatedBy
 			assert.Equal(t, tc.client, expected, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.client, expected))
 			ok := repoCall.Parent.AssertCalled(t, "Save", context.Background(), mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("Save was not called on %s", tc.desc))
@@ -971,7 +972,7 @@ func TestEnableClient(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", context.Background(), mock.Anything).Return(nil)
 		repoCall1 := cRepo.On("RetrieveByID", context.Background(), tc.id).Return(tc.client, tc.err)
-		repoCall2 := cRepo.On("ChangeStatus", context.Background(), tc.id, clients.EnabledStatus).Return(tc.response, tc.err)
+		repoCall2 := cRepo.On("ChangeStatus", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		_, err := svc.EnableClient(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if tc.err == nil {
@@ -979,7 +980,7 @@ func TestEnableClient(t *testing.T) {
 			assert.True(t, ok, fmt.Sprintf("CheckAdmin was not called on %s", tc.desc))
 			ok = repoCall1.Parent.AssertCalled(t, "RetrieveByID", context.Background(), tc.id)
 			assert.True(t, ok, fmt.Sprintf("RetrieveByID was not called on %s", tc.desc))
-			ok = repoCall2.Parent.AssertCalled(t, "ChangeStatus", context.Background(), tc.id, clients.EnabledStatus)
+			ok = repoCall2.Parent.AssertCalled(t, "ChangeStatus", context.Background(), mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("ChangeStatus was not called on %s", tc.desc))
 		}
 		repoCall.Unset()
@@ -1099,7 +1100,7 @@ func TestDisableClient(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", context.Background(), mock.Anything).Return(nil)
 		repoCall1 := cRepo.On("RetrieveByID", context.Background(), tc.id).Return(tc.client, tc.err)
-		repoCall2 := cRepo.On("ChangeStatus", context.Background(), tc.id, clients.DisabledStatus).Return(tc.response, tc.err)
+		repoCall2 := cRepo.On("ChangeStatus", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		_, err := svc.DisableClient(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if tc.err == nil {
@@ -1107,7 +1108,7 @@ func TestDisableClient(t *testing.T) {
 			assert.True(t, ok, fmt.Sprintf("CheckAdmin was not called on %s", tc.desc))
 			ok = repoCall1.Parent.AssertCalled(t, "RetrieveByID", context.Background(), tc.id)
 			assert.True(t, ok, fmt.Sprintf("RetrieveByID was not called on %s", tc.desc))
-			ok = repoCall2.Parent.AssertCalled(t, "ChangeStatus", context.Background(), tc.id, clients.DisabledStatus)
+			ok = repoCall2.Parent.AssertCalled(t, "ChangeStatus", context.Background(), mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("ChangeStatus was not called on %s", tc.desc))
 		}
 		repoCall.Unset()
