@@ -575,7 +575,9 @@ func TestClient(t *testing.T) {
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, rClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, rClient))
 		if tc.err == nil {
-			ok := repoCall2.Parent.AssertCalled(t, "RetrieveByID", mock.Anything, tc.clientID)
+			ok := repoCall1.Parent.AssertCalled(t, "CheckAdmin", mock.Anything, mock.Anything)
+			assert.True(t, ok, fmt.Sprintf("CheckAdmin was not called on %s", tc.desc))
+			ok = repoCall2.Parent.AssertCalled(t, "RetrieveByID", mock.Anything, tc.clientID)
 			assert.True(t, ok, fmt.Sprintf("RetrieveByID was not called on %s", tc.desc))
 		}
 		repoCall2.Unset()

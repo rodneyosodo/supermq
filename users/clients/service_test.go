@@ -305,7 +305,9 @@ func TestViewClient(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, rClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, rClient))
 		if tc.err == nil {
-			ok := repoCall2.Parent.AssertCalled(t, "RetrieveByID", context.Background(), tc.clientID)
+			ok := repoCall1.Parent.AssertCalled(t, "CheckAdmin", context.Background(), mock.Anything)
+			assert.True(t, ok, fmt.Sprintf("CheckAdmin was not called on %s", tc.desc))
+			ok = repoCall2.Parent.AssertCalled(t, "RetrieveByID", context.Background(), tc.clientID)
 			assert.True(t, ok, fmt.Sprintf("RetrieveByID was not called on %s", tc.desc))
 		}
 		repoCall2.Unset()
