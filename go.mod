@@ -13,6 +13,7 @@ require (
 	github.com/go-kit/log v0.2.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-zoo/bone v1.3.0
+	github.com/go-zookeeper/zk v1.0.2
 	github.com/gocql/gocql v1.2.1
 	github.com/gofrs/uuid v4.3.0+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.0
@@ -39,7 +40,6 @@ require (
 	github.com/prometheus/client_golang v1.13.0
 	github.com/rabbitmq/amqp091-go v1.5.0
 	github.com/rubenv/sql-migrate v1.2.0
-	github.com/samuel/go-zookeeper v0.0.0-20201211165307-7117e9ea2414
 	github.com/segmentio/kafka-go v0.4.38
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.13.0

@@ -6,8 +6,8 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
-	"time"
 
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/segmentio/kafka-go"
@@ -19,7 +19,7 @@ var _ messaging.Publisher = (*publisher)(nil)
 var (
 	numPartitions     = 1
 	replicationFactor = 1
-	batchTimeout      = time.Microsecond
+	batchSize         = 1
 )
 
 type publisher struct {
@@ -35,14 +35,12 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	if err != nil {
 		return &publisher{}, err
 	}
-
 	ret := &publisher{
 		url:    url,
 		conn:   conn,
 		topics: make(map[string]*kafka.Writer),
 	}
 	return ret, nil
-
 }
 
 func (pub *publisher) Publish(ctx context.Context, topic string, msg *messaging.Message) error {
@@ -57,6 +55,7 @@ func (pub *publisher) Publish(ctx context.Context, topic string, msg *messaging.
 	if msg.Subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 	}
+	subject = formatTopic(subject)
 
 	kafkaMsg := kafka.Message{
 		Value: data,
@@ -87,14 +86,14 @@ func (pub *publisher) Publish(ctx context.Context, topic string, msg *messaging.
 		Addr:                   kafka.TCP(pub.url),
 		Topic:                  subject,
 		RequiredAcks:           kafka.RequireAll,
-		Balancer:               &kafka.LeastBytes{},
-		BatchTimeout:           batchTimeout,
+		BatchSize:              batchSize,
 		AllowAutoTopicCreation: true,
 	}
 	if err := writer.WriteMessages(ctx, kafkaMsg); err != nil {
 		return err
 	}
 	pub.topics[subject] = writer
+
 	return nil
 }
 
@@ -110,15 +109,14 @@ func (pub *publisher) Close() error {
 		pub.topics[topic].Close()
 	}
 
-	req := &kafka.DeleteTopicsRequest{
-		Addr:   kafka.TCP(pub.url),
-		Topics: topics,
-	}
-	client := kafka.Client{
-		Addr: kafka.TCP(pub.url),
-	}
-	if _, err := client.DeleteTopics(context.Background(), req); err != nil {
+	if err := pub.conn.DeleteTopics(topics...); err != nil {
 		return err
 	}
 	return nil
+}
+
+// formatTopic replaces all '>' with '*' in topic string
+// to match Kafka topic wildcard.
+func formatTopic(topic string) string {
+	return strings.Replace(topic, ">", "*", 1)
 }

@@ -88,7 +88,6 @@ func TestPubsub(t *testing.T) {
 		} else {
 			assert.Equal(t, err, tc.err)
 		}
-
 	}
 
 	// Test Subscribe and Unsubscribe
@@ -97,7 +96,7 @@ func TestPubsub(t *testing.T) {
 		topic        string
 		topicID      string
 		errorMessage error
-		pubsub       bool //true for subscribe and false for unsubscribe
+		pubsub       bool // true for subscribe and false for unsubscribe
 	}{
 		{
 			desc:         "Subscribe to a topic with an ID",

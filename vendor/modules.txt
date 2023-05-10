@@ -130,6 +130,9 @@ github.com/go-redis/redis/v8/internal/util
 # github.com/go-zoo/bone v1.3.0
 ## explicit; go 1.9
 github.com/go-zoo/bone
+# github.com/go-zookeeper/zk v1.0.2
+## explicit; go 1.13
+github.com/go-zookeeper/zk
 # github.com/gocql/gocql v1.2.1
 ## explicit; go 1.13
 github.com/gocql/gocql
@@ -552,9 +555,6 @@ github.com/rubenv/sql-migrate/sqlparse
 # github.com/ryanuber/go-glob v1.0.0
 ## explicit
 github.com/ryanuber/go-glob
-# github.com/samuel/go-zookeeper v0.0.0-20201211165307-7117e9ea2414
-## explicit
-github.com/samuel/go-zookeeper/zk
 # github.com/segmentio/kafka-go v0.4.38
 ## explicit; go 1.15
 github.com/segmentio/kafka-go
@@ -597,7 +597,6 @@ github.com/segmentio/kafka-go/protocol/saslhandshake
 github.com/segmentio/kafka-go/protocol/syncgroup
 github.com/segmentio/kafka-go/protocol/txnoffsetcommit
 github.com/segmentio/kafka-go/sasl
-github.com/segmentio/kafka-go/topics
 # github.com/sirupsen/logrus v1.9.0
 ## explicit; go 1.13
 github.com/sirupsen/logrus

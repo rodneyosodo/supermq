@@ -12,21 +12,24 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-zookeeper/zk"
 	mflog "github.com/mainflux/mainflux/logger"
-
 	"github.com/mainflux/mainflux/pkg/messaging"
-	"github.com/samuel/go-zookeeper/zk"
 	kafka "github.com/segmentio/kafka-go"
 	"google.golang.org/protobuf/proto"
 )
 
 const (
-	chansPrefix             = "channels"
-	SubjectAllChannels      = "channels.*"
-	offset                  = kafka.LastOffset
-	defaultScanningInterval = 1000 * time.Millisecond
-	topicsRoot              = "/brokers/topics"
-	zkTimeout               = time.Second
+	chansPrefix                  = "channels"
+	SubjectAllChannels           = "channels.*"
+	offset                       = kafka.LastOffset
+	defaultScanningInterval      = 1000 * time.Millisecond
+	topicsRoot                   = "/brokers/topics"
+	zkTimeout                    = time.Second
+	readerWaitTime               = time.Second
+	readerHeartbeatInterval      = time.Second
+	readerPartitionWatchInterval = time.Second
+	readerSessionTimeout         = time.Second * 10
 )
 
 var (
@@ -44,7 +47,6 @@ type subscription struct {
 }
 type pubsub struct {
 	publisher
-	client        *kafka.Client
 	zkConn        *zk.Conn
 	logger        mflog.Logger
 	mu            sync.Mutex
@@ -56,9 +58,6 @@ func NewPubSub(url, _ string, logger mflog.Logger) (messaging.PubSub, error) {
 	conn, err := kafka.Dial("tcp", url)
 	if err != nil {
 		return &pubsub{}, err
-	}
-	client := &kafka.Client{
-		Addr: conn.LocalAddr(),
 	}
 	host, _, err := net.SplitHostPort(url)
 	if err != nil {
@@ -76,7 +75,6 @@ func NewPubSub(url, _ string, logger mflog.Logger) (messaging.PubSub, error) {
 			conn:   conn,
 			topics: make(map[string]*kafka.Writer),
 		},
-		client:        client,
 		zkConn:        zkConn,
 		subscriptions: make(map[string]map[string]subscription),
 		logger:        logger,
@@ -90,6 +88,8 @@ func (ps *pubsub) Subscribe(ctx context.Context, id, topic string, handler messa
 	if topic == "" {
 		return ErrEmptyTopic
 	}
+	topic = formatTopic(topic)
+
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
@@ -98,7 +98,7 @@ func (ps *pubsub) Subscribe(ctx context.Context, id, topic string, handler messa
 		return nil
 	}
 
-	s, err := ps.checkTopic(topic, id, ErrAlreadySubscribed)
+	s, err := ps.checkSubscribed(topic, id)
 	if err != nil {
 		return err
 	}
@@ -114,6 +114,8 @@ func (ps *pubsub) Unsubscribe(ctx context.Context, id, topic string) error {
 	if topic == "" {
 		return ErrEmptyTopic
 	}
+	topic = formatTopic(topic)
+
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 	// Check topic
@@ -168,14 +170,15 @@ func (s subscription) close() error {
 	return s.Close()
 }
 
-func (ps *pubsub) checkTopic(topic, id string, err error) (map[string]subscription, error) {
+// checkSubscribed checks if topic and topic ID are already subscribed.
+func (ps *pubsub) checkSubscribed(topic, id string) (map[string]subscription, error) {
 	// Check topic
 	s, ok := ps.subscriptions[topic]
 	switch ok {
 	case true:
 		// Check topic ID
 		if _, ok := s[id]; ok {
-			return map[string]subscription{}, err
+			return map[string]subscription{}, ErrAlreadySubscribed
 		}
 	default:
 		s = make(map[string]subscription)
@@ -187,10 +190,14 @@ func (ps *pubsub) checkTopic(topic, id string, err error) (map[string]subscripti
 // configReader configures reader for given topic and starts consuming messages.
 func (ps *pubsub) configReader(ctx context.Context, id, topic string, s map[string]subscription, handler messaging.MessageHandler) {
 	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:     []string{ps.url},
-		GroupID:     id,
-		Topic:       topic,
-		StartOffset: offset,
+		Brokers:                []string{ps.url},
+		GroupID:                id,
+		Topic:                  topic,
+		StartOffset:            offset,
+		MaxWait:                readerWaitTime,
+		HeartbeatInterval:      readerHeartbeatInterval,
+		PartitionWatchInterval: readerPartitionWatchInterval,
+		SessionTimeout:         readerSessionTimeout,
 	})
 
 	go func() {
@@ -231,7 +238,7 @@ func (ps *pubsub) subscribeToAllChannels(ctx context.Context, id string, handler
 			}
 
 			for _, t := range topics {
-				s, err := ps.checkTopic(t, id, ErrAlreadySubscribed)
+				s, err := ps.checkSubscribed(t, id)
 				if err == nil {
 					ps.configReader(ctx, id, t, s, handler)
 				}
