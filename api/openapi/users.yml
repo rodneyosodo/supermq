@@ -688,14 +688,10 @@ paths:
         Updates Actions of a policy.
       tags:
         - Policies
-      parameters:
-        - $ref: "#/components/parameters/Subject"
-        - $ref: "#/components/parameters/Object"
-        - $ref: "#/components/parameters/Actions"
       security:
         - bearerAuth: []
       requestBody:
-        $ref: "#/components/requestBodies/PolicyUpdateReq"
+        $ref: "#/components/requestBodies/PolicyCreateReq"
       responses:
         '200':
           description: Group updated.
@@ -707,7 +703,8 @@ paths:
           description: Group does not exist.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /policies/{obj}/{sub}:
+
+  /policies/{sub}/{obj}:
     delete:
       tags:
         - Policies
@@ -717,11 +714,11 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/Obj"
         - $ref: "#/components/parameters/Sub"
+        - $ref: "#/components/parameters/Obj"
       responses:
-        '200':
-          $ref: "#/components/responses/PolicyPageRes"
+        '204':
+          description: Group deleted.
         '400':
           description: Failed due to malformed query parameters.
         '401':
