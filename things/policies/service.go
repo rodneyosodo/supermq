@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/internal/apiutil"
 	mfclients "github.com/mainflux/mainflux/pkg/clients"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/things/clients"
@@ -156,7 +155,7 @@ func (svc service) checkActionRank(ctx context.Context, clientID string, p Polic
 		}
 	}
 
-	return apiutil.ErrHigherPolicyRank
+	return nil
 
 }
 
