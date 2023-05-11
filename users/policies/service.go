@@ -124,7 +124,7 @@ func (svc service) ListPolicy(ctx context.Context, token string, pm Page) (Polic
 		return svc.policies.Retrieve(ctx, pm)
 	}
 
-	// If the user is not admin, return only the policies that he owns
+	// If the user is not admin, return only the policies that they are in
 	pm.Subject = id
 	pm.Object = id
 
