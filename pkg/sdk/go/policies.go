@@ -80,14 +80,9 @@ func (sdk mfSDK) ListPolicies(pm PageMetadata, token string) (PolicyPage, errors
 
 // DeletePolicy removes a policy.
 func (sdk mfSDK) DeletePolicy(p Policy, token string) errors.SDKError {
-	url := fmt.Sprintf("%s/%s/%s/%s", sdk.usersURL, policiesEndpoint, p.Object, p.Subject)
+	url := fmt.Sprintf("%s/%s/%s/%s", sdk.usersURL, policiesEndpoint, p.Subject, p.Object)
 
-	data, err := json.Marshal(p)
-	if err != nil {
-		return errors.NewSDKError(err)
-	}
-
-	_, _, sdkerr := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), data, http.StatusNoContent)
+	_, _, sdkerr := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), nil, http.StatusNoContent)
 	return sdkerr
 }
 
