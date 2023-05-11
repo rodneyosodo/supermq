@@ -143,7 +143,7 @@ func (svc service) ViewClient(ctx context.Context, token string, id string) (mfc
 		return svc.clients.RetrieveByID(ctx, id)
 	}
 
-	if err := svc.authorizeByID(ctx, entityType, policies.Policy{Subject: ir, Object: id, Actions: []string{listRelationKey}}); err != nil {
+	if err := svc.authorize(ctx, entityType, policies.Policy{Subject: ir, Object: id, Actions: []string{listRelationKey}}); err != nil {
 		return mfclients.Client{}, err
 	}
 
@@ -191,7 +191,7 @@ func (svc service) UpdateClient(ctx context.Context, token string, cli mfclients
 	if err != nil {
 		return mfclients.Client{}, err
 	}
-	if err := svc.authorizeByID(ctx, entityType, policies.Policy{Subject: id, Object: cli.ID, Actions: []string{updateRelationKey}}); err != nil {
+	if err := svc.authorize(ctx, entityType, policies.Policy{Subject: id, Object: cli.ID, Actions: []string{updateRelationKey}}); err != nil {
 		return mfclients.Client{}, err
 	}
 
@@ -211,7 +211,7 @@ func (svc service) UpdateClientTags(ctx context.Context, token string, cli mfcli
 	if err != nil {
 		return mfclients.Client{}, err
 	}
-	if err := svc.authorizeByID(ctx, entityType, policies.Policy{Subject: id, Object: cli.ID, Actions: []string{updateRelationKey}}); err != nil {
+	if err := svc.authorize(ctx, entityType, policies.Policy{Subject: id, Object: cli.ID, Actions: []string{updateRelationKey}}); err != nil {
 		return mfclients.Client{}, err
 	}
 
@@ -230,7 +230,7 @@ func (svc service) UpdateClientIdentity(ctx context.Context, token, clientID, id
 	if err != nil {
 		return mfclients.Client{}, err
 	}
-	if err := svc.authorizeByID(ctx, entityType, policies.Policy{Subject: id, Object: clientID, Actions: []string{updateRelationKey}}); err != nil {
+	if err := svc.authorize(ctx, entityType, policies.Policy{Subject: id, Object: clientID, Actions: []string{updateRelationKey}}); err != nil {
 		return mfclients.Client{}, err
 	}
 
@@ -326,7 +326,7 @@ func (svc service) UpdateClientOwner(ctx context.Context, token string, cli mfcl
 	if err != nil {
 		return mfclients.Client{}, err
 	}
-	if err := svc.authorizeByID(ctx, entityType, policies.Policy{Subject: id, Object: cli.ID, Actions: []string{updateRelationKey}}); err != nil {
+	if err := svc.authorize(ctx, entityType, policies.Policy{Subject: id, Object: cli.ID, Actions: []string{updateRelationKey}}); err != nil {
 		return mfclients.Client{}, err
 	}
 
@@ -388,7 +388,7 @@ func (svc service) changeClientStatus(ctx context.Context, token string, client 
 	if err != nil {
 		return mfclients.Client{}, err
 	}
-	if err := svc.authorizeByID(ctx, entityType, policies.Policy{Subject: id, Object: client.ID, Actions: []string{deleteRelationKey}}); err != nil {
+	if err := svc.authorize(ctx, entityType, policies.Policy{Subject: id, Object: client.ID, Actions: []string{deleteRelationKey}}); err != nil {
 		return mfclients.Client{}, err
 	}
 	dbClient, err := svc.clients.RetrieveByID(ctx, client.ID)
