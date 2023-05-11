@@ -569,16 +569,18 @@ func TestClient(t *testing.T) {
 
 	for _, tc := range cases {
 		repoCall := pRepo.On("Evaluate", mock.Anything, mock.Anything, mock.Anything).Return(nil)
-		repoCall1 := cRepo.On("RetrieveByID", mock.Anything, tc.clientID).Return(convertClient(tc.response), tc.err)
+		repoCall1 := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
+		repoCall2 := cRepo.On("RetrieveByID", mock.Anything, tc.clientID).Return(convertClient(tc.response), tc.err)
 		rClient, err := clientSDK.User(tc.clientID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, rClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, rClient))
 		if tc.err == nil {
-			ok := repoCall.Parent.AssertCalled(t, "Evaluate", mock.Anything, mock.Anything, mock.Anything)
-			assert.True(t, ok, fmt.Sprintf("Evaluate was not called on %s", tc.desc))
-			ok = repoCall1.Parent.AssertCalled(t, "RetrieveByID", mock.Anything, tc.clientID)
+			ok := repoCall1.Parent.AssertCalled(t, "CheckAdmin", mock.Anything, mock.Anything)
+			assert.True(t, ok, fmt.Sprintf("CheckAdmin was not called on %s", tc.desc))
+			ok = repoCall2.Parent.AssertCalled(t, "RetrieveByID", mock.Anything, tc.clientID)
 			assert.True(t, ok, fmt.Sprintf("RetrieveByID was not called on %s", tc.desc))
 		}
+		repoCall2.Unset()
 		repoCall1.Unset()
 		repoCall.Unset()
 	}

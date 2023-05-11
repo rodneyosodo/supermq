@@ -299,18 +299,20 @@ func TestViewClient(t *testing.T) {
 
 	for _, tc := range cases {
 		repoCall := pRepo.On("Evaluate", context.Background(), "client", mock.Anything).Return(nil)
-		repoCall1 := cRepo.On("RetrieveByID", context.Background(), tc.clientID).Return(tc.response, tc.err)
+		repoCall1 := pRepo.On("CheckAdmin", context.Background(), mock.Anything).Return(nil)
+		repoCall2 := cRepo.On("RetrieveByID", context.Background(), tc.clientID).Return(tc.response, tc.err)
 		rClient, err := svc.ViewClient(context.Background(), tc.token, tc.clientID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, rClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, rClient))
-		repoCall.Unset()
 		if tc.err == nil {
-			ok := repoCall.Parent.AssertCalled(t, "Evaluate", context.Background(), "client", mock.Anything)
-			assert.True(t, ok, fmt.Sprintf("Evaluate was not called on %s", tc.desc))
-			ok = repoCall1.Parent.AssertCalled(t, "RetrieveByID", context.Background(), tc.clientID)
+			ok := repoCall1.Parent.AssertCalled(t, "CheckAdmin", context.Background(), mock.Anything)
+			assert.True(t, ok, fmt.Sprintf("CheckAdmin was not called on %s", tc.desc))
+			ok = repoCall2.Parent.AssertCalled(t, "RetrieveByID", context.Background(), tc.clientID)
 			assert.True(t, ok, fmt.Sprintf("RetrieveByID was not called on %s", tc.desc))
 		}
+		repoCall2.Unset()
 		repoCall1.Unset()
+		repoCall.Unset()
 	}
 }
 
