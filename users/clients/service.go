@@ -163,6 +163,15 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 	if err != nil {
 		return mfclients.ClientsPage{}, err
 	}
+
+	// If the user is admin, fetch all things from database.
+	pol := policies.Policy{Subject: id, Object: clientsObjectKey, Actions: []string{listRelationKey}}
+	if err := svc.authorize(ctx, clientsObjectKey, pol); err == nil {
+		pm.Owner = ""
+		pm.SharedBy = ""
+		goto QUERY_DB
+	}
+
 	if pm.SharedBy == MyKey {
 		pm.SharedBy = id
 	}
@@ -170,6 +179,8 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 		pm.Owner = id
 	}
 	pm.Action = "c_list"
+
+QUERY_DB:
 	clients, err := svc.clients.RetrieveAll(ctx, pm)
 	if err != nil {
 		return mfclients.ClientsPage{}, err
