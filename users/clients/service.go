@@ -173,9 +173,8 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 	pm.Action = "c_list"
 
 	// If the user is admin, fetch all things from database.
-	pol := policies.Policy{Subject: id, Object: clientsObjectKey, Actions: []string{listRelationKey}}
-	if err := svc.authorize(ctx, clientsObjectKey, pol); err == nil {
-		pm.Owner = ""
+	p := policies.Policy{Subject: id, Object: clientsObjectKey, Actions: []string{listRelationKey}}
+	if err := svc.authorize(ctx, clientsObjectKey, p); err == nil {
 		pm.SharedBy = ""
 		pm.Action = ""
 	}
