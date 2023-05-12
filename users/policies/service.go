@@ -50,6 +50,7 @@ func (svc service) Authorize(ctx context.Context, entityType string, p Policy) e
 
 	return svc.policies.Evaluate(ctx, entityType, p)
 }
+
 func (svc service) UpdatePolicy(ctx context.Context, token string, p Policy) error {
 	id, err := svc.identify(ctx, token)
 	if err != nil {
@@ -72,31 +73,23 @@ func (svc service) AddPolicy(ctx context.Context, token string, p Policy) error 
 	if err != nil {
 		return err
 	}
-	p.UpdatedBy = id
 	if err := p.Validate(); err != nil {
 		return err
 	}
 
-	page, err := svc.policies.Retrieve(ctx, Page{Subject: p.Subject, Object: p.Object})
+	pm := Page{Subject: p.Subject, Object: p.Object, Offset: 0, Limit: 1}
+	page, err := svc.policies.Retrieve(ctx, pm)
 	if err != nil {
 		return err
 	}
+
+	// If the policy already exists, replace the actions
 	if len(page.Policies) == 1 {
-		// Update policy, add the new actions
-		for _, ra := range page.Policies[0].Actions {
-			var found = false
-			for _, na := range p.Actions {
-				if ra == na {
-					found = true
-					break
-				}
-			}
-			if !found {
-				p.Actions = append(p.Actions, ra)
-			}
-		}
+		p.UpdatedAt = time.Now()
+		p.UpdatedBy = id
 		return svc.policies.Update(ctx, p)
 	}
+
 	if err := svc.checkActionRank(ctx, id, p); err != nil {
 		return err
 	}
