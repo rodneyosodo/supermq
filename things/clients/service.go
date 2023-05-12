@@ -15,14 +15,13 @@ import (
 const (
 	MyKey             = "mine"
 	thingsObjectKey   = "things"
-	createKey         = "c_add"
 	updateRelationKey = "c_update"
 	listRelationKey   = "c_list"
 	deleteRelationKey = "c_delete"
 	entityType        = "group"
 )
 
-var AdminRelationKey = []string{createKey, updateRelationKey, listRelationKey, deleteRelationKey}
+var AdminRelationKey = []string{updateRelationKey, listRelationKey, deleteRelationKey}
 
 type service struct {
 	auth        policies.AuthServiceClient

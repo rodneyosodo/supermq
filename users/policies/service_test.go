@@ -87,7 +87,7 @@ func TestAddPolicy(t *testing.T) {
 			policy: policies.Policy{
 				Subject: testsutil.GenerateUUID(t, idProvider),
 				Object:  testsutil.GenerateUUID(t, idProvider),
-				Actions: []string{"c_delete", "c_update", "c_add", "c_list"},
+				Actions: []string{"c_delete", "c_update", "c_list"},
 			},
 			err:   nil,
 			token: testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), csvc, cRepo, phasher),

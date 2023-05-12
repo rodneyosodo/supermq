@@ -254,7 +254,7 @@ func createPolicies(s sdk.SDK, conf Config, token, owner string, users []sdk.Use
 		upolicy := sdk.Policy{
 			Subject: owner,
 			Object:  users[i].ID,
-			Actions: []string{"c_delete", "c_update", "c_add", "c_list"},
+			Actions: []string{"c_delete", "c_update", "c_list"},
 		}
 		gpolicy := sdk.Policy{
 			Subject: owner,
@@ -264,7 +264,7 @@ func createPolicies(s sdk.SDK, conf Config, token, owner string, users []sdk.Use
 		tpolicy := sdk.Policy{
 			Subject: owner,
 			Object:  things[i].ID,
-			Actions: []string{"c_delete", "c_update", "c_add", "c_list"},
+			Actions: []string{"c_delete", "c_update", "c_list"},
 		}
 		cpolicy := sdk.Policy{
 			Subject: owner,

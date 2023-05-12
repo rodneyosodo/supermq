@@ -290,7 +290,7 @@ func TestPoliciesUpdate(t *testing.T) {
 				OwnerID: cid,
 				Subject: "",
 				Object:  pid,
-				Actions: []string{"c_add"},
+				Actions: []string{"c_update"},
 			},
 			resp: policies.Policy{
 				OwnerID: cid,
@@ -306,7 +306,7 @@ func TestPoliciesUpdate(t *testing.T) {
 				OwnerID: cid,
 				Subject: cid,
 				Object:  "",
-				Actions: []string{"c_add"},
+				Actions: []string{"c_update"},
 			},
 			resp: policies.Policy{
 				OwnerID: cid,
@@ -398,7 +398,7 @@ func TestPoliciesRetrievalAll(t *testing.T) {
 		policy := policies.Policy{
 			Subject: clientB.ID,
 			Object:  obj,
-			Actions: []string{"c_add", "c_update"},
+			Actions: []string{ "c_update"},
 		}
 		err = repo.Save(context.Background(), policy)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
