@@ -41,7 +41,7 @@ default values.
 | MF_THINGS_AUTH_GRPC_PORT   | Things service Auth gRPC port                                           | 7000           |
 | MF_THINGS_SERVER_CERT      | Path to server certificate in pem format                                |                |
 | MF_THINGS_SERVER_KEY       | Path to server key in pem format                                        |                |
-| MF_THINGS_STANDALONE_EMAIL | User email for standalone mode (no gRPC communication with users)       |                |
+| MF_THINGS_STANDALONE_ID    | User ID for standalone mode (no gRPC communication with users)          |                |
 | MF_THINGS_STANDALONE_TOKEN | User token for standalone mode that should be passed in auth header     |                |
 | MF_JAEGER_URL              | Jaeger server URL                                                       | localhost:6831 |
 | MF_AUTH_GRPC_URL           | Users service gRPC URL                                                  | localhost:7001 |

@@ -25,6 +25,7 @@ import (
 	capi "github.com/mainflux/mainflux/things/clients/api"
 	cpostgres "github.com/mainflux/mainflux/things/clients/postgres"
 	redisthcache "github.com/mainflux/mainflux/things/clients/redis"
+	localusers "github.com/mainflux/mainflux/things/clients/standalone"
 	ctracing "github.com/mainflux/mainflux/things/clients/tracing"
 	"github.com/mainflux/mainflux/things/groups"
 	gapi "github.com/mainflux/mainflux/things/groups/api"
@@ -57,7 +58,7 @@ const (
 
 type config struct {
 	LogLevel        string `env:"MF_THINGS_LOG_LEVEL"          envDefault:"info"`
-	StandaloneEmail string `env:"MF_THINGS_STANDALONE_EMAIL"   envDefault:""`
+	StandaloneID    string `env:"MF_THINGS_STANDALONE_ID"      envDefault:""`
 	StandaloneToken string `env:"MF_THINGS_STANDALONE_TOKEN"   envDefault:""`
 	JaegerURL       string `env:"MF_JAEGER_URL"                envDefault:"http://jaeger:14268/api/traces"`
 }
@@ -102,13 +103,22 @@ func main() {
 	}
 	defer cacheClient.Close()
 
-	// Setup new auth grpc client
-	auth, authHandler, err := authClient.Setup(envPrefix, cfg.JaegerURL)
-	if err != nil {
-		logger.Fatal(err.Error())
+	var auth upolicies.AuthServiceClient
+	switch cfg.StandaloneID != "" && cfg.StandaloneToken != "" {
+	case true:
+		auth = localusers.NewAuthService(cfg.StandaloneID, cfg.StandaloneToken)
+		logger.Info("Using standalone auth service")
+	default:
+		authServiceClient, authHandler, err := authClient.Setup(envPrefix, cfg.JaegerURL)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		defer authHandler.Close()
+		auth = authServiceClient
+		logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 	}
-	defer authHandler.Close()
-	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
+
+	// Setup new auth grpc client
 
 	csvc, gsvc, psvc := newService(db, auth, cacheClient, tracer, logger)
 
