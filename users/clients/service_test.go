@@ -1047,7 +1047,7 @@ func TestEnableClient(t *testing.T) {
 			Action: "c_list",
 		}
 		repoCall := pRepo.On("CheckAdmin", context.Background(), mock.Anything).Return(nil)
-		repoCall1 := cRepo.On("RetrieveAll", context.Background(), pm).Return(tc.response, nil)
+		repoCall1 := cRepo.On("RetrieveAll", context.Background(), mock.Anything).Return(tc.response, nil)
 		page, err := svc.ListClients(context.Background(), testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), svc, cRepo, phasher), pm)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		size := uint64(len(page.Clients))
@@ -1177,7 +1177,7 @@ func TestDisableClient(t *testing.T) {
 			Action: "c_list",
 		}
 		repoCall := pRepo.On("CheckAdmin", context.Background(), mock.Anything).Return(nil)
-		repoCall1 := cRepo.On("RetrieveAll", context.Background(), pm).Return(tc.response, nil)
+		repoCall1 := cRepo.On("RetrieveAll", context.Background(), mock.Anything).Return(tc.response, nil)
 		page, err := svc.ListClients(context.Background(), testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), svc, cRepo, phasher), pm)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		size := uint64(len(page.Clients))
