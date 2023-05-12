@@ -78,20 +78,8 @@ func (svc service) AddPolicy(ctx context.Context, token string, p Policy) error 
 		return err
 	}
 
-	// If the policy already exists, update it appending the new actions
+	// If the policy already exists, replace the actions
 	if len(page.Policies) == 1 {
-		p.Actions = append(p.Actions, page.Policies[0].Actions...)
-
-		isUnique := make(map[string]bool)
-		var uniqueActions []string
-		for _, action := range p.Actions {
-			if _, ok := isUnique[action]; !ok {
-				isUnique[action] = true
-				uniqueActions = append(uniqueActions, action)
-			}
-		}
-
-		p.Actions = uniqueActions
 		p.UpdatedAt = time.Now()
 		p.UpdatedBy = id
 		return svc.policies.Update(ctx, p)
