@@ -10,7 +10,7 @@ networks:
 volumes:
   mainflux-users-db-volume:
   mainflux-things-db-volume:
-  mainflux-users-redis-volume:
+  mainflux-things-redis-volume:
   mainflux-es-redis-volume:
   mainflux-mqtt-broker-volume:
 
@@ -82,7 +82,7 @@ services:
       MF_THINGS_DB_USER: ${MF_THINGS_DB_USER}
       MF_THINGS_DB_PASS: ${MF_THINGS_DB_PASS}
       MF_THINGS_DB: ${MF_THINGS_DB}
-      MF_THINGS_CACHE_URL: users-redis:${MF_REDIS_TCP_PORT}
+      MF_THINGS_CACHE_URL: things-redis:${MF_REDIS_TCP_PORT}
       MF_THINGS_ES_URL: es-redis:${MF_REDIS_TCP_PORT}
       MF_THINGS_HTTP_PORT: ${MF_THINGS_HTTP_PORT}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
@@ -112,14 +112,14 @@ services:
     volumes:
       - mainflux-users-db-volume:/var/lib/postgresql/data
 
-  users-redis:
+  things-redis:
     image: redis:6.2.2-alpine
-    container_name: mainflux-users-redis
+    container_name: mainflux-things-redis
     restart: on-failure
     networks:
       - mainflux-base-net
     volumes:
-      - mainflux-users-redis-volume:/data
+      - mainflux-things-redis-volume:/data
 
   users:
     image: mainflux/users:${MF_RELEASE_TAG}
@@ -205,7 +205,7 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-      MF_AUTH_CACHE_URL: users-redis:${MF_REDIS_TCP_PORT}
+      MF_AUTH_CACHE_URL: things-redis:${MF_REDIS_TCP_PORT}
     networks:
       - mainflux-base-net
 
