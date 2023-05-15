@@ -53,12 +53,12 @@ type Service interface {
 
 // ClientCache contains thing caching interface.
 type ClientCache interface {
-	// Save stores pair thing key, thing id.
-	Save(context.Context, string, string) error
+	// Save stores pair thing secret, thing id.
+	Save(ctx context.Context, thingSecret, thingID string) error
 
-	// ID returns thing ID for given key.
-	ID(context.Context, string) (string, error)
+	// ID returns thing ID for given thing secret.
+	ID(ctx context.Context, thingSecret string) (string, error)
 
 	// Removes thing from cache.
-	Remove(context.Context, string) error
+	Remove(ctx context.Context, thingID string) error
 }
