@@ -218,6 +218,10 @@ func (svc service) DisableClient(ctx context.Context, token, id string) (mfclien
 		return mfclients.Client{}, errors.Wrap(mfclients.ErrDisableClient, err)
 	}
 
+	if err := svc.clientCache.Remove(ctx, client.ID); err != nil {
+		return client, err
+	}
+
 	return client, nil
 }
 

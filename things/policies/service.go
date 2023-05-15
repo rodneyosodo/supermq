@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/internal/apiutil"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/things/clients"
 	upolicies "github.com/mainflux/mainflux/users/policies"
@@ -90,7 +89,15 @@ func (svc service) AddPolicy(ctx context.Context, token string, p Policy) (Polic
 	p.OwnerID = res.GetId()
 	p.CreatedAt = time.Now()
 
-	return svc.policies.Save(ctx, p)
+	p, err = svc.policies.Save(ctx, p)
+	if err != nil {
+		return Policy{}, err
+	}
+
+	if err := svc.policyCache.Put(ctx, p); err != nil {
+		return p, err
+	}
+	return p, nil
 }
 
 func (svc service) UpdatePolicy(ctx context.Context, token string, p Policy) (Policy, error) {
@@ -101,7 +108,7 @@ func (svc service) UpdatePolicy(ctx context.Context, token string, p Policy) (Po
 	if err := p.Validate(); err != nil {
 		return Policy{}, err
 	}
-	if err := svc.checkActionRank(ctx, res.GetId(), p); err != nil {
+	if err := svc.checkAction(ctx, res.GetId(), p); err != nil {
 		return Policy{}, err
 	}
 	p.UpdatedAt = time.Now()
@@ -127,37 +134,42 @@ func (svc service) ListPolicies(ctx context.Context, token string, pm Page) (Pol
 }
 
 func (svc service) DeletePolicy(ctx context.Context, token string, p Policy) error {
-	if _, err := svc.auth.Identify(ctx, &upolicies.Token{Value: token}); err != nil {
+	res, err := svc.auth.Identify(ctx, &upolicies.Token{Value: token})
+	if err != nil {
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
-
+	if err := svc.checkAction(ctx, res.GetId(), p); err != nil {
+		return err
+	}
 	if err := svc.policyCache.Remove(ctx, p); err != nil {
 		return err
 	}
 	return svc.policies.Delete(ctx, p)
 }
 
-// checkActionRank check if client updating the policy has the sufficient privileges
-// WriteAction has a higher priority to ReadAction
-func (svc service) checkActionRank(ctx context.Context, clientID string, p Policy) error {
-	page, err := svc.policies.Retrieve(ctx, Page{Subject: clientID, Object: p.Object, Total: 1})
+// checkAction check if client updating the policy has the sufficient priviledges.
+// If the client is the owner of the policy.
+// If the client is the admin.
+func (svc service) checkAction(ctx context.Context, clientID string, p Policy) error {
+	pm := Page{Subject: p.Subject, Object: p.Object, OwnerID: clientID, Total: 1, Offset: 0}
+	page, err := svc.policies.Retrieve(ctx, pm)
 	if err != nil {
 		return err
 	}
-	if len(page.Policies) != 0 {
-		// Check if the client is the owner
-		if page.Policies[0].OwnerID == clientID {
-			return nil
-		}
-
-		// If I am not the owner I can't add a policy of a higher priority
-		for _, act := range page.Policies[0].Actions {
-			if act == WriteAction {
-				return nil
-			}
-		}
+	if len(page.Policies) != 1 {
+		return errors.ErrAuthorization
+	}
+	// If the client is the owner of the policy
+	if page.Policies[0].OwnerID == clientID {
+		return nil
 	}
 
-	return apiutil.ErrHigherPolicyRank
+	// If the client is the admin
+	req := &upolicies.AuthorizeReq{Sub: clientID, Obj: p.Object, Act: p.Actions[0], EntityType: "client"}
+	if _, err := svc.auth.Authorize(ctx, req); err == nil {
+		return nil
+	}
+
+	return errors.ErrAuthorization
 
 }
