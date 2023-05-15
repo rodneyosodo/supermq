@@ -30,12 +30,13 @@ import (
 	"github.com/mainflux/mainflux/things/groups"
 	gapi "github.com/mainflux/mainflux/things/groups/api"
 	gpostgres "github.com/mainflux/mainflux/things/groups/postgres"
+	redischcache "github.com/mainflux/mainflux/things/groups/redis"
 	gtracing "github.com/mainflux/mainflux/things/groups/tracing"
 	tpolicies "github.com/mainflux/mainflux/things/policies"
 	grpcapi "github.com/mainflux/mainflux/things/policies/api/grpc"
 	papi "github.com/mainflux/mainflux/things/policies/api/http"
 	ppostgres "github.com/mainflux/mainflux/things/policies/postgres"
-	redischcache "github.com/mainflux/mainflux/things/policies/redis"
+	redispcache "github.com/mainflux/mainflux/things/policies/redis"
 	ppracing "github.com/mainflux/mainflux/things/policies/tracing"
 	thingsPg "github.com/mainflux/mainflux/things/postgres"
 	upolicies "github.com/mainflux/mainflux/users/policies"
@@ -49,6 +50,7 @@ const (
 	svcName            = "things"
 	envPrefix          = "MF_THINGS_"
 	envPrefixCache     = "MF_THINGS_CACHE_"
+	envPrefixES        = "MF_THINGS_ES_"
 	envPrefixHttp      = "MF_THINGS_HTTP_"
 	envPrefixAuthGrpc  = "MF_THINGS_AUTH_GRPC_"
 	defDB              = "things"
@@ -103,6 +105,13 @@ func main() {
 	}
 	defer cacheClient.Close()
 
+	// Setup new redis event store client
+	esClient, err := redisClient.Setup(envPrefixES)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	defer esClient.Close()
+
 	var auth upolicies.AuthServiceClient
 	switch cfg.StandaloneID != "" && cfg.StandaloneToken != "" {
 	case true:
@@ -118,8 +127,7 @@ func main() {
 		logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 	}
 
-	// Setup new auth grpc client
-	csvc, gsvc, psvc := newService(db, auth, cacheClient, tracer, logger)
+	csvc, gsvc, psvc := newService(db, auth, cacheClient, esClient, tracer, logger)
 
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
 	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
@@ -157,7 +165,7 @@ func main() {
 	}
 }
 
-func newService(db *sqlx.DB, auth upolicies.AuthServiceClient, cacheClient *redis.Client, tracer trace.Tracer, logger mflog.Logger) (clients.Service, groups.Service, tpolicies.Service) {
+func newService(db *sqlx.DB, auth upolicies.AuthServiceClient, cacheClient *redis.Client, esClient *redis.Client, tracer trace.Tracer, logger mflog.Logger) (clients.Service, groups.Service, tpolicies.Service) {
 	database := postgres.NewDatabase(db, tracer)
 	cRepo := cpostgres.NewRepository(database)
 	gRepo := gpostgres.NewRepository(database)
@@ -165,12 +173,16 @@ func newService(db *sqlx.DB, auth upolicies.AuthServiceClient, cacheClient *redi
 
 	idp := uuid.New()
 
-	policyCache := redischcache.NewCache(cacheClient)
+	policyCache := redispcache.NewCache(cacheClient)
 	thingCache := redisthcache.NewCache(cacheClient)
 
 	csvc := clients.NewService(auth, cRepo, thingCache, idp)
 	gsvc := groups.NewService(auth, gRepo, idp)
 	psvc := tpolicies.NewService(auth, pRepo, thingCache, policyCache, idp)
+
+	csvc = redisthcache.NewEventStoreMiddleware(csvc, esClient)
+	gsvc = redischcache.NewEventStoreMiddleware(gsvc, esClient)
+	psvc = redispcache.NewEventStoreMiddleware(psvc, esClient)
 
 	csvc = ctracing.TracingMiddleware(csvc, tracer)
 	csvc = capi.LoggingMiddleware(csvc, logger)
