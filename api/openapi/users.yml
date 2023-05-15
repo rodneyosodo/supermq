@@ -94,7 +94,7 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /users/{userId}:
+  /users/{userID}:
      get:
       summary: Gets info on specified user.
       description: |
@@ -112,7 +112,7 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"          
-  /groups/{groupId}:
+  /groups/{groupID}:
     get:
       summary: Retrieves users
       description: |

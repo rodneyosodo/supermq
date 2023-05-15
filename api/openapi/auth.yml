@@ -216,7 +216,7 @@ paths:
           description: Group does not exist.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /groups/{groupId}/members:
+  /groups/{groupID}/members:
     get:
       summary: Gets members of a group.
       description: |
@@ -234,7 +234,7 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /groups/{groupId}/members/assign:
+  /groups/{groupID}/members/assign:
     post:
       summary: Assigns members to a group.
       description: |
@@ -258,7 +258,7 @@ paths:
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /groups/{groupId}/members/unassign:
+  /groups/{groupID}/members/unassign:
     post:
       summary: Unassigns members to a group.
       description: |
