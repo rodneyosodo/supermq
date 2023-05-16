@@ -9,13 +9,13 @@ type Page struct {
 	Order        string   `json:"order,omitempty"`
 	Dir          string   `json:"dir,omitempty"`
 	Metadata     Metadata `json:"metadata,omitempty"`
-	Disconnected bool     // Used for connected or disconnected lists
-	Owner        string
-	Tag          string
-	SharedBy     string
-	Status       Status
-	Action       string
-	Subject      string
-	IDs          []string
-	Identity     string
+	Disconnected bool     `json:"disconnected,omitempty"` // Used for connected or disconnected lists
+	Owner        string   `json:"owner,omitempty"`
+	Tag          string   `json:"tag,omitempty"`
+	SharedBy     string   `json:"shared_by,omitempty"`
+	Status       Status   `json:"status,omitempty"`
+	Action       string   `json:"action,omitempty"`
+	Subject      string   `json:"subject,omitempty"`
+	IDs          []string `json:"ids,omitempty"`
+	Identity     string   `json:"identity,omitempty"`
 }

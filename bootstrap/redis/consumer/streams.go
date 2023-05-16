@@ -31,7 +31,7 @@ const (
 // Subscriber represents event source for things and channels provisioning.
 type Subscriber interface {
 	// Subscribes to given subject and receives events.
-	Subscribe(context.Context, string) error
+	Subscribe(ctx context.Context, subject string) error
 }
 
 type eventStore struct {

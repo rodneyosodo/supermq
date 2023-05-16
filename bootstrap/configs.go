@@ -9,25 +9,25 @@ package bootstrap
 // MFKey is key of corresponding Mainflux Thing.
 // MFChannels is a list of Mainflux Channels corresponding Mainflux Thing connects to.
 type Config struct {
-	MFThing     string
-	Owner       string
-	Name        string
-	ClientCert  string
-	ClientKey   string
-	CACert      string
-	MFKey       string
-	MFChannels  []Channel
-	ExternalID  string
-	ExternalKey string
-	Content     string
-	State       State
+	MFThing     string    `json:"mainflux_thing"`
+	Owner       string    `json:"owner,omitempty"`
+	Name        string    `json:"name,omitempty"`
+	ClientCert  string    `json:"client_cert,omitempty"`
+	ClientKey   string    `json:"client_key,omitempty"`
+	CACert      string    `json:"ca_cert,omitempty"`
+	MFKey       string    `json:"mainflux_key"`
+	MFChannels  []Channel `json:"mainflux_channels,omitempty"`
+	ExternalID  string    `json:"external_id"`
+	ExternalKey string    `json:"external_key"`
+	Content     string    `json:"content,omitempty"`
+	State       State     `json:"state"`
 }
 
 // Channel represents Mainflux channel corresponding Mainflux Thing is connected to.
 type Channel struct {
-	ID       string
-	Name     string
-	Metadata map[string]interface{}
+	ID       string                 `json:"id"`
+	Name     string                 `json:"name,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // Filter is used for the search filters.
@@ -39,10 +39,10 @@ type Filter struct {
 // ConfigsPage contains page related metadata as well as list of Configs that
 // belong to this page.
 type ConfigsPage struct {
-	Total   uint64
-	Offset  uint64
-	Limit   uint64
-	Configs []Config
+	Total   uint64   `json:"total"`
+	Offset  uint64   `json:"offset"`
+	Limit   uint64   `json:"limit"`
+	Configs []Config `json:"configs"`
 }
 
 // ConfigRepository specifies a Config persistence API.

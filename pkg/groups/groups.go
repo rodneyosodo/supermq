@@ -29,8 +29,8 @@ type Group struct {
 	Path        string           `json:"path,omitempty"`
 	Children    []*Group         `json:"children,omitempty"`
 	CreatedAt   time.Time        `json:"created_at"`
-	UpdatedAt   time.Time        `json:"updated_at"`
-	UpdatedBy   string           `json:"updated_by"`
+	UpdatedAt   time.Time        `json:"updated_at,omitempty"`
+	UpdatedBy   string           `json:"updated_by,omitempty"`
 	Status      clients.Status   `json:"status"`
 }
 
