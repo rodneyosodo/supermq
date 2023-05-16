@@ -22,6 +22,8 @@ type Page struct {
 	Certs  []Cert
 }
 
+var ErrMissingCerts = errors.New("CA path or CA key path not set")
+
 // Repository specifies a Config persistence API.
 type Repository interface {
 	// Save  saves cert for thing into database
@@ -41,34 +43,33 @@ type Repository interface {
 }
 
 func LoadCertificates(caPath, caKeyPath string) (tls.Certificate, *x509.Certificate, error) {
-	var tlsCert tls.Certificate
-	var caCert *x509.Certificate
-
 	if caPath == "" || caKeyPath == "" {
-		return tlsCert, caCert, nil
+		return tls.Certificate{}, &x509.Certificate{}, ErrMissingCerts
 	}
 
-	if _, err := os.Stat(caPath); os.IsNotExist(err) {
-		return tlsCert, caCert, err
+	_, err := os.Stat(caPath)
+	if os.IsNotExist(err) || os.IsPermission(err) {
+		return tls.Certificate{}, &x509.Certificate{}, err
 	}
 
-	if _, err := os.Stat(caKeyPath); os.IsNotExist(err) {
-		return tlsCert, caCert, err
+	_, err = os.Stat(caKeyPath)
+	if os.IsNotExist(err) || os.IsPermission(err) {
+		return tls.Certificate{}, &x509.Certificate{}, err
 	}
 
 	tlsCert, err := tls.LoadX509KeyPair(caPath, caKeyPath)
 	if err != nil {
-		return tlsCert, caCert, errors.Wrap(err, err)
+		return tlsCert, &x509.Certificate{}, err
 	}
 
 	b, err := ioutil.ReadFile(caPath)
 	if err != nil {
-		return tlsCert, caCert, err
+		return tlsCert, &x509.Certificate{}, err
 	}
 
-	caCert, err = ReadCert(b)
+	caCert, err := ReadCert(b)
 	if err != nil {
-		return tlsCert, caCert, errors.Wrap(err, err)
+		return tlsCert, &x509.Certificate{}, err
 	}
 
 	return tlsCert, caCert, nil
