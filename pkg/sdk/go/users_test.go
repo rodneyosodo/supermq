@@ -364,7 +364,6 @@ func TestListClients(t *testing.T) {
 			ok := repoCall1.Parent.AssertCalled(t, "RetrieveAll", mock.Anything, mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("RetrieveAll was not called on %s", tc.desc))
 		}
-		repoCall1.Unset()
 		repoCall.Unset()
 	}
 }
