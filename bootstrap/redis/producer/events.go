@@ -17,15 +17,17 @@ const (
 	configUpdate        = configPrefix + "update"
 	configRemove        = configPrefix + "remove"
 	configList          = configPrefix + "list"
-	configHandlerRemove = configPrefix + "handler_remove"
+	configHandlerRemove = configPrefix + "remove_handler"
 
 	thingPrefix            = "thing."
 	thingBootstrap         = thingPrefix + "bootstrap"
-	thingStateChange       = thingPrefix + "state_change"
+	thingStateChange       = thingPrefix + "change_state"
 	thingUpdateConnections = thingPrefix + "update_connections"
-	channelHandlerRemove   = thingPrefix + "channel_handler_remove"
-	channelUpdateHandler   = thingPrefix + "update_channel_handler"
 	thingDisconnect        = thingPrefix + "disconnect"
+
+	channelPrefix        = "channel."
+	channelHandlerRemove = channelPrefix + "remove_handler"
+	channelUpdateHandler = channelPrefix + "update_handler"
 
 	certUpdate = "cert.update"
 )
