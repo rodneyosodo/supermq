@@ -162,7 +162,7 @@ func main() {
 		&cli.Limit,
 		"limit",
 		"l",
-		100,
+		10,
 		"Limit query parameter",
 	)
 
