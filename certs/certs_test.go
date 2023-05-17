@@ -10,7 +10,6 @@ import (
 )
 
 func TestLoadCertificates(t *testing.T) {
-
 	cases := []struct {
 		desc      string
 		caPath    string
