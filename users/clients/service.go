@@ -176,6 +176,7 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 	p := policies.Policy{Subject: id, Object: clientsObjectKey, Actions: []string{listRelationKey}}
 	if err := svc.authorize(ctx, clientsObjectKey, p); err == nil {
 		pm.SharedBy = ""
+		pm.Owner = ""
 		pm.Action = ""
 	}
 
