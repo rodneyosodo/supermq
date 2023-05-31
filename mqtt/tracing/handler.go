@@ -2,8 +2,10 @@ package tracing
 
 import (
 	"context"
+	"strings"
 
 	"github.com/mainflux/mproxy/pkg/session"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -35,22 +37,43 @@ func NewHandler(tracer trace.Tracer, handler session.Handler) session.Handler {
 
 // AuthConnect traces auth connect operations.
 func (h *handlerMiddleware) AuthConnect(ctx context.Context) error {
-	// span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, h.tracer, authConnectOP)
-	ctx, span := h.tracer.Start(ctx, authConnectOP)
+	kvOpts := []attribute.KeyValue{}
+	s, ok := session.FromContext(ctx)
+	if ok {
+		kvOpts = append(kvOpts, attribute.String("client_id", s.ID))
+		kvOpts = append(kvOpts, attribute.String("username", s.Username))
+	}
+	ctx, span := h.tracer.Start(ctx, authConnectOP, trace.WithAttributes(kvOpts...))
 	defer span.End()
 	return h.handler.AuthConnect(ctx)
 }
 
 // AuthPublish traces auth publish operations.
 func (h *handlerMiddleware) AuthPublish(ctx context.Context, topic *string, payload *[]byte) error {
-	ctx, span := h.tracer.Start(ctx, authPublishOP)
+	kvOpts := []attribute.KeyValue{}
+	s, ok := session.FromContext(ctx)
+	if ok {
+		kvOpts = append(kvOpts, attribute.String("client_id", s.ID))
+		if topic != nil {
+			kvOpts = append(kvOpts, attribute.String("topic", *topic))
+		}
+	}
+	ctx, span := h.tracer.Start(ctx, authPublishOP, trace.WithAttributes(kvOpts...))
 	defer span.End()
 	return h.handler.AuthPublish(ctx, topic, payload)
 }
 
 // AuthSubscribe traces auth subscribe operations.
 func (h *handlerMiddleware) AuthSubscribe(ctx context.Context, topics *[]string) error {
-	ctx, span := h.tracer.Start(ctx, authSubscribeOP)
+	kvOpts := []attribute.KeyValue{}
+	s, ok := session.FromContext(ctx)
+	if ok {
+		kvOpts = append(kvOpts, attribute.String("client_id", s.ID))
+		if topics != nil {
+			kvOpts = append(kvOpts, attribute.String("topics", strings.Join(*topics, ", ")))
+		}
+	}
+	ctx, span := h.tracer.Start(ctx, authSubscribeOP, trace.WithAttributes(kvOpts...))
 	defer span.End()
 	return h.handler.AuthSubscribe(ctx, topics)
 }
