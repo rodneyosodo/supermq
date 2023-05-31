@@ -109,7 +109,7 @@ func main() {
 		auth = localusers.NewAuthService(cfg.StandaloneID, cfg.StandaloneToken)
 		logger.Info("Using standalone auth service")
 	default:
-		authServiceClient, authHandler, err := authClient.Setup(envPrefix, cfg.JaegerURL)
+		authServiceClient, authHandler, err := authClient.Setup(envPrefix, svcName, cfg.JaegerURL)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
@@ -119,7 +119,6 @@ func main() {
 	}
 
 	// Setup new auth grpc client
-
 	csvc, gsvc, psvc := newService(db, auth, cacheClient, tracer, logger)
 
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
@@ -182,7 +181,6 @@ func newService(db *sqlx.DB, auth upolicies.AuthServiceClient, cacheClient *redi
 	gsvc = gapi.LoggingMiddleware(gsvc, logger)
 	counter, latency = internal.MakeMetrics(fmt.Sprintf("%s_groups", svcName), "api")
 	gsvc = gapi.MetricsMiddleware(gsvc, counter, latency)
-
 	psvc = ppracing.TracingMiddleware(psvc, tracer)
 	psvc = papi.LoggingMiddleware(psvc, logger)
 	counter, latency = internal.MakeMetrics(fmt.Sprintf("%s_policies", svcName), "api")

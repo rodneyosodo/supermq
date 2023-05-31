@@ -61,7 +61,7 @@ func main() {
 	logger.Info("Successfully connected to things grpc server " + tcHandler.Secure())
 
 	// Create new auth grpc client
-	auth, authHandler, err := authClient.Setup(envPrefix, cfg.JaegerURL)
+	auth, authHandler, err := authClient.Setup(envPrefix, svcName, cfg.JaegerURL)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

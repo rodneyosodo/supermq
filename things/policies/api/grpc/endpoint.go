@@ -22,6 +22,7 @@ func authorizeEndpoint(svc policies.Service) endpoint.Endpoint {
 		if err := svc.Authorize(ctx, req.entityType, policy); err != nil {
 			return authorizeRes{}, err
 		}
+
 		return authorizeRes{authorized: true}, nil
 	}
 }

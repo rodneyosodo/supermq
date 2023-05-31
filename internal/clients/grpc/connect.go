@@ -5,6 +5,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	jaegerClient "github.com/mainflux/mainflux/internal/clients/jaeger"
@@ -84,7 +85,7 @@ func Setup(config Config, svcName, jaegerURL string) (*Client, ClientHandler, er
 	}
 
 	// initialize auth tracer for auth grpc client
-	tp, err := jaegerClient.NewProvider(svcName, jaegerURL)
+	tp, err := jaegerClient.NewProvider(fmt.Sprintf("auth.%s", svcName), jaegerURL)
 	if err != nil {
 		grpcClient.Close()
 		return nil, nil, errors.Wrap(errJaeger, err)
@@ -94,6 +95,7 @@ func Setup(config Config, svcName, jaegerURL string) (*Client, ClientHandler, er
 	return c, NewClientHandler(c), nil
 }
 
+// Close shuts down trace provider.
 func (c *Client) Close() error {
 	var retErr error
 	err := c.ClientConn.Close()
@@ -106,10 +108,13 @@ func (c *Client) Close() error {
 	return retErr
 }
 
+// IsSecure is utility method for checking if
+// the client is running with TLS enabled.
 func (c *Client) IsSecure() bool {
 	return c.secure
 }
 
+// Secure is used for pretty printing TLS info.
 func (c *Client) Secure() string {
 	if c.secure {
 		return "with TLS"

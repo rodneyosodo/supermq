@@ -10,7 +10,7 @@ import (
 
 var _ http.Service = (*serviceMiddleware)(nil)
 
-const publishOP = "publishOP"
+const publishOP = "publish"
 
 // serviceMiddleware implements the http.Service interface, providing a middleware layer for tracing HTTP requests.
 // It creates a new span for each request and sets it as the active span in the OpenTelemetry context.

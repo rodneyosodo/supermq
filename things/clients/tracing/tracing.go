@@ -28,7 +28,7 @@ func (tm *tracingMiddleware) CreateThings(ctx context.Context, token string, cli
 }
 
 func (tm *tracingMiddleware) ViewClient(ctx context.Context, token string, id string) (mfclients.Client, error) {
-	ctx, span := tm.tracer.Start(ctx, "svc_view_client", trace.WithAttributes(attribute.String("ID", id)))
+	ctx, span := tm.tracer.Start(ctx, "svc_view_client", trace.WithAttributes(attribute.String("id", id)))
 	defer span.End()
 	return tm.svc.ViewClient(ctx, token, id)
 }
@@ -40,14 +40,14 @@ func (tm *tracingMiddleware) ListClients(ctx context.Context, token string, pm m
 }
 
 func (tm *tracingMiddleware) UpdateClient(ctx context.Context, token string, cli mfclients.Client) (mfclients.Client, error) {
-	ctx, span := tm.tracer.Start(ctx, "svc_update_client_name_and_metadata", trace.WithAttributes(attribute.String("Name", cli.Name)))
+	ctx, span := tm.tracer.Start(ctx, "svc_update_client_name_and_metadata", trace.WithAttributes(attribute.String("name", cli.Name)))
 	defer span.End()
 
 	return tm.svc.UpdateClient(ctx, token, cli)
 }
 
 func (tm *tracingMiddleware) UpdateClientTags(ctx context.Context, token string, cli mfclients.Client) (mfclients.Client, error) {
-	ctx, span := tm.tracer.Start(ctx, "svc_update_client_tags", trace.WithAttributes(attribute.StringSlice("Tags", cli.Tags)))
+	ctx, span := tm.tracer.Start(ctx, "svc_update_client_tags", trace.WithAttributes(attribute.StringSlice("tags", cli.Tags)))
 	defer span.End()
 
 	return tm.svc.UpdateClientTags(ctx, token, cli)
@@ -62,21 +62,21 @@ func (tm *tracingMiddleware) UpdateClientSecret(ctx context.Context, token, oldS
 }
 
 func (tm *tracingMiddleware) UpdateClientOwner(ctx context.Context, token string, cli mfclients.Client) (mfclients.Client, error) {
-	ctx, span := tm.tracer.Start(ctx, "svc_update_client_owner", trace.WithAttributes(attribute.StringSlice("Tags", cli.Tags)))
+	ctx, span := tm.tracer.Start(ctx, "svc_update_client_owner", trace.WithAttributes(attribute.StringSlice("tags", cli.Tags)))
 	defer span.End()
 
 	return tm.svc.UpdateClientOwner(ctx, token, cli)
 }
 
 func (tm *tracingMiddleware) EnableClient(ctx context.Context, token, id string) (mfclients.Client, error) {
-	ctx, span := tm.tracer.Start(ctx, "svc_enable_client", trace.WithAttributes(attribute.String("ID", id)))
+	ctx, span := tm.tracer.Start(ctx, "svc_enable_client", trace.WithAttributes(attribute.String("id", id)))
 	defer span.End()
 
 	return tm.svc.EnableClient(ctx, token, id)
 }
 
 func (tm *tracingMiddleware) DisableClient(ctx context.Context, token, id string) (mfclients.Client, error) {
-	ctx, span := tm.tracer.Start(ctx, "svc_disable_client", trace.WithAttributes(attribute.String("ID", id)))
+	ctx, span := tm.tracer.Start(ctx, "svc_disable_client", trace.WithAttributes(attribute.String("id", id)))
 	defer span.End()
 
 	return tm.svc.DisableClient(ctx, token, id)
@@ -91,13 +91,13 @@ func (tm *tracingMiddleware) ListClientsByGroup(ctx context.Context, token, grou
 }
 
 func (tm *tracingMiddleware) ShareClient(ctx context.Context, token string, thingID string, actions, userIDs []string) error {
-	ctx, span := tm.tracer.Start(ctx, "svc_view_client", trace.WithAttributes(attribute.String("ID", thingID)))
+	ctx, span := tm.tracer.Start(ctx, "svc_view_client", trace.WithAttributes(attribute.String("id", thingID)))
 	defer span.End()
 	return tm.svc.ShareClient(ctx, token, thingID, actions, userIDs)
 }
 
 func (tm *tracingMiddleware) Identify(ctx context.Context, key string) (string, error) {
-	ctx, span := tm.tracer.Start(ctx, "svc_view_client", trace.WithAttributes(attribute.String("Key", key)))
+	ctx, span := tm.tracer.Start(ctx, "svc_view_client", trace.WithAttributes(attribute.String("key", key)))
 	defer span.End()
 	return tm.svc.Identify(ctx, key)
 }
