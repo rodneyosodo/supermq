@@ -12,11 +12,6 @@ import (
 	"github.com/mainflux/mainflux/pkg/messaging"
 )
 
-const (
-	channels = "channels"
-	messages = "messages"
-)
-
 // Forwarder specifies MQTT forwarder interface API.
 type Forwarder interface {
 	// Forward subscribes to the Subscriber and
@@ -48,9 +43,9 @@ func handle(ctx context.Context, pub messaging.Publisher, logger mflog.Logger) h
 		}
 		// Use concatenation instead of fmt.Sprintf for the
 		// sake of simplicity and performance.
-		topic := channels + "/" + msg.Channel + "/" + messages
+		topic := fmt.Sprintf("channels/%s/messages", msg.Channel)
 		if msg.Subtopic != "" {
-			topic += "/" + strings.ReplaceAll(msg.Subtopic, ".", "/")
+			topic += fmt.Sprintf("%s/%s", topic, strings.ReplaceAll(msg.Subtopic, ".", "/"))
 		}
 		go func() {
 			if err := pub.Publish(ctx, topic, msg); err != nil {

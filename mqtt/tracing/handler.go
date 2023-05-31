@@ -2,7 +2,6 @@ package tracing
 
 import (
 	"context"
-	"strings"
 
 	"github.com/mainflux/mproxy/pkg/session"
 	"go.opentelemetry.io/otel/attribute"
@@ -70,7 +69,7 @@ func (h *handlerMiddleware) AuthSubscribe(ctx context.Context, topics *[]string)
 	if ok {
 		kvOpts = append(kvOpts, attribute.String("client_id", s.ID))
 		if topics != nil {
-			kvOpts = append(kvOpts, attribute.String("topics", strings.Join(*topics, ", ")))
+			kvOpts = append(kvOpts, attribute.StringSlice("topics", *topics))
 		}
 	}
 	ctx, span := h.tracer.Start(ctx, authSubscribeOP, trace.WithAttributes(kvOpts...))
