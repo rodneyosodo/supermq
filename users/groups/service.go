@@ -82,6 +82,10 @@ func (svc service) ListGroups(ctx context.Context, token string, gm groups.Group
 	if err != nil {
 		return groups.GroupsPage{}, err
 	}
+	// If the user is admin, fetch all groups from the database.
+	if err := svc.authorizeByID(ctx, entityType, policies.Policy{Subject: id, Object: groupsObjectKey, Actions: []string{listRelationKey}}); err == nil {
+		return svc.groups.RetrieveAll(ctx, gm)
+	}
 	gm.Subject = id
 	gm.OwnerID = id
 	gm.Action = listRelationKey
