@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	groupPrefix          = "channels."
+	groupPrefix          = "channel."
 	groupCreate          = groupPrefix + "create"
 	groupUpdate          = groupPrefix + "update"
 	groupRemove          = groupPrefix + "remove"

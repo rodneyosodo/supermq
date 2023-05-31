@@ -3,6 +3,12 @@
 
 package bootstrap
 
+import (
+	"time"
+
+	"github.com/mainflux/mainflux/pkg/clients"
+)
+
 // Config represents Configuration entity. It wraps information about external entity
 // as well as info about corresponding Mainflux entities.
 // MFThing represents corresponding Mainflux Thing ID.
@@ -25,9 +31,16 @@ type Config struct {
 
 // Channel represents Mainflux channel corresponding Mainflux Thing is connected to.
 type Channel struct {
-	ID       string                 `json:"id"`
-	Name     string                 `json:"name,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	Owner       string                 `json:"owner_id"`
+	Parent      string                 `json:"parent_id,omitempty"`
+	Description string                 `json:"description,omitempty"`
+	CreatedAt   time.Time              `json:"created_at"`
+	UpdatedAt   time.Time              `json:"updated_at,omitempty"`
+	UpdatedBy   string                 `json:"updated_by,omitempty"`
+	Status      clients.Status         `json:"status"`
 }
 
 // Filter is used for the search filters.

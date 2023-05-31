@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/mainflux/mainflux/bootstrap"
@@ -17,9 +18,8 @@ const (
 	stream = "mainflux.things"
 	group  = "mainflux.bootstrap"
 
-	thingPrefix     = "thing."
-	thingRemove     = thingPrefix + "remove"
-	thingDisconnect = thingPrefix + "disconnect"
+	thingRemove     = "thing.remove"
+	thingDisconnect = "policy.delete"
 
 	channelPrefix = "channel."
 	channelUpdate = channelPrefix + "update"
@@ -109,9 +109,11 @@ func decodeUpdateChannel(event map[string]interface{}) updateChannelEvent {
 	}
 
 	return updateChannelEvent{
-		id:       read(event, "id", ""),
-		name:     read(event, "name", ""),
-		metadata: metadata,
+		id:        read(event, "id", ""),
+		name:      read(event, "name", ""),
+		metadata:  metadata,
+		updatedAt: readTime(event, "updated_at", time.Now()),
+		updatedBy: read(event, "updated_by", ""),
 	}
 }
 
@@ -130,15 +132,26 @@ func decodeDisconnectThing(event map[string]interface{}) disconnectEvent {
 
 func (es eventStore) handleUpdateChannel(ctx context.Context, uce updateChannelEvent) error {
 	channel := bootstrap.Channel{
-		ID:       uce.id,
-		Name:     uce.name,
-		Metadata: uce.metadata,
+		ID:        uce.id,
+		Name:      uce.name,
+		Metadata:  uce.metadata,
+		UpdatedAt: uce.updatedAt,
+		UpdatedBy: uce.updatedBy,
 	}
 	return es.svc.UpdateChannelHandler(ctx, channel)
 }
 
 func read(event map[string]interface{}, key, def string) string {
 	val, ok := event[key].(string)
+	if !ok {
+		return def
+	}
+
+	return val
+}
+
+func readTime(event map[string]interface{}, key string, def time.Time) time.Time {
+	val, ok := event[key].(time.Time)
 	if !ok {
 		return def
 	}

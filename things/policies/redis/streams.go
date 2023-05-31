@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	streamID  = "mainflux.things.policies"
+	streamID  = "mainflux.things"
 	streamLen = 1000
 )
 

@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	streamID  = "mainflux.channels"
+	streamID  = "mainflux.things"
 	streamLen = 1000
 )
 
