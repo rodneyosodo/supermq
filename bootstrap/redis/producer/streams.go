@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/mainflux/mainflux/bootstrap"
+	"github.com/mainflux/mainflux/pkg/errors"
 )
 
 const (
@@ -38,11 +39,11 @@ func (es eventStore) Add(ctx context.Context, token string, cfg bootstrap.Config
 	}
 
 	ev := configEvent{
-		saved,
+		saved, configCreate,
 	}
 
-	if err = es.add(ctx, ev); err != nil {
-		return saved, err
+	if err1 := es.add(ctx, ev); err1 != nil {
+		return saved, errors.Wrap(err, err1)
 	}
 
 	return saved, err
@@ -54,11 +55,11 @@ func (es eventStore) View(ctx context.Context, token, id string) (bootstrap.Conf
 		return cfg, err
 	}
 	ev := configEvent{
-		cfg,
+		cfg, configList,
 	}
 
-	if err = es.add(ctx, ev); err != nil {
-		return cfg, err
+	if err1 := es.add(ctx, ev); err1 != nil {
+		return cfg, errors.Wrap(err, err1)
 	}
 
 	return cfg, err
@@ -70,7 +71,7 @@ func (es eventStore) Update(ctx context.Context, token string, cfg bootstrap.Con
 	}
 
 	ev := configEvent{
-		cfg,
+		cfg, configUpdate,
 	}
 
 	return es.add(ctx, ev)
@@ -117,8 +118,8 @@ func (es eventStore) List(ctx context.Context, token string, filter bootstrap.Fi
 		partialMatch: filter.PartialMatch,
 	}
 
-	if err = es.add(ctx, ev); err != nil {
-		return bp, err
+	if err1 := es.add(ctx, ev); err1 != nil {
+		return bp, errors.Wrap(err, err1)
 	}
 
 	return bp, nil
@@ -149,8 +150,8 @@ func (es eventStore) Bootstrap(ctx context.Context, externalKey, externalID stri
 		ev.success = false
 	}
 
-	if err = es.add(ctx, ev); err != nil {
-		return cfg, err
+	if err1 := es.add(ctx, ev); err1 != nil {
+		return cfg, err1
 	}
 
 	return cfg, err

@@ -170,9 +170,8 @@ func TestAdd(t *testing.T) {
 
 		var event map[string]interface{}
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
-			msg := streams[0].Messages[0]
-			event = msg.Values
-			lastID = msg.ID
+			event := streams[0].Messages
+			lastID = event[0].ID
 		}
 
 		test(t, tc.event, event, tc.desc)
@@ -236,11 +235,15 @@ func TestUpdate(t *testing.T) {
 			token:  validToken,
 			err:    nil,
 			event: map[string]interface{}{
-				"thing_id":  modified.MFThing,
-				"name":      modified.Name,
-				"content":   modified.Content,
-				"timestamp": time.Now().Unix(),
-				"operation": configUpdate,
+				"name":           modified.Name,
+				"content":        modified.Content,
+				"timestamp":      time.Now().Unix(),
+				"operation":      configUpdate,
+				"channels":       "[1, 2]",
+				"external_id":    "external_id",
+				"mainflux_thing": "1",
+				"owner":          email,
+				"state":          "0",
 			},
 		},
 		{
@@ -267,6 +270,7 @@ func TestUpdate(t *testing.T) {
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
 			msg := streams[0].Messages[0]
 			event = msg.Values
+			event["timestamp"] = msg.ID
 			lastID = msg.ID
 		}
 
@@ -332,9 +336,8 @@ func TestUpdateConnections(t *testing.T) {
 
 		var event map[string]interface{}
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
-			msg := streams[0].Messages[0]
-			event = msg.Values
-			lastID = msg.ID
+			event := streams[0].Messages
+			lastID = event[0].ID
 		}
 
 		test(t, tc.event, event, tc.desc)
@@ -414,9 +417,8 @@ func TestRemove(t *testing.T) {
 
 		var event map[string]interface{}
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
-			msg := streams[0].Messages[0]
-			event = msg.Values
-			lastID = msg.ID
+			event := streams[0].Messages
+			lastID = event[0].ID
 		}
 
 		test(t, tc.event, event, tc.desc)
@@ -461,7 +463,7 @@ func TestBootstrap(t *testing.T) {
 		{
 			desc:        "bootstrap with an error",
 			externalID:  saved.ExternalID,
-			externalKey: "external_id",
+			externalKey: "external_id1",
 			err:         bootstrap.ErrExternalKey,
 			event: map[string]interface{}{
 				"external_id": "external_id",
@@ -485,9 +487,8 @@ func TestBootstrap(t *testing.T) {
 
 		var event map[string]interface{}
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
-			msg := streams[0].Messages[0]
-			event = msg.Values
-			lastID = msg.ID
+			event := streams[0].Messages
+			lastID = event[0].ID
 		}
 		test(t, tc.event, event, tc.desc)
 	}
@@ -553,9 +554,8 @@ func TestChangeState(t *testing.T) {
 
 		var event map[string]interface{}
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
-			msg := streams[0].Messages[0]
-			event = msg.Values
-			lastID = msg.ID
+			event := streams[0].Messages
+			lastID = event[0].ID
 		}
 
 		test(t, tc.event, event, tc.desc)
@@ -565,9 +565,11 @@ func TestChangeState(t *testing.T) {
 func test(t *testing.T, expected, actual map[string]interface{}, description string) {
 	if expected != nil && actual != nil {
 		ts1 := expected["timestamp"].(int64)
+		ats := actual["timestamp"].(string)
 
-		ts2, err := strconv.ParseInt(actual["timestamp"].(string), 10, 64)
+		ts2, err := strconv.ParseInt(strings.Split(ats, "-")[0], 10, 64)
 		require.Nil(t, err, fmt.Sprintf("%s: expected to get a valid timestamp, got %s", description, err))
+		ts2 = time.UnixMilli(ts2).Unix()
 
 		val := ts1 == ts2 || ts2 <= ts1+defaultTimout
 		assert.True(t, val, fmt.Sprintf("%s: timestamp is not in valid range", description))

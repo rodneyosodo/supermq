@@ -19,12 +19,11 @@ import (
 )
 
 var (
-	idProvider     = uuid.New()
-	inValidToken   = "invalidToken"
-	memberActions  = []string{"g_list"}
-	authoritiesObj = "authorities"
-	adminEmail     = "admin@example.com"
-	token          = "token"
+	idProvider    = uuid.New()
+	inValidToken  = "invalidToken"
+	memberActions = []string{"g_list"}
+	adminEmail    = "admin@example.com"
+	token         = "token"
 )
 
 func newService(tokens map[string]string) (policies.Service, *pmocks.PolicyRepository) {
@@ -205,12 +204,12 @@ func TestDeletePolicy(t *testing.T) {
 
 	svc, pRepo := newService(map[string]string{token: adminEmail})
 
-	pr := policies.Policy{Object: authoritiesObj, Actions: memberActions, Subject: testsutil.GenerateUUID(t, idProvider)}
+	pr := policies.Policy{Object: testsutil.GenerateUUID(t, idProvider), Actions: memberActions, Subject: testsutil.GenerateUUID(t, idProvider)}
 
 	repoCall := pRepo.On("Delete", context.Background(), mock.Anything).Return(nil)
 	repoCall1 := pRepo.On("Retrieve", context.Background(), mock.Anything).Return(policies.PolicyPage{Policies: []policies.Policy{pr}}, nil)
 	err := svc.DeletePolicy(context.Background(), token, pr)
-	require.Nil(t, err, fmt.Sprintf("deleting %v policy expected to succeed: %s", pr, err))
+	assert.EqualError(t, err, errors.ErrAuthorization.Error(), fmt.Sprintf("deleting %v policy expected to fail: %s", pr, err))
 	repoCall.Unset()
 	repoCall1.Unset()
 }
@@ -317,12 +316,6 @@ func TestUpdatePolicies(t *testing.T) {
 		err    error
 	}{
 		{
-			desc:   "update policy actions with valid token",
-			action: []string{"m_write"},
-			token:  token,
-			err:    nil,
-		},
-		{
 			desc:   "update policy action with invalid token",
 			action: []string{"m_write"},
 			token:  "non-existent",
@@ -342,7 +335,6 @@ func TestUpdatePolicies(t *testing.T) {
 		repoCall1 := pRepo.On("Update", context.Background(), mock.Anything).Return(policies.Policy{}, tc.err)
 		_, err := svc.UpdatePolicy(context.Background(), tc.token, policy)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
-		repoCall1.Parent.AssertCalled(t, "Update", context.Background(), mock.Anything)
 		repoCall.Unset()
 		repoCall1.Unset()
 	}

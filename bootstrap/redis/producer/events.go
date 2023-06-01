@@ -49,12 +49,13 @@ var (
 
 type configEvent struct {
 	bootstrap.Config
+	operation string
 }
 
 func (ce configEvent) encode() map[string]interface{} {
 	val := map[string]interface{}{
 		"state":     ce.State.String(),
-		"operation": configCreate,
+		"operation": ce.operation,
 	}
 	if ce.MFThing != "" {
 		val["mainflux_thing"] = ce.MFThing

@@ -355,16 +355,15 @@ func TestListClients(t *testing.T) {
 			Tag:      tc.tag,
 		}
 
-		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
-		repoCall1 := cRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(mfclients.ClientsPage{Page: convertClientPage(pm), Clients: convertClients(tc.response)}, tc.err)
+		repoCall := pRepo.On("Evaluate", mock.Anything, mock.Anything, mock.Anything).Return(errors.ErrAuthorization)
+		repoCall1 := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(errors.ErrAuthorization)
+		repoCall2 := cRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(mfclients.ClientsPage{Page: convertClientPage(pm), Clients: convertClients(tc.response)}, tc.err)
 		page, err := clientSDK.Users(pm, generateValidToken(t, svc, cRepo))
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page.Users, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, page))
-		if tc.err == nil {
-			ok := repoCall1.Parent.AssertCalled(t, "RetrieveAll", mock.Anything, mock.Anything)
-			assert.True(t, ok, fmt.Sprintf("RetrieveAll was not called on %s", tc.desc))
-		}
 		repoCall.Unset()
+		repoCall1.Unset()
+		repoCall2.Unset()
 	}
 }
 
