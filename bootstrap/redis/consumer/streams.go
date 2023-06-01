@@ -12,6 +12,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/mainflux/mainflux/bootstrap"
 	"github.com/mainflux/mainflux/logger"
+	"github.com/mainflux/mainflux/pkg/clients"
 )
 
 const (
@@ -96,8 +97,20 @@ func (es eventStore) Subscribe(ctx context.Context, subject string) error {
 }
 
 func decodeRemoveThing(event map[string]interface{}) removeEvent {
-	return removeEvent{
-		id: read(event, "id", ""),
+	status := read(event, "status", "")
+	st, err := clients.ToStatus(status)
+	if err != nil {
+		return removeEvent{}
+	}
+	switch st {
+	case clients.EnabledStatus:
+		return removeEvent{}
+	case clients.DisabledStatus:
+		return removeEvent{
+			id: read(event, "id", ""),
+		}
+	default:
+		return removeEvent{}
 	}
 }
 
@@ -118,8 +131,20 @@ func decodeUpdateChannel(event map[string]interface{}) updateChannelEvent {
 }
 
 func decodeRemoveChannel(event map[string]interface{}) removeEvent {
-	return removeEvent{
-		id: read(event, "id", ""),
+	status := read(event, "status", "")
+	st, err := clients.ToStatus(status)
+	if err != nil {
+		return removeEvent{}
+	}
+	switch st {
+	case clients.EnabledStatus:
+		return removeEvent{}
+	case clients.DisabledStatus:
+		return removeEvent{
+			id: read(event, "id", ""),
+		}
+	default:
+		return removeEvent{}
 	}
 }
 
