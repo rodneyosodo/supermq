@@ -333,7 +333,7 @@ func toDBClient(c mfclients.Client) (dbClient, error) {
 		updatedBy = &c.UpdatedBy
 	}
 	var updatedAt sql.NullTime
-	if c.UpdatedAt != (time.Time{}) {
+	if !c.UpdatedAt.IsZero() {
 		updatedAt = sql.NullTime{Time: c.UpdatedAt, Valid: true}
 	}
 

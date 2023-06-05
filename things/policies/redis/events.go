@@ -3,7 +3,6 @@ package redis
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/mainflux/mainflux/things/policies"
 )
@@ -49,10 +48,10 @@ func (pe policyEvent) Encode() map[string]interface{} {
 		actions := fmt.Sprintf("[%s]", strings.Join(pe.Actions, ","))
 		val["actions"] = actions
 	}
-	if pe.CreatedAt != (time.Time{}) {
+	if !pe.CreatedAt.IsZero() {
 		val["created_at"] = pe.CreatedAt
 	}
-	if pe.UpdatedAt != (time.Time{}) {
+	if !pe.UpdatedAt.IsZero() {
 		val["updated_at"] = pe.UpdatedAt
 	}
 	if pe.UpdatedBy != "" {

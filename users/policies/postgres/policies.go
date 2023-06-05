@@ -221,7 +221,7 @@ func toDBPolicy(p policies.Policy) (dbPolicy, error) {
 		return dbPolicy{}, err
 	}
 	var updatedAt sql.NullTime
-	if p.UpdatedAt != (time.Time{}) {
+	if !p.UpdatedAt.IsZero() {
 		updatedAt = sql.NullTime{Time: p.UpdatedAt, Valid: true}
 	}
 	var updatedBy *string

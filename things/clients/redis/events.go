@@ -106,7 +106,7 @@ func (uce updateClientEvent) Encode() map[string]interface{} {
 
 		val["metadata"] = metadata
 	}
-	if uce.CreatedAt != (time.Time{}) {
+	if !uce.CreatedAt.IsZero() {
 		val["created_at"] = uce.CreatedAt
 	}
 	if uce.Status.String() != "" {
@@ -179,10 +179,10 @@ func (vce viewClientEvent) Encode() map[string]interface{} {
 
 		val["metadata"] = metadata
 	}
-	if vce.CreatedAt != (time.Time{}) {
+	if !vce.CreatedAt.IsZero() {
 		val["created_at"] = vce.CreatedAt
 	}
-	if vce.UpdatedAt != (time.Time{}) {
+	if !vce.UpdatedAt.IsZero() {
 		val["updated_at"] = vce.UpdatedAt
 	}
 	if vce.UpdatedBy != "" {

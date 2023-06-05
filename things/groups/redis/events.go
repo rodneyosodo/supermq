@@ -65,7 +65,7 @@ func (cce createGroupEvent) Encode() map[string]interface{} {
 	if cce.Status.String() != "" {
 		val["status"] = cce.Status.String()
 	}
-	if cce.CreatedAt != (time.Time{}) {
+	if !cce.CreatedAt.IsZero() {
 		val["created_at"] = cce.CreatedAt
 	}
 	return val
@@ -105,10 +105,10 @@ func (uce updateGroupEvent) Encode() map[string]interface{} {
 
 		val["metadata"] = metadata
 	}
-	if uce.CreatedAt != (time.Time{}) {
+	if !uce.CreatedAt.IsZero() {
 		val["created_at"] = uce.CreatedAt
 	}
-	if uce.UpdatedAt != (time.Time{}) {
+	if !uce.UpdatedAt.IsZero() {
 		val["updated_at"] = uce.UpdatedAt
 	}
 	if uce.Status.String() != "" {
@@ -165,10 +165,10 @@ func (vce viewGroupEvent) Encode() map[string]interface{} {
 
 		val["metadata"] = metadata
 	}
-	if vce.CreatedAt != (time.Time{}) {
+	if !vce.CreatedAt.IsZero() {
 		val["created_at"] = vce.CreatedAt
 	}
-	if vce.UpdatedAt != (time.Time{}) {
+	if !vce.UpdatedAt.IsZero() {
 		val["updated_at"] = vce.UpdatedAt
 	}
 	if vce.UpdatedBy != "" {

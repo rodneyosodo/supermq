@@ -317,7 +317,7 @@ func toDBGroup(g mfgroups.Group) (dbGroup, error) {
 		data = b
 	}
 	var updatedAt sql.NullTime
-	if g.UpdatedAt != (time.Time{}) {
+	if !g.UpdatedAt.IsZero() {
 		updatedAt = sql.NullTime{Time: g.UpdatedAt, Valid: true}
 	}
 	var updatedBy *string

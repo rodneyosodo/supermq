@@ -558,7 +558,7 @@ func nullString(s string) sql.NullString {
 }
 
 func nullTime(t time.Time) sql.NullTime {
-	if t == (time.Time{}) {
+	if t.IsZero() {
 		return sql.NullTime{}
 	}
 
