@@ -22,7 +22,7 @@ const (
 )
 
 type event interface {
-	Encode() map[string]interface{}
+	Encode() (map[string]interface{}, error)
 }
 
 var (
@@ -40,7 +40,7 @@ type createClientEvent struct {
 	mfclients.Client
 }
 
-func (cce createClientEvent) Encode() map[string]interface{} {
+func (cce createClientEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation":  clientCreate,
 		"id":         cce.ID,
@@ -61,7 +61,7 @@ func (cce createClientEvent) Encode() map[string]interface{} {
 	if cce.Metadata != nil {
 		metadata, err := json.Marshal(cce.Metadata)
 		if err != nil {
-			return val
+			return map[string]interface{}{}, err
 		}
 
 		val["metadata"] = metadata
@@ -70,7 +70,7 @@ func (cce createClientEvent) Encode() map[string]interface{} {
 		val["identity"] = cce.Credentials.Identity
 	}
 
-	return val
+	return val, nil
 }
 
 type updateClientEvent struct {
@@ -78,7 +78,7 @@ type updateClientEvent struct {
 	operation string
 }
 
-func (uce updateClientEvent) Encode() map[string]interface{} {
+func (uce updateClientEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation":  clientUpdate + "." + uce.operation,
 		"updated_at": uce.UpdatedAt,
@@ -101,7 +101,7 @@ func (uce updateClientEvent) Encode() map[string]interface{} {
 	if uce.Metadata != nil {
 		metadata, err := json.Marshal(uce.Metadata)
 		if err != nil {
-			return val
+			return map[string]interface{}{}, err
 		}
 
 		val["metadata"] = metadata
@@ -113,7 +113,7 @@ func (uce updateClientEvent) Encode() map[string]interface{} {
 		val["status"] = uce.Status.String()
 	}
 
-	return val
+	return val, nil
 }
 
 type removeClientEvent struct {
@@ -123,14 +123,14 @@ type removeClientEvent struct {
 	updatedBy string
 }
 
-func (rce removeClientEvent) Encode() map[string]interface{} {
+func (rce removeClientEvent) Encode() (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"operation":  clientRemove,
 		"id":         rce.id,
 		"status":     rce.status,
 		"updated_at": rce.updatedAt,
 		"updated_by": rce.updatedBy,
-	}
+	}, nil
 }
 
 type shareClientEvent struct {
@@ -139,20 +139,20 @@ type shareClientEvent struct {
 	userIDs string
 }
 
-func (sce shareClientEvent) Encode() map[string]interface{} {
+func (sce shareClientEvent) Encode() (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"operation": clientShare,
 		"thing_id":  sce.thingID,
 		"actions":   sce.actions,
 		"user_ids":  sce.userIDs,
-	}
+	}, nil
 }
 
 type viewClientEvent struct {
 	mfclients.Client
 }
 
-func (vce viewClientEvent) Encode() map[string]interface{} {
+func (vce viewClientEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation": clientView,
 		"id":        vce.ID,
@@ -174,7 +174,7 @@ func (vce viewClientEvent) Encode() map[string]interface{} {
 	if vce.Metadata != nil {
 		metadata, err := json.Marshal(vce.Metadata)
 		if err != nil {
-			return val
+			return map[string]interface{}{}, err
 		}
 
 		val["metadata"] = metadata
@@ -192,14 +192,14 @@ func (vce viewClientEvent) Encode() map[string]interface{} {
 		val["status"] = vce.Status.String()
 	}
 
-	return val
+	return val, nil
 }
 
 type listClientEvent struct {
 	mfclients.Page
 }
 
-func (lce listClientEvent) Encode() map[string]interface{} {
+func (lce listClientEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation": clientList,
 		"total":     lce.Total,
@@ -219,7 +219,7 @@ func (lce listClientEvent) Encode() map[string]interface{} {
 	if lce.Metadata != nil {
 		metadata, err := json.Marshal(lce.Metadata)
 		if err != nil {
-			return val
+			return map[string]interface{}{}, err
 		}
 
 		val["metadata"] = metadata
@@ -246,7 +246,7 @@ func (lce listClientEvent) Encode() map[string]interface{} {
 		val["identity"] = lce.Identity
 	}
 
-	return val
+	return val, nil
 }
 
 type listClientByGroupEvent struct {
@@ -254,7 +254,7 @@ type listClientByGroupEvent struct {
 	channelID string
 }
 
-func (lcge listClientByGroupEvent) Encode() map[string]interface{} {
+func (lcge listClientByGroupEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation":  clientListByGroup,
 		"total":      lcge.Total,
@@ -275,7 +275,7 @@ func (lcge listClientByGroupEvent) Encode() map[string]interface{} {
 	if lcge.Metadata != nil {
 		metadata, err := json.Marshal(lcge.Metadata)
 		if err != nil {
-			return val
+			return map[string]interface{}{}, err
 		}
 
 		val["metadata"] = metadata
@@ -302,16 +302,16 @@ func (lcge listClientByGroupEvent) Encode() map[string]interface{} {
 		val["identity"] = lcge.Identity
 	}
 
-	return val
+	return val, nil
 }
 
 type identifyClientEvent struct {
 	thingID string
 }
 
-func (ice identifyClientEvent) Encode() map[string]interface{} {
+func (ice identifyClientEvent) Encode() (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"operation": clientIdentify,
 		"thing_id":  ice.thingID,
-	}
+	}, nil
 }

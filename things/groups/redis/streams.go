@@ -42,10 +42,14 @@ func (es eventStore) CreateGroups(ctx context.Context, token string, groups ...m
 		event := createGroupEvent{
 			group,
 		}
+		values, err := event.Encode()
+		if err != nil {
+			return gs, err
+		}
 		record := &redis.XAddArgs{
 			Stream: streamID,
 			MaxLen: streamLen,
-			Values: event.Encode(),
+			Values: values,
 		}
 		if err := es.client.XAdd(ctx, record).Err(); err != nil {
 			return gs, err
@@ -63,10 +67,14 @@ func (es eventStore) UpdateGroup(ctx context.Context, token string, group mfgrou
 	event := updateGroupEvent{
 		group,
 	}
+	values, err := event.Encode()
+	if err != nil {
+		return group, err
+	}
 	record := &redis.XAddArgs{
 		Stream:       streamID,
 		MaxLenApprox: streamLen,
-		Values:       event.Encode(),
+		Values:       values,
 	}
 	if err := es.client.XAdd(ctx, record).Err(); err != nil {
 		return group, err
@@ -83,10 +91,14 @@ func (es eventStore) ViewGroup(ctx context.Context, token, id string) (mfgroups.
 	event := viewGroupEvent{
 		group,
 	}
+	values, err := event.Encode()
+	if err != nil {
+		return group, err
+	}
 	record := &redis.XAddArgs{
 		Stream:       streamID,
 		MaxLenApprox: streamLen,
-		Values:       event.Encode(),
+		Values:       values,
 	}
 	if err := es.client.XAdd(ctx, record).Err(); err != nil {
 		return group, err
@@ -103,10 +115,14 @@ func (es eventStore) ListGroups(ctx context.Context, token string, pm mfgroups.G
 	event := listGroupEvent{
 		pm,
 	}
+	values, err := event.Encode()
+	if err != nil {
+		return gp, err
+	}
 	record := &redis.XAddArgs{
 		Stream:       streamID,
 		MaxLenApprox: streamLen,
-		Values:       event.Encode(),
+		Values:       values,
 	}
 	if err := es.client.XAdd(ctx, record).Err(); err != nil {
 		return gp, err
@@ -123,11 +139,14 @@ func (es eventStore) ListMemberships(ctx context.Context, token, clientID string
 	event := listGroupMembershipEvent{
 		pm, clientID,
 	}
-
+	values, err := event.Encode()
+	if err != nil {
+		return mp, err
+	}
 	record := &redis.XAddArgs{
 		Stream:       streamID,
 		MaxLenApprox: streamLen,
-		Values:       event.Encode(),
+		Values:       values,
 	}
 	if err := es.client.XAdd(ctx, record).Err(); err != nil {
 		return mp, err
@@ -161,10 +180,14 @@ func (es eventStore) delete(ctx context.Context, group mfgroups.Group) (mfgroups
 		updatedBy: group.UpdatedBy,
 		status:    group.Status.String(),
 	}
+	values, err := event.Encode()
+	if err != nil {
+		return group, err
+	}
 	record := &redis.XAddArgs{
 		Stream:       streamID,
 		MaxLenApprox: streamLen,
-		Values:       event.Encode(),
+		Values:       values,
 	}
 	if err := es.client.XAdd(ctx, record).Err(); err != nil {
 		return group, err

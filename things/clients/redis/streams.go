@@ -44,10 +44,14 @@ func (es eventStore) CreateThings(ctx context.Context, token string, thing ...mf
 		event := createClientEvent{
 			th,
 		}
+		values, err := event.Encode()
+		if err != nil {
+			return sths, err
+		}
 		record := &redis.XAddArgs{
 			Stream: streamID,
 			MaxLen: streamLen,
-			Values: event.Encode(),
+			Values: values,
 		}
 		if err := es.client.XAdd(ctx, record).Err(); err != nil {
 			return sths, err
@@ -96,13 +100,17 @@ func (es eventStore) update(ctx context.Context, operation string, cli mfclients
 	event := updateClientEvent{
 		cli, operation,
 	}
+	values, err := event.Encode()
+	if err != nil {
+		return cli, err
+	}
 	record := &redis.XAddArgs{
 		Stream:       streamID,
 		MaxLenApprox: streamLen,
-		Values:       event.Encode(),
+		Values:       values,
 	}
 	if err := es.client.XAdd(ctx, record).Err(); err != nil {
-		return mfclients.Client{}, err
+		return cli, err
 	}
 
 	return cli, nil
@@ -117,10 +125,14 @@ func (es eventStore) ShareClient(ctx context.Context, token, thingID string, act
 		actions: fmt.Sprintf("[%s]", strings.Join(actions, ",")),
 		userIDs: fmt.Sprintf("[%s]", strings.Join(userIDs, ",")),
 	}
+	values, err := event.Encode()
+	if err != nil {
+		return err
+	}
 	record := &redis.XAddArgs{
 		Stream:       streamID,
 		MaxLenApprox: streamLen,
-		Values:       event.Encode(),
+		Values:       values,
 	}
 	if err := es.client.XAdd(ctx, record).Err(); err != nil {
 		return err
@@ -137,13 +149,17 @@ func (es eventStore) ViewClient(ctx context.Context, token, id string) (mfclient
 	event := viewClientEvent{
 		cli,
 	}
+	values, err := event.Encode()
+	if err != nil {
+		return cli, err
+	}
 	record := &redis.XAddArgs{
 		Stream:       streamID,
 		MaxLenApprox: streamLen,
-		Values:       event.Encode(),
+		Values:       values,
 	}
 	if err := es.client.XAdd(ctx, record).Err(); err != nil {
-		return mfclients.Client{}, err
+		return cli, err
 	}
 
 	return cli, nil
@@ -157,13 +173,17 @@ func (es eventStore) ListClients(ctx context.Context, token string, pm mfclients
 	event := listClientEvent{
 		pm,
 	}
+	values, err := event.Encode()
+	if err != nil {
+		return cp, err
+	}
 	record := &redis.XAddArgs{
 		Stream:       streamID,
 		MaxLenApprox: streamLen,
-		Values:       event.Encode(),
+		Values:       values,
 	}
 	if err := es.client.XAdd(ctx, record).Err(); err != nil {
-		return mfclients.ClientsPage{}, err
+		return cp, err
 	}
 
 	return cp, nil
@@ -177,14 +197,17 @@ func (es eventStore) ListClientsByGroup(ctx context.Context, token, chID string,
 	event := listClientByGroupEvent{
 		pm, chID,
 	}
-
+	values, err := event.Encode()
+	if err != nil {
+		return cp, err
+	}
 	record := &redis.XAddArgs{
 		Stream:       streamID,
 		MaxLenApprox: streamLen,
-		Values:       event.Encode(),
+		Values:       values,
 	}
 	if err := es.client.XAdd(ctx, record).Err(); err != nil {
-		return mfclients.MembersPage{}, err
+		return cp, err
 	}
 
 	return cp, nil
@@ -215,13 +238,17 @@ func (es eventStore) delete(ctx context.Context, cli mfclients.Client) (mfclient
 		updatedBy: cli.UpdatedBy,
 		status:    cli.Status.String(),
 	}
+	values, err := event.Encode()
+	if err != nil {
+		return cli, err
+	}
 	record := &redis.XAddArgs{
 		Stream:       streamID,
 		MaxLenApprox: streamLen,
-		Values:       event.Encode(),
+		Values:       values,
 	}
 	if err := es.client.XAdd(ctx, record).Err(); err != nil {
-		return mfclients.Client{}, err
+		return cli, err
 	}
 
 	return cli, nil
@@ -235,13 +262,17 @@ func (es eventStore) Identify(ctx context.Context, key string) (string, error) {
 	event := identifyClientEvent{
 		thingID: thingID,
 	}
+	values, err := event.Encode()
+	if err != nil {
+		return thingID, err
+	}
 	record := &redis.XAddArgs{
 		Stream:       streamID,
 		MaxLenApprox: streamLen,
-		Values:       event.Encode(),
+		Values:       values,
 	}
 	if err := es.client.XAdd(ctx, record).Err(); err != nil {
-		return "", err
+		return thingID, err
 	}
 
 	return thingID, nil

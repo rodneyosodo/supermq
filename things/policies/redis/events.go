@@ -17,7 +17,7 @@ const (
 )
 
 type event interface {
-	Encode() map[string]interface{}
+	Encode() (map[string]interface{}, error)
 }
 
 var (
@@ -31,7 +31,7 @@ type policyEvent struct {
 	operation string
 }
 
-func (pe policyEvent) Encode() map[string]interface{} {
+func (pe policyEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation": pe.operation,
 	}
@@ -57,7 +57,7 @@ func (pe policyEvent) Encode() map[string]interface{} {
 	if pe.UpdatedBy != "" {
 		val["updated_by"] = pe.UpdatedBy
 	}
-	return val
+	return val, nil
 }
 
 type authorizeEvent struct {
@@ -65,7 +65,7 @@ type authorizeEvent struct {
 	entityType string
 }
 
-func (ae authorizeEvent) Encode() map[string]interface{} {
+func (ae authorizeEvent) Encode() (map[string]interface{}, error) {
 	// We don't want to send the key over the stream, so we don't send the subject.
 	val := map[string]interface{}{
 		"operation":   authorize,
@@ -78,14 +78,14 @@ func (ae authorizeEvent) Encode() map[string]interface{} {
 	if ae.Action != "" {
 		val["actions"] = ae.Action
 	}
-	return val
+	return val, nil
 }
 
 type listPoliciesEvent struct {
 	policies.Page
 }
 
-func (ae listPoliciesEvent) Encode() map[string]interface{} {
+func (ae listPoliciesEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation": policyList,
 		"total":     ae.Total,
@@ -104,5 +104,5 @@ func (ae listPoliciesEvent) Encode() map[string]interface{} {
 	if ae.Action != "" {
 		val["action"] = ae.Action
 	}
-	return val
+	return val, nil
 }

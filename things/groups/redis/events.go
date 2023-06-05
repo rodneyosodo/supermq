@@ -18,7 +18,7 @@ const (
 )
 
 type event interface {
-	Encode() map[string]interface{}
+	Encode() (map[string]interface{}, error)
 }
 
 var (
@@ -34,7 +34,7 @@ type createGroupEvent struct {
 	mfgroups.Group
 }
 
-func (cce createGroupEvent) Encode() map[string]interface{} {
+func (cce createGroupEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation":  groupCreate,
 		"id":         cce.ID,
@@ -57,7 +57,7 @@ func (cce createGroupEvent) Encode() map[string]interface{} {
 	if cce.Metadata != nil {
 		metadata, err := json.Marshal(cce.Metadata)
 		if err != nil {
-			return val
+			return map[string]interface{}{}, err
 		}
 
 		val["metadata"] = metadata
@@ -68,14 +68,14 @@ func (cce createGroupEvent) Encode() map[string]interface{} {
 	if !cce.CreatedAt.IsZero() {
 		val["created_at"] = cce.CreatedAt
 	}
-	return val
+	return val, nil
 }
 
 type updateGroupEvent struct {
 	mfgroups.Group
 }
 
-func (uce updateGroupEvent) Encode() map[string]interface{} {
+func (uce updateGroupEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation":  groupUpdate,
 		"updated_at": uce.UpdatedAt,
@@ -100,7 +100,7 @@ func (uce updateGroupEvent) Encode() map[string]interface{} {
 	if uce.Metadata != nil {
 		metadata, err := json.Marshal(uce.Metadata)
 		if err != nil {
-			return val
+			return map[string]interface{}{}, err
 		}
 
 		val["metadata"] = metadata
@@ -115,7 +115,7 @@ func (uce updateGroupEvent) Encode() map[string]interface{} {
 		val["status"] = uce.Status.String()
 	}
 
-	return val
+	return val, nil
 }
 
 type removeGroupEvent struct {
@@ -125,21 +125,21 @@ type removeGroupEvent struct {
 	updatedBy string
 }
 
-func (rce removeGroupEvent) Encode() map[string]interface{} {
+func (rce removeGroupEvent) Encode() (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"operation":  groupRemove,
 		"id":         rce.id,
 		"status":     rce.status,
 		"updated_at": rce.updatedAt,
 		"updated_by": rce.updatedBy,
-	}
+	}, nil
 }
 
 type viewGroupEvent struct {
 	mfgroups.Group
 }
 
-func (vce viewGroupEvent) Encode() map[string]interface{} {
+func (vce viewGroupEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation": groupView,
 		"id":        vce.ID,
@@ -160,7 +160,7 @@ func (vce viewGroupEvent) Encode() map[string]interface{} {
 	if vce.Metadata != nil {
 		metadata, err := json.Marshal(vce.Metadata)
 		if err != nil {
-			return val
+			return map[string]interface{}{}, err
 		}
 
 		val["metadata"] = metadata
@@ -178,14 +178,14 @@ func (vce viewGroupEvent) Encode() map[string]interface{} {
 		val["status"] = vce.Status.String()
 	}
 
-	return val
+	return val, nil
 }
 
 type listGroupEvent struct {
 	mfgroups.GroupsPage
 }
 
-func (lce listGroupEvent) Encode() map[string]interface{} {
+func (lce listGroupEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation": groupList,
 		"total":     lce.Total,
@@ -205,7 +205,7 @@ func (lce listGroupEvent) Encode() map[string]interface{} {
 	if lce.Metadata != nil {
 		metadata, err := json.Marshal(lce.Metadata)
 		if err != nil {
-			return val
+			return map[string]interface{}{}, err
 		}
 
 		val["metadata"] = metadata
@@ -223,7 +223,7 @@ func (lce listGroupEvent) Encode() map[string]interface{} {
 		val["subject"] = lce.Subject
 	}
 
-	return val
+	return val, nil
 }
 
 type listGroupMembershipEvent struct {
@@ -231,7 +231,7 @@ type listGroupMembershipEvent struct {
 	channelID string
 }
 
-func (lcge listGroupMembershipEvent) Encode() map[string]interface{} {
+func (lcge listGroupMembershipEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation":  groupListMemberships,
 		"total":      lcge.Total,
@@ -252,7 +252,7 @@ func (lcge listGroupMembershipEvent) Encode() map[string]interface{} {
 	if lcge.Metadata != nil {
 		metadata, err := json.Marshal(lcge.Metadata)
 		if err != nil {
-			return val
+			return map[string]interface{}{}, err
 		}
 
 		val["metadata"] = metadata
@@ -270,5 +270,5 @@ func (lcge listGroupMembershipEvent) Encode() map[string]interface{} {
 		val["subject"] = lcge.Subject
 	}
 
-	return val
+	return val, nil
 }

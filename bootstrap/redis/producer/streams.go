@@ -222,10 +222,15 @@ func (es eventStore) DisconnectThingHandler(ctx context.Context, channelID, thin
 }
 
 func (es eventStore) add(ctx context.Context, ev event) error {
+	values, err := ev.encode()
+	if err != nil {
+		return err
+	}
+
 	record := &redis.XAddArgs{
 		Stream:       streamID,
 		MaxLenApprox: streamLen,
-		Values:       ev.encode(),
+		Values:       values,
 	}
 
 	return es.client.XAdd(ctx, record).Err()

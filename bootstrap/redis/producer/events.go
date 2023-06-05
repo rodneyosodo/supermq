@@ -33,7 +33,7 @@ const (
 )
 
 type event interface {
-	encode() map[string]interface{}
+	encode() (map[string]interface{}, error)
 }
 
 var (
@@ -52,7 +52,7 @@ type configEvent struct {
 	operation string
 }
 
-func (ce configEvent) encode() map[string]interface{} {
+func (ce configEvent) encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"state":     ce.State.String(),
 		"operation": ce.operation,
@@ -92,18 +92,18 @@ func (ce configEvent) encode() map[string]interface{} {
 		val["content"] = ce.Content
 	}
 
-	return val
+	return val, nil
 }
 
 type removeConfigEvent struct {
 	mfThing string
 }
 
-func (rce removeConfigEvent) encode() map[string]interface{} {
+func (rce removeConfigEvent) encode() (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"thing_id":  rce.mfThing,
 		"operation": configRemove,
-	}
+	}, nil
 }
 
 type listConfigsEvent struct {
@@ -113,7 +113,7 @@ type listConfigsEvent struct {
 	partialMatch map[string]string
 }
 
-func (rce listConfigsEvent) encode() map[string]interface{} {
+func (rce listConfigsEvent) encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"offset":    rce.offset,
 		"limit":     rce.limit,
@@ -122,7 +122,7 @@ func (rce listConfigsEvent) encode() map[string]interface{} {
 	if len(rce.fullMatch) > 0 {
 		data, err := json.Marshal(rce.fullMatch)
 		if err != nil {
-			return val
+			return map[string]interface{}{}, err
 		}
 
 		val["full_match"] = data
@@ -131,12 +131,12 @@ func (rce listConfigsEvent) encode() map[string]interface{} {
 	if len(rce.partialMatch) > 0 {
 		data, err := json.Marshal(rce.partialMatch)
 		if err != nil {
-			return val
+			return map[string]interface{}{}, err
 		}
 
 		val["full_match"] = data
 	}
-	return val
+	return val, nil
 }
 
 type bootstrapEvent struct {
@@ -145,7 +145,7 @@ type bootstrapEvent struct {
 	success    bool
 }
 
-func (be bootstrapEvent) encode() map[string]interface{} {
+func (be bootstrapEvent) encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"external_id": be.externalID,
 		"success":     be.success,
@@ -186,7 +186,7 @@ func (be bootstrapEvent) encode() map[string]interface{} {
 	if be.Content != "" {
 		val["content"] = be.Content
 	}
-	return val
+	return val, nil
 }
 
 type changeStateEvent struct {
@@ -194,12 +194,12 @@ type changeStateEvent struct {
 	state   bootstrap.State
 }
 
-func (cse changeStateEvent) encode() map[string]interface{} {
+func (cse changeStateEvent) encode() (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"thing_id":  cse.mfThing,
 		"state":     cse.state.String(),
 		"operation": thingStateChange,
-	}
+	}, nil
 }
 
 type updateConnectionsEvent struct {
@@ -207,26 +207,26 @@ type updateConnectionsEvent struct {
 	mfChannels []string
 }
 
-func (uce updateConnectionsEvent) encode() map[string]interface{} {
+func (uce updateConnectionsEvent) encode() (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"thing_id":  uce.mfThing,
 		"channels":  fmt.Sprintf("[%s]", strings.Join(uce.mfChannels, ", ")),
 		"operation": thingUpdateConnections,
-	}
+	}, nil
 }
 
 type updateCertEvent struct {
 	thingKey, clientCert, clientKey, caCert string
 }
 
-func (uce updateCertEvent) encode() map[string]interface{} {
+func (uce updateCertEvent) encode() (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"thing_key":   uce.thingKey,
 		"client_cert": uce.clientCert,
 		"client_key":  uce.clientKey,
 		"ca_cert":     uce.caCert,
 		"operation":   certUpdate,
-	}
+	}, nil
 }
 
 type removeHandlerEvent struct {
@@ -234,18 +234,18 @@ type removeHandlerEvent struct {
 	operation string
 }
 
-func (rhe removeHandlerEvent) encode() map[string]interface{} {
+func (rhe removeHandlerEvent) encode() (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"config_id": rhe.id,
 		"operation": rhe.operation,
-	}
+	}, nil
 }
 
 type updateChannelHandlerEvent struct {
 	bootstrap.Channel
 }
 
-func (uche updateChannelHandlerEvent) encode() map[string]interface{} {
+func (uche updateChannelHandlerEvent) encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation": channelUpdateHandler,
 	}
@@ -259,12 +259,12 @@ func (uche updateChannelHandlerEvent) encode() map[string]interface{} {
 	if uche.Metadata != nil {
 		metadata, err := json.Marshal(uche.Metadata)
 		if err != nil {
-			return val
+			return map[string]interface{}{}, err
 		}
 
 		val["metadata"] = metadata
 	}
-	return val
+	return val, nil
 }
 
 type disconnectThingEvent struct {
@@ -272,10 +272,10 @@ type disconnectThingEvent struct {
 	channelID string
 }
 
-func (dte disconnectThingEvent) encode() map[string]interface{} {
+func (dte disconnectThingEvent) encode() (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"thing_id":   dte.thingID,
 		"channel_id": dte.channelID,
 		"operation":  thingDisconnect,
-	}
+	}, nil
 }
