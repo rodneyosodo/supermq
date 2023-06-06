@@ -13,6 +13,9 @@ import (
 	"github.com/mainflux/mainflux/pkg/uuid"
 	"github.com/mainflux/mainflux/things/clients"
 	"github.com/mainflux/mainflux/things/clients/mocks"
+	gmocks "github.com/mainflux/mainflux/things/groups/mocks"
+	"github.com/mainflux/mainflux/things/policies"
+	pmocks "github.com/mainflux/mainflux/things/policies/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -37,18 +40,22 @@ var (
 	token          = "token"
 )
 
-func newService(tokens map[string]string) (clients.Service, *mocks.ClientRepository) {
+func newService(tokens map[string]string) (clients.Service, *mocks.ClientRepository, *pmocks.PolicyRepository) {
 	adminPolicy := mocks.MockSubjectSet{Object: ID, Relation: clients.AdminRelationKey}
 	auth := mocks.NewAuthService(tokens, map[string][]mocks.MockSubjectSet{adminEmail: {adminPolicy}})
 	thingCache := mocks.NewClientCache()
+	policiesCache := pmocks.NewChannelCache()
 	idProvider := uuid.NewMock()
 	cRepo := new(mocks.ClientRepository)
+	gRepo := new(gmocks.GroupRepository)
+	pRepo := new(pmocks.PolicyRepository)
 
-	return clients.NewService(auth, cRepo, thingCache, idProvider), cRepo
+	psvc := policies.NewService(auth, pRepo, policiesCache, idProvider)
+	return clients.NewService(auth, psvc, cRepo, gRepo, thingCache, idProvider), cRepo, pRepo
 }
 
 func TestRegisterClient(t *testing.T) {
-	svc, cRepo := newService(map[string]string{token: adminEmail})
+	svc, cRepo, _ := newService(map[string]string{token: adminEmail})
 
 	cases := []struct {
 		desc   string
@@ -253,7 +260,7 @@ func TestRegisterClient(t *testing.T) {
 }
 
 func TestViewClient(t *testing.T) {
-	svc, cRepo := newService(map[string]string{token: adminEmail})
+	svc, cRepo, pRepo := newService(map[string]string{token: adminEmail})
 
 	cases := []struct {
 		desc     string
@@ -293,16 +300,18 @@ func TestViewClient(t *testing.T) {
 	}
 
 	for _, tc := range cases {
+		repoCall := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		rClient, err := svc.ViewClient(context.Background(), tc.token, tc.clientID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, rClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, rClient))
+		repoCall.Unset()
 		repoCall1.Unset()
 	}
 }
 
 func TestListClients(t *testing.T) {
-	svc, cRepo := newService(map[string]string{token: adminEmail})
+	svc, cRepo, _ := newService(map[string]string{token: adminEmail})
 
 	var nClients = uint64(200)
 	var aClients = []mfclients.Client{}
@@ -569,18 +578,16 @@ func TestListClients(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		repoCall := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(mfclients.Client{}, tc.err)
-		repoCall1 := cRepo.On("RetrieveAll", context.Background(), mock.Anything).Return(tc.response, tc.err)
+		repoCall := cRepo.On("RetrieveAll", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		page, err := svc.ListClients(context.Background(), tc.token, tc.page)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, page))
 		repoCall.Unset()
-		repoCall1.Unset()
 	}
 }
 
 func TestUpdateClient(t *testing.T) {
-	svc, cRepo := newService(map[string]string{token: adminEmail})
+	svc, cRepo, pRepo := newService(map[string]string{token: adminEmail})
 
 	client1 := client
 	client2 := client
@@ -635,18 +642,20 @@ func TestUpdateClient(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		repoCall := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(mfclients.Client{}, tc.err)
-		repoCall1 := cRepo.On("Update", context.Background(), mock.Anything).Return(tc.response, tc.err)
+		repoCall := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
+		repoCall1 := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(mfclients.Client{}, tc.err)
+		repoCall2 := cRepo.On("Update", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		updatedClient, err := svc.UpdateClient(context.Background(), tc.token, tc.client)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, updatedClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, updatedClient))
-		repoCall1.Unset()
 		repoCall.Unset()
+		repoCall1.Unset()
+		repoCall2.Unset()
 	}
 }
 
 func TestUpdateClientTags(t *testing.T) {
-	svc, cRepo := newService(map[string]string{token: adminEmail})
+	svc, cRepo, pRepo := newService(map[string]string{token: adminEmail})
 
 	client.Tags = []string{"updated"}
 
@@ -684,18 +693,20 @@ func TestUpdateClientTags(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		repoCall := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(mfclients.Client{}, tc.err)
-		repoCall1 := cRepo.On("UpdateTags", context.Background(), mock.Anything).Return(tc.response, tc.err)
+		repoCall := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
+		repoCall1 := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(mfclients.Client{}, tc.err)
+		repoCall2 := cRepo.On("UpdateTags", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		updatedClient, err := svc.UpdateClientTags(context.Background(), tc.token, tc.client)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, updatedClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, updatedClient))
-		repoCall1.Unset()
 		repoCall.Unset()
+		repoCall1.Unset()
+		repoCall2.Unset()
 	}
 }
 
 func TestUpdateClientOwner(t *testing.T) {
-	svc, cRepo := newService(map[string]string{token: adminEmail})
+	svc, cRepo, pRepo := newService(map[string]string{token: adminEmail})
 
 	client.Owner = "newowner@mail.com"
 
@@ -733,18 +744,20 @@ func TestUpdateClientOwner(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		repoCall := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(mfclients.Client{}, tc.err)
-		repoCall1 := cRepo.On("UpdateOwner", context.Background(), mock.Anything).Return(tc.response, tc.err)
+		repoCall := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
+		repoCall1 := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(mfclients.Client{}, tc.err)
+		repoCall2 := cRepo.On("UpdateOwner", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		updatedClient, err := svc.UpdateClientOwner(context.Background(), tc.token, tc.client)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, updatedClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, updatedClient))
-		repoCall1.Unset()
 		repoCall.Unset()
+		repoCall1.Unset()
+		repoCall2.Unset()
 	}
 }
 
 func TestUpdateClientSecret(t *testing.T) {
-	svc, cRepo := newService(map[string]string{token: adminEmail})
+	svc, cRepo, pRepo := newService(map[string]string{token: adminEmail})
 
 	cases := []struct {
 		desc      string
@@ -773,20 +786,18 @@ func TestUpdateClientSecret(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		repoCall1 := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(tc.response, tc.err)
-		repoCall2 := cRepo.On("RetrieveByIdentity", context.Background(), mock.Anything).Return(tc.response, tc.err)
-		repoCall3 := cRepo.On("UpdateSecret", context.Background(), mock.Anything).Return(tc.response, tc.err)
+		repoCall := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
+		repoCall1 := cRepo.On("UpdateSecret", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		updatedClient, err := svc.UpdateClientSecret(context.Background(), tc.token, tc.id, tc.newSecret)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, updatedClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, updatedClient))
+		repoCall.Unset()
 		repoCall1.Unset()
-		repoCall2.Unset()
-		repoCall3.Unset()
 	}
 }
 
 func TestEnableClient(t *testing.T) {
-	svc, cRepo := newService(map[string]string{token: adminEmail})
+	svc, cRepo, pRepo := newService(map[string]string{token: adminEmail})
 
 	enabledClient1 := mfclients.Client{ID: ID, Credentials: mfclients.Credentials{Identity: "client1@example.com", Secret: "password"}, Status: mfclients.EnabledStatus}
 	disabledClient1 := mfclients.Client{ID: ID, Credentials: mfclients.Credentials{Identity: "client3@example.com", Secret: "password"}, Status: mfclients.DisabledStatus}
@@ -828,10 +839,12 @@ func TestEnableClient(t *testing.T) {
 	}
 
 	for _, tc := range cases {
+		repoCall := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(tc.client, tc.err)
 		repoCall2 := cRepo.On("ChangeStatus", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		_, err := svc.EnableClient(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		repoCall.Unset()
 		repoCall1.Unset()
 		repoCall2.Unset()
 	}
@@ -889,19 +902,17 @@ func TestEnableClient(t *testing.T) {
 			Limit:  100,
 			Status: tc.status,
 		}
-		repoCall := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(mfclients.Client{}, nil)
-		repoCall1 := cRepo.On("RetrieveAll", context.Background(), mock.Anything).Return(tc.response, nil)
+		repoCall := cRepo.On("RetrieveAll", context.Background(), mock.Anything).Return(tc.response, nil)
 		page, err := svc.ListClients(context.Background(), token, pm)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		size := uint64(len(page.Clients))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", tc.desc, tc.size, size))
-		repoCall1.Unset()
 		repoCall.Unset()
 	}
 }
 
 func TestDisableClient(t *testing.T) {
-	svc, cRepo := newService(map[string]string{token: adminEmail})
+	svc, cRepo, pRepo := newService(map[string]string{token: adminEmail})
 
 	enabledClient1 := mfclients.Client{ID: ID, Credentials: mfclients.Credentials{Identity: "client1@example.com", Secret: "password"}, Status: mfclients.EnabledStatus}
 	disabledClient1 := mfclients.Client{ID: ID, Credentials: mfclients.Credentials{Identity: "client3@example.com", Secret: "password"}, Status: mfclients.DisabledStatus}
@@ -943,11 +954,14 @@ func TestDisableClient(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_ = cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(tc.client, tc.err)
-		repoCall1 := cRepo.On("ChangeStatus", context.Background(), mock.Anything).Return(tc.response, tc.err)
+		repoCall := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
+		repoCall1 := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(tc.client, tc.err)
+		repoCall2 := cRepo.On("ChangeStatus", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		_, err := svc.DisableClient(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		repoCall.Unset()
 		repoCall1.Unset()
+		repoCall2.Unset()
 	}
 
 	cases2 := []struct {
@@ -1003,19 +1017,17 @@ func TestDisableClient(t *testing.T) {
 			Limit:  100,
 			Status: tc.status,
 		}
-		repoCall := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(mfclients.Client{}, nil)
-		repoCall1 := cRepo.On("RetrieveAll", context.Background(), mock.Anything).Return(tc.response, nil)
+		repoCall := cRepo.On("RetrieveAll", context.Background(), mock.Anything).Return(tc.response, nil)
 		page, err := svc.ListClients(context.Background(), token, pm)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		size := uint64(len(page.Clients))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", tc.desc, tc.size, size))
-		repoCall1.Unset()
 		repoCall.Unset()
 	}
 }
 
 func TestListMembers(t *testing.T) {
-	svc, cRepo := newService(map[string]string{token: adminEmail})
+	svc, cRepo, _ := newService(map[string]string{token: adminEmail})
 
 	var nClients = uint64(10)
 	var aClients = []mfclients.Client{}
@@ -1120,12 +1132,10 @@ func TestListMembers(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		repoCall := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(mfclients.Client{}, tc.err)
 		repoCall1 := cRepo.On("Members", context.Background(), tc.groupID, tc.page).Return(tc.response, tc.err)
 		page, err := svc.ListClientsByGroup(context.Background(), tc.token, tc.groupID, tc.page)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, page))
-		repoCall.Unset()
 		repoCall1.Unset()
 	}
 }

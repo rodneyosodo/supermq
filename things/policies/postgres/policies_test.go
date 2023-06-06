@@ -114,7 +114,7 @@ func TestPoliciesEvaluate(t *testing.T) {
 		OwnerID: client1.ID,
 		Subject: client1.ID,
 		Object:  group.ID,
-		Actions: []string{"c_update", "g_update"},
+		Actions: []string{"c_update", "c_list", "g_list", "g_update"},
 	}
 	policy2 := policies.Policy{
 		OwnerID: client2.ID,
@@ -136,8 +136,8 @@ func TestPoliciesEvaluate(t *testing.T) {
 	}{
 		"evaluate valid client update":   {client1.ID, client2.ID, "c_update", "client", nil},
 		"evaluate valid group update":    {client1.ID, group.ID, "g_update", "group", nil},
-		"evaluate valid client list":     {client1.ID, client2.ID, "c_list", "client", errors.ErrAuthorization},
-		"evaluate valid group list":      {client1.ID, group.ID, "g_list", "group", errors.ErrAuthorization},
+		"evaluate valid client list":     {client1.ID, client2.ID, "c_list", "client", nil},
+		"evaluate valid group list":      {client1.ID, group.ID, "g_list", "group", nil},
 		"evaluate invalid client delete": {client1.ID, client2.ID, "c_delete", "client", errors.ErrAuthorization},
 		"evaluate invalid group delete":  {client1.ID, group.ID, "g_delete", "group", errors.ErrAuthorization},
 		"evaluate invalid client update": {"unknown", "unknown", "c_update", "client", errors.ErrAuthorization},
@@ -150,8 +150,14 @@ func TestPoliciesEvaluate(t *testing.T) {
 			Object:  tc.Object,
 			Actions: []string{tc.Action},
 		}
-		err := repo.Evaluate(context.Background(), tc.Domain, p)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+		switch tc.Domain {
+		case "client":
+			_, err := repo.EvaluateThingAccess(context.Background(), p)
+			assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+		case "group":
+			_, err := repo.EvaluateGroupAccess(context.Background(), p)
+			assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+		}
 	}
 }
 

@@ -50,6 +50,7 @@ func TestCreateClient(t *testing.T) {
 		UsersURL: ts.URL,
 	}
 	clientSDK := sdk.NewSDK(conf)
+	token := testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), svc, cRepo, phasher)
 
 	cases := []struct {
 		desc     string
@@ -169,6 +170,7 @@ func TestCreateClient(t *testing.T) {
 		repoCall := cRepo.On("Save", mock.Anything, mock.Anything).Return(tc.response, tc.err)
 		rClient, err := clientSDK.CreateUser(tc.client, tc.token)
 		tc.response.ID = rClient.ID
+		tc.response.Owner = rClient.Owner
 		tc.response.CreatedAt = rClient.CreatedAt
 		tc.response.UpdatedAt = rClient.UpdatedAt
 		rClient.Credentials.Secret = tc.response.Credentials.Secret
@@ -1080,7 +1082,6 @@ func TestEnableClient(t *testing.T) {
 			Limit:  100,
 			Status: tc.status,
 		}
-
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := cRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(convertClientsPage(tc.response), nil)
 		clientsPage, err := clientSDK.Users(pm, generateValidToken(t, svc, cRepo))
