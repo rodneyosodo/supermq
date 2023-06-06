@@ -9,40 +9,47 @@ import (
 	"github.com/mainflux/mainflux/internal/apiutil"
 	mfclients "github.com/mainflux/mainflux/pkg/clients"
 	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/users/policies"
+	mfgroups "github.com/mainflux/mainflux/pkg/groups"
+	tpolicies "github.com/mainflux/mainflux/things/policies"
+	upolicies "github.com/mainflux/mainflux/users/policies"
 )
 
 const (
 	MyKey             = "mine"
 	thingsObjectKey   = "things"
-	createKey         = "c_add"
+	addRelationKey    = "g_add"
 	updateRelationKey = "c_update"
 	listRelationKey   = "c_list"
 	deleteRelationKey = "c_delete"
-	entityType        = "group"
+	groupEntityType   = "group"
+	clientEntityType  = "client"
 )
 
-var AdminRelationKey = []string{createKey, updateRelationKey, listRelationKey, deleteRelationKey}
+var AdminRelationKey = []string{updateRelationKey, listRelationKey, deleteRelationKey}
 
 type service struct {
-	auth        policies.AuthServiceClient
+	uauth       upolicies.AuthServiceClient
+	policies    tpolicies.Service
 	clients     mfclients.Repository
 	clientCache ClientCache
 	idProvider  mainflux.IDProvider
+	grepo       mfgroups.Repository
 }
 
 // NewService returns a new Clients service implementation.
-func NewService(auth policies.AuthServiceClient, c mfclients.Repository, tcache ClientCache, idp mainflux.IDProvider) Service {
+func NewService(uauth upolicies.AuthServiceClient, policies tpolicies.Service, c mfclients.Repository, grepo mfgroups.Repository, tcache ClientCache, idp mainflux.IDProvider) Service {
 	return service{
-		auth:        auth,
+		uauth:       uauth,
+		policies:    policies,
 		clients:     c,
+		grepo:       grepo,
 		clientCache: tcache,
 		idProvider:  idp,
 	}
 }
 
 func (svc service) CreateThings(ctx context.Context, token string, clis ...mfclients.Client) ([]mfclients.Client, error) {
-	res, err := svc.auth.Identify(ctx, &policies.Token{Value: token})
+	userID, err := svc.identify(ctx, token)
 	if err != nil {
 		return []mfclients.Client{}, err
 	}
@@ -63,21 +70,20 @@ func (svc service) CreateThings(ctx context.Context, token string, clis ...mfcli
 			cli.Credentials.Secret = key
 		}
 		if cli.Owner == "" {
-			cli.Owner = res.GetId()
+			cli.Owner = userID
 		}
 		if cli.Status != mfclients.DisabledStatus && cli.Status != mfclients.EnabledStatus {
 			return []mfclients.Client{}, apiutil.ErrInvalidStatus
 		}
 		cli.CreatedAt = time.Now()
-		cli.UpdatedAt = cli.CreatedAt
-		cli.UpdatedBy = cli.Owner
+
 		clients = append(clients, cli)
 	}
 	return svc.clients.Save(ctx, clients...)
 }
 
 func (svc service) ViewClient(ctx context.Context, token string, id string) (mfclients.Client, error) {
-	userID, err := svc.identifyUser(ctx, token)
+	userID, err := svc.identify(ctx, token)
 	if err != nil {
 		return mfclients.Client{}, err
 	}
@@ -88,13 +94,13 @@ func (svc service) ViewClient(ctx context.Context, token string, id string) (mfc
 }
 
 func (svc service) ListClients(ctx context.Context, token string, pm mfclients.Page) (mfclients.ClientsPage, error) {
-	userID, err := svc.identifyUser(ctx, token)
+	userID, err := svc.identify(ctx, token)
 	if err != nil {
 		return mfclients.ClientsPage{}, err
 	}
 
 	// If the user is admin, fetch all things from database.
-	if err := svc.authorize(ctx, userID, thingsObjectKey, listRelationKey); err == nil {
+	if err := svc.checkAdmin(ctx, userID, thingsObjectKey, listRelationKey); err == nil {
 		pm.Owner = ""
 		pm.SharedBy = ""
 		return svc.clients.RetrieveAll(ctx, pm)
@@ -115,7 +121,7 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 }
 
 func (svc service) UpdateClient(ctx context.Context, token string, cli mfclients.Client) (mfclients.Client, error) {
-	userID, err := svc.identifyUser(ctx, token)
+	userID, err := svc.identify(ctx, token)
 	if err != nil {
 		return mfclients.Client{}, err
 	}
@@ -135,7 +141,7 @@ func (svc service) UpdateClient(ctx context.Context, token string, cli mfclients
 }
 
 func (svc service) UpdateClientTags(ctx context.Context, token string, cli mfclients.Client) (mfclients.Client, error) {
-	userID, err := svc.identifyUser(ctx, token)
+	userID, err := svc.identify(ctx, token)
 	if err != nil {
 		return mfclients.Client{}, err
 	}
@@ -154,7 +160,7 @@ func (svc service) UpdateClientTags(ctx context.Context, token string, cli mfcli
 }
 
 func (svc service) UpdateClientSecret(ctx context.Context, token, id, key string) (mfclients.Client, error) {
-	userID, err := svc.identifyUser(ctx, token)
+	userID, err := svc.identify(ctx, token)
 	if err != nil {
 		return mfclients.Client{}, err
 	}
@@ -175,7 +181,7 @@ func (svc service) UpdateClientSecret(ctx context.Context, token, id, key string
 }
 
 func (svc service) UpdateClientOwner(ctx context.Context, token string, cli mfclients.Client) (mfclients.Client, error) {
-	userID, err := svc.identifyUser(ctx, token)
+	userID, err := svc.identify(ctx, token)
 	if err != nil {
 		return mfclients.Client{}, err
 	}
@@ -225,13 +231,32 @@ func (svc service) DisableClient(ctx context.Context, token, id string) (mfclien
 	return client, nil
 }
 
+func (svc service) changeClientStatus(ctx context.Context, token string, client mfclients.Client) (mfclients.Client, error) {
+	userID, err := svc.identify(ctx, token)
+	if err != nil {
+		return mfclients.Client{}, err
+	}
+	if err := svc.authorize(ctx, userID, client.ID, deleteRelationKey); err != nil {
+		return mfclients.Client{}, err
+	}
+	dbClient, err := svc.clients.RetrieveByID(ctx, client.ID)
+	if err != nil {
+		return mfclients.Client{}, err
+	}
+	if dbClient.Status == client.Status {
+		return mfclients.Client{}, mfclients.ErrStatusAlreadyAssigned
+	}
+	client.UpdatedBy = userID
+	return svc.clients.ChangeStatus(ctx, client)
+}
+
 func (svc service) ListClientsByGroup(ctx context.Context, token, groupID string, pm mfclients.Page) (mfclients.MembersPage, error) {
-	userID, err := svc.identifyUser(ctx, token)
+	userID, err := svc.identify(ctx, token)
 	if err != nil {
 		return mfclients.MembersPage{}, err
 	}
 	// If the user is admin, fetch all things connected to the channel.
-	if err := svc.authorize(ctx, token, thingsObjectKey, listRelationKey); err == nil {
+	if err := svc.checkAdmin(ctx, token, thingsObjectKey, listRelationKey); err == nil {
 		return svc.clients.Members(ctx, groupID, pm)
 	}
 	pm.Owner = userID
@@ -254,50 +279,66 @@ func (svc service) Identify(ctx context.Context, key string) (string, error) {
 	return client.ID, nil
 }
 
-func (svc service) changeClientStatus(ctx context.Context, token string, client mfclients.Client) (mfclients.Client, error) {
-	userID, err := svc.identifyUser(ctx, token)
+// ShareClient shares a thing with a user.
+// We assume the user has already created the things anf group.
+func (svc service) ShareClient(ctx context.Context, token, userID, groupID, thingID string, actions []string) error {
+	id, err := svc.identify(ctx, token)
 	if err != nil {
-		return mfclients.Client{}, err
+		return err
 	}
-	if err := svc.authorize(ctx, userID, client.ID, deleteRelationKey); err != nil {
-		return mfclients.Client{}, err
+
+	areq := tpolicies.AccessRequest{Subject: id, Object: groupID, Action: addRelationKey, Entity: groupEntityType}
+	if _, err := svc.policies.Authorize(ctx, areq); err != nil {
+		return fmt.Errorf("cannot share things using group %s to user %s: %s", groupID, userID, err)
 	}
-	dbClient, err := svc.clients.RetrieveByID(ctx, client.ID)
-	if err != nil {
-		return mfclients.Client{}, err
+
+	areq = tpolicies.AccessRequest{Subject: id, Object: thingID, Action: addRelationKey, Entity: clientEntityType}
+	if _, err := svc.policies.Authorize(ctx, areq); err != nil {
+		return fmt.Errorf("cannot share thing %s with user %s: %s", thingID, userID, err)
 	}
-	if dbClient.Status == client.Status {
-		return mfclients.Client{}, mfclients.ErrStatusAlreadyAssigned
+
+	policy := tpolicies.Policy{
+		Subject: userID,
+		Object:  groupID,
+		Actions: actions,
 	}
-	client.UpdatedBy = userID
-	return svc.clients.ChangeStatus(ctx, client)
+	if _, err = svc.policies.AddPolicy(ctx, token, policy); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (svc service) identifyUser(ctx context.Context, token string) (string, error) {
-	req := &policies.Token{Value: token}
-	res, err := svc.auth.Identify(ctx, req)
+func (svc service) identify(ctx context.Context, token string) (string, error) {
+	req := &upolicies.Token{Value: token}
+	res, err := svc.uauth.Identify(ctx, req)
 	if err != nil {
 		return "", errors.Wrap(errors.ErrAuthorization, err)
 	}
 	return res.GetId(), nil
 }
 
-func (svc service) authorize(ctx context.Context, subject, object string, relation string) error {
-	// Check if the client is the owner of the thing.
-	dbThing, err := svc.clients.RetrieveByID(ctx, object)
-	if err != nil {
-		return err
-	}
-	if dbThing.Owner == subject {
+func (svc service) authorize(ctx context.Context, subject, object, action string) error {
+	// If the user is admin, skip authorization.
+	if err := svc.checkAdmin(ctx, subject, thingsObjectKey, action); err == nil {
 		return nil
 	}
-	req := &policies.AuthorizeReq{
+
+	policy := tpolicies.AccessRequest{Subject: subject, Object: object, Action: action, Entity: clientEntityType}
+
+	_, err := svc.policies.Authorize(ctx, policy)
+	return err
+}
+
+// TODO : Only accept token as parameter since object and action are irrelevant.
+func (svc service) checkAdmin(ctx context.Context, subject, object, action string) error {
+	req := &upolicies.AuthorizeReq{
 		Sub:        subject,
 		Obj:        object,
-		Act:        relation,
-		EntityType: entityType,
+		Act:        action,
+		EntityType: clientEntityType,
 	}
-	res, err := svc.auth.Authorize(ctx, req)
+	res, err := svc.uauth.Authorize(ctx, req)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -305,21 +346,4 @@ func (svc service) authorize(ctx context.Context, subject, object string, relati
 		return errors.ErrAuthorization
 	}
 	return nil
-}
-
-func (svc service) ShareClient(ctx context.Context, token, clientID string, actions, userIDs []string) error {
-	if err := svc.authorize(ctx, token, clientID, updateRelationKey); err != nil {
-		return err
-	}
-	var errs error
-	for _, userID := range userIDs {
-		apr, err := svc.auth.AddPolicy(ctx, &policies.AddPolicyReq{Token: token, Sub: userID, Obj: clientID, Act: actions})
-		if err != nil {
-			errs = errors.Wrap(fmt.Errorf("cannot claim ownership on object '%s' by user '%s': %s", clientID, userID, err), errs)
-		}
-		if !apr.GetAuthorized() {
-			errs = errors.Wrap(fmt.Errorf("cannot claim ownership on object '%s' by user '%s': unauthorized", clientID, userID), errs)
-		}
-	}
-	return errs
 }
