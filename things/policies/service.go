@@ -86,12 +86,12 @@ func (svc service) Authorize(ctx context.Context, ar AccessRequest) (Policy, err
 		// Replace Subject since AccessRequest Subject is Thing Key,
 		// and Policy subject is Thing ID.
 		policy.Subject = ar.Subject
+		if err := svc.policyCache.Put(ctx, policy); err != nil {
+			return policy, err
+		}
+
 	default:
 		return Policy{}, ErrInvalidEntityType
-	}
-
-	if err := svc.policyCache.Put(ctx, policy); err != nil {
-		return policy, err
 	}
 
 	return policy, nil
@@ -164,6 +164,10 @@ func (svc service) UpdatePolicy(ctx context.Context, token string, p Policy) (Po
 	}
 	p.UpdatedAt = time.Now()
 	p.UpdatedBy = userID
+
+	if err := svc.policyCache.Remove(ctx, p); err != nil {
+		return Policy{}, err
+	}
 
 	return svc.policies.Update(ctx, p)
 }

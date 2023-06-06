@@ -40,10 +40,10 @@ func (c client) Identify(ctx context.Context, thingKey string) (string, error) {
 	thingID, err := c.redisClient.Get(ctx, tkey).Result()
 	if err != nil {
 		t := &policies.Key{
-			Value: string(thingKey),
+			Value: thingKey,
 		}
 
-		thid, err := c.thingsClient.Identify(context.TODO(), t)
+		thid, err := c.thingsClient.Identify(ctx, t)
 		if err != nil {
 			return "", err
 		}
@@ -53,10 +53,6 @@ func (c client) Identify(ctx context.Context, thingKey string) (string, error) {
 }
 
 func (c client) Authorize(ctx context.Context, chanID, thingID, action string) error {
-	if c.redisClient.SIsMember(ctx, chanPrefix+":"+chanID, thingID).Val() {
-		return nil
-	}
-
 	ar := &policies.AuthorizeReq{
 		Sub:        thingID,
 		Obj:        chanID,
