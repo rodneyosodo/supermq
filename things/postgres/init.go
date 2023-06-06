@@ -24,8 +24,7 @@ func Migration() *migrate.MemoryMigrationSource {
 						created_at	TIMESTAMP,
 						updated_at	TIMESTAMP,
 						updated_by  VARCHAR(254),
-						status		SMALLINT NOT NULL DEFAULT 0 CHECK (status >= 0),
-						UNIQUE		(owner_id, secret)
+						status		SMALLINT NOT NULL DEFAULT 0 CHECK (status >= 0)
 					)`,
 					`CREATE TABLE IF NOT EXISTS groups (
 						id			VARCHAR(36) PRIMARY KEY,
