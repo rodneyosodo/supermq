@@ -43,7 +43,7 @@ var (
 func newService(tokens map[string]string) (clients.Service, *mocks.ClientRepository, *pmocks.PolicyRepository) {
 	adminPolicy := mocks.MockSubjectSet{Object: ID, Relation: clients.AdminRelationKey}
 	auth := mocks.NewAuthService(tokens, map[string][]mocks.MockSubjectSet{adminEmail: {adminPolicy}})
-	thingCache := mocks.NewClientCache()
+	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewChannelCache()
 	idProvider := uuid.NewMock()
 	cRepo := new(mocks.ClientRepository)

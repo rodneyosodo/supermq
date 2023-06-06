@@ -51,8 +51,8 @@ type Service interface {
 	Identify(ctx context.Context, key string) (string, error)
 }
 
-// ClientCache contains thing caching interface.
-type ClientCache interface {
+// Cache contains thing caching interface.
+type Cache interface {
 	// Save stores pair thing secret, thing id.
 	Save(ctx context.Context, thingSecret, thingID string) error
 

@@ -299,8 +299,8 @@ type clientCacheMock struct {
 	things map[string]string
 }
 
-// NewClientCache returns mock cache instance.
-func NewClientCache() clients.ClientCache {
+// NewCache returns mock cache instance.
+func NewCache() clients.Cache {
 	return &clientCacheMock{
 		things: make(map[string]string),
 	}
