@@ -21,7 +21,7 @@ func TracingMiddleware(psvc policies.Service, tracer trace.Tracer) policies.Serv
 }
 
 func (tm *tracingMiddleware) Authorize(ctx context.Context, ar policies.AccessRequest) (policies.Policy, error) {
-	ctx, span := tm.tracer.Start(ctx, "svc_authorize_by_key", trace.WithAttributes(attribute.String("subject", ar.Subject), attribute.String("object", ar.Object), attribute.String("action", ar.Action)))
+	ctx, span := tm.tracer.Start(ctx, "svc_authorize", trace.WithAttributes(attribute.String("subject", ar.Subject), attribute.String("object", ar.Object), attribute.String("action", ar.Action)))
 	defer span.End()
 
 	return tm.psvc.Authorize(ctx, ar)

@@ -31,13 +31,13 @@ type service struct {
 	uauth       upolicies.AuthServiceClient
 	policies    tpolicies.Service
 	clients     mfclients.Repository
-	clientCache ClientCache
+	clientCache Cache
 	idProvider  mainflux.IDProvider
 	grepo       mfgroups.Repository
 }
 
 // NewService returns a new Clients service implementation.
-func NewService(uauth upolicies.AuthServiceClient, policies tpolicies.Service, c mfclients.Repository, grepo mfgroups.Repository, tcache ClientCache, idp mainflux.IDProvider) Service {
+func NewService(uauth upolicies.AuthServiceClient, policies tpolicies.Service, c mfclients.Repository, grepo mfgroups.Repository, tcache Cache, idp mainflux.IDProvider) Service {
 	return service{
 		uauth:       uauth,
 		policies:    policies,
