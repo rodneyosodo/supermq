@@ -34,13 +34,14 @@ func authorizeEndpoint(svc policies.Service) endpoint.Endpoint {
 			Subject: req.ClientSecret,
 			Object:  req.GroupID,
 			Action:  req.Action,
+			Entity:  req.EntityType,
 		}
-		id, err := svc.Authorize(ctx, ar, req.EntityType)
+		policy, err := svc.Authorize(ctx, ar)
 		if err != nil {
 			return authorizeRes{Authorized: false}, err
 		}
 
-		return authorizeRes{ThingID: id, Authorized: true}, nil
+		return authorizeRes{ThingID: policy.Subject, Authorized: true}, nil
 	}
 }
 
@@ -75,12 +76,12 @@ func connectThingsEndpoint(svc policies.Service) endpoint.Endpoint {
 		if err := cr.validate(); err != nil {
 			return nil, err
 		}
+		if len(cr.Actions) == 0 {
+			cr.Actions = policies.PolicyTypes
+		}
 		ps := []policies.Policy{}
 		for _, tid := range cr.ClientIDs {
 			for _, cid := range cr.GroupIDs {
-				if len(cr.Actions) == 0 {
-					cr.Actions = policies.PolicyTypes
-				}
 				policy := policies.Policy{
 					Subject: tid,
 					Object:  cid,

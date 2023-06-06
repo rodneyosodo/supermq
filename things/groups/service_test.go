@@ -14,6 +14,8 @@ import (
 	"github.com/mainflux/mainflux/things/clients/mocks"
 	"github.com/mainflux/mainflux/things/groups"
 	gmocks "github.com/mainflux/mainflux/things/groups/mocks"
+	"github.com/mainflux/mainflux/things/policies"
+	pmocks "github.com/mainflux/mainflux/things/policies/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -38,18 +40,23 @@ var (
 	token          = "token"
 )
 
-func newService(tokens map[string]string) (groups.Service, *gmocks.GroupRepository) {
+func newService(tokens map[string]string) (groups.Service, *gmocks.GroupRepository, *pmocks.PolicyRepository) {
 	adminPolicy := mocks.MockSubjectSet{Object: ID, Relation: []string{"g_add", "g_update", "g_list", "g_delete"}}
 	auth := mocks.NewAuthService(tokens, map[string][]mocks.MockSubjectSet{adminEmail: {adminPolicy}})
 	idProvider := uuid.NewMock()
-	gRepo := new(gmocks.GroupRepository)
 
-	return groups.NewService(auth, gRepo, idProvider), gRepo
+	gRepo := new(gmocks.GroupRepository)
+	pRepo := new(pmocks.PolicyRepository)
+	policiesCache := pmocks.NewChannelCache()
+
+	psvc := policies.NewService(auth, pRepo, policiesCache, idProvider)
+
+	return groups.NewService(auth, psvc, gRepo, idProvider), gRepo, pRepo
 }
 
 func TestCreateGroup(t *testing.T) {
 
-	svc, gRepo := newService(map[string]string{token: adminEmail})
+	svc, gRepo, _ := newService(map[string]string{token: adminEmail})
 
 	cases := []struct {
 		desc  string
@@ -119,7 +126,7 @@ func TestCreateGroup(t *testing.T) {
 
 func TestUpdateGroup(t *testing.T) {
 
-	svc, gRepo := newService(map[string]string{token: adminEmail})
+	svc, gRepo, pRepo := newService(map[string]string{token: adminEmail})
 
 	cases := []struct {
 		desc     string
@@ -238,20 +245,22 @@ func TestUpdateGroup(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		repoCall := gRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(mfgroups.Group{}, tc.err)
-		repoCall1 := gRepo.On("Update", context.Background(), mock.Anything).Return(tc.response, tc.err)
+		repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
+		repoCall1 := gRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(mfgroups.Group{}, tc.err)
+		repoCall2 := gRepo.On("Update", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		expectedGroup, err := svc.UpdateGroup(context.Background(), tc.token, tc.group)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, expectedGroup, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, expectedGroup))
-		repoCall1.Unset()
 		repoCall.Unset()
+		repoCall1.Unset()
+		repoCall2.Unset()
 	}
 
 }
 
 func TestViewGroup(t *testing.T) {
 
-	svc, gRepo := newService(map[string]string{token: adminEmail})
+	svc, gRepo, pRepo := newService(map[string]string{token: adminEmail})
 
 	cases := []struct {
 		desc     string
@@ -285,17 +294,19 @@ func TestViewGroup(t *testing.T) {
 	}
 
 	for _, tc := range cases {
+		repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := gRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		expected, err := svc.ViewGroup(context.Background(), tc.token, tc.groupID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, expected, tc.response, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, expected, tc.response))
+		repoCall.Unset()
 		repoCall1.Unset()
 	}
 }
 
 func TestListGroups(t *testing.T) {
 
-	svc, gRepo := newService(map[string]string{token: adminEmail})
+	svc, gRepo, pRepo := newService(map[string]string{token: adminEmail})
 
 	nGroups := uint64(200)
 	parentID := ""
@@ -367,20 +378,19 @@ func TestListGroups(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		repoCall := gRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(mfgroups.Group{}, tc.err)
+		repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := gRepo.On("RetrieveAll", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		page, err := svc.ListGroups(context.Background(), tc.token, tc.page)
 		assert.Equal(t, tc.response, page, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, page))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
-		repoCall1.Unset()
 		repoCall.Unset()
+		repoCall1.Unset()
 	}
-
 }
 
 func TestEnableGroup(t *testing.T) {
 
-	svc, gRepo := newService(map[string]string{token: adminEmail})
+	svc, gRepo, pRepo := newService(map[string]string{token: adminEmail})
 
 	enabledGroup1 := mfgroups.Group{ID: ID, Name: "group1", Status: mfclients.EnabledStatus}
 	disabledGroup := mfgroups.Group{ID: ID, Name: "group2", Status: mfclients.DisabledStatus}
@@ -422,10 +432,12 @@ func TestEnableGroup(t *testing.T) {
 	}
 
 	for _, tc := range casesEnabled {
+		repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := gRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(tc.group, tc.err)
 		repoCall2 := gRepo.On("ChangeStatus", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		_, err := svc.EnableGroup(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		repoCall.Unset()
 		repoCall1.Unset()
 		repoCall2.Unset()
 	}
@@ -485,20 +497,20 @@ func TestEnableGroup(t *testing.T) {
 				Status: tc.status,
 			},
 		}
-		repoCall := gRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(mfgroups.Group{}, nil)
+		repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := gRepo.On("RetrieveAll", context.Background(), mock.Anything).Return(tc.response, nil)
 		page, err := svc.ListGroups(context.Background(), token, pm)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		size := uint64(len(page.Groups))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", tc.desc, tc.size, size))
-		repoCall1.Unset()
 		repoCall.Unset()
+		repoCall1.Unset()
 	}
 }
 
 func TestDisableGroup(t *testing.T) {
 
-	svc, gRepo := newService(map[string]string{token: adminEmail})
+	svc, gRepo, pRepo := newService(map[string]string{token: adminEmail})
 
 	enabledGroup1 := mfgroups.Group{ID: ID, Name: "group1", Status: mfclients.EnabledStatus}
 	disabledGroup := mfgroups.Group{ID: ID, Name: "group2", Status: mfclients.DisabledStatus}
@@ -540,10 +552,12 @@ func TestDisableGroup(t *testing.T) {
 	}
 
 	for _, tc := range casesDisabled {
+		repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := gRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(tc.group, tc.err)
 		repoCall2 := gRepo.On("ChangeStatus", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		_, err := svc.DisableGroup(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		repoCall.Unset()
 		repoCall1.Unset()
 		repoCall2.Unset()
 	}
@@ -603,20 +617,20 @@ func TestDisableGroup(t *testing.T) {
 				Status: tc.status,
 			},
 		}
-		repoCall := gRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(mfgroups.Group{}, nil)
+		repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := gRepo.On("RetrieveAll", context.Background(), mock.Anything).Return(tc.response, nil)
 		page, err := svc.ListGroups(context.Background(), token, pm)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		size := uint64(len(page.Groups))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", tc.desc, tc.size, size))
-		repoCall1.Unset()
 		repoCall.Unset()
+		repoCall1.Unset()
 	}
 }
 
 func TestListMemberships(t *testing.T) {
 
-	svc, gRepo := newService(map[string]string{token: adminEmail})
+	svc, gRepo, pRepo := newService(map[string]string{token: adminEmail})
 
 	var nGroups = uint64(100)
 	var aGroups = []mfgroups.Group{}
@@ -722,7 +736,7 @@ func TestListMemberships(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		repoCall := gRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(mfgroups.Group{}, tc.err)
+		repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := gRepo.On("Memberships", context.Background(), tc.clientID, tc.page).Return(tc.response, tc.err)
 		page, err := svc.ListMemberships(context.Background(), tc.token, tc.clientID, tc.page)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))

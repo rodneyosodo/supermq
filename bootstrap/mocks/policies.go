@@ -30,11 +30,11 @@ func NewPoliciesService(auth upolicies.AuthServiceClient) tpolicies.Service {
 	}
 }
 
-func (svc *mainfluxPolicies) AddPolicy(_ context.Context, token string, p tpolicies.Policy) (tpolicies.Policy, error) {
+func (svc *mainfluxPolicies) AddPolicy(ctx context.Context, token string, p tpolicies.Policy) (tpolicies.Policy, error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	if _, err := svc.auth.Identify(context.Background(), &upolicies.Token{Value: token}); err != nil {
+	if _, err := svc.auth.Identify(ctx, &upolicies.Token{Value: token}); err != nil {
 		return tpolicies.Policy{}, errors.ErrAuthentication
 	}
 	svc.connections[fmt.Sprintf("%s:%s", p.Subject, p.Object)] = p
@@ -42,7 +42,7 @@ func (svc *mainfluxPolicies) AddPolicy(_ context.Context, token string, p tpolic
 	return p, nil
 }
 
-func (svc *mainfluxPolicies) DeletePolicy(_ context.Context, token string, p tpolicies.Policy) error {
+func (svc *mainfluxPolicies) DeletePolicy(ctx context.Context, token string, p tpolicies.Policy) error {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
@@ -62,7 +62,7 @@ func (svc *mainfluxPolicies) UpdatePolicy(context.Context, string, tpolicies.Pol
 	panic("not implemented")
 }
 
-func (svc *mainfluxPolicies) Authorize(context.Context, tpolicies.AccessRequest, string) (string, error) {
+func (svc *mainfluxPolicies) Authorize(context.Context, tpolicies.AccessRequest) (tpolicies.Policy, error) {
 	panic("not implemented")
 }
 

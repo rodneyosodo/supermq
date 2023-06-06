@@ -13,6 +13,7 @@ import (
 	"github.com/mainflux/mainflux/things/clients/mocks"
 	"github.com/mainflux/mainflux/things/policies"
 	pmocks "github.com/mainflux/mainflux/things/policies/mocks"
+	umocks "github.com/mainflux/mainflux/users/policies/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -26,19 +27,19 @@ var (
 	token         = "token"
 )
 
-func newService(tokens map[string]string) (policies.Service, *pmocks.PolicyRepository) {
-	adminPolicy := mocks.MockSubjectSet{Object: "authorities", Relation: clients.AdminRelationKey}
+func newService(tokens map[string]string) (policies.Service, *pmocks.PolicyRepository, *umocks.PolicyRepository) {
+	adminPolicy := mocks.MockSubjectSet{Object: "things", Relation: clients.AdminRelationKey}
 	auth := mocks.NewAuthService(tokens, map[string][]mocks.MockSubjectSet{adminEmail: {adminPolicy}})
 	idProvider := uuid.NewMock()
-	thingsCache := mocks.NewClientCache()
 	policiesCache := pmocks.NewChannelCache()
 	pRepo := new(pmocks.PolicyRepository)
+	uRepo := new(umocks.PolicyRepository)
 
-	return policies.NewService(auth, pRepo, thingsCache, policiesCache, idProvider), pRepo
+	return policies.NewService(auth, pRepo, policiesCache, idProvider), pRepo, uRepo
 }
 
 func TestAddPolicy(t *testing.T) {
-	svc, pRepo := newService(map[string]string{token: adminEmail})
+	svc, pRepo, _ := newService(map[string]string{token: adminEmail})
 
 	policy := policies.Policy{Object: "obj1", Actions: []string{"m_read"}, Subject: "sub1"}
 
@@ -57,13 +58,6 @@ func TestAddPolicy(t *testing.T) {
 			err:    nil,
 		},
 		{
-			desc:   "add existing policy",
-			policy: policy,
-			page:   policies.PolicyPage{Policies: []policies.Policy{policy}},
-			token:  token,
-			err:    errors.ErrConflict,
-		},
-		{
 			desc: "add a new policy with owner",
 			page: policies.PolicyPage{},
 			policy: policies.Policy{
@@ -80,7 +74,7 @@ func TestAddPolicy(t *testing.T) {
 			page: policies.PolicyPage{},
 			policy: policies.Policy{
 				Object:  "obj2",
-				Actions: []string{"c_delete", "c_update", "c_add", "c_list"},
+				Actions: []string{"c_delete", "c_update", "c_list"},
 				Subject: "sub2",
 			},
 			err:   nil,
@@ -130,8 +124,8 @@ func TestAddPolicy(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		repoCall := pRepo.On("RetrieveOne", context.Background(), mock.Anything, mock.Anything).Return(tc.policy, tc.err)
-		repoCall1 := pRepo.On("Evaluate", context.Background(), "client", mock.Anything).Return(nil)
+		repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, tc.err)
+		repoCall1 := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, tc.err)
 		repoCall2 := pRepo.On("Update", context.Background(), tc.policy).Return(tc.err)
 		repoCall3 := pRepo.On("Save", context.Background(), mock.Anything).Return(tc.policy, tc.err)
 		repoCall4 := pRepo.On("Retrieve", context.Background(), mock.Anything).Return(tc.page, nil)
@@ -139,14 +133,14 @@ func TestAddPolicy(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if err == nil {
 			tc.policy.Subject = tc.token
-			areq := policies.AccessRequest{Subject: tc.policy.Subject, Object: tc.policy.Object, Action: tc.policy.Actions[0]}
-			_, err = svc.Authorize(context.Background(), areq, "client")
+			areq := policies.AccessRequest{Subject: tc.policy.Subject, Object: tc.policy.Object, Action: tc.policy.Actions[0], Entity: "client"}
+			_, err = svc.Authorize(context.Background(), areq)
 			require.Nil(t, err, fmt.Sprintf("checking shared %v policy expected to be succeed: %#v", tc.policy, err))
 		}
-		repoCall3.Parent.AssertCalled(t, "Save", context.Background(), mock.Anything)
 		repoCall.Unset()
 		repoCall1.Unset()
 		repoCall2.Unset()
+		repoCall3.Parent.AssertCalled(t, "Save", context.Background(), mock.Anything)
 		repoCall3.Unset()
 		repoCall4.Unset()
 	}
@@ -154,55 +148,52 @@ func TestAddPolicy(t *testing.T) {
 }
 
 func TestAuthorize(t *testing.T) {
-	svc, pRepo := newService(map[string]string{token: adminEmail})
+	svc, pRepo, _ := newService(map[string]string{token: adminEmail})
 
 	cases := []struct {
 		desc   string
 		policy policies.AccessRequest
-		domain string
 		err    error
 	}{
 		{
 			desc:   "check valid policy in client domain",
-			policy: policies.AccessRequest{Object: "client1", Action: "c_update", Subject: token},
-			domain: "client",
+			policy: policies.AccessRequest{Object: "client1", Action: "c_update", Subject: token, Entity: "client"},
 			err:    nil,
 		},
 		{
 			desc:   "check valid policy in group domain",
-			policy: policies.AccessRequest{Object: "client2", Action: "g_update", Subject: token},
-			domain: "group",
-			err:    errors.ErrConflict,
+			policy: policies.AccessRequest{Object: "client2", Action: "g_update", Subject: token, Entity: "group"},
+			err:    nil,
 		},
 		{
 			desc:   "check invalid policy in client domain",
-			policy: policies.AccessRequest{Object: "client3", Action: "c_update", Subject: token},
-			domain: "client",
+			policy: policies.AccessRequest{Object: "client3", Action: "c_update", Subject: token, Entity: "client"},
 			err:    nil,
 		},
 		{
 			desc:   "check invalid policy in group domain",
-			policy: policies.AccessRequest{Object: "client4", Action: "g_update", Subject: token},
-			domain: "group",
+			policy: policies.AccessRequest{Object: "client4", Action: "g_update", Subject: token, Entity: "group"},
 			err:    nil,
 		},
 	}
 
 	for _, tc := range cases {
-		policy := policies.Policy{Object: tc.policy.Object, Actions: []string{tc.policy.Action}, Subject: tc.policy.Subject}
-		repoCall := pRepo.On("RetrieveOne", context.Background(), mock.Anything, mock.Anything).Return(policy, tc.err)
-		repoCall1 := pRepo.On("Evaluate", context.Background(), tc.domain, mock.Anything).Return(tc.err)
-		_, err := svc.Authorize(context.Background(), tc.policy, tc.domain)
+		// policy := policies.Policy{Object: tc.policy.Object, Actions: []string{tc.policy.Action}, Subject: tc.policy.Subject}
+		repoCall := &mock.Call{}
+		switch tc.policy.Entity {
+		case "client":
+			repoCall = pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, tc.err)
+		case "group":
+			repoCall = pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, tc.err)
+		}
+		_, err := svc.Authorize(context.Background(), tc.policy)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		repoCall.Unset()
-		repoCall1.Unset()
 	}
-
 }
 
 func TestDeletePolicy(t *testing.T) {
-
-	svc, pRepo := newService(map[string]string{token: adminEmail})
+	svc, pRepo, _ := newService(map[string]string{token: adminEmail})
 
 	pr := policies.Policy{Object: testsutil.GenerateUUID(t, idProvider), Actions: memberActions, Subject: testsutil.GenerateUUID(t, idProvider)}
 
@@ -216,7 +207,7 @@ func TestDeletePolicy(t *testing.T) {
 
 func TestListPolicies(t *testing.T) {
 
-	svc, pRepo := newService(map[string]string{token: adminEmail})
+	svc, pRepo, _ := newService(map[string]string{token: adminEmail})
 
 	id := testsutil.GenerateUUID(t, idProvider)
 
@@ -294,7 +285,7 @@ func TestListPolicies(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		repoCall := pRepo.On("Retrieve", context.Background(), tc.page).Return(tc.response, tc.err)
+		repoCall := pRepo.On("Retrieve", context.Background(), mock.Anything).Return(tc.response, tc.err)
 		page, err := svc.ListPolicies(context.Background(), tc.token, tc.page)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page, fmt.Sprintf("%s: expected size %v got %v\n", tc.desc, tc.response, page))
@@ -305,7 +296,7 @@ func TestListPolicies(t *testing.T) {
 
 func TestUpdatePolicies(t *testing.T) {
 
-	svc, pRepo := newService(map[string]string{token: adminEmail})
+	svc, pRepo, _ := newService(map[string]string{token: adminEmail})
 
 	policy := policies.Policy{Object: "obj1", Actions: []string{"m_read"}, Subject: "sub1"}
 
