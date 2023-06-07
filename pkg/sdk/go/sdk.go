@@ -641,9 +641,9 @@ type SDK interface {
 	// Unassign removes member from a group.
 	//
 	// example:
-	//  err := sdk.Unassign([]string{"g_add"}, "userID:1", "groupID:1", "token")
+	//  err := sdk.Unassign("userID:1", "groupID:1", "token")
 	//  fmt.Println(err)
-	Unassign(memberType []string, groupID string, memberID string, token string) errors.SDKError
+	Unassign(memberID, groupID, token string) errors.SDKError
 
 	// Connect bulk connects things to channels specified by id.
 	//

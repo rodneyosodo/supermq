@@ -167,21 +167,15 @@ var cmdGroups = []cobra.Command{
 		},
 	},
 	{
-		Use:   "unassign <member_type> <group_id> <member_id> <user_auth_token>",
+		Use:   "unassign <member_id> <group_id> <user_auth_token>",
 		Short: "Unassign member",
-		Long: `Unassign members from a group
-				member_ids - '["member_id",...]`,
+		Long:  `Unassign members from a group`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 4 {
 				logUsage(cmd.Use)
 				return
 			}
-			var types []string
-			if err := json.Unmarshal([]byte(args[0]), &types); err != nil {
-				logError(err)
-				return
-			}
-			if err := sdk.Unassign(types, args[1], args[2], args[3]); err != nil {
+			if err := sdk.Unassign(args[0], args[1], args[2]); err != nil {
 				logError(err)
 				return
 			}

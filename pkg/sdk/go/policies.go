@@ -122,20 +122,10 @@ func (sdk mfSDK) Assign(memberType []string, memberID, groupID, token string) er
 	return sdkerr
 }
 
-func (sdk mfSDK) Unassign(memberType []string, groupID string, memberID string, token string) errors.SDKError {
-	var policy = Policy{
-		Subject: memberID,
-		Object:  groupID,
-		Actions: memberType,
-	}
-	data, err := json.Marshal(policy)
-	if err != nil {
-		return errors.NewSDKError(err)
-	}
+func (sdk mfSDK) Unassign(memberID, groupID, token string) errors.SDKError {
+	url := fmt.Sprintf("%s/%s/%s/%s", sdk.usersURL, policiesEndpoint, memberID, groupID)
 
-	url := fmt.Sprintf("%s/%s/%s/%s", sdk.usersURL, policiesEndpoint, groupID, memberID)
-
-	_, _, sdkerr := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), data, http.StatusNoContent)
+	_, _, sdkerr := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), nil, http.StatusNoContent)
 	return sdkerr
 }
 
