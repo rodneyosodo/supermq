@@ -41,6 +41,13 @@ var (
 		Metadata:    validMetadata,
 		Status:      mfclients.EnabledStatus.String(),
 	}
+	thing = sdk.Thing{
+		Name:        "thingname",
+		Tags:        []string{"tag1", "tag2"},
+		Credentials: sdk.Credentials{Identity: "clientidentity", Secret: generateUUID(&testing.T{})},
+		Metadata:    validMetadata,
+		Status:      mfclients.EnabledStatus.String(),
+	}
 	description = "shortdescription"
 	gName       = "groupname"
 
@@ -92,11 +99,27 @@ func convertClientsPage(cp sdk.UsersPage) mfclients.ClientsPage {
 	}
 }
 
+func convertThingsPage(cp sdk.ThingsPage) mfclients.ClientsPage {
+	return mfclients.ClientsPage{
+		Clients: convertThings(cp.Things),
+	}
+}
+
 func convertClients(cs []sdk.User) []mfclients.Client {
 	ccs := []mfclients.Client{}
 
 	for _, c := range cs {
 		ccs = append(ccs, convertClient(c))
+	}
+
+	return ccs
+}
+
+func convertThings(cs []sdk.Thing) []mfclients.Client {
+	ccs := []mfclients.Client{}
+
+	for _, c := range cs {
+		ccs = append(ccs, convertThing(c))
 	}
 
 	return ccs
@@ -223,6 +246,27 @@ func convertClient(c sdk.User) mfclients.Client {
 		return mfclients.Client{}
 	}
 	
+	return mfclients.Client{
+		ID:          c.ID,
+		Name:        c.Name,
+		Tags:        c.Tags,
+		Owner:       c.Owner,
+		Credentials: mfclients.Credentials(c.Credentials),
+		Metadata:    mfclients.Metadata(c.Metadata),
+		CreatedAt:   c.CreatedAt,
+		UpdatedAt:   c.UpdatedAt,
+		Status:      status,
+	}
+}
+
+func convertThing(c sdk.Thing) mfclients.Client {
+	if c.Status == "" {
+		c.Status = mfclients.EnabledStatus.String()
+	}
+	status, err := mfclients.ToStatus(c.Status)
+	if err != nil {
+		return mfclients.Client{}
+	}
 	return mfclients.Client{
 		ID:          c.ID,
 		Name:        c.Name,
