@@ -256,7 +256,7 @@ func (svc service) ListClientsByGroup(ctx context.Context, token, groupID string
 		return mfclients.MembersPage{}, err
 	}
 	// If the user is admin, fetch all things connected to the channel.
-	if err := svc.checkAdmin(ctx, token, thingsObjectKey, listRelationKey); err == nil {
+	if err := svc.checkAdmin(ctx, userID, thingsObjectKey, listRelationKey); err == nil {
 		return svc.clients.Members(ctx, groupID, pm)
 	}
 	pm.Owner = userID
