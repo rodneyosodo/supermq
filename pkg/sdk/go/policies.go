@@ -120,7 +120,7 @@ func (sdk mfSDK) Assign(memberType []string, memberID, groupID, token string) er
 	}
 	url := fmt.Sprintf("%s/%s", sdk.usersURL, policiesEndpoint)
 	_, _, sdkerr := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), data, http.StatusCreated)
-	
+
 	return sdkerr
 }
 
@@ -128,7 +128,7 @@ func (sdk mfSDK) Unassign(memberID, groupID, token string) errors.SDKError {
 	url := fmt.Sprintf("%s/%s/%s/%s", sdk.usersURL, policiesEndpoint, memberID, groupID)
 
 	_, _, sdkerr := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), nil, http.StatusNoContent)
-	
+
 	return sdkerr
 }
 
@@ -141,7 +141,7 @@ func (sdk mfSDK) Connect(connIDs ConnectionIDs, token string) errors.SDKError {
 	url := fmt.Sprintf("%s/%s", sdk.thingsURL, connectEndpoint)
 
 	_, _, sdkerr := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), data, http.StatusCreated)
-	
+
 	return sdkerr
 }
 
@@ -153,7 +153,7 @@ func (sdk mfSDK) Disconnect(connIDs ConnectionIDs, token string) errors.SDKError
 
 	url := fmt.Sprintf("%s/%s", sdk.thingsURL, disconnectEndpoint)
 	_, _, sdkerr := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), data, http.StatusNoContent)
-	
+
 	return sdkerr
 }
 
@@ -161,7 +161,7 @@ func (sdk mfSDK) ConnectThing(thingID, chanID, token string) errors.SDKError {
 	url := fmt.Sprintf("%s/%s/%s/%s/%s", sdk.thingsURL, channelsEndpoint, chanID, thingsEndpoint, thingID)
 
 	_, _, err := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), nil, http.StatusCreated)
-	
+
 	return err
 }
 
@@ -169,7 +169,7 @@ func (sdk mfSDK) DisconnectThing(thingID, chanID, token string) errors.SDKError 
 	url := fmt.Sprintf("%s/%s/%s/%s/%s", sdk.thingsURL, channelsEndpoint, chanID, thingsEndpoint, thingID)
 
 	_, _, err := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), nil, http.StatusNoContent)
-	
+
 	return err
 }
 
