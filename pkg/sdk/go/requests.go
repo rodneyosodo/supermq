@@ -41,3 +41,22 @@ type tokenReq struct {
 type identifyThingReq struct {
 	Token string `json:"token,omitempty"`
 }
+
+type shareThingReq struct {
+	UserIDs  []string `json:"user_ids"`
+	Policies []string `json:"policies"`
+}
+
+type authorizeReq struct {
+	Subject    string `json:"subject,omitempty"`
+	Object     string `json:"object,omitempty"`
+	Action     string `json:"action,omitempty"`
+	EntityType string `json:"entity_type,omitempty"`
+}
+
+type canAccessReq struct {
+	ClientSecret string `json:"secret"`
+	GroupID      string `json:"group_id"`
+	Action       string `json:"action"`
+	EntityType   string `json:"entity_type"`
+}

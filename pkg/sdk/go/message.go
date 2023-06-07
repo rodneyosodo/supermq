@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/mainflux/mainflux/internal/apiutil"
 	"github.com/mainflux/mainflux/pkg/errors"
 )
 
@@ -23,7 +22,7 @@ func (sdk mfSDK) SendMessage(chanName, msg, key string) errors.SDKError {
 
 	url := fmt.Sprintf("%s/channels/%s/messages/%s", sdk.httpAdapterURL, chanID, subtopicPart)
 
-	_, _, err := sdk.processRequest(http.MethodPost, url, apiutil.ThingPrefix+key, string(CTJSON), []byte(msg), http.StatusAccepted)
+	_, _, err := sdk.processRequest(http.MethodPost, url, ThingPrefix+key, string(CTJSON), []byte(msg), http.StatusAccepted)
 	return err
 }
 

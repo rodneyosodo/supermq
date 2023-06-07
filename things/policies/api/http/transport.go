@@ -57,21 +57,21 @@ func MakePolicyHandler(csvc clients.Service, psvc policies.Service, mux *bone.Mu
 		opts...,
 	))
 
-	mux.Put("/identify", kithttp.NewServer(
+	mux.Put("/things/policies", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("update_policy"))(updatePolicyEndpoint(psvc)),
 		decodeUpdatePolicy,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Get("/identify", kithttp.NewServer(
+	mux.Get("/things/policies", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("list_policies"))(listPoliciesEndpoint(psvc)),
 		decodeListPolicies,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Post("/identify/channels/:chanID/access", kithttp.NewServer(
+	mux.Post("/channels/:chanID/access", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("authorize"))(authorizeEndpoint(psvc)),
 		decodeCanAccess,
 		api.EncodeResponse,

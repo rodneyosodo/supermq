@@ -6,18 +6,17 @@ import (
 )
 
 type authorizeReq struct {
-	Subject    string   `json:"subject,omitempty"`
-	Object     string   `json:"object,omitempty"`
-	Actions    []string `json:"actions,omitempty"`
-	EntityType string   `json:"entity_type,omitempty"`
+	Subject    string `json:"subject,omitempty"`
+	Object     string `json:"object,omitempty"`
+	Action     string `json:"action,omitempty"`
+	EntityType string `json:"entity_type,omitempty"`
 }
 
 func (req authorizeReq) validate() error {
-	for _, a := range req.Actions {
-		if ok := policies.ValidateAction(a); !ok {
-			return apiutil.ErrMalformedPolicyAct
-		}
+	if ok := policies.ValidateAction(req.Action); !ok {
+		return apiutil.ErrMalformedPolicyAct
 	}
+
 	if req.Subject == "" {
 		return apiutil.ErrMissingPolicySub
 	}

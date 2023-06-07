@@ -14,6 +14,7 @@ const (
 	connectEndpoint    = "connect"
 	disconnectEndpoint = "disconnect"
 	identifyEndpoint   = "identify"
+	shareEndpoint      = "share"
 )
 
 // Thing represents mainflux thing.
@@ -263,4 +264,20 @@ func (sdk mfSDK) IdentifyThing(key string) (string, errors.SDKError) {
 	}
 
 	return i.ID, nil
+}
+
+func (sdk mfSDK) ShareThing(thingID string, userIDs, actions []string, token string) errors.SDKError {
+	sreq := shareThingReq{Policies: actions, UserIDs: userIDs}
+	data, err := json.Marshal(sreq)
+	if err != nil {
+		return errors.NewSDKError(err)
+	}
+
+	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, thingID, shareEndpoint)
+	_, _, sdkerr := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), data, http.StatusOK)
+	if sdkerr != nil {
+		return sdkerr
+	}
+
+	return nil
 }

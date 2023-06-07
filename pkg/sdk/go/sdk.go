@@ -15,8 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/internal/apiutil"
 	"github.com/mainflux/mainflux/pkg/errors"
 )
 
@@ -35,6 +33,10 @@ const (
 
 	// DisabledStatus represents disabled status for a client
 	DisabledStatus = "disabled"
+
+	BearerPrefix = "Bearer "
+
+	ThingPrefix = "Thing "
 )
 
 // ContentType represents all possible content types.
@@ -178,6 +180,9 @@ type SDK interface {
 	// IdentifyThing validates thing's key and returns its ID
 	IdentifyThing(key string) (string, errors.SDKError)
 
+	// ShareThing shares thing with other user.
+	ShareThing(thingID string, userIDs, actions []string, token string) errors.SDKError
+
 	// CreateGroup creates new group and returns its id.
 	CreateGroup(group Group, token string) (Group, errors.SDKError)
 
@@ -244,6 +249,9 @@ type SDK interface {
 	// ListPolicies lists policies based on the given policy structure.
 	ListPolicies(pm PageMetadata, token string) (PolicyPage, errors.SDKError)
 
+	// Authorize returns true if the given policy structure allows the action.
+	Authorize(p Policy, entityType, token string) (bool, errors.SDKError)
+
 	// Assign assigns member of member type (thing or user) to a group.
 	Assign(memberType []string, memberID, groupID, token string) errors.SDKError
 
@@ -262,6 +270,15 @@ type SDK interface {
 	// DisconnectThing disconnect thing from specified channel by id.
 	DisconnectThing(thingID, chanID, token string) errors.SDKError
 
+	// UpdateThingsPolicy updates policies based on the given policy structure.
+	UpdateThingsPolicy(p Policy, token string) errors.SDKError
+
+	// ListThingsPolicies lists policies based on the given policy structure.
+	ListThingsPolicies(pm PageMetadata, token string) (PolicyPage, errors.SDKError)
+
+	// ThingsCanAccess returns true if the given policy structure allows the action.
+	ThingCanAccess(p Policy, entityType, token string) (bool, string, errors.SDKError)
+
 	// SendMessage send message to specified channel.
 	SendMessage(chanID, msg, key string) errors.SDKError
 
@@ -272,7 +289,7 @@ type SDK interface {
 	SetContentType(ct ContentType) errors.SDKError
 
 	// Health returns things service health check.
-	Health() (mainflux.HealthInfo, errors.SDKError)
+	Health() (HealthInfo, errors.SDKError)
 
 	// AddBootstrap add bootstrap configuration
 	AddBootstrap(cfg BootstrapConfig, token string) (string, errors.SDKError)
@@ -384,8 +401,8 @@ func (sdk mfSDK) processRequest(method, url, token, contentType string, data []b
 	}
 
 	if token != "" {
-		if !strings.Contains(token, apiutil.ThingPrefix) {
-			token = apiutil.BearerPrefix + token
+		if !strings.Contains(token, ThingPrefix) {
+			token = BearerPrefix + token
 		}
 		req.Header.Set("Authorization", token)
 	}

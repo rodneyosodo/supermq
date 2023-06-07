@@ -12,6 +12,8 @@ import (
 	"github.com/mainflux/mainflux/pkg/errors"
 )
 
+const channelsEndpoint = "channels"
+
 // Channel represents mainflux channel.
 type Channel struct {
 	ID          string     `json:"id"`
@@ -27,8 +29,6 @@ type Channel struct {
 	UpdatedAt   time.Time  `json:"updated_at,omitempty"`
 	Status      string     `json:"status,omitempty"`
 }
-
-const channelsEndpoint = "channels"
 
 func (sdk mfSDK) CreateChannel(c Channel, token string) (Channel, errors.SDKError) {
 	data, err := json.Marshal(c)
