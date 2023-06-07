@@ -145,12 +145,10 @@ func (sdk mfSDK) UpdateChannel(c Channel, token string) (Channel, errors.SDKErro
 	return c, nil
 }
 
-// EnableChannel enables the channel identified with the provided ID.
 func (sdk mfSDK) EnableChannel(id, token string) (Channel, errors.SDKError) {
 	return sdk.changeChannelStatus(id, enableEndpoint, token)
 }
 
-// DisableChannel enabled the channel identified with the provided ID.
 func (sdk mfSDK) DisableChannel(id, token string) (Channel, errors.SDKError) {
 	return sdk.changeChannelStatus(id, disableEndpoint, token)
 }

@@ -334,8 +334,8 @@ func TestListClients(t *testing.T) {
 		pm := sdk.PageMetadata{
 			Status:   tc.status,
 			Total:    total,
-			Offset:   uint64(tc.offset),
-			Limit:    uint64(tc.limit),
+			Offset:   tc.offset,
+			Limit:    tc.limit,
 			Name:     tc.name,
 			OwnerID:  tc.ownerID,
 			Metadata: tc.metadata,

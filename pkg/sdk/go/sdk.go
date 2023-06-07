@@ -28,10 +28,10 @@ const (
 	// CTBinary represents binary content type.
 	CTBinary ContentType = "application/octet-stream"
 
-	// EnabledStatus represents enable status for a client
+	// EnabledStatus represents enable status for a client.
 	EnabledStatus = "enabled"
 
-	// DisabledStatus represents disabled status for a client
+	// DisabledStatus represents disabled status for a client.
 	DisabledStatus = "disabled"
 
 	BearerPrefix = "Bearer "
@@ -991,6 +991,7 @@ func (sdk mfSDK) withQueryParams(baseURL, endpoint string, pm PageMetadata) (str
 	if err != nil {
 		return "", err
 	}
+	
 	return fmt.Sprintf("%s/%s?%s", baseURL, endpoint, q), nil
 }
 
@@ -1030,5 +1031,6 @@ func (pm PageMetadata) query() (string, error) {
 		}
 		q.Add("metadata", string(md))
 	}
+	
 	return q.Encode(), nil
 }

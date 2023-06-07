@@ -16,7 +16,6 @@ type Token struct {
 	AccessType   string `json:"access_type,omitempty"`
 }
 
-// CreateToken receives credentials and returns user token.
 func (sdk mfSDK) CreateToken(user User) (Token, errors.SDKError) {
 	var treq = tokenReq{
 		Identity: user.Credentials.Identity,
@@ -41,7 +40,6 @@ func (sdk mfSDK) CreateToken(user User) (Token, errors.SDKError) {
 	return token, nil
 }
 
-// RefreshToken refreshes expired access tokens.
 func (sdk mfSDK) RefreshToken(token string) (Token, errors.SDKError) {
 	url := fmt.Sprintf("%s/%s/%s", sdk.usersURL, usersEndpoint, refreshTokenEndpoint)
 

@@ -70,7 +70,7 @@ func TestCreatePolicy(t *testing.T) {
 				Object:  object,
 				Actions: []string{"m_write", "g_add"},
 			},
-			page:  sdk.PolicyPage{Policies: []sdk.Policy{sdk.Policy(clientPolicy)}},
+			page:  sdk.PolicyPage{Policies: []sdk.Policy{clientPolicy}},
 			token: generateValidToken(t, csvc, cRepo),
 			err:   errors.NewSDKErrorWithStatus(sdk.ErrFailedCreation, http.StatusInternalServerError),
 		},
