@@ -25,6 +25,7 @@ var _ session.Handler = (*handler)(nil)
 
 const protocol = "mqtt"
 
+// Log message formats
 const (
 	LogInfoSubscribed   = "subscribed with client_id %s to topics %s"
 	LogInfoUnsubscribed = "unsubscribed client_id %s from topics %s"
@@ -33,8 +34,8 @@ const (
 	LogInfoPublished    = "published with client_id %s to the topic %s"
 )
 
+// Error wrappers for MQTT errors
 var (
-	channelRegExp                   = regexp.MustCompile(`^\/?channels\/([\w\-]+)\/messages(\/[^?]*)?(\?.*)?$`)
 	ErrMalformedSubtopic            = errors.New("malformed subtopic")
 	ErrClientNotInitialized         = errors.New("client is not initialized")
 	ErrMalformedTopic               = errors.New("malformed topic")
@@ -52,6 +53,8 @@ var (
 	ErrFailedPublishConnectEvent    = errors.New("failed to publish connect event")
 	ErrFailedPublishToMsgBroker     = errors.New("failed to publish to mainflux message broker")
 )
+
+var channelRegExp = regexp.MustCompile(`^\/?channels\/([\w\-]+)\/messages(\/[^?]*)?(\?.*)?$`)
 
 // Event implements events.Event interface
 type handler struct {
@@ -93,7 +96,7 @@ func (h *handler) AuthConnect(ctx context.Context) error {
 		return errors.ErrAuthentication
 	}
 
-	if err := h.es.Connect(s.Username); err != nil {
+	if err := h.es.Connect(string(s.Password)); err != nil {
 		h.logger.Error(errors.Wrap(ErrFailedPublishConnectEvent, err).Error())
 	}
 
@@ -103,15 +106,15 @@ func (h *handler) AuthConnect(ctx context.Context) error {
 // AuthPublish is called on device publish,
 // prior forwarding to the MQTT broker
 func (h *handler) AuthPublish(ctx context.Context, topic *string, payload *[]byte) error {
+	if topic == nil {
+		return ErrMissingTopicPub
+	}
 	s, ok := session.FromContext(ctx)
 	if !ok {
 		return ErrClientNotInitialized
 	}
-	if topic == nil {
-		return ErrMissingTopicPub
-	}
 
-	return h.authAccess(ctx, s.Username, *topic, policies.WriteAction)
+	return h.authAccess(ctx, string(s.Password), *topic, policies.WriteAction)
 }
 
 // AuthSubscribe is called on device publish,
@@ -126,7 +129,7 @@ func (h *handler) AuthSubscribe(ctx context.Context, topics *[]string) error {
 	}
 
 	for _, v := range *topics {
-		if err := h.authAccess(ctx, s.Username, v, policies.ReadAction); err != nil {
+		if err := h.authAccess(ctx, string(s.Password), v, policies.ReadAction); err != nil {
 			return err
 		}
 
@@ -214,13 +217,13 @@ func (h *handler) Disconnect(ctx context.Context) {
 		h.logger.Error(errors.Wrap(ErrFailedDisconnect, ErrClientNotInitialized).Error())
 		return
 	}
-	h.logger.Error(fmt.Sprintf(LogInfoDisconnected, s.ID, s.Username))
-	if err := h.es.Disconnect(s.Username); err != nil {
+	h.logger.Error(fmt.Sprintf(LogInfoDisconnected, s.ID, s.Password))
+	if err := h.es.Disconnect(string(s.Password)); err != nil {
 		h.logger.Error(errors.Wrap(ErrFailedPublishDisconnectEvent, err).Error())
 	}
 }
 
-func (h *handler) authAccess(ctx context.Context, username, topic, action string) error {
+func (h *handler) authAccess(ctx context.Context, password, topic, action string) error {
 	// Topics are in the format:
 	// channels/<channel_id>/messages/<subtopic>/.../ct/<content_type>
 	if !channelRegExp.Match([]byte(topic)) {
@@ -233,7 +236,7 @@ func (h *handler) authAccess(ctx context.Context, username, topic, action string
 	}
 
 	chanID := channelParts[1]
-	return h.auth.Authorize(ctx, chanID, username, action)
+	return h.auth.Authorize(ctx, chanID, password, action)
 }
 
 func parseSubtopic(subtopic string) (string, error) {
