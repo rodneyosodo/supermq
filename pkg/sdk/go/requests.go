@@ -43,7 +43,8 @@ type identifyThingReq struct {
 }
 
 type shareThingReq struct {
-	UserIDs  []string `json:"user_ids"`
+	GroupID  string   `json:"group_id"`
+	UserID   string   `json:"user_id"`
 	Policies []string `json:"policies"`
 }
 

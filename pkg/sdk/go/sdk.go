@@ -375,9 +375,9 @@ type SDK interface {
 	// ShareThing shares thing with other user.
 	//
 	// example:
-	//  err := sdk.ShareThing("thingID", []string{"userID1", "userID2"}, []string{"c_list", "c_delete"}, "token")
+	//  err := sdk.ShareThing("thingID", "groupID", "userID", []string{"c_list", "c_delete"}, "token")
 	//  fmt.Println(err)
-	ShareThing(thingID string, userIDs, actions []string, token string) errors.SDKError
+	ShareThing(thingID, groupID, userID string, actions []string, token string) errors.SDKError
 
 	// CreateGroup creates new group and returns its id.
 	//
@@ -991,7 +991,7 @@ func (sdk mfSDK) withQueryParams(baseURL, endpoint string, pm PageMetadata) (str
 	if err != nil {
 		return "", err
 	}
-	
+
 	return fmt.Sprintf("%s/%s?%s", baseURL, endpoint, q), nil
 }
 
@@ -1031,6 +1031,6 @@ func (pm PageMetadata) query() (string, error) {
 		}
 		q.Add("metadata", string(md))
 	}
-	
+
 	return q.Encode(), nil
 }
