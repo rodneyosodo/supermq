@@ -41,7 +41,6 @@ var (
 	ErrMissingClientID              = errors.New("client_id not found")
 	ErrMissingTopicPub              = errors.New("failed to publish due to missing topic")
 	ErrMissingTopicSub              = errors.New("failed to subscribe due to missing topic")
-	ErrAuthentication               = errors.New("failed to perform authentication over the entity")
 	ErrFailedConnect                = errors.New("failed to connect")
 	ErrFailedSubscribe              = errors.New("failed to subscribe")
 	ErrFailedUnsubscribe            = errors.New("failed to unsubscribe")
