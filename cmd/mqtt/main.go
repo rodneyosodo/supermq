@@ -18,7 +18,6 @@ import (
 	"github.com/mainflux/mainflux/mqtt"
 	mqttredis "github.com/mainflux/mainflux/mqtt/redis"
 	mqtttracing "github.com/mainflux/mainflux/mqtt/tracing"
-	"github.com/mainflux/mainflux/pkg/auth"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
@@ -136,9 +135,7 @@ func main() {
 	defer tcHandler.Close()
 	logger.Info("Successfully connected to things grpc server " + tcHandler.Secure())
 
-	authClient := auth.New(ac, tc)
-
-	h := mqtt.NewHandler([]messaging.Publisher{np}, es, logger, authClient)
+	h := mqtt.NewHandler([]messaging.Publisher{np}, es, logger, tc)
 	h = mqtttracing.NewHandler(tracer, h)
 
 	logger.Info(fmt.Sprintf("Starting MQTT proxy on port %s", cfg.MqttPort))
