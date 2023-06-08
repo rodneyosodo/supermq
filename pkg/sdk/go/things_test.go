@@ -95,6 +95,18 @@ func TestCreateThing(t *testing.T) {
 			err:      errors.NewSDKErrorWithStatus(errors.ErrMalformedEntity, http.StatusBadRequest),
 		},
 		{
+			desc: "register a thing that can't be marshalled",
+			client: sdk.Thing{
+				Name: "test",
+				Metadata: map[string]interface{}{
+					"test": make(chan int),
+				},
+			},
+			response: sdk.Thing{},
+			token:    token,
+			err:      errors.NewSDKError(fmt.Errorf("json: unsupported type: chan int")),
+		},
+		{
 			desc: "register thing with empty secret",
 			client: sdk.Thing{
 				Name: "emptysecret",
@@ -238,6 +250,20 @@ func TestCreateThings(t *testing.T) {
 			response: []sdk.Thing{},
 			token:    token,
 			err:      errors.NewSDKErrorWithStatus(apiutil.ErrEmptyList, http.StatusBadRequest),
+		},
+		{
+			desc: "register things that can't be marshalled",
+			things: []sdk.Thing{
+				{
+					Name: "test",
+					Metadata: map[string]interface{}{
+						"test": make(chan int),
+					},
+				},
+			},
+			response: []sdk.Thing{},
+			token:    token,
+			err:      errors.NewSDKError(fmt.Errorf("json: unsupported type: chan int")),
 		},
 	}
 	for _, tc := range cases {
@@ -440,15 +466,11 @@ func TestListThings(t *testing.T) {
 			Tag:      tc.tag,
 		}
 
-		repoCall := pRepo.On("Evaluate", mock.Anything, mock.Anything, mock.Anything).Return(errors.ErrAuthorization)
-		repoCall1 := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(errors.ErrAuthorization)
-		repoCall2 := cRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(mfclients.ClientsPage{Page: convertClientPage(pm), Clients: convertThings(tc.response)}, tc.err)
+		repoCall := cRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(mfclients.ClientsPage{Page: convertClientPage(pm), Clients: convertThings(tc.response)}, tc.err)
 		page, err := tsdk.Things(pm, adminToken)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page.Things, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, page))
 		repoCall.Unset()
-		repoCall1.Unset()
-		repoCall2.Unset()
 	}
 }
 
@@ -582,17 +604,15 @@ func TestListThingsByChannel(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
-		repoCall1 := cRepo.On("Members", mock.Anything, tc.channelID, mock.Anything).Return(mfclients.MembersPage{Members: convertThings(tc.response)}, tc.err)
+		repoCall := cRepo.On("Members", mock.Anything, tc.channelID, mock.Anything).Return(mfclients.MembersPage{Members: convertThings(tc.response)}, tc.err)
 		membersPage, err := tsdk.ThingsByChannel(tc.channelID, tc.page, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, membersPage.Things, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, membersPage.Things))
 		if tc.err == nil {
-			ok := repoCall1.Parent.AssertCalled(t, "Members", mock.Anything, tc.channelID, mock.Anything)
+			ok := repoCall.Parent.AssertCalled(t, "Members", mock.Anything, tc.channelID, mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("Members was not called on %s", tc.desc))
 		}
 		repoCall.Unset()
-		repoCall1.Unset()
 	}
 }
 
@@ -736,6 +756,18 @@ func TestUpdateThing(t *testing.T) {
 			token:    adminToken,
 			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedUpdate, http.StatusInternalServerError),
 		},
+		{
+			desc: "update thing that can't be marshalled",
+			thing: sdk.Thing{
+				Name: "test",
+				Metadata: map[string]interface{}{
+					"test": make(chan int),
+				},
+			},
+			response: sdk.Thing{},
+			token:    token,
+			err:      errors.NewSDKError(fmt.Errorf("json: unsupported type: chan int")),
+		},
 	}
 
 	for _, tc := range cases {
@@ -815,6 +847,18 @@ func TestUpdateThingTags(t *testing.T) {
 			response: sdk.Thing{},
 			token:    adminToken,
 			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedUpdate, http.StatusInternalServerError),
+		},
+		{
+			desc: "update thing that can't be marshalled",
+			thing: sdk.Thing{
+				Name: "test",
+				Metadata: map[string]interface{}{
+					"test": make(chan int),
+				},
+			},
+			response: sdk.Thing{},
+			token:    token,
+			err:      errors.NewSDKError(fmt.Errorf("json: unsupported type: chan int")),
 		},
 	}
 
@@ -966,6 +1010,18 @@ func TestUpdateThingOwner(t *testing.T) {
 			response: sdk.Thing{},
 			token:    adminToken,
 			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedUpdate, http.StatusInternalServerError),
+		},
+		{
+			desc: "update thing that can't be marshalled",
+			thing: sdk.Thing{
+				Name: "test",
+				Metadata: map[string]interface{}{
+					"test": make(chan int),
+				},
+			},
+			response: sdk.Thing{},
+			token:    token,
+			err:      errors.NewSDKError(fmt.Errorf("json: unsupported type: chan int")),
 		},
 	}
 

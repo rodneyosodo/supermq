@@ -135,6 +135,16 @@ func convertGroups(cs []sdk.Group) []mfgroups.Group {
 	return cgs
 }
 
+func convertChannels(cs []sdk.Channel) []mfgroups.Group {
+	cgs := []mfgroups.Group{}
+
+	for _, c := range cs {
+		cgs = append(cgs, convertChannel(c))
+	}
+
+	return cgs
+}
+
 func convertPolicies(cs []sdk.Policy) []policies.Policy {
 	ccs := []policies.Policy{}
 
@@ -164,6 +174,17 @@ func convertMembershipsPage(m sdk.MembershipsPage) mfgroups.MembershipsPage {
 			Offset: m.Offset,
 		},
 		Memberships: convertMemberships(m.Memberships),
+	}
+}
+
+func convertChannelsMembershipPage(m sdk.ChannelsPage) mfgroups.MembershipsPage {
+	return mfgroups.MembershipsPage{
+		Page: mfgroups.Page{
+			Limit:  m.Limit,
+			Total:  m.Total,
+			Offset: m.Offset,
+		},
+		Memberships: convertChannels(m.Channels),
 	}
 }
 
@@ -276,6 +297,29 @@ func convertThing(c sdk.Thing) mfclients.Client {
 		Metadata:    mfclients.Metadata(c.Metadata),
 		CreatedAt:   c.CreatedAt,
 		UpdatedAt:   c.UpdatedAt,
+		Status:      status,
+	}
+}
+
+func convertChannel(g sdk.Channel) mfgroups.Group {
+	if g.Status == "" {
+		g.Status = mfclients.EnabledStatus.String()
+	}
+	status, err := mfclients.ToStatus(g.Status)
+	if err != nil {
+		return mfgroups.Group{}
+	}
+	return mfgroups.Group{
+		ID:          g.ID,
+		Owner:       g.OwnerID,
+		Parent:      g.ParentID,
+		Name:        g.Name,
+		Description: g.Description,
+		Metadata:    mfclients.Metadata(g.Metadata),
+		Level:       g.Level,
+		Path:        g.Path,
+		CreatedAt:   g.CreatedAt,
+		UpdatedAt:   g.UpdatedAt,
 		Status:      status,
 	}
 }

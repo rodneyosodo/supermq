@@ -82,6 +82,21 @@ func TestCreateClient(t *testing.T) {
 			err:      errors.NewSDKErrorWithStatus(errors.ErrMalformedEntity, http.StatusBadRequest),
 		},
 		{
+			desc: "register a user that can't be marshalled",
+			client: sdk.User{
+				Credentials: sdk.Credentials{
+					Identity: "user@example.com",
+					Secret:   "12345678",
+				},
+				Metadata: map[string]interface{}{
+					"test": make(chan int),
+				},
+			},
+			response: sdk.User{},
+			token:    token,
+			err:      errors.NewSDKError(fmt.Errorf("json: unsupported type: chan int")),
+		},
+		{
 			desc: "register user with invalid identity",
 			client: sdk.User{
 				Credentials: sdk.Credentials{
@@ -686,6 +701,21 @@ func TestUpdateClient(t *testing.T) {
 			token:    generateValidToken(t, svc, cRepo),
 			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedUpdate, http.StatusInternalServerError),
 		},
+		{
+			desc: "update a user that can't be marshalled",
+			client: sdk.User{
+				Credentials: sdk.Credentials{
+					Identity: "user@example.com",
+					Secret:   "12345678",
+				},
+				Metadata: map[string]interface{}{
+					"test": make(chan int),
+				},
+			},
+			response: sdk.User{},
+			token:    token,
+			err:      errors.NewSDKError(fmt.Errorf("json: unsupported type: chan int")),
+		},
 	}
 
 	for _, tc := range cases {
@@ -762,6 +792,22 @@ func TestUpdateClientTags(t *testing.T) {
 			token:    generateValidToken(t, svc, cRepo),
 			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedUpdate, http.StatusInternalServerError),
 		},
+		{
+			desc: "update a user that can't be marshalled",
+			client: sdk.User{
+				ID: generateUUID(t),
+				Credentials: sdk.Credentials{
+					Identity: "user@example.com",
+					Secret:   "12345678",
+				},
+				Metadata: map[string]interface{}{
+					"test": make(chan int),
+				},
+			},
+			response: sdk.User{},
+			token:    token,
+			err:      errors.NewSDKError(fmt.Errorf("json: unsupported type: chan int")),
+		},
 	}
 
 	for _, tc := range cases {
@@ -835,6 +881,22 @@ func TestUpdateClientIdentity(t *testing.T) {
 			response: sdk.User{},
 			token:    generateValidToken(t, svc, cRepo),
 			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedUpdate, http.StatusInternalServerError),
+		},
+		{
+			desc: "update a user that can't be marshalled",
+			client: sdk.User{
+				ID: generateUUID(t),
+				Credentials: sdk.Credentials{
+					Identity: "user@example.com",
+					Secret:   "12345678",
+				},
+				Metadata: map[string]interface{}{
+					"test": make(chan int),
+				},
+			},
+			response: sdk.User{},
+			token:    generateValidToken(t, svc, cRepo),
+			err:      errors.NewSDKErrorWithStatus(fmt.Errorf("json: unsupported type: chan int"), http.StatusInternalServerError),
 		},
 	}
 
@@ -987,6 +1049,21 @@ func TestUpdateClientOwner(t *testing.T) {
 			response: sdk.User{},
 			token:    generateValidToken(t, svc, cRepo),
 			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedUpdate, http.StatusInternalServerError),
+		},
+		{
+			desc: "update a user that can't be marshalled",
+			client: sdk.User{
+				Credentials: sdk.Credentials{
+					Identity: "user@example.com",
+					Secret:   "12345678",
+				},
+				Metadata: map[string]interface{}{
+					"test": make(chan int),
+				},
+			},
+			response: sdk.User{},
+			token:    token,
+			err:      errors.NewSDKError(fmt.Errorf("json: unsupported type: chan int")),
 		},
 	}
 
