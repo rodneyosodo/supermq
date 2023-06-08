@@ -15,7 +15,9 @@ var cmdUsers = []cobra.Command{
 	{
 		Use:   "create <name> <username> <password> <user_auth_token>",
 		Short: "Create user",
-		Long:  `Creates new user`,
+		Long: "Create user with provided name, username and password. Token in optional\n" +
+			"For example:\n" +
+			"\tmainflux-cli users create user user@example.com 12345678 $USER_AUTH_TOKEN\n",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) < 3 || len(args) > 4 {
 				logUsage(cmd.Use)
@@ -45,9 +47,11 @@ var cmdUsers = []cobra.Command{
 	{
 		Use:   "get [all | <user_id> ] <user_auth_token>",
 		Short: "Get users",
-		Long: `Get all users or get user by id. Users can be filtered by name or metadata
-		all - lists all users
-		<user_id> - shows user with provided <user_id>`,
+		Long: "Get all users or get user by id. Users can be filtered by name or metadata or status\n" +
+			"Usage:\n" +
+			"\tmainflux-cli users get all <user_auth_token> - lists all users\n" +
+			"\tmainflux-cli users get all <user_auth_token> --offset <offset> --limit <limit> - lists all users with provided offset and limit\n" +
+			"\tmainflux-cli users get <user_id> <user_auth_token> - shows user with provided <user_id>\n",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
@@ -86,7 +90,9 @@ var cmdUsers = []cobra.Command{
 	{
 		Use:   "token <username> <password>",
 		Short: "Get token",
-		Long:  `Generate new token`,
+		Long: "Generate new token from username and password\n" +
+			"For example:\n" +
+			"\tmainflux-cli users token user@example.com 12345678\n",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
@@ -112,7 +118,9 @@ var cmdUsers = []cobra.Command{
 	{
 		Use:   "refreshtoken <token>",
 		Short: "Get token",
-		Long:  `Generate new token from refresh token`,
+		Long: "Generate new token from refresh token\n" +
+			"For example:\n" +
+			"\tmainflux-cli users refreshtoken <refresh_token>\n",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 1 {
 				logUsage(cmd.Use)
@@ -130,16 +138,65 @@ var cmdUsers = []cobra.Command{
 		},
 	},
 	{
-		Use:   "update <user_id> <JSON_string> <user_auth_token>",
+		Use:   "update [<user_id> <JSON_string> | tags <user_id> <tags> | identity <user_id> <identity> | owner <user_id> <owner>] <user_auth_token>",
 		Short: "Update user",
-		Long:  `Update user metadata`,
+		Long: "Updates either user name and metadata or user tags or user identity or user owner\n" +
+			"Usage:\n" +
+			"\tmainflux-cli users update <user_id> '{\"name\":\"new name\", \"metadata\":{\"key\": \"value\"}}' $USERTOKEN - updates user name and metadata\n" +
+			"\tmainflux-cli users update tags <user_id> '[\"tag1\", \"tag2\"]' $USERTOKEN - updates user tags\n" +
+			"\tmainflux-cli users update identity <user_id> newidentity@example.com $USERTOKEN - updates user identity\n" +
+			"\tmainflux-cli users update owner <user_id> <owner_id> $USERTOKEN - updates user owner\n",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 3 {
+			if len(args) != 4 && len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
 
 			var user mfxsdk.User
+			if args[0] == "tags" {
+				if err := json.Unmarshal([]byte(args[2]), &user.Tags); err != nil {
+					logError(err)
+					return
+				}
+				user.ID = args[1]
+				user, err := sdk.UpdateUserTags(user, args[3])
+				if err != nil {
+					logError(err)
+					return
+				}
+
+				logJSON(user)
+				return
+			}
+
+			if args[0] == "identity" {
+				user.ID = args[1]
+				user.Credentials.Identity = args[2]
+				user, err := sdk.UpdateUserIdentity(user, args[3])
+				if err != nil {
+					logError(err)
+					return
+				}
+
+				logJSON(user)
+				return
+
+			}
+
+			if args[0] == "owner" {
+				user.ID = args[1]
+				user.Owner = args[2]
+				user, err := sdk.UpdateUserOwner(user, args[3])
+				if err != nil {
+					logError(err)
+					return
+				}
+
+				logJSON(user)
+				return
+
+			}
+
 			if err := json.Unmarshal([]byte(args[1]), &user); err != nil {
 				logError(err)
 				return
@@ -155,85 +212,11 @@ var cmdUsers = []cobra.Command{
 		},
 	},
 	{
-		Use:   "updatetags <user_id> <tags> <user_auth_token>",
-		Short: "Update user tags",
-		Long:  `Update user tags`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 3 {
-				logUsage(cmd.Use)
-				return
-			}
-
-			var user mfxsdk.User
-			if err := json.Unmarshal([]byte(args[1]), &user.Tags); err != nil {
-				logError(err)
-				return
-			}
-			user.ID = args[0]
-			user, err := sdk.UpdateUserTags(user, args[2])
-			if err != nil {
-				logError(err)
-				return
-			}
-
-			logJSON(user)
-		},
-	},
-	{
-		Use:   "updateidentity <user_id> <identity> <user_auth_token>",
-		Short: "Update user identity",
-		Long:  `Update user identity`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 3 {
-				logUsage(cmd.Use)
-				return
-			}
-
-			var user mfxsdk.User
-			if err := json.Unmarshal([]byte(args[1]), &user.Credentials.Identity); err != nil {
-				logError(err)
-				return
-			}
-			user.ID = args[0]
-			user, err := sdk.UpdateUserTags(user, args[2])
-			if err != nil {
-				logError(err)
-				return
-			}
-
-			logJSON(user)
-		},
-	},
-	{
-		Use:   "updateowner <user_id> <owner> <user_auth_token>",
-		Short: "Update user owner",
-		Long:  `Update user owner`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 3 {
-				logUsage(cmd.Use)
-				return
-			}
-
-			var user mfxsdk.User
-			if err := json.Unmarshal([]byte(args[1]), &user.Owner); err != nil {
-				logError(err)
-				return
-			}
-			user.ID = args[0]
-			user, err := sdk.UpdateUserTags(user, args[2])
-			if err != nil {
-				logError(err)
-				return
-			}
-
-			logJSON(user)
-		},
-	},
-
-	{
 		Use:   "profile <user_auth_token>",
 		Short: "Get user profile",
-		Long:  `Get user profile`,
+		Long: "Get user profile\n" +
+			"Usage:\n" +
+			"\tmainflux-cli users profile $USERTOKEN\n",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 1 {
 				logUsage(cmd.Use)
@@ -252,7 +235,9 @@ var cmdUsers = []cobra.Command{
 	{
 		Use:   "password <old_password> <password> <user_auth_token>",
 		Short: "Update password",
-		Long:  `Update user password`,
+		Long: "Update password\n" +
+			"Usage:\n" +
+			"\tmainflux-cli users password old_password new_password $USERTOKEN\n",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
 				logUsage(cmd.Use)
@@ -271,7 +256,9 @@ var cmdUsers = []cobra.Command{
 	{
 		Use:   "enable <user_id> <user_auth_token>",
 		Short: "Change user status to enabled",
-		Long:  `Change user status to enabled`,
+		Long: "Change user status to enabled\n" +
+			"Usage:\n" +
+			"\tmainflux-cli users enable <user_id> <user_auth_token>\n",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
@@ -290,7 +277,9 @@ var cmdUsers = []cobra.Command{
 	{
 		Use:   "disable <user_id> <user_auth_token>",
 		Short: "Change user status to disabled",
-		Long:  `Change user status to disabled`,
+		Long: "Change user status to disabled\n" +
+			"Usage:\n" +
+			"\tmainflux-cli users disable <user_id> <user_auth_token>\n",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
