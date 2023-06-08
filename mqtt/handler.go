@@ -13,7 +13,6 @@ import (
 
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/mqtt/redis"
-	"github.com/mainflux/mainflux/pkg/auth"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/things/policies"
@@ -59,14 +58,14 @@ var channelRegExp = regexp.MustCompile(`^\/?channels\/([\w\-]+)\/messages(\/[^?]
 // Event implements events.Event interface
 type handler struct {
 	publishers []messaging.Publisher
-	auth       auth.Client
+	auth       policies.ThingsServiceClient
 	logger     logger.Logger
 	es         redis.EventStore
 }
 
 // NewHandler creates new Handler entity
 func NewHandler(publishers []messaging.Publisher, es redis.EventStore,
-	logger logger.Logger, auth auth.Client) session.Handler {
+	logger logger.Logger, auth policies.ThingsServiceClient) session.Handler {
 	return &handler{
 		es:         es,
 		logger:     logger,
@@ -87,12 +86,17 @@ func (h *handler) AuthConnect(ctx context.Context) error {
 		return ErrMissingClientID
 	}
 
-	thid, err := h.auth.Identify(ctx, string(s.Password))
+	pwd := string(s.Password)
+
+	t := &policies.Key{
+		Value: pwd,
+	}
+
+	thid, err := h.auth.Identify(ctx, t)
 	if err != nil {
 		return err
 	}
-
-	if thid != s.Username {
+	if thid.GetValue() != s.Username {
 		return errors.ErrAuthentication
 	}
 
@@ -236,7 +240,22 @@ func (h *handler) authAccess(ctx context.Context, password, topic, action string
 	}
 
 	chanID := channelParts[1]
-	return h.auth.Authorize(ctx, chanID, password, action)
+
+	ar := &policies.AuthorizeReq{
+		Sub:        password,
+		Obj:        chanID,
+		Act:        action,
+		EntityType: policies.ThingEntityType,
+	}
+	res, err := h.auth.Authorize(ctx, ar)
+	if err != nil {
+		return err
+	}
+	if !res.GetAuthorized() {
+		return errors.ErrAuthorization
+	}
+
+	return err
 }
 
 func parseSubtopic(subtopic string) (string, error) {
