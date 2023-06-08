@@ -236,14 +236,8 @@ func (sdk mfSDK) changeThingStatus(id, status, token string) (Thing, errors.SDKE
 }
 
 func (sdk mfSDK) IdentifyThing(key string) (string, errors.SDKError) {
-	idReq := identifyThingReq{Token: key}
-	data, err := json.Marshal(idReq)
-	if err != nil {
-		return "", errors.NewSDKError(err)
-	}
-
 	url := fmt.Sprintf("%s/%s", sdk.thingsURL, identifyEndpoint)
-	_, body, sdkerr := sdk.processRequest(http.MethodPost, url, "", string(CTJSON), data, http.StatusOK)
+	_, body, sdkerr := sdk.processRequest(http.MethodPost, url, ThingPrefix+key, string(CTJSON), nil, http.StatusOK)
 	if sdkerr != nil {
 		return "", sdkerr
 	}

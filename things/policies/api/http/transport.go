@@ -128,10 +128,7 @@ func decodeIdentify(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, errors.ErrUnsupportedContentType
 	}
 
-	req := identifyReq{}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
+	req := identifyReq{Secret: apiutil.ExtractThingKey(r)}
 
 	return req, nil
 }
@@ -142,7 +139,7 @@ func decodeCanAccess(_ context.Context, r *http.Request) (interface{}, error) {
 	}
 
 	req := authorizeReq{
-		GroupID: bone.GetValue(r, "chanID"),
+		Object: bone.GetValue(r, "chanID"),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
