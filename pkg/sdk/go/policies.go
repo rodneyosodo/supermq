@@ -181,7 +181,7 @@ func (sdk mfSDK) UpdateThingsPolicy(p Policy, token string) errors.SDKError {
 
 	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, thingsEndpoint, policiesEndpoint)
 
-	_, _, sdkerr := sdk.processRequest(http.MethodPut, url, token, string(CTJSON), data, http.StatusNoContent)
+	_, _, sdkerr := sdk.processRequest(http.MethodPut, url, token, string(CTJSON), data, http.StatusOK)
 	if sdkerr != nil {
 		return sdkerr
 	}

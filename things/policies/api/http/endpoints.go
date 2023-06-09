@@ -115,7 +115,7 @@ func updatePolicyEndpoint(svc policies.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return policyRes{[]policies.Policy{policy}, true}, nil
+		return policyRes{[]policies.Policy{policy}, false}, nil
 	}
 }
 
