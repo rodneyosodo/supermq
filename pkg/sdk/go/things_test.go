@@ -64,7 +64,7 @@ func TestCreateThing(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	tsdk := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	cases := []struct {
 		desc     string
@@ -177,7 +177,7 @@ func TestCreateThing(t *testing.T) {
 	}
 	for _, tc := range cases {
 		repoCall := cRepo.On("Save", mock.Anything, mock.Anything).Return(tc.response, tc.err)
-		rThing, err := tsdk.CreateThing(tc.client, tc.token)
+		rThing, err := mfsdk.CreateThing(tc.client, tc.token)
 		tc.response.ID = rThing.ID
 		tc.response.Owner = rThing.Owner
 		tc.response.CreatedAt = rThing.CreatedAt
@@ -221,7 +221,7 @@ func TestCreateThings(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	tsdk := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	cases := []struct {
 		desc     string
@@ -268,7 +268,7 @@ func TestCreateThings(t *testing.T) {
 	}
 	for _, tc := range cases {
 		repoCall := cRepo.On("Save", mock.Anything, mock.Anything).Return(tc.response, tc.err)
-		rThing, err := tsdk.CreateThings(tc.things, tc.token)
+		rThing, err := mfsdk.CreateThings(tc.things, tc.token)
 		for i, t := range rThing {
 			tc.response[i].ID = t.ID
 			tc.response[i].Owner = t.Owner
@@ -305,7 +305,7 @@ func TestListThings(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	tsdk := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	owner := generateUUID(t)
 	for i := 10; i < 100; i++ {
@@ -467,7 +467,7 @@ func TestListThings(t *testing.T) {
 		}
 
 		repoCall := cRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(mfclients.ClientsPage{Page: convertClientPage(pm), Clients: convertThings(tc.response)}, tc.err)
-		page, err := tsdk.Things(pm, adminToken)
+		page, err := mfsdk.Things(pm, adminToken)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page.Things, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, page))
 		repoCall.Unset()
@@ -491,7 +491,7 @@ func TestListThingsByChannel(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	tsdk := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	var nThing = uint64(10)
 	var aThings = []sdk.Thing{}
@@ -605,7 +605,7 @@ func TestListThingsByChannel(t *testing.T) {
 
 	for _, tc := range cases {
 		repoCall := cRepo.On("Members", mock.Anything, tc.channelID, mock.Anything).Return(mfclients.MembersPage{Members: convertThings(tc.response)}, tc.err)
-		membersPage, err := tsdk.ThingsByChannel(tc.channelID, tc.page, tc.token)
+		membersPage, err := mfsdk.ThingsByChannel(tc.channelID, tc.page, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, membersPage.Things, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, membersPage.Things))
 		if tc.err == nil {
@@ -640,7 +640,7 @@ func TestThing(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	tsdk := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	cases := []struct {
 		desc     string
@@ -682,7 +682,7 @@ func TestThing(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := cRepo.On("RetrieveByID", mock.Anything, tc.thingID).Return(convertThing(tc.response), tc.err)
-		rClient, err := tsdk.Thing(tc.thingID, tc.token)
+		rClient, err := mfsdk.Thing(tc.thingID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, rClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, rClient))
 		if tc.err == nil {
@@ -711,7 +711,7 @@ func TestUpdateThing(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	tsdk := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	thing := sdk.Thing{
 		ID:          generateUUID(t),
@@ -773,7 +773,7 @@ func TestUpdateThing(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := cRepo.On("Update", mock.Anything, mock.Anything).Return(convertThing(tc.response), tc.err)
-		uClient, err := tsdk.UpdateThing(tc.thing, tc.token)
+		uClient, err := mfsdk.UpdateThing(tc.thing, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, uClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, uClient))
 		if tc.err == nil {
@@ -804,7 +804,7 @@ func TestUpdateThingTags(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	tsdk := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	thing := sdk.Thing{
 		ID:          generateUUID(t),
@@ -865,7 +865,7 @@ func TestUpdateThingTags(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := cRepo.On("UpdateTags", mock.Anything, mock.Anything).Return(convertThing(tc.response), tc.err)
-		uClient, err := tsdk.UpdateThingTags(tc.thing, tc.token)
+		uClient, err := mfsdk.UpdateThingTags(tc.thing, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, uClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, uClient))
 		if tc.err == nil {
@@ -896,7 +896,7 @@ func TestUpdateThingSecret(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	tsdk := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	user.ID = generateUUID(t)
 	rthing := thing
@@ -939,7 +939,7 @@ func TestUpdateThingSecret(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := cRepo.On("UpdateSecret", mock.Anything, mock.Anything).Return(convertThing(tc.response), tc.err)
-		uClient, err := tsdk.UpdateThingSecret(tc.oldSecret, tc.newSecret, tc.token)
+		uClient, err := mfsdk.UpdateThingSecret(tc.oldSecret, tc.newSecret, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, uClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, uClient))
 		if tc.err == nil {
@@ -968,7 +968,7 @@ func TestUpdateThingOwner(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	tsdk := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	thing = sdk.Thing{
 		ID:          generateUUID(t),
@@ -1028,7 +1028,7 @@ func TestUpdateThingOwner(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := cRepo.On("UpdateOwner", mock.Anything, mock.Anything).Return(convertThing(tc.response), tc.err)
-		uClient, err := tsdk.UpdateThingOwner(tc.thing, tc.token)
+		uClient, err := mfsdk.UpdateThingOwner(tc.thing, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, uClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, uClient))
 		if tc.err == nil {
@@ -1059,7 +1059,7 @@ func TestEnableThing(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	tsdk := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	enabledThing1 := sdk.Thing{ID: testsutil.GenerateUUID(t, idProvider), Credentials: sdk.Credentials{Identity: "client1@example.com", Secret: generateUUID(t)}, Status: mfclients.EnabledStatus.String()}
 	disabledThing1 := sdk.Thing{ID: testsutil.GenerateUUID(t, idProvider), Credentials: sdk.Credentials{Identity: "client3@example.com", Secret: generateUUID(t)}, Status: mfclients.DisabledStatus.String()}
@@ -1105,7 +1105,7 @@ func TestEnableThing(t *testing.T) {
 		repoCall := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := cRepo.On("RetrieveByID", mock.Anything, tc.id).Return(convertThing(tc.thing), tc.err)
 		repoCall2 := cRepo.On("ChangeStatus", mock.Anything, mock.Anything).Return(convertThing(tc.response), tc.err)
-		eClient, err := tsdk.EnableThing(tc.id, tc.token)
+		eClient, err := mfsdk.EnableThing(tc.id, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, eClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, eClient))
 		if tc.err == nil {
@@ -1164,7 +1164,7 @@ func TestEnableThing(t *testing.T) {
 		}
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := cRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(convertThingsPage(tc.response), nil)
-		clientsPage, err := tsdk.Things(pm, adminToken)
+		clientsPage, err := mfsdk.Things(pm, adminToken)
 		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		size := uint64(len(clientsPage.Things))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", tc.desc, tc.size, size))
@@ -1190,7 +1190,7 @@ func TestDisableThing(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	tsdk := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	enabledThing1 := sdk.Thing{ID: testsutil.GenerateUUID(t, idProvider), Credentials: sdk.Credentials{Identity: "client1@example.com", Secret: generateUUID(t)}, Status: mfclients.EnabledStatus.String()}
 	disabledThing1 := sdk.Thing{ID: testsutil.GenerateUUID(t, idProvider), Credentials: sdk.Credentials{Identity: "client3@example.com", Secret: generateUUID(t)}, Status: mfclients.DisabledStatus.String()}
@@ -1236,7 +1236,7 @@ func TestDisableThing(t *testing.T) {
 		repoCall := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := cRepo.On("RetrieveByID", mock.Anything, tc.id).Return(convertThing(tc.thing), tc.err)
 		repoCall2 := cRepo.On("ChangeStatus", mock.Anything, mock.Anything).Return(convertThing(tc.response), tc.err)
-		dThing, err := tsdk.DisableThing(tc.id, tc.token)
+		dThing, err := mfsdk.DisableThing(tc.id, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, dThing, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, dThing))
 		if tc.err == nil {
@@ -1295,7 +1295,7 @@ func TestDisableThing(t *testing.T) {
 		}
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := cRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(convertThingsPage(tc.response), nil)
-		page, err := tsdk.Things(pm, adminToken)
+		page, err := mfsdk.Things(pm, adminToken)
 		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		size := uint64(len(page.Things))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", tc.desc, tc.size, size))
@@ -1321,7 +1321,7 @@ func TestIdentify(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	tsdk := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	thing = sdk.Thing{
 		ID:          generateUUID(t),
@@ -1352,7 +1352,7 @@ func TestIdentify(t *testing.T) {
 
 	for _, tc := range cases {
 		repoCall := cRepo.On("RetrieveBySecret", mock.Anything, mock.Anything).Return(convertThing(thing), tc.err)
-		id, err := tsdk.IdentifyThing(tc.secret)
+		id, err := mfsdk.IdentifyThing(tc.secret)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, id, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, id))
 		if tc.err == nil {
@@ -1380,7 +1380,7 @@ func TestShareThing(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	tsdk := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	cases := []struct {
 		desc    string
@@ -1413,7 +1413,7 @@ func TestShareThing(t *testing.T) {
 		repoCall1 := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall3 := pRepo.On("Retrieve", mock.Anything, mock.Anything).Return(policies.PolicyPage{}, nil)
 		repoCall4 := pRepo.On("Save", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
-		err := tsdk.ShareThing(tc.thingID, tc.groupID, tc.userID, []string{"c_list", "c_delete"}, tc.token)
+		err := mfsdk.ShareThing(tc.thingID, tc.groupID, tc.userID, []string{"c_list", "c_delete"}, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		if tc.err == nil {
 			ok := repoCall4.Parent.AssertCalled(t, "Save", mock.Anything, mock.Anything)

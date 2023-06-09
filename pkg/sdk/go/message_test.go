@@ -48,7 +48,7 @@ func TestSendMessage(t *testing.T) {
 		TLSVerification: false,
 	}
 
-	mainfluxSDK := sdk.NewSDK(sdkConf)
+	mfsdk := sdk.NewSDK(sdkConf)
 
 	cases := map[string]struct {
 		chanID string
@@ -94,7 +94,7 @@ func TestSendMessage(t *testing.T) {
 		},
 	}
 	for desc, tc := range cases {
-		err := mainfluxSDK.SendMessage(tc.chanID, tc.msg, tc.auth)
+		err := mfsdk.SendMessage(tc.chanID, tc.msg, tc.auth)
 		if tc.err == nil {
 			assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s", desc, err))
 		} else {
@@ -117,7 +117,7 @@ func TestSetContentType(t *testing.T) {
 		MsgContentType:  contentType,
 		TLSVerification: false,
 	}
-	mainfluxSDK := sdk.NewSDK(sdkConf)
+	mfsdk := sdk.NewSDK(sdkConf)
 
 	cases := []struct {
 		desc  string
@@ -136,7 +136,7 @@ func TestSetContentType(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		err := mainfluxSDK.SetContentType(tc.cType)
+		err := mfsdk.SetContentType(tc.cType)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }

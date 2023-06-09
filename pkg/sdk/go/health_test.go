@@ -44,7 +44,7 @@ func TestHealth(t *testing.T) {
 		TLSVerification: false,
 	}
 
-	mainfluxSDK := sdk.NewSDK(sdkConf)
+	mfsdk := sdk.NewSDK(sdkConf)
 	cases := map[string]struct {
 		empty bool
 		err   errors.SDKError
@@ -55,7 +55,7 @@ func TestHealth(t *testing.T) {
 		},
 	}
 	for desc, tc := range cases {
-		h, err := mainfluxSDK.Health()
+		h, err := mfsdk.Health()
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", desc, tc.err, err))
 		assert.Equal(t, thingsStatus, h.Status, fmt.Sprintf("%s: expected %s status, got %s", desc, thingsStatus, h.Status))
 		assert.Equal(t, tc.empty, h.Version == "", fmt.Sprintf("%s: expected non-empty version", desc))

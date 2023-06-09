@@ -63,7 +63,7 @@ func TestCreateSubscription(t *testing.T) {
 		TLSVerification: false,
 	}
 
-	mainfluxSDK := sdk.NewSDK(sdkConf)
+	mfsdk := sdk.NewSDK(sdkConf)
 
 	cases := []struct {
 		desc         string
@@ -103,7 +103,7 @@ func TestCreateSubscription(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		loc, err := mainfluxSDK.CreateSubscription(tc.subscription.Topic, tc.subscription.Contact, tc.token)
+		loc, err := mfsdk.CreateSubscription(tc.subscription.Topic, tc.subscription.Contact, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.empty, loc == "", fmt.Sprintf("%s: expected empty result location, got: %s", tc.desc, loc))
 	}
@@ -119,8 +119,8 @@ func TestViewSubscription(t *testing.T) {
 		TLSVerification: false,
 	}
 
-	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id, err := mainfluxSDK.CreateSubscription("topic", "contact", exampleUser1)
+	mfsdk := sdk.NewSDK(sdkConf)
+	id, err := mfsdk.CreateSubscription("topic", "contact", exampleUser1)
 	require.Nil(t, err, fmt.Sprintf("unexpected error during creating subscription: %s", err))
 
 	cases := []struct {
@@ -154,7 +154,7 @@ func TestViewSubscription(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		respSub, err := mainfluxSDK.ViewSubscription(tc.subID, tc.token)
+		respSub, err := mfsdk.ViewSubscription(tc.subID, tc.token)
 
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		tc.response.ID = respSub.ID
@@ -173,13 +173,13 @@ func TestListSubscription(t *testing.T) {
 		TLSVerification: false,
 	}
 
-	mainfluxSDK := sdk.NewSDK(sdkConf)
+	mfsdk := sdk.NewSDK(sdkConf)
 	var nSubs = 10
 	subs := make([]sdk.Subscription, nSubs)
 	for i := 0; i < nSubs; i++ {
-		id, err := mainfluxSDK.CreateSubscription(fmt.Sprintf("topic_%d", i), fmt.Sprintf("contact_%d", i), exampleUser1)
+		id, err := mfsdk.CreateSubscription(fmt.Sprintf("topic_%d", i), fmt.Sprintf("contact_%d", i), exampleUser1)
 		require.Nil(t, err, fmt.Sprintf("unexpected error during creating subscription: %s", err))
-		sub, err := mainfluxSDK.ViewSubscription(id, exampleUser1)
+		sub, err := mfsdk.ViewSubscription(id, exampleUser1)
 		require.Nil(t, err, fmt.Sprintf("unexpected error during getting subscription: %s", err))
 		subs[i] = sub
 	}
@@ -215,7 +215,7 @@ func TestListSubscription(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		subs, err := mainfluxSDK.ListSubscriptions(tc.page, tc.token)
+		subs, err := mfsdk.ListSubscriptions(tc.page, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, subs.Subscriptions, fmt.Sprintf("%s: expected response %v, got %v", tc.desc, tc.response, subs.Subscriptions))
 	}
@@ -231,8 +231,8 @@ func TestDeleteSubscription(t *testing.T) {
 		TLSVerification: false,
 	}
 
-	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id, err := mainfluxSDK.CreateSubscription("topic", "contact", exampleUser1)
+	mfsdk := sdk.NewSDK(sdkConf)
+	id, err := mfsdk.CreateSubscription("topic", "contact", exampleUser1)
 	require.Nil(t, err, fmt.Sprintf("unexpected error during creating subscription: %s", err))
 
 	cases := []struct {
@@ -266,7 +266,7 @@ func TestDeleteSubscription(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := mainfluxSDK.DeleteSubscription(tc.subID, tc.token)
+		err := mfsdk.DeleteSubscription(tc.subID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }

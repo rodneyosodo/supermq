@@ -50,7 +50,7 @@ func TestCreateClient(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	clientSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 	token := testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), svc, cRepo, phasher)
 
 	cases := []struct {
@@ -169,7 +169,7 @@ func TestCreateClient(t *testing.T) {
 	}
 	for _, tc := range cases {
 		repoCall := cRepo.On("Save", mock.Anything, mock.Anything).Return(tc.response, tc.err)
-		rClient, err := clientSDK.CreateUser(tc.client, tc.token)
+		rClient, err := mfsdk.CreateUser(tc.client, tc.token)
 		tc.response.ID = rClient.ID
 		tc.response.Owner = rClient.Owner
 		tc.response.CreatedAt = rClient.CreatedAt
@@ -198,7 +198,7 @@ func TestListClients(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	clientSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	for i := 10; i < 100; i++ {
 		cl := sdk.User{
@@ -361,7 +361,7 @@ func TestListClients(t *testing.T) {
 		repoCall := pRepo.On("Evaluate", mock.Anything, mock.Anything, mock.Anything).Return(errors.ErrAuthorization)
 		repoCall1 := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(errors.ErrAuthorization)
 		repoCall2 := cRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(mfclients.ClientsPage{Page: convertClientPage(pm), Clients: convertClients(tc.response)}, tc.err)
-		page, err := clientSDK.Users(pm, generateValidToken(t, svc, cRepo))
+		page, err := mfsdk.Users(pm, generateValidToken(t, svc, cRepo))
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page.Users, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, page))
 		repoCall.Unset()
@@ -382,7 +382,7 @@ func TestListMembers(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	clientSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	var nClients = uint64(10)
 	var aClients = []sdk.User{}
@@ -498,7 +498,7 @@ func TestListMembers(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := cRepo.On("Members", mock.Anything, tc.groupID, mock.Anything).Return(mfclients.MembersPage{Members: convertClients(tc.response)}, tc.err)
-		membersPage, err := clientSDK.Members(tc.groupID, tc.page, tc.token)
+		membersPage, err := mfsdk.Members(tc.groupID, tc.page, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, membersPage.Members, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, membersPage.Members))
 		if tc.err == nil {
@@ -531,7 +531,7 @@ func TestClient(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	clientSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	cases := []struct {
 		desc     string
@@ -574,7 +574,7 @@ func TestClient(t *testing.T) {
 		repoCall := pRepo.On("Evaluate", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall2 := cRepo.On("RetrieveByID", mock.Anything, tc.clientID).Return(convertClient(tc.response), tc.err)
-		rClient, err := clientSDK.User(tc.clientID, tc.token)
+		rClient, err := mfsdk.User(tc.clientID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, rClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, rClient))
 		if tc.err == nil {
@@ -608,7 +608,7 @@ func TestProfile(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	clientSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	cases := []struct {
 		desc     string
@@ -632,7 +632,7 @@ func TestProfile(t *testing.T) {
 
 	for _, tc := range cases {
 		repoCall := cRepo.On("RetrieveByID", mock.Anything, mock.Anything).Return(convertClient(tc.response), tc.err)
-		rClient, err := clientSDK.UserProfile(tc.token)
+		rClient, err := mfsdk.UserProfile(tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, rClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, rClient))
 		if tc.err == nil {
@@ -655,7 +655,7 @@ func TestUpdateClient(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	clientSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	user = sdk.User{
 		ID:          generateUUID(t),
@@ -721,7 +721,7 @@ func TestUpdateClient(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := cRepo.On("Update", mock.Anything, mock.Anything).Return(convertClient(tc.response), tc.err)
-		uClient, err := clientSDK.UpdateUser(tc.client, tc.token)
+		uClient, err := mfsdk.UpdateUser(tc.client, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, uClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, uClient))
 		if tc.err == nil {
@@ -747,7 +747,7 @@ func TestUpdateClientTags(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	clientSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	user = sdk.User{
 		ID:          generateUUID(t),
@@ -813,7 +813,7 @@ func TestUpdateClientTags(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := cRepo.On("UpdateTags", mock.Anything, mock.Anything).Return(convertClient(tc.response), tc.err)
-		uClient, err := clientSDK.UpdateUserTags(tc.client, tc.token)
+		uClient, err := mfsdk.UpdateUserTags(tc.client, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, uClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, uClient))
 		if tc.err == nil {
@@ -839,7 +839,7 @@ func TestUpdateClientIdentity(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	clientSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	user = sdk.User{
 		ID:          generateUUID(t),
@@ -903,7 +903,7 @@ func TestUpdateClientIdentity(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := cRepo.On("UpdateIdentity", mock.Anything, mock.Anything).Return(convertClient(tc.response), tc.err)
-		uClient, err := clientSDK.UpdateUserIdentity(tc.client, tc.token)
+		uClient, err := mfsdk.UpdateUserIdentity(tc.client, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, uClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, uClient))
 		if tc.err == nil {
@@ -929,7 +929,7 @@ func TestUpdateClientSecret(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	clientSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	user.ID = generateUUID(t)
 	rclient := user
@@ -978,7 +978,7 @@ func TestUpdateClientSecret(t *testing.T) {
 		repoCall := cRepo.On("RetrieveByID", mock.Anything, user.ID).Return(convertClient(tc.response), tc.err)
 		repoCall1 := cRepo.On("RetrieveByIdentity", mock.Anything, user.Credentials.Identity).Return(convertClient(tc.response), tc.err)
 		repoCall2 := cRepo.On("UpdateSecret", mock.Anything, mock.Anything).Return(convertClient(tc.response), tc.err)
-		uClient, err := clientSDK.UpdatePassword(tc.oldSecret, tc.newSecret, tc.token)
+		uClient, err := mfsdk.UpdatePassword(tc.oldSecret, tc.newSecret, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, uClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, uClient))
 		if tc.err == nil {
@@ -1007,7 +1007,7 @@ func TestUpdateClientOwner(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	clientSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	user = sdk.User{
 		ID:          generateUUID(t),
@@ -1070,7 +1070,7 @@ func TestUpdateClientOwner(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := cRepo.On("UpdateOwner", mock.Anything, mock.Anything).Return(convertClient(tc.response), tc.err)
-		uClient, err := clientSDK.UpdateUserOwner(tc.client, tc.token)
+		uClient, err := mfsdk.UpdateUserOwner(tc.client, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, uClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, uClient))
 		if tc.err == nil {
@@ -1096,7 +1096,7 @@ func TestEnableClient(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	clientSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	enabledClient1 := sdk.User{ID: testsutil.GenerateUUID(t, idProvider), Credentials: sdk.Credentials{Identity: "client1@example.com", Secret: "password"}, Status: mfclients.EnabledStatus.String()}
 	disabledClient1 := sdk.User{ID: testsutil.GenerateUUID(t, idProvider), Credentials: sdk.Credentials{Identity: "client3@example.com", Secret: "password"}, Status: mfclients.DisabledStatus.String()}
@@ -1142,7 +1142,7 @@ func TestEnableClient(t *testing.T) {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := cRepo.On("RetrieveByID", mock.Anything, tc.id).Return(convertClient(tc.client), tc.err)
 		repoCall2 := cRepo.On("ChangeStatus", mock.Anything, mock.Anything).Return(convertClient(tc.response), tc.err)
-		eClient, err := clientSDK.EnableUser(tc.id, tc.token)
+		eClient, err := mfsdk.EnableUser(tc.id, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, eClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, eClient))
 		if tc.err == nil {
@@ -1201,7 +1201,7 @@ func TestEnableClient(t *testing.T) {
 		}
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := cRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(convertClientsPage(tc.response), nil)
-		clientsPage, err := clientSDK.Users(pm, generateValidToken(t, svc, cRepo))
+		clientsPage, err := mfsdk.Users(pm, generateValidToken(t, svc, cRepo))
 		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		size := uint64(len(clientsPage.Users))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", tc.desc, tc.size, size))
@@ -1222,7 +1222,7 @@ func TestDisableClient(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	clientSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	enabledClient1 := sdk.User{ID: testsutil.GenerateUUID(t, idProvider), Credentials: sdk.Credentials{Identity: "client1@example.com", Secret: "password"}, Status: mfclients.EnabledStatus.String()}
 	disabledClient1 := sdk.User{ID: testsutil.GenerateUUID(t, idProvider), Credentials: sdk.Credentials{Identity: "client3@example.com", Secret: "password"}, Status: mfclients.DisabledStatus.String()}
@@ -1268,7 +1268,7 @@ func TestDisableClient(t *testing.T) {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := cRepo.On("RetrieveByID", mock.Anything, tc.id).Return(convertClient(tc.client), tc.err)
 		repoCall2 := cRepo.On("ChangeStatus", mock.Anything, mock.Anything).Return(convertClient(tc.response), tc.err)
-		dClient, err := clientSDK.DisableUser(tc.id, tc.token)
+		dClient, err := mfsdk.DisableUser(tc.id, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, dClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, dClient))
 		if tc.err == nil {
@@ -1327,7 +1327,7 @@ func TestDisableClient(t *testing.T) {
 		}
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := cRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(convertClientsPage(tc.response), nil)
-		page, err := clientSDK.Users(pm, generateValidToken(t, svc, cRepo))
+		page, err := mfsdk.Users(pm, generateValidToken(t, svc, cRepo))
 		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		size := uint64(len(page.Users))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", tc.desc, tc.size, size))

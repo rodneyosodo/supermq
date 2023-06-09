@@ -61,7 +61,7 @@ func TestCreateChannel(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	chSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 	cases := []struct {
 		desc    string
 		channel sdk.Channel
@@ -143,7 +143,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 	for _, tc := range cases {
 		repoCall := gRepo.On("Save", mock.Anything, mock.Anything).Return(convertChannel(sdk.Channel{}), tc.err)
-		rChannel, err := chSDK.CreateChannel(tc.channel, adminToken)
+		rChannel, err := mfsdk.CreateChannel(tc.channel, adminToken)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		if err == nil {
 			assert.NotEmpty(t, rChannel, fmt.Sprintf("%s: expected not nil on client ID", tc.desc))
@@ -186,7 +186,7 @@ func TestCreateChannels(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	chSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 	cases := []struct {
 		desc     string
 		channels []sdk.Channel
@@ -225,7 +225,7 @@ func TestCreateChannels(t *testing.T) {
 	}
 	for _, tc := range cases {
 		repoCall := gRepo.On("Save", mock.Anything, mock.Anything).Return(convertChannels(tc.response), tc.err)
-		rChannel, err := chSDK.CreateChannels(tc.channels, adminToken)
+		rChannel, err := mfsdk.CreateChannels(tc.channels, adminToken)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		if err == nil {
 			assert.NotEmpty(t, rChannel, fmt.Sprintf("%s: expected not nil on client ID", tc.desc))
@@ -256,7 +256,7 @@ func TestListChannels(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	chSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	for i := 10; i < 100; i++ {
 		gr := sdk.Channel{
@@ -356,7 +356,7 @@ func TestListChannels(t *testing.T) {
 		repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := gRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(mfgroups.GroupsPage{Groups: convertChannels(tc.response)}, tc.err)
 		pm := sdk.PageMetadata{}
-		page, err := chSDK.Channels(pm, adminToken)
+		page, err := mfsdk.Channels(pm, adminToken)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, len(tc.response), len(page.Channels), fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, page))
 		if tc.err == nil {
@@ -395,7 +395,7 @@ func TestViewChannel(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	chSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 	channel.ID = generateUUID(t)
 
 	cases := []struct {
@@ -432,7 +432,7 @@ func TestViewChannel(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := gRepo.On("RetrieveByID", mock.Anything, tc.channelID).Return(convertChannel(tc.response), tc.err)
-		grp, err := chSDK.Channel(tc.channelID, tc.token)
+		grp, err := mfsdk.Channel(tc.channelID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		if len(tc.response.Children) == 0 {
 			tc.response.Children = nil
@@ -478,7 +478,7 @@ func TestUpdateChannel(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	chSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	channel.ID = generateUUID(t)
 
@@ -613,7 +613,7 @@ func TestUpdateChannel(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := gRepo.On("Update", mock.Anything, mock.Anything).Return(convertChannel(tc.response), tc.err)
-		_, err := chSDK.UpdateChannel(tc.channel, tc.token)
+		_, err := mfsdk.UpdateChannel(tc.channel, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		if tc.err == nil {
 			ok := repoCall.Parent.AssertCalled(t, "EvaluateGroupAccess", mock.Anything, mock.Anything)
@@ -645,7 +645,7 @@ func TestListChannelsByThing(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	chSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	var nChannels = uint64(100)
 	var aChannels = []sdk.Channel{}
@@ -751,7 +751,7 @@ func TestListChannelsByThing(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 		repoCall1 := gRepo.On("Memberships", mock.Anything, tc.clientID, mock.Anything).Return(convertChannelsMembershipPage(sdk.ChannelsPage{Channels: tc.response}), tc.err)
-		page, err := chSDK.ChannelsByThing(tc.clientID, tc.page, tc.token)
+		page, err := mfsdk.ChannelsByThing(tc.clientID, tc.page, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page.Channels, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, page.Channels))
 		if tc.err == nil {
@@ -784,7 +784,7 @@ func TestEnableChannel(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	chSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	creationTime := time.Now().UTC()
 	channel := sdk.Channel{
@@ -799,7 +799,7 @@ func TestEnableChannel(t *testing.T) {
 	repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 	repoCall1 := gRepo.On("RetrieveByID", mock.Anything, mock.Anything).Return(nil)
 	repoCall2 := gRepo.On("ChangeStatus", mock.Anything, mock.Anything).Return(nil)
-	_, err := chSDK.EnableChannel("wrongID", adminToken)
+	_, err := mfsdk.EnableChannel("wrongID", adminToken)
 	assert.Equal(t, err, errors.NewSDKErrorWithStatus(mfgroups.ErrEnableGroup, http.StatusNotFound), fmt.Sprintf("Enable channel with wrong id: expected %v got %v", errors.ErrNotFound, err))
 	ok := repoCall.Parent.AssertCalled(t, "EvaluateGroupAccess", mock.Anything, mock.Anything)
 	assert.True(t, ok, "EvaluateGroupAccess was not called on enabling channel")
@@ -821,7 +821,7 @@ func TestEnableChannel(t *testing.T) {
 	repoCall = pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 	repoCall1 = gRepo.On("RetrieveByID", mock.Anything, mock.Anything).Return(ch, nil)
 	repoCall2 = gRepo.On("ChangeStatus", mock.Anything, mock.Anything).Return(ch, nil)
-	res, err := chSDK.EnableChannel(channel.ID, adminToken)
+	res, err := mfsdk.EnableChannel(channel.ID, adminToken)
 	assert.Nil(t, err, fmt.Sprintf("Enable channel with correct id: expected %v got %v", nil, err))
 	assert.Equal(t, channel, res, fmt.Sprintf("Enable channel with correct id: expected %v got %v", channel, res))
 	ok = repoCall.Parent.AssertCalled(t, "EvaluateGroupAccess", mock.Anything, mock.Anything)
@@ -854,7 +854,7 @@ func TestDisableChannel(t *testing.T) {
 	conf := sdk.Config{
 		ThingsURL: ts.URL,
 	}
-	chSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	creationTime := time.Now().UTC()
 	channel := sdk.Channel{
@@ -869,7 +869,7 @@ func TestDisableChannel(t *testing.T) {
 	repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 	repoCall1 := gRepo.On("ChangeStatus", mock.Anything, mock.Anything).Return(sdk.ErrFailedRemoval)
 	repoCall2 := gRepo.On("RetrieveByID", mock.Anything, mock.Anything).Return(nil)
-	_, err := chSDK.DisableChannel("wrongID", adminToken)
+	_, err := mfsdk.DisableChannel("wrongID", adminToken)
 	assert.Equal(t, err, errors.NewSDKErrorWithStatus(mfgroups.ErrDisableGroup, http.StatusNotFound), fmt.Sprintf("Disable channel with wrong id: expected %v got %v", errors.ErrNotFound, err))
 	ok := repoCall.Parent.AssertCalled(t, "EvaluateGroupAccess", mock.Anything, mock.Anything)
 	assert.True(t, ok, "EvaluateGroupAccess was not called on disabling group with wrong id")
@@ -891,7 +891,7 @@ func TestDisableChannel(t *testing.T) {
 	repoCall = pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, nil)
 	repoCall1 = gRepo.On("ChangeStatus", mock.Anything, mock.Anything).Return(ch, nil)
 	repoCall2 = gRepo.On("RetrieveByID", mock.Anything, mock.Anything).Return(ch, nil)
-	res, err := chSDK.DisableChannel(channel.ID, adminToken)
+	res, err := mfsdk.DisableChannel(channel.ID, adminToken)
 	assert.Nil(t, err, fmt.Sprintf("Disable channel with correct id: expected %v got %v", nil, err))
 	assert.Equal(t, channel, res, fmt.Sprintf("Disable channel with correct id: expected %v got %v", channel, res))
 	ok = repoCall.Parent.AssertCalled(t, "EvaluateGroupAccess", mock.Anything, mock.Anything)
