@@ -38,10 +38,6 @@ type tokenReq struct {
 	Secret   string `json:"secret"`
 }
 
-type identifyThingReq struct {
-	Token string `json:"token,omitempty"`
-}
-
 type shareThingReq struct {
 	GroupID  string   `json:"group_id"`
 	UserID   string   `json:"user_id"`

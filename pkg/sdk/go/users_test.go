@@ -30,6 +30,7 @@ func newClientServer(svc clients.Service) *httptest.Server {
 	logger := mflog.NewMock()
 	mux := bone.New()
 	api.MakeClientsHandler(svc, mux, logger)
+
 	return httptest.NewServer(mux)
 }
 

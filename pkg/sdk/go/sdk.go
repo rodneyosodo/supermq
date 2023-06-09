@@ -68,27 +68,26 @@ var (
 )
 
 type PageMetadata struct {
-	Total        uint64   `json:"total"`
-	Offset       uint64   `json:"offset"`
-	Limit        uint64   `json:"limit"`
-	Level        uint64   `json:"level,omitempty"`
-	Email        string   `json:"email,omitempty"`
-	Name         string   `json:"name,omitempty"`
-	Type         string   `json:"type,omitempty"`
-	Disconnected bool     `json:"disconnected,omitempty"`
-	Metadata     Metadata `json:"metadata,omitempty"`
-	Status       string   `json:"status,omitempty"`
-	Action       string   `json:"action,omitempty"`
-	Subject      string   `json:"subject,omitempty"`
-	Object       string   `json:"object,omitempty"`
-	Tag          string   `json:"tag,omitempty"`
-	Owner        string   `json:"owner,omitempty"`
-	SharedBy     string   `json:"shared_by,omitempty"`
-	Visibility   string   `json:"visibility,omitempty"`
-	OwnerID      string   `json:"owner_id,omitempty"`
-	Topic        string   `json:"topic,omitempty"`
-	Contact      string   `json:"contact,omitempty"`
-	State        string   `json:"state,omitempty"`
+	Total      uint64   `json:"total"`
+	Offset     uint64   `json:"offset"`
+	Limit      uint64   `json:"limit"`
+	Level      uint64   `json:"level,omitempty"`
+	Email      string   `json:"email,omitempty"`
+	Name       string   `json:"name,omitempty"`
+	Type       string   `json:"type,omitempty"`
+	Metadata   Metadata `json:"metadata,omitempty"`
+	Status     string   `json:"status,omitempty"`
+	Action     string   `json:"action,omitempty"`
+	Subject    string   `json:"subject,omitempty"`
+	Object     string   `json:"object,omitempty"`
+	Tag        string   `json:"tag,omitempty"`
+	Owner      string   `json:"owner,omitempty"`
+	SharedBy   string   `json:"shared_by,omitempty"`
+	Visibility string   `json:"visibility,omitempty"`
+	OwnerID    string   `json:"owner_id,omitempty"`
+	Topic      string   `json:"topic,omitempty"`
+	Contact    string   `json:"contact,omitempty"`
+	State      string   `json:"state,omitempty"`
 }
 
 // Credentials represent client credentials: it contains
@@ -288,8 +287,7 @@ type SDK interface {
 	//  fmt.Println(things)
 	Things(pm PageMetadata, token string) (ThingsPage, errors.SDKError)
 
-	// ThingsByChannel returns page of things that are connected or not connected
-	// to specified channel.
+	// ThingsByChannel returns page of things that are connected to specified channel.
 	//
 	// example:
 	//  pm := sdk.PageMetadata{
@@ -521,8 +519,7 @@ type SDK interface {
 	//  fmt.Println(channels)
 	Channels(pm PageMetadata, token string) (ChannelsPage, errors.SDKError)
 
-	// ChannelsByThing returns page of channels that are connected or not connected
-	// to specified thing.
+	// ChannelsByThing returns page of channels that are connected to specified thing.
 	//
 	// example:
 	//  pm := sdk.PageMetadata{
@@ -1030,6 +1027,33 @@ func (pm PageMetadata) query() (string, error) {
 			return "", errors.NewSDKError(err)
 		}
 		q.Add("metadata", string(md))
+	}
+	if pm.Action != "" {
+		q.Add("action", pm.Action)
+	}
+	if pm.Subject != "" {
+		q.Add("subject", pm.Subject)
+	}
+	if pm.Object != "" {
+		q.Add("object", pm.Object)
+	}
+	if pm.Tag != "" {
+		q.Add("tag", pm.Tag)
+	}
+	if pm.Owner != "" {
+		q.Add("owner", pm.Owner)
+	}
+	if pm.SharedBy != "" {
+		q.Add("shared_by", pm.SharedBy)
+	}
+	if pm.Topic != "" {
+		q.Add("topic", pm.Topic)
+	}
+	if pm.Contact != "" {
+		q.Add("contact", pm.Contact)
+	}
+	if pm.State != "" {
+		q.Add("state", pm.State)
 	}
 
 	return q.Encode(), nil

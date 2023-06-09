@@ -26,6 +26,7 @@ func newPolicyServer(svc policies.Service) *httptest.Server {
 	logger := logger.NewMock()
 	mux := bone.New()
 	api.MakePolicyHandler(svc, mux, logger)
+	
 	return httptest.NewServer(mux)
 }
 
