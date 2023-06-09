@@ -28,6 +28,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+const addExistingPolicyDesc = "add existing policy"
+
 var (
 	utadminPolicy = umocks.SubjectSet{Subject: "things", Relation: []string{"g_add"}}
 )
@@ -75,7 +77,7 @@ func TestCreatePolicy(t *testing.T) {
 			err:   nil,
 		},
 		{
-			desc: "add existing policy",
+			desc: addExistingPolicyDesc,
 			policy: sdk.Policy{
 				Subject: subject,
 				Object:  object,
@@ -163,7 +165,7 @@ func TestCreatePolicy(t *testing.T) {
 			assert.True(t, ok, fmt.Sprintf("Retrieve was not called on %s", tc.desc))
 			ok = repoCall2.Parent.AssertCalled(t, "Save", mock.Anything, mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("Save was not called on %s", tc.desc))
-			if tc.desc == "add existing policy" {
+			if tc.desc == addExistingPolicyDesc {
 				ok = repoCall1.Parent.AssertCalled(t, "Update", mock.Anything, mock.Anything)
 				assert.True(t, ok, fmt.Sprintf("Update was not called on %s", tc.desc))
 			}
@@ -316,7 +318,7 @@ func TestAssign(t *testing.T) {
 			err:   nil,
 		},
 		{
-			desc: "add existing policy",
+			desc: addExistingPolicyDesc,
 			policy: sdk.Policy{
 				Subject: subject,
 				Object:  object,
@@ -404,7 +406,7 @@ func TestAssign(t *testing.T) {
 			assert.True(t, ok, fmt.Sprintf("Retrieve was not called on %s", tc.desc))
 			ok = repoCall2.Parent.AssertCalled(t, "Save", mock.Anything, mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("Save was not called on %s", tc.desc))
-			if tc.desc == "add existing policy" {
+			if tc.desc == addExistingPolicyDesc {
 				ok = repoCall1.Parent.AssertCalled(t, "Update", mock.Anything, mock.Anything)
 				assert.True(t, ok, fmt.Sprintf("Update was not called on %s", tc.desc))
 			}
@@ -801,7 +803,7 @@ func TestConnect(t *testing.T) {
 			err:   nil,
 		},
 		{
-			desc: "add existing policy",
+			desc: addExistingPolicyDesc,
 			policy: sdk.Policy{
 				Subject: subject,
 				Object:  object,
@@ -889,7 +891,7 @@ func TestConnect(t *testing.T) {
 			assert.True(t, ok, fmt.Sprintf("Retrieve was not called on %s", tc.desc))
 			ok = repoCall2.Parent.AssertCalled(t, "Save", mock.Anything, mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("Save was not called on %s", tc.desc))
-			if tc.desc == "add existing policy" {
+			if tc.desc == addExistingPolicyDesc {
 				ok = repoCall1.Parent.AssertCalled(t, "Update", mock.Anything, mock.Anything)
 				assert.True(t, ok, fmt.Sprintf("Update was not called on %s", tc.desc))
 			}
@@ -940,7 +942,7 @@ func TestConnectThing(t *testing.T) {
 			err:   nil,
 		},
 		{
-			desc: "add existing policy",
+			desc: addExistingPolicyDesc,
 			policy: sdk.Policy{
 				Subject: subject,
 				Object:  object,
@@ -1027,7 +1029,7 @@ func TestConnectThing(t *testing.T) {
 			assert.True(t, ok, fmt.Sprintf("Retrieve was not called on %s", tc.desc))
 			ok = repoCall2.Parent.AssertCalled(t, "Save", mock.Anything, mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("Save was not called on %s", tc.desc))
-			if tc.desc == "add existing policy" {
+			if tc.desc == addExistingPolicyDesc {
 				ok = repoCall1.Parent.AssertCalled(t, "Update", mock.Anything, mock.Anything)
 				assert.True(t, ok, fmt.Sprintf("Update was not called on %s", tc.desc))
 			}

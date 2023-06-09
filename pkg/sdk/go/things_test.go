@@ -31,7 +31,6 @@ var (
 	adminID      = generateUUID(&testing.T{})
 	users        = map[string]string{adminToken: adminID}
 	ID           = testsutil.GenerateUUID(&testing.T{}, idProvider)
-	tadminPolicy = mocks.MockSubjectSet{Object: ID, Relation: clients.AdminRelationKey}
 	uadminPolicy = cmocks.SubjectSet{Subject: ID, Relation: clients.AdminRelationKey}
 )
 

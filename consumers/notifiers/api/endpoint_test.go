@@ -412,7 +412,7 @@ func TestRemove(t *testing.T) {
 			desc:   "remove not existing",
 			id:     "not existing",
 			auth:   token,
-			status: http.StatusNoContent,
+			status: http.StatusNotFound,
 		},
 		{
 			desc:   "remove empty id",
