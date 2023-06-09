@@ -26,7 +26,7 @@ func newPolicyServer(svc policies.Service) *httptest.Server {
 	logger := logger.NewMock()
 	mux := bone.New()
 	api.MakePolicyHandler(svc, mux, logger)
-	
+
 	return httptest.NewServer(mux)
 }
 
@@ -345,7 +345,7 @@ func TestListPolicies(t *testing.T) {
 				Action: "wrong",
 			},
 			response: []sdk.Policy(nil),
-			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedList, http.StatusInternalServerError),
+			err:      errors.NewSDKErrorWithStatus(apiutil.ErrMalformedPolicyAct, http.StatusInternalServerError),
 		},
 	}
 
