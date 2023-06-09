@@ -119,8 +119,8 @@ func (svc service) IssueToken(ctx context.Context, identity, secret string) (jwt
 	return svc.tokens.Issue(ctx, claims)
 }
 
-func (svc service) RefreshToken(ctx context.Context, accessToken string) (jwt.Token, error) {
-	claims, err := svc.tokens.Parse(ctx, accessToken)
+func (svc service) RefreshToken(ctx context.Context, refreshToken string) (jwt.Token, error) {
+	claims, err := svc.tokens.Parse(ctx, refreshToken)
 	if err != nil {
 		return jwt.Token{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
