@@ -60,11 +60,11 @@ const (
 )
 
 type config struct {
-	LogLevel         string `env:"MF_THINGS_LOG_LEVEL"          envDefault:"info"`
-	StandaloneID     string `env:"MF_THINGS_STANDALONE_ID"      envDefault:""`
-	StandaloneToken  string `env:"MF_THINGS_STANDALONE_TOKEN"   envDefault:""`
-	JaegerURL        string `env:"MF_JAEGER_URL"                envDefault:"http://jaeger:14268/api/traces"`
-	CacheKeyDuration string `env:"MF_THINGS_CACHE_KEY_DURATION" envDefault:"10m"`
+	LogLevel         string `env:"MF_THINGS_LOG_LEVEL"           envDefault:"info"`
+	StandaloneID     string `env:"MF_THINGS_STANDALONE_ID"       envDefault:""`
+	StandaloneToken  string `env:"MF_THINGS_STANDALONE_TOKEN"    envDefault:""`
+	JaegerURL        string `env:"MF_JAEGER_URL"                 envDefault:"http://jaeger:14268/api/traces"`
+	CacheKeyDuration string `env:"MF_THINGS_AUTH_CACHE_DURATION" envDefault:"10m"`
 }
 
 func main() {
