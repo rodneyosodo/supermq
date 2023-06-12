@@ -192,87 +192,86 @@ func TestAuthorize(t *testing.T) {
 	mfsdk := sdk.NewSDK(conf)
 
 	cases := []struct {
-		desc       string
-		policy     sdk.Policy
-		entityType string
-		page       sdk.PolicyPage
-		token      string
-		err        errors.SDKError
+		desc   string
+		policy sdk.AccessRequest
+		page   sdk.PolicyPage
+		token  string
+		err    errors.SDKError
 	}{
 		{
 			desc: "authorize a valid policy with client entity",
-			policy: sdk.Policy{
-				Subject: subject,
-				Object:  object,
-				Actions: []string{"c_list"},
+			policy: sdk.AccessRequest{
+				Subject:    subject,
+				Object:     object,
+				Action:     "c_list",
+				EntityType: "client",
 			},
-			entityType: "client",
-			page:       sdk.PolicyPage{},
-			token:      generateValidToken(t, csvc, cRepo),
-			err:        nil,
+			page:  sdk.PolicyPage{},
+			token: generateValidToken(t, csvc, cRepo),
+			err:   nil,
 		},
 		{
 			desc: "authorize a valid policy with group entity",
-			policy: sdk.Policy{
-				Subject: subject,
-				Object:  object,
-				Actions: []string{"g_add"},
+			policy: sdk.AccessRequest{
+				Subject:    subject,
+				Object:     object,
+				Action:     "g_add",
+				EntityType: "group",
 			},
-			entityType: "group",
-			page:       sdk.PolicyPage{},
-			token:      generateValidToken(t, csvc, cRepo),
-			err:        nil,
+			page:  sdk.PolicyPage{},
+			token: generateValidToken(t, csvc, cRepo),
+			err:   nil,
 		},
 		{
 			desc: "authorize a policy with wrong action",
 			page: sdk.PolicyPage{},
-			policy: sdk.Policy{
-				Object:  "obj3",
-				Actions: []string{"wrong"},
-				Subject: "sub3",
+			policy: sdk.AccessRequest{
+				Object:     "obj3",
+				Action:     "wrong",
+				Subject:    "sub3",
+				EntityType: "client",
 			},
-			entityType: "client",
-			err:        errors.NewSDKErrorWithStatus(apiutil.ErrMalformedPolicyAct, http.StatusInternalServerError),
-			token:      generateValidToken(t, csvc, cRepo),
+			err:   errors.NewSDKErrorWithStatus(apiutil.ErrMalformedPolicyAct, http.StatusInternalServerError),
+			token: generateValidToken(t, csvc, cRepo),
 		},
 		{
 			desc: "authorize a policy with empty object",
 			page: sdk.PolicyPage{},
-			policy: sdk.Policy{
-				Actions: []string{"c_delete"},
-				Subject: "sub4",
+			policy: sdk.AccessRequest{
+				Action:     "c_delete",
+				Subject:    "sub4",
+				EntityType: "client",
 			},
-			entityType: "client",
-			err:        errors.NewSDKErrorWithStatus(apiutil.ErrMissingPolicyObj, http.StatusInternalServerError),
-			token:      generateValidToken(t, csvc, cRepo),
+			err:   errors.NewSDKErrorWithStatus(apiutil.ErrMissingPolicyObj, http.StatusInternalServerError),
+			token: generateValidToken(t, csvc, cRepo),
 		},
 		{
 			desc: "authorize a policy with empty subject",
 			page: sdk.PolicyPage{},
-			policy: sdk.Policy{
-				Actions: []string{"c_delete"},
-				Object:  "obj4",
+			policy: sdk.AccessRequest{
+				Action:     "c_delete",
+				Object:     "obj4",
+				EntityType: "client",
 			},
-			entityType: "client",
-			err:        errors.NewSDKErrorWithStatus(apiutil.ErrMissingPolicySub, http.StatusInternalServerError),
-			token:      generateValidToken(t, csvc, cRepo),
+			err:   errors.NewSDKErrorWithStatus(apiutil.ErrMissingPolicySub, http.StatusInternalServerError),
+			token: generateValidToken(t, csvc, cRepo),
 		},
 		{
 			desc: "authorize a policy with empty action",
 			page: sdk.PolicyPage{},
-			policy: sdk.Policy{
-				Subject: "sub5",
-				Object:  "obj5",
+			policy: sdk.AccessRequest{
+				Subject:    "sub5",
+				Object:     "obj5",
+				EntityType: "client",
 			},
-			entityType: "client",
-			err:        errors.NewSDKError(fmt.Errorf("invalid number of actions, it should be exactly 1")),
-			token:      generateValidToken(t, csvc, cRepo),
+			err:   errors.NewSDKErrorWithStatus(apiutil.ErrMalformedPolicyAct, http.StatusInternalServerError),
+			token: generateValidToken(t, csvc, cRepo),
 		},
 	}
 
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
-		ok, err := mfsdk.Authorize(tc.policy, tc.entityType, tc.token)
+		ok, err := mfsdk.Authorize(tc.policy, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		if tc.err == nil {
 			assert.True(t, ok, fmt.Sprintf("%s: expected true, got false", tc.desc))
