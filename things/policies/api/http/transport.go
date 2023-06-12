@@ -57,21 +57,21 @@ func MakePolicyHandler(csvc clients.Service, psvc policies.Service, mux *bone.Mu
 		opts...,
 	))
 
-	mux.Put("/identify", kithttp.NewServer(
+	mux.Put("/things/policies", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("update_policy"))(updatePolicyEndpoint(psvc)),
 		decodeUpdatePolicy,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Get("/identify", kithttp.NewServer(
+	mux.Get("/things/policies", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("list_policies"))(listPoliciesEndpoint(psvc)),
 		decodeListPolicies,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Post("/identify/channels/:chanID/access", kithttp.NewServer(
+	mux.Post("/channels/:chanID/access", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("authorize"))(authorizeEndpoint(psvc)),
 		decodeCanAccess,
 		api.EncodeResponse,
@@ -128,10 +128,7 @@ func decodeIdentify(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, errors.ErrUnsupportedContentType
 	}
 
-	req := identifyReq{}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
+	req := identifyReq{Secret: apiutil.ExtractThingKey(r)}
 
 	return req, nil
 }
@@ -142,7 +139,7 @@ func decodeCanAccess(_ context.Context, r *http.Request) (interface{}, error) {
 	}
 
 	req := authorizeReq{
-		GroupID: bone.GetValue(r, "chanID"),
+		Object: bone.GetValue(r, "chanID"),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)

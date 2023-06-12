@@ -15,16 +15,9 @@ var cmdGroups = []cobra.Command{
 	{
 		Use:   "create <JSON_group> <user_auth_token>",
 		Short: "Create group",
-		Long: `Creates new group:
-		{
-			"Name":<group_name>,
-			"Description":<description>,
-			"ParentID":<parent_id>,
-			"Metadata":<metadata>,
-		}
-		Name - is unique group name
-		ParentID - ID of a group that is a parent to the creating group
-		Metadata - JSON structured string`,
+		Long: "Creates new group\n" +
+			"Usage:\n" +
+			"\tmainflux-cli groups create '{\"name\":\"new group\", \"description\":\"new group description\", \"metadata\":{\"key\": \"value\"}}' $USERTOKEN\n",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
@@ -47,7 +40,9 @@ var cmdGroups = []cobra.Command{
 	{
 		Use:   "update <JSON_group> <user_auth_token>",
 		Short: "Update group",
-		Long:  `Updates group record`,
+		Long: "Updates group\n" +
+			"Usage:\n" +
+			"\tmainflux-cli groups update '{\"id\":\"<group_id>\", \"name\":\"new group\", \"description\":\"new group description\", \"metadata\":{\"key\": \"value\"}}' $USERTOKEN\n",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
@@ -60,22 +55,24 @@ var cmdGroups = []cobra.Command{
 				return
 			}
 
-			if _, err := sdk.UpdateGroup(group, args[1]); err != nil {
+			group, err := sdk.UpdateGroup(group, args[1])
+			if err != nil {
 				logError(err)
 				return
 			}
 
-			logOK()
+			logJSON(group)
 		},
 	},
 	{
 		Use:   "get [all | children <group_id> | parents <group_id> | members <group_id> | <group_id>] <user_auth_token>",
 		Short: "Get group",
-		Long: `Get all users groups, group children or group by id.
-		all - lists all groups
-		children <group_id> - lists all children groups of <group_id>
-		members <group_id> - shows members of the provided group ID
-		<group_id> - shows group with provided group ID`,
+		Long: "Get all users groups, group children or group by id.\n" +
+			"Usage:\n" +
+			"\tmainflux-cli groups get all $USERTOKEN - lists all groups\n" +
+			"\tmainflux-cli groups get children <group_id> $USERTOKEN - lists all children groups of <group_id>\n" +
+			"\tmainflux-cli groups get parents <group_id> $USERTOKEN - lists all parent groups of <group_id>\n" +
+			"\tmainflux-cli groups get <group_id> $USERTOKEN - shows group with provided group ID\n",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) < 2 {
 				logUsage(cmd.Use)
@@ -145,21 +142,22 @@ var cmdGroups = []cobra.Command{
 		},
 	},
 	{
-		Use:   "assign <member_type> <member_id> <group_id> <user_auth_token>",
+		Use:   "assign <allowed_actions> <member_id> <group_id> <user_auth_token>",
 		Short: "Assign member",
-		Long: `Assign members to a group.
-				member_ids - '["member_id",...]`,
+		Long: "Assign members to a group\n" +
+			"Usage:\n" +
+			"\tmainflux-cli groups assign '[\"<allowed_action>\", \"<allowed_action>\"]' <member_id> <group_id> $USERTOKEN\n",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 4 {
 				logUsage(cmd.Use)
 				return
 			}
-			var types []string
-			if err := json.Unmarshal([]byte(args[0]), &types); err != nil {
+			var actions []string
+			if err := json.Unmarshal([]byte(args[0]), &actions); err != nil {
 				logError(err)
 				return
 			}
-			if err := sdk.Assign(types, args[1], args[2], args[3]); err != nil {
+			if err := sdk.Assign(actions, args[1], args[2], args[3]); err != nil {
 				logError(err)
 				return
 			}
@@ -167,21 +165,17 @@ var cmdGroups = []cobra.Command{
 		},
 	},
 	{
-		Use:   "unassign <member_type> <group_id> <member_id> <user_auth_token>",
+		Use:   "unassign <member_id> <group_id> <user_auth_token>",
 		Short: "Unassign member",
-		Long: `Unassign members from a group
-				member_ids - '["member_id",...]`,
+		Long: "Unassign member from a group\n" +
+			"Usage:\n" +
+			"\tmainflux-cli groups unassign <member_id> <group_id> $USERTOKEN\n",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 4 {
 				logUsage(cmd.Use)
 				return
 			}
-			var types []string
-			if err := json.Unmarshal([]byte(args[0]), &types); err != nil {
-				logError(err)
-				return
-			}
-			if err := sdk.Unassign(types, args[1], args[2], args[3]); err != nil {
+			if err := sdk.Unassign(args[0], args[1], args[2]); err != nil {
 				logError(err)
 				return
 			}
@@ -191,7 +185,9 @@ var cmdGroups = []cobra.Command{
 	{
 		Use:   "members <group_id> <user_auth_token>",
 		Short: "Members list",
-		Long:  `Lists all members of a group.`,
+		Long: "List group's members\n" +
+			"Usage:\n" +
+			"\tmainflux-cli groups members <group_id> $USERTOKEN",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
@@ -213,7 +209,9 @@ var cmdGroups = []cobra.Command{
 	{
 		Use:   "membership <member_id> <user_auth_token>",
 		Short: "Membership list",
-		Long:  `List member group's membership`,
+		Long: "List memberships of a member\n" +
+			"Usage:\n" +
+			"\tmainflux-cli groups membership <member_id> $USERTOKEN",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
@@ -234,7 +232,9 @@ var cmdGroups = []cobra.Command{
 	{
 		Use:   "enable <group_id> <user_auth_token>",
 		Short: "Change group status to enabled",
-		Long:  `Change group status to enabled`,
+		Long: "Change group status to enabled\n" +
+			"Usage:\n" +
+			"\tmainflux-cli groups enable <group_id> $USERTOKEN\n",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
@@ -253,7 +253,9 @@ var cmdGroups = []cobra.Command{
 	{
 		Use:   "disable <group_id> <user_auth_token>",
 		Short: "Change group status to disabled",
-		Long:  `Change group status to disabled`,
+		Long: "Change group status to disabled\n" +
+			"Usage:\n" +
+			"\tmainflux-cli groups disable <group_id> $USERTOKEN\n",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)

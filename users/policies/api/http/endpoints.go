@@ -11,19 +11,19 @@ func authorizeEndpoint(svc policies.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(authorizeReq)
 		if err := req.validate(); err != nil {
-			return authorizeRes{authorized: false}, err
+			return authorizeRes{Authorized: false}, err
 		}
 		policy := policies.Policy{
 			Subject: req.Subject,
 			Object:  req.Object,
-			Actions: req.Actions,
+			Actions: []string{req.Action},
 		}
 		err := svc.Authorize(ctx, req.EntityType, policy)
 		if err != nil {
-			return authorizeRes{authorized: false}, err
+			return authorizeRes{Authorized: false}, err
 		}
 
-		return authorizeRes{authorized: true}, nil
+		return authorizeRes{Authorized: true}, nil
 	}
 }
 

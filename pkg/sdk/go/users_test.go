@@ -30,6 +30,7 @@ func newClientServer(svc clients.Service) *httptest.Server {
 	logger := mflog.NewMock()
 	mux := bone.New()
 	api.MakeClientsHandler(svc, mux, logger)
+
 	return httptest.NewServer(mux)
 }
 
@@ -74,10 +75,17 @@ func TestCreateClient(t *testing.T) {
 			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedCreation, http.StatusInternalServerError),
 		},
 		{
+			desc:     "register empty user",
+			client:   sdk.User{},
+			response: sdk.User{},
+			token:    token,
+			err:      errors.NewSDKErrorWithStatus(errors.ErrMalformedEntity, http.StatusBadRequest),
+		},
+		{
 			desc: "register user with invalid identity",
 			client: sdk.User{
 				Credentials: sdk.Credentials{
-					Identity: invalidIdentity,
+					Identity: mocks.WrongID,
 					Secret:   "password",
 				},
 			},
@@ -88,20 +96,9 @@ func TestCreateClient(t *testing.T) {
 		{
 			desc: "register user with empty secret",
 			client: sdk.User{
+				Name: "emptysecret",
 				Credentials: sdk.Credentials{
-					Identity: Identity + "2",
-					Secret:   "",
-				},
-			},
-			response: sdk.User{},
-			token:    token,
-			err:      errors.NewSDKErrorWithStatus(errors.ErrMalformedEntity, http.StatusBadRequest),
-		},
-		{
-			desc: "register user with no secret",
-			client: sdk.User{
-				Credentials: sdk.Credentials{
-					Identity: Identity + "2",
+					Secret: "",
 				},
 			},
 			response: sdk.User{},
@@ -114,17 +111,6 @@ func TestCreateClient(t *testing.T) {
 				Credentials: sdk.Credentials{
 					Identity: "",
 					Secret:   secret,
-				},
-			},
-			response: sdk.User{},
-			token:    token,
-			err:      errors.NewSDKErrorWithStatus(errors.ErrMalformedEntity, http.StatusBadRequest),
-		},
-		{
-			desc: "register user with no identity",
-			client: sdk.User{
-				Credentials: sdk.Credentials{
-					Secret: secret,
 				},
 			},
 			response: sdk.User{},
@@ -349,8 +335,8 @@ func TestListClients(t *testing.T) {
 		pm := sdk.PageMetadata{
 			Status:   tc.status,
 			Total:    total,
-			Offset:   uint64(tc.offset),
-			Limit:    uint64(tc.limit),
+			Offset:   tc.offset,
+			Limit:    tc.limit,
 			Name:     tc.name,
 			OwnerID:  tc.ownerID,
 			Metadata: tc.metadata,
@@ -584,6 +570,60 @@ func TestClient(t *testing.T) {
 		}
 		repoCall2.Unset()
 		repoCall1.Unset()
+		repoCall.Unset()
+	}
+}
+
+func TestProfile(t *testing.T) {
+	cRepo := new(mocks.ClientRepository)
+	pRepo := new(pmocks.PolicyRepository)
+	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+
+	svc := clients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
+	ts := newClientServer(svc)
+	defer ts.Close()
+
+	user = sdk.User{
+		Name:        "clientname",
+		Tags:        []string{"tag1", "tag2"},
+		Credentials: sdk.Credentials{Identity: "clientidentity", Secret: secret},
+		Metadata:    validMetadata,
+		Status:      mfclients.EnabledStatus.String(),
+	}
+	conf := sdk.Config{
+		UsersURL: ts.URL,
+	}
+	clientSDK := sdk.NewSDK(conf)
+
+	cases := []struct {
+		desc     string
+		token    string
+		response sdk.User
+		err      errors.SDKError
+	}{
+		{
+			desc:     "view client successfully",
+			response: user,
+			token:    generateValidToken(t, svc, cRepo),
+			err:      nil,
+		},
+		{
+			desc:     "view client with an invalid token",
+			response: sdk.User{},
+			token:    invalidToken,
+			err:      errors.NewSDKErrorWithStatus(errors.ErrAuthentication, http.StatusUnauthorized),
+		},
+	}
+
+	for _, tc := range cases {
+		repoCall := cRepo.On("RetrieveByID", mock.Anything, mock.Anything).Return(convertClient(tc.response), tc.err)
+		rClient, err := clientSDK.UserProfile(tc.token)
+		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
+		assert.Equal(t, tc.response, rClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, rClient))
+		if tc.err == nil {
+			ok := repoCall.Parent.AssertCalled(t, "RetrieveByID", mock.Anything, mock.Anything)
+			assert.True(t, ok, fmt.Sprintf("RetrieveByID was not called on %s", tc.desc))
+		}
 		repoCall.Unset()
 	}
 }

@@ -37,7 +37,7 @@ func (res policyRes) Empty() bool {
 }
 
 type listPolicyRes struct {
-	policies.PolicyPage `json:"policies"`
+	policies.PolicyPage
 }
 
 func (res listPolicyRes) Code() int {

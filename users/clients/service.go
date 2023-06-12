@@ -240,7 +240,7 @@ func (svc service) UpdateClientIdentity(ctx context.Context, token, clientID, id
 	}
 
 	cli := mfclients.Client{
-		ID: id,
+		ID: clientID,
 		Credentials: mfclients.Credentials{
 			Identity: identity,
 		},

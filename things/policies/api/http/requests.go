@@ -54,29 +54,29 @@ func (req createPoliciesReq) validate() error {
 }
 
 type identifyReq struct {
-	Token string `json:"token"`
+	Secret string `json:"token"`
 }
 
 func (req identifyReq) validate() error {
-	if req.Token == "" {
-		return apiutil.ErrBearerKey
+	if req.Secret == "" {
+		return apiutil.ErrMissingSecret
 	}
 
 	return nil
 }
 
 type authorizeReq struct {
-	ClientSecret string `json:"secret"`
-	GroupID      string `json:"group_id"`
-	Action       string `json:"action"`
-	EntityType   string `json:"entity_type"`
+	Subject    string `json:"secret"`
+	Object     string
+	Action     string `json:"action"`
+	EntityType string `json:"entity_type"`
 }
 
 func (req authorizeReq) validate() error {
-	if req.GroupID == "" {
+	if req.Object == "" {
 		return apiutil.ErrMissingID
 	}
-	if req.ClientSecret == "" {
+	if req.Subject == "" {
 		return apiutil.ErrMissingSecret
 	}
 
@@ -84,11 +84,10 @@ func (req authorizeReq) validate() error {
 }
 
 type policyReq struct {
-	token    string
-	Owner    string `json:"owner,omitempty"`
-	ClientID string `json:"client,omitempty"`
-	GroupID  string `json:"group,omitempty"`
-	Action   string `json:"action,omitempty"`
+	token   string
+	Subject string   `json:"subject,omitempty"`
+	Object  string   `json:"object,omitempty"`
+	Actions []string `json:"actions,omitempty"`
 }
 
 func (req policyReq) validate() error {

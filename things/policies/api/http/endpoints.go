@@ -15,7 +15,7 @@ func identifyEndpoint(svc clients.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		id, err := svc.Identify(ctx, req.Token)
+		id, err := svc.Identify(ctx, req.Secret)
 		if err != nil {
 			return nil, err
 		}
@@ -31,8 +31,8 @@ func authorizeEndpoint(svc policies.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		ar := policies.AccessRequest{
-			Subject: req.ClientSecret,
-			Object:  req.GroupID,
+			Subject: req.Subject,
+			Object:  req.Object,
 			Action:  req.Action,
 			Entity:  req.EntityType,
 		}
@@ -106,16 +106,16 @@ func updatePolicyEndpoint(svc policies.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		policy := policies.Policy{
-			Subject: cr.ClientID,
-			Object:  cr.GroupID,
-			Actions: policies.PolicyTypes,
+			Subject: cr.Subject,
+			Object:  cr.Object,
+			Actions: cr.Actions,
 		}
 		policy, err := svc.UpdatePolicy(ctx, cr.token, policy)
 		if err != nil {
 			return nil, err
 		}
 
-		return policyRes{[]policies.Policy{policy}, true}, nil
+		return policyRes{[]policies.Policy{policy}, false}, nil
 	}
 }
 
