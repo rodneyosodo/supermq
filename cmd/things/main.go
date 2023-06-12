@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/go-zoo/bone"
@@ -59,10 +60,11 @@ const (
 )
 
 type config struct {
-	LogLevel        string `env:"MF_THINGS_LOG_LEVEL"          envDefault:"info"`
-	StandaloneID    string `env:"MF_THINGS_STANDALONE_ID"      envDefault:""`
-	StandaloneToken string `env:"MF_THINGS_STANDALONE_TOKEN"   envDefault:""`
-	JaegerURL       string `env:"MF_JAEGER_URL"                envDefault:"http://jaeger:14268/api/traces"`
+	LogLevel         string `env:"MF_THINGS_LOG_LEVEL"           envDefault:"info"`
+	StandaloneID     string `env:"MF_THINGS_STANDALONE_ID"       envDefault:""`
+	StandaloneToken  string `env:"MF_THINGS_STANDALONE_TOKEN"    envDefault:""`
+	JaegerURL        string `env:"MF_JAEGER_URL"                 envDefault:"http://jaeger:14268/api/traces"`
+	CacheKeyDuration string `env:"MF_THINGS_AUTH_CACHE_DURATION" envDefault:"10m"`
 }
 
 func main() {
@@ -127,7 +129,7 @@ func main() {
 		logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 	}
 
-	csvc, gsvc, psvc := newService(db, auth, cacheClient, esClient, tracer, logger)
+	csvc, gsvc, psvc := newService(db, auth, cacheClient, esClient, cfg.CacheKeyDuration, tracer, logger)
 
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
 	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
@@ -165,7 +167,7 @@ func main() {
 	}
 }
 
-func newService(db *sqlx.DB, auth upolicies.AuthServiceClient, cacheClient *redis.Client, esClient *redis.Client, tracer trace.Tracer, logger mflog.Logger) (clients.Service, groups.Service, tpolicies.Service) {
+func newService(db *sqlx.DB, auth upolicies.AuthServiceClient, cacheClient *redis.Client, esClient *redis.Client, keyDuration string, tracer trace.Tracer, logger mflog.Logger) (clients.Service, groups.Service, tpolicies.Service) {
 	database := postgres.NewDatabase(db, tracer)
 	cRepo := cpostgres.NewRepository(database)
 	gRepo := gpostgres.NewRepository(database)
@@ -173,8 +175,13 @@ func newService(db *sqlx.DB, auth upolicies.AuthServiceClient, cacheClient *redi
 
 	idp := uuid.New()
 
-	policyCache := redispcache.NewCache(cacheClient)
-	thingCache := redisthcache.NewCache(cacheClient)
+	kDuration, err := time.ParseDuration(keyDuration)
+	if err != nil {
+		logger.Error(fmt.Sprintf("failed to parse cache key duration: %s", err.Error()))
+	}
+
+	policyCache := redispcache.NewCache(cacheClient, kDuration)
+	thingCache := redisthcache.NewCache(cacheClient, kDuration)
 
 	psvc := tpolicies.NewService(auth, pRepo, policyCache, idp)
 	csvc := clients.NewService(auth, psvc, cRepo, gRepo, thingCache, idp)
