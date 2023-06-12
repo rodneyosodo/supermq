@@ -47,7 +47,7 @@ func newService(tokens map[string]string) (groups.Service, *gmocks.GroupReposito
 
 	gRepo := new(gmocks.GroupRepository)
 	pRepo := new(pmocks.PolicyRepository)
-	policiesCache := pmocks.NewChannelCache()
+	policiesCache := pmocks.NewCache()
 
 	psvc := policies.NewService(auth, pRepo, policiesCache, idProvider)
 

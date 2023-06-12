@@ -10,19 +10,19 @@ import (
 	"github.com/mainflux/mainflux/things/policies"
 )
 
-type channelCacheMock struct {
+type cacheMock struct {
 	mu       sync.Mutex
 	policies map[string]string
 }
 
-// NewChannelCache returns mock cache instance.
-func NewChannelCache() policies.Cache {
-	return &channelCacheMock{
+// NewCache returns mock cache instance.
+func NewCache() policies.Cache {
+	return &cacheMock{
 		policies: make(map[string]string),
 	}
 }
 
-func (ccm *channelCacheMock) Put(_ context.Context, policy policies.Policy) error {
+func (ccm *cacheMock) Put(_ context.Context, policy policies.Policy) error {
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 
@@ -30,7 +30,7 @@ func (ccm *channelCacheMock) Put(_ context.Context, policy policies.Policy) erro
 	return nil
 }
 
-func (ccm *channelCacheMock) Get(_ context.Context, policy policies.Policy) (policies.Policy, error) {
+func (ccm *cacheMock) Get(_ context.Context, policy policies.Policy) (policies.Policy, error) {
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 	actions := ccm.policies[fmt.Sprintf("%s:%s", policy.Subject, policy.Object)]
@@ -46,7 +46,7 @@ func (ccm *channelCacheMock) Get(_ context.Context, policy policies.Policy) (pol
 	return policies.Policy{}, errors.ErrNotFound
 }
 
-func (ccm *channelCacheMock) Remove(_ context.Context, policy policies.Policy) error {
+func (ccm *cacheMock) Remove(_ context.Context, policy policies.Policy) error {
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 

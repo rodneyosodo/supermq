@@ -53,7 +53,7 @@ func TestCreateGroup(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	groupSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 	cases := []struct {
 		desc  string
 		group sdk.Group
@@ -123,10 +123,21 @@ func TestCreateGroup(t *testing.T) {
 			token: token,
 			err:   nil,
 		},
+		{
+			desc: "create a group that can't be marshalled",
+			group: sdk.Group{
+				Name: "test",
+				Metadata: map[string]interface{}{
+					"test": make(chan int),
+				},
+			},
+			token: token,
+			err:   errors.NewSDKError(fmt.Errorf("json: unsupported type: chan int")),
+		},
 	}
 	for _, tc := range cases {
 		repoCall := gRepo.On("Save", mock.Anything, mock.Anything).Return(convertGroup(sdk.Group{}), tc.err)
-		rGroup, err := groupSDK.CreateGroup(tc.group, generateValidToken(t, csvc, cRepo))
+		rGroup, err := mfsdk.CreateGroup(tc.group, generateValidToken(t, csvc, cRepo))
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		if err == nil {
 			assert.NotEmpty(t, rGroup, fmt.Sprintf("%s: expected not nil on client ID", tc.desc))
@@ -152,7 +163,7 @@ func TestListGroups(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	groupSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	for i := 10; i < 100; i++ {
 		gr := sdk.Group{
@@ -252,7 +263,7 @@ func TestListGroups(t *testing.T) {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := gRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(mfgroups.GroupsPage{Groups: convertGroups(tc.response)}, tc.err)
 		pm := sdk.PageMetadata{}
-		page, err := groupSDK.Groups(pm, generateValidToken(t, csvc, cRepo))
+		page, err := mfsdk.Groups(pm, generateValidToken(t, csvc, cRepo))
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, len(tc.response), len(page.Groups), fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, page))
 		if tc.err == nil {
@@ -264,6 +275,266 @@ func TestListGroups(t *testing.T) {
 	}
 }
 
+func TestListParentGroups(t *testing.T) {
+	cRepo := new(cmocks.ClientRepository)
+	gRepo := new(gmocks.GroupRepository)
+	pRepo := new(pmocks.PolicyRepository)
+	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+
+	csvc := clients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
+	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)
+	ts := newGroupsServer(svc)
+	defer ts.Close()
+
+	var grps []sdk.Group
+	conf := sdk.Config{
+		UsersURL: ts.URL,
+	}
+	mfsdk := sdk.NewSDK(conf)
+
+	parentID := ""
+	for i := 10; i < 100; i++ {
+		gr := sdk.Group{
+			ID:       generateUUID(t),
+			Name:     fmt.Sprintf("group_%d", i),
+			Metadata: sdk.Metadata{"name": fmt.Sprintf("user_%d", i)},
+			Status:   mfclients.EnabledStatus.String(),
+			ParentID: parentID,
+		}
+		parentID = gr.ID
+		grps = append(grps, gr)
+	}
+
+	cases := []struct {
+		desc     string
+		token    string
+		status   mfclients.Status
+		total    uint64
+		offset   uint64
+		limit    uint64
+		level    int
+		name     string
+		ownerID  string
+		metadata sdk.Metadata
+		err      errors.SDKError
+		response []sdk.Group
+	}{
+		{
+			desc:     "get a list of groups",
+			token:    token,
+			limit:    limit,
+			offset:   offset,
+			total:    total,
+			err:      nil,
+			response: grps[offset:limit],
+		},
+		{
+			desc:     "get a list of groups with invalid token",
+			token:    invalidToken,
+			offset:   offset,
+			limit:    limit,
+			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedList, http.StatusInternalServerError),
+			response: nil,
+		},
+		{
+			desc:     "get a list of groups with empty token",
+			token:    "",
+			offset:   offset,
+			limit:    limit,
+			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedList, http.StatusInternalServerError),
+			response: nil,
+		},
+		{
+			desc:     "get a list of groups with zero limit",
+			token:    token,
+			offset:   offset,
+			limit:    0,
+			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedList, http.StatusInternalServerError),
+			response: nil,
+		},
+		{
+			desc:     "get a list of groups with limit greater than max",
+			token:    token,
+			offset:   offset,
+			limit:    110,
+			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedList, http.StatusInternalServerError),
+			response: []sdk.Group(nil),
+		},
+		{
+			desc:     "get a list of groups with given name",
+			token:    token,
+			offset:   0,
+			limit:    1,
+			err:      nil,
+			metadata: sdk.Metadata{},
+			response: []sdk.Group{grps[89]},
+		},
+		{
+			desc:     "get a list of groups with level",
+			token:    token,
+			offset:   0,
+			limit:    1,
+			level:    1,
+			err:      nil,
+			response: []sdk.Group{grps[0]},
+		},
+		{
+			desc:     "get a list of groups with metadata",
+			token:    token,
+			offset:   0,
+			limit:    1,
+			err:      nil,
+			metadata: sdk.Metadata{},
+			response: []sdk.Group{grps[89]},
+		},
+	}
+
+	for _, tc := range cases {
+		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
+		repoCall1 := gRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(mfgroups.GroupsPage{Groups: convertGroups(tc.response)}, tc.err)
+		pm := sdk.PageMetadata{}
+		page, err := mfsdk.Parents(parentID, pm, generateValidToken(t, csvc, cRepo))
+		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
+		assert.Equal(t, len(tc.response), len(page.Groups), fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, page))
+		if tc.err == nil {
+			ok := repoCall1.Parent.AssertCalled(t, "RetrieveAll", mock.Anything, mock.Anything)
+			assert.True(t, ok, fmt.Sprintf("RetrieveAll was not called on %s", tc.desc))
+		}
+		repoCall.Unset()
+		repoCall1.Unset()
+	}
+}
+
+func TestListChildrenGroups(t *testing.T) {
+	cRepo := new(cmocks.ClientRepository)
+	gRepo := new(gmocks.GroupRepository)
+	pRepo := new(pmocks.PolicyRepository)
+	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+
+	csvc := clients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
+	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)
+	ts := newGroupsServer(svc)
+	defer ts.Close()
+
+	var grps []sdk.Group
+	conf := sdk.Config{
+		UsersURL: ts.URL,
+	}
+	mfsdk := sdk.NewSDK(conf)
+
+	parentID := ""
+	for i := 10; i < 100; i++ {
+		gr := sdk.Group{
+			ID:       generateUUID(t),
+			Name:     fmt.Sprintf("group_%d", i),
+			Metadata: sdk.Metadata{"name": fmt.Sprintf("user_%d", i)},
+			Status:   mfclients.EnabledStatus.String(),
+			ParentID: parentID,
+		}
+		parentID = gr.ID
+		grps = append(grps, gr)
+	}
+	childID := grps[0].ID
+
+	cases := []struct {
+		desc     string
+		token    string
+		status   mfclients.Status
+		total    uint64
+		offset   uint64
+		limit    uint64
+		level    int
+		name     string
+		ownerID  string
+		metadata sdk.Metadata
+		err      errors.SDKError
+		response []sdk.Group
+	}{
+		{
+			desc:     "get a list of groups",
+			token:    token,
+			limit:    limit,
+			offset:   offset,
+			total:    total,
+			err:      nil,
+			response: grps[offset:limit],
+		},
+		{
+			desc:     "get a list of groups with invalid token",
+			token:    invalidToken,
+			offset:   offset,
+			limit:    limit,
+			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedList, http.StatusInternalServerError),
+			response: nil,
+		},
+		{
+			desc:     "get a list of groups with empty token",
+			token:    "",
+			offset:   offset,
+			limit:    limit,
+			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedList, http.StatusInternalServerError),
+			response: nil,
+		},
+		{
+			desc:     "get a list of groups with zero limit",
+			token:    token,
+			offset:   offset,
+			limit:    0,
+			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedList, http.StatusInternalServerError),
+			response: nil,
+		},
+		{
+			desc:     "get a list of groups with limit greater than max",
+			token:    token,
+			offset:   offset,
+			limit:    110,
+			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedList, http.StatusInternalServerError),
+			response: []sdk.Group(nil),
+		},
+		{
+			desc:     "get a list of groups with given name",
+			token:    token,
+			offset:   0,
+			limit:    1,
+			err:      nil,
+			metadata: sdk.Metadata{},
+			response: []sdk.Group{grps[89]},
+		},
+		{
+			desc:     "get a list of groups with level",
+			token:    token,
+			offset:   0,
+			limit:    1,
+			level:    1,
+			err:      nil,
+			response: []sdk.Group{grps[0]},
+		},
+		{
+			desc:     "get a list of groups with metadata",
+			token:    token,
+			offset:   0,
+			limit:    1,
+			err:      nil,
+			metadata: sdk.Metadata{},
+			response: []sdk.Group{grps[89]},
+		},
+	}
+
+	for _, tc := range cases {
+		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
+		repoCall1 := gRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(mfgroups.GroupsPage{Groups: convertGroups(tc.response)}, tc.err)
+		pm := sdk.PageMetadata{}
+		page, err := mfsdk.Children(childID, pm, generateValidToken(t, csvc, cRepo))
+		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
+		assert.Equal(t, len(tc.response), len(page.Groups), fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, page))
+		if tc.err == nil {
+			ok := repoCall1.Parent.AssertCalled(t, "RetrieveAll", mock.Anything, mock.Anything)
+			assert.True(t, ok, fmt.Sprintf("RetrieveAll was not called on %s", tc.desc))
+		}
+		repoCall.Unset()
+		repoCall1.Unset()
+	}
+}
 func TestViewGroup(t *testing.T) {
 	cRepo := new(cmocks.ClientRepository)
 	gRepo := new(gmocks.GroupRepository)
@@ -286,7 +557,7 @@ func TestViewGroup(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	groupSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 	group.ID = generateUUID(t)
 
 	cases := []struct {
@@ -323,7 +594,7 @@ func TestViewGroup(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := gRepo.On("RetrieveByID", mock.Anything, tc.groupID).Return(convertGroup(tc.response), tc.err)
-		grp, err := groupSDK.Group(tc.groupID, tc.token)
+		grp, err := mfsdk.Group(tc.groupID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		if len(tc.response.Children) == 0 {
 			tc.response.Children = nil
@@ -364,7 +635,7 @@ func TestUpdateGroup(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	groupSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	group.ID = generateUUID(t)
 
@@ -482,12 +753,24 @@ func TestUpdateGroup(t *testing.T) {
 			token:    invalidToken,
 			err:      errors.NewSDKErrorWithStatus(errors.ErrAuthentication, http.StatusUnauthorized),
 		},
+		{
+			desc: "update a group that can't be marshalled",
+			group: sdk.Group{
+				Name: "test",
+				Metadata: map[string]interface{}{
+					"test": make(chan int),
+				},
+			},
+			response: sdk.Group{},
+			token:    token,
+			err:      errors.NewSDKError(fmt.Errorf("json: unsupported type: chan int")),
+		},
 	}
 
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := gRepo.On("Update", mock.Anything, mock.Anything).Return(convertGroup(tc.response), tc.err)
-		_, err := groupSDK.UpdateGroup(tc.group, tc.token)
+		_, err := mfsdk.UpdateGroup(tc.group, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		if tc.err == nil {
 			ok := repoCall.Parent.AssertCalled(t, "CheckAdmin", mock.Anything, mock.Anything)
@@ -514,7 +797,7 @@ func TestListMemberships(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	groupSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	var nGroups = uint64(100)
 	var aGroups = []sdk.Group{}
@@ -620,7 +903,7 @@ func TestListMemberships(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := gRepo.On("Memberships", mock.Anything, tc.clientID, mock.Anything).Return(convertMembershipsPage(sdk.MembershipsPage{Memberships: tc.response}), tc.err)
-		page, err := groupSDK.Memberships(tc.clientID, tc.page, tc.token)
+		page, err := mfsdk.Memberships(tc.clientID, tc.page, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page.Memberships, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, page.Memberships))
 		if tc.err == nil {
@@ -648,7 +931,7 @@ func TestEnableGroup(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	groupSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	creationTime := time.Now().UTC()
 	group := sdk.Group{
@@ -663,7 +946,7 @@ func TestEnableGroup(t *testing.T) {
 	repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 	repoCall1 := gRepo.On("RetrieveByID", mock.Anything, mock.Anything).Return(nil)
 	repoCall2 := gRepo.On("ChangeStatus", mock.Anything, mock.Anything).Return(sdk.ErrFailedRemoval)
-	_, err := groupSDK.EnableGroup("wrongID", generateValidToken(t, csvc, cRepo))
+	_, err := mfsdk.EnableGroup("wrongID", generateValidToken(t, csvc, cRepo))
 	assert.Equal(t, err, errors.NewSDKErrorWithStatus(errors.ErrNotFound, http.StatusNotFound), fmt.Sprintf("Enable group with wrong id: expected %v got %v", errors.ErrNotFound, err))
 	ok := repoCall.Parent.AssertCalled(t, "CheckAdmin", mock.Anything, mock.Anything)
 	assert.True(t, ok, "CheckAdmin was not called on enabling group")
@@ -685,7 +968,7 @@ func TestEnableGroup(t *testing.T) {
 	repoCall = pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 	repoCall1 = gRepo.On("RetrieveByID", mock.Anything, mock.Anything).Return(g, nil)
 	repoCall2 = gRepo.On("ChangeStatus", mock.Anything, mock.Anything).Return(g, nil)
-	res, err := groupSDK.EnableGroup(group.ID, generateValidToken(t, csvc, cRepo))
+	res, err := mfsdk.EnableGroup(group.ID, generateValidToken(t, csvc, cRepo))
 	assert.Nil(t, err, fmt.Sprintf("Enable group with correct id: expected %v got %v", nil, err))
 	assert.Equal(t, group, res, fmt.Sprintf("Enable group with correct id: expected %v got %v", group, res))
 	ok = repoCall.Parent.AssertCalled(t, "CheckAdmin", mock.Anything, mock.Anything)
@@ -713,7 +996,7 @@ func TestDisableGroup(t *testing.T) {
 	conf := sdk.Config{
 		UsersURL: ts.URL,
 	}
-	groupSDK := sdk.NewSDK(conf)
+	mfsdk := sdk.NewSDK(conf)
 
 	creationTime := time.Now().UTC()
 	group := sdk.Group{
@@ -728,7 +1011,7 @@ func TestDisableGroup(t *testing.T) {
 	repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 	repoCall1 := gRepo.On("ChangeStatus", mock.Anything, mock.Anything).Return(sdk.ErrFailedRemoval)
 	repoCall2 := gRepo.On("RetrieveByID", mock.Anything, mock.Anything).Return(nil)
-	_, err := groupSDK.DisableGroup("wrongID", generateValidToken(t, csvc, cRepo))
+	_, err := mfsdk.DisableGroup("wrongID", generateValidToken(t, csvc, cRepo))
 	assert.Equal(t, err, errors.NewSDKErrorWithStatus(errors.ErrNotFound, http.StatusNotFound), fmt.Sprintf("Disable group with wrong id: expected %v got %v", errors.ErrNotFound, err))
 	ok := repoCall.Parent.AssertCalled(t, "CheckAdmin", mock.Anything, mock.Anything)
 	assert.True(t, ok, "CheckAdmin was not called on disabling group with wrong id")
@@ -750,7 +1033,7 @@ func TestDisableGroup(t *testing.T) {
 	repoCall = pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 	repoCall1 = gRepo.On("ChangeStatus", mock.Anything, mock.Anything).Return(g, nil)
 	repoCall2 = gRepo.On("RetrieveByID", mock.Anything, mock.Anything).Return(g, nil)
-	res, err := groupSDK.DisableGroup(group.ID, generateValidToken(t, csvc, cRepo))
+	res, err := mfsdk.DisableGroup(group.ID, generateValidToken(t, csvc, cRepo))
 	assert.Nil(t, err, fmt.Sprintf("Disable group with correct id: expected %v got %v", nil, err))
 	assert.Equal(t, group, res, fmt.Sprintf("Disable group with correct id: expected %v got %v", group, res))
 	ok = repoCall.Parent.AssertCalled(t, "CheckAdmin", mock.Anything, mock.Anything)

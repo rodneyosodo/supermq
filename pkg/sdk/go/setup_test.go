@@ -13,10 +13,11 @@ import (
 	mfgroups "github.com/mainflux/mainflux/pkg/groups"
 	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
 	"github.com/mainflux/mainflux/pkg/uuid"
+	tpolicies "github.com/mainflux/mainflux/things/policies"
 	"github.com/mainflux/mainflux/users/clients"
 	umocks "github.com/mainflux/mainflux/users/clients/mocks"
 	"github.com/mainflux/mainflux/users/hasher"
-	"github.com/mainflux/mainflux/users/policies"
+	upolicies "github.com/mainflux/mainflux/users/policies"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -38,6 +39,13 @@ var (
 		Name:        "clientname",
 		Tags:        []string{"tag1", "tag2"},
 		Credentials: sdk.Credentials{Identity: "clientidentity", Secret: secret},
+		Metadata:    validMetadata,
+		Status:      mfclients.EnabledStatus.String(),
+	}
+	thing = sdk.Thing{
+		Name:        "thingname",
+		Tags:        []string{"tag1", "tag2"},
+		Credentials: sdk.Credentials{Identity: "clientidentity", Secret: generateUUID(&testing.T{})},
 		Metadata:    validMetadata,
 		Status:      mfclients.EnabledStatus.String(),
 	}
@@ -92,11 +100,27 @@ func convertClientsPage(cp sdk.UsersPage) mfclients.ClientsPage {
 	}
 }
 
+func convertThingsPage(cp sdk.ThingsPage) mfclients.ClientsPage {
+	return mfclients.ClientsPage{
+		Clients: convertThings(cp.Things),
+	}
+}
+
 func convertClients(cs []sdk.User) []mfclients.Client {
 	ccs := []mfclients.Client{}
 
 	for _, c := range cs {
 		ccs = append(ccs, convertClient(c))
+	}
+
+	return ccs
+}
+
+func convertThings(cs []sdk.Thing) []mfclients.Client {
+	ccs := []mfclients.Client{}
+
+	for _, c := range cs {
+		ccs = append(ccs, convertThing(c))
 	}
 
 	return ccs
@@ -112,18 +136,49 @@ func convertGroups(cs []sdk.Group) []mfgroups.Group {
 	return cgs
 }
 
-func convertPolicies(cs []sdk.Policy) []policies.Policy {
-	ccs := []policies.Policy{}
+func convertChannels(cs []sdk.Channel) []mfgroups.Group {
+	cgs := []mfgroups.Group{}
 
 	for _, c := range cs {
-		ccs = append(ccs, convertPolicy(c))
+		cgs = append(cgs, convertChannel(c))
+	}
+
+	return cgs
+}
+
+func convertUserPolicies(cs []sdk.Policy) []upolicies.Policy {
+	ccs := []upolicies.Policy{}
+
+	for _, c := range cs {
+		ccs = append(ccs, convertUserPolicy(c))
 	}
 
 	return ccs
 }
 
-func convertPolicy(sp sdk.Policy) policies.Policy {
-	return policies.Policy{
+func convertThingPolicies(cs []sdk.Policy) []tpolicies.Policy {
+	ccs := []tpolicies.Policy{}
+
+	for _, c := range cs {
+		ccs = append(ccs, convertThingPolicy(c))
+	}
+
+	return ccs
+}
+
+func convertUserPolicy(sp sdk.Policy) upolicies.Policy {
+	return upolicies.Policy{
+		OwnerID:   sp.OwnerID,
+		Subject:   sp.Subject,
+		Object:    sp.Object,
+		Actions:   sp.Actions,
+		CreatedAt: sp.CreatedAt,
+		UpdatedAt: sp.UpdatedAt,
+	}
+}
+
+func convertThingPolicy(sp sdk.Policy) tpolicies.Policy {
+	return tpolicies.Policy{
 		OwnerID:   sp.OwnerID,
 		Subject:   sp.Subject,
 		Object:    sp.Object,
@@ -141,6 +196,17 @@ func convertMembershipsPage(m sdk.MembershipsPage) mfgroups.MembershipsPage {
 			Offset: m.Offset,
 		},
 		Memberships: convertMemberships(m.Memberships),
+	}
+}
+
+func convertChannelsMembershipPage(m sdk.ChannelsPage) mfgroups.MembershipsPage {
+	return mfgroups.MembershipsPage{
+		Page: mfgroups.Page{
+			Limit:  m.Limit,
+			Total:  m.Total,
+			Offset: m.Offset,
+		},
+		Memberships: convertChannels(m.Channels),
 	}
 }
 
@@ -236,14 +302,69 @@ func convertClient(c sdk.User) mfclients.Client {
 	}
 }
 
-func convertPolicyPage(pp sdk.PolicyPage) policies.PolicyPage {
-	return policies.PolicyPage{
-		Page: policies.Page{
+func convertThing(c sdk.Thing) mfclients.Client {
+	if c.Status == "" {
+		c.Status = mfclients.EnabledStatus.String()
+	}
+	status, err := mfclients.ToStatus(c.Status)
+	if err != nil {
+		return mfclients.Client{}
+	}
+	return mfclients.Client{
+		ID:          c.ID,
+		Name:        c.Name,
+		Tags:        c.Tags,
+		Owner:       c.Owner,
+		Credentials: mfclients.Credentials(c.Credentials),
+		Metadata:    mfclients.Metadata(c.Metadata),
+		CreatedAt:   c.CreatedAt,
+		UpdatedAt:   c.UpdatedAt,
+		Status:      status,
+	}
+}
+
+func convertChannel(g sdk.Channel) mfgroups.Group {
+	if g.Status == "" {
+		g.Status = mfclients.EnabledStatus.String()
+	}
+	status, err := mfclients.ToStatus(g.Status)
+	if err != nil {
+		return mfgroups.Group{}
+	}
+	return mfgroups.Group{
+		ID:          g.ID,
+		Owner:       g.OwnerID,
+		Parent:      g.ParentID,
+		Name:        g.Name,
+		Description: g.Description,
+		Metadata:    mfclients.Metadata(g.Metadata),
+		Level:       g.Level,
+		Path:        g.Path,
+		CreatedAt:   g.CreatedAt,
+		UpdatedAt:   g.UpdatedAt,
+		Status:      status,
+	}
+}
+
+func convertUserPolicyPage(pp sdk.PolicyPage) upolicies.PolicyPage {
+	return upolicies.PolicyPage{
+		Page: upolicies.Page{
 			Limit:  pp.Limit,
 			Total:  pp.Total,
 			Offset: pp.Offset,
 		},
-		Policies: convertPolicies(pp.Policies),
+		Policies: convertUserPolicies(pp.Policies),
+	}
+}
+
+func convertThingPolicyPage(pp sdk.PolicyPage) tpolicies.PolicyPage {
+	return tpolicies.PolicyPage{
+		Page: tpolicies.Page{
+			Limit:  pp.Limit,
+			Total:  pp.Total,
+			Offset: pp.Offset,
+		},
+		Policies: convertThingPolicies(pp.Policies),
 	}
 }
 
