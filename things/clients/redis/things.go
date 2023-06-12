@@ -6,6 +6,7 @@ package redis
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/mainflux/mainflux/pkg/errors"
@@ -20,24 +21,26 @@ const (
 var _ clients.Cache = (*thingCache)(nil)
 
 type thingCache struct {
-	client *redis.Client
+	client      *redis.Client
+	keyDuration time.Duration
 }
 
 // NewCache returns redis thing cache implementation.
-func NewCache(client *redis.Client) clients.Cache {
+func NewCache(client *redis.Client, duration time.Duration) clients.Cache {
 	return &thingCache{
-		client: client,
+		client:      client,
+		keyDuration: duration,
 	}
 }
 
 func (tc *thingCache) Save(ctx context.Context, thingKey string, thingID string) error {
 	tkey := fmt.Sprintf("%s:%s", keyPrefix, thingKey)
-	if err := tc.client.Set(ctx, tkey, thingID, 0).Err(); err != nil {
+	if err := tc.client.Set(ctx, tkey, thingID, tc.keyDuration).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
 	tid := fmt.Sprintf("%s:%s", idPrefix, thingID)
-	if err := tc.client.Set(ctx, tid, thingKey, 0).Err(); err != nil {
+	if err := tc.client.Set(ctx, tid, thingKey, tc.keyDuration).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
 	return nil
