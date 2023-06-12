@@ -619,14 +619,15 @@ type SDK interface {
 	// Authorize returns true if the given policy structure allows the action.
 	//
 	// example:
-	//  p := sdk.Policy{
-	//    Subject: "userID:1",
-	//    Object:  "groupID:1",
-	//    Actions: []string{"g_add"},
+	//  aReq := sdk.AccessRequest{
+	//    Subject:    "userID:1",
+	//    Object:     "groupID:1",
+	//    Actions:    "g_add",
+	//    EntityType: "clients",
 	//  }
-	//  ok, _ := sdk.Authorize(p, "clients" "token")
+	//  ok, _ := sdk.Authorize(aReq, "token")
 	//  fmt.Println(ok)
-	Authorize(p Policy, entityType, token string) (bool, errors.SDKError)
+	Authorize(accessReq AccessRequest, token string) (bool, errors.SDKError)
 
 	// Assign assigns member of member type (thing or user) to a group.
 	//
@@ -706,14 +707,15 @@ type SDK interface {
 	// ThingCanAccess returns true if the given policy structure allows the action.
 	//
 	// example:
-	//  p := sdk.Policy{
-	//    Subject: "thingID",
-	//    Object:  "channelID",
-	//    Actions: []string{"m_read"},
+	//  aReq := sdk.AccessRequest{
+	//    Subject:    "thingID",
+	//    Object:     "channelID",
+	//    Actions:    "m_read",
+	//    EntityType: "things",
 	//  }
-	//  ok, _ := sdk.ThingCanAccess(p, "things", "token")
+	//  ok, _ := sdk.ThingCanAccess(aReq "token")
 	//  fmt.Println(ok)
-	ThingCanAccess(p Policy, entityType, token string) (bool, string, errors.SDKError)
+	ThingCanAccess(accessReq AccessRequest, token string) (bool, string, errors.SDKError)
 
 	// SendMessage send message to specified channel.
 	//

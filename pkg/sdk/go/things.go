@@ -251,7 +251,7 @@ func (sdk mfSDK) IdentifyThing(key string) (string, errors.SDKError) {
 }
 
 func (sdk mfSDK) ShareThing(thingID, groupID, userID string, actions []string, token string) errors.SDKError {
-	sreq := shareThingReq{GroupID: groupID, UserID: userID, Policies: actions}
+	sreq := shareThingReq{GroupID: groupID, UserID: userID, Actions: actions}
 	data, err := json.Marshal(sreq)
 	if err != nil {
 		return errors.NewSDKError(err)

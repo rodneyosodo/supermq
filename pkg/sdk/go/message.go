@@ -12,9 +12,7 @@ import (
 	"github.com/mainflux/mainflux/pkg/errors"
 )
 
-const (
-	channelParts = 2
-)
+const channelParts = 2
 
 func (sdk mfSDK) SendMessage(chanName, msg, key string) errors.SDKError {
 	chanNameParts := strings.SplitN(chanName, ".", channelParts)
@@ -27,7 +25,7 @@ func (sdk mfSDK) SendMessage(chanName, msg, key string) errors.SDKError {
 	url := fmt.Sprintf("%s/channels/%s/messages/%s", sdk.httpAdapterURL, chanID, subtopicPart)
 
 	_, _, err := sdk.processRequest(http.MethodPost, url, ThingPrefix+key, string(CTJSON), []byte(msg), http.StatusAccepted)
-	
+
 	return err
 }
 
@@ -60,6 +58,6 @@ func (sdk *mfSDK) SetContentType(ct ContentType) errors.SDKError {
 	}
 
 	sdk.msgContentType = ct
-	
+
 	return nil
 }

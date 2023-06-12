@@ -15,8 +15,6 @@ const (
 	accessEndpoint    = "access"
 )
 
-var errInvalidAction = errors.NewSDKError(fmt.Errorf("invalid number of actions, it should be exactly 1"))
-
 // Policy represents an argument struct for making a policy related function calls.
 type Policy struct {
 	OwnerID   string    `json:"owner_id"`
@@ -27,12 +25,15 @@ type Policy struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func (sdk mfSDK) Authorize(p Policy, entityType, token string) (bool, errors.SDKError) {
-	if len(p.Actions) == 1 {
-		return false, errInvalidAction
-	}
-	areq := authorizeReq{Subject: p.Subject, Object: p.Object, Action: p.Actions[0], EntityType: entityType}
-	data, err := json.Marshal(areq)
+type AccessRequest struct {
+	Subject    string `json:"subject"`
+	Object     string `json:"object"`
+	Action     string `json:"action"`
+	EntityType string `json:"entity_type"`
+}
+
+func (sdk mfSDK) Authorize(accessReq AccessRequest, token string) (bool, errors.SDKError) {
+	data, err := json.Marshal(accessReq)
 	if err != nil {
 		return false, errors.NewSDKError(err)
 	}
@@ -208,17 +209,14 @@ func (sdk mfSDK) ListThingsPolicies(pm PageMetadata, token string) (PolicyPage, 
 	return pp, nil
 }
 
-func (sdk mfSDK) ThingCanAccess(p Policy, entityType, token string) (bool, string, errors.SDKError) {
-	if len(p.Actions) != 1 {
-		return false, "", errInvalidAction
-	}
-	creq := canAccessReq{ClientSecret: p.Subject, Action: p.Actions[0], EntityType: entityType}
+func (sdk mfSDK) ThingCanAccess(accessReq AccessRequest, token string) (bool, string, errors.SDKError) {
+	creq := canAccessReq{ClientSecret: accessReq.Subject, GroupID: accessReq.Object, Action: accessReq.Action, EntityType: accessReq.EntityType}
 	data, err := json.Marshal(creq)
 	if err != nil {
 		return false, "", errors.NewSDKError(err)
 	}
 
-	url := fmt.Sprintf("%s/%s/%s/%s", sdk.thingsURL, channelsEndpoint, p.Object, accessEndpoint)
+	url := fmt.Sprintf("%s/%s/%s/%s", sdk.thingsURL, channelsEndpoint, accessReq.Object, accessEndpoint)
 	_, body, sdkerr := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), data, http.StatusOK)
 	if sdkerr != nil {
 		return false, "", sdkerr

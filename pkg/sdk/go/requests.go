@@ -39,16 +39,9 @@ type tokenReq struct {
 }
 
 type shareThingReq struct {
-	GroupID  string   `json:"group_id"`
-	UserID   string   `json:"user_id"`
-	Policies []string `json:"policies"`
-}
-
-type authorizeReq struct {
-	Subject    string `json:"subject,omitempty"`
-	Object     string `json:"object,omitempty"`
-	Action     string `json:"action,omitempty"`
-	EntityType string `json:"entity_type,omitempty"`
+	GroupID string   `json:"group_id"`
+	UserID  string   `json:"user_id"`
+	Actions []string `json:"actions"`
 }
 
 type canAccessReq struct {

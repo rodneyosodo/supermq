@@ -211,7 +211,7 @@ type shareClientReq struct {
 	clientID string
 	GroupID  string   `json:"group_id"`
 	UserID   string   `json:"user_id"`
-	Policies []string `json:"policies"`
+	Actions  []string `json:"actions"`
 }
 
 func (req shareClientReq) validate() error {
@@ -223,7 +223,7 @@ func (req shareClientReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.Policies) == 0 {
+	if len(req.Actions) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
