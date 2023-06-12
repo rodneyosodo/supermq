@@ -59,27 +59,23 @@ func (svc service) Authorize(ctx context.Context, ar AccessRequest) (Policy, err
 	if !errors.Contains(err, errors.ErrNotFound) {
 		return Policy{}, err
 	}
-	policy = Policy{
-		Subject: ar.Subject,
-		Object:  ar.Object,
-		Actions: []string{ar.Action},
-	}
+
 	// fetch from repo as a fallback if not found in cache
 	switch ar.Entity {
 	case GroupEntityType:
-		policy, err = svc.policies.EvaluateGroupAccess(ctx, policy)
+		policy, err = svc.policies.EvaluateGroupAccess(ctx, ar)
 		if err != nil {
 			return Policy{}, err
 		}
 
 	case ClientEntityType:
-		policy, err = svc.policies.EvaluateThingAccess(ctx, policy)
+		policy, err = svc.policies.EvaluateThingAccess(ctx, ar)
 		if err != nil {
 			return Policy{}, err
 		}
 
 	case ThingEntityType:
-		policy, err := svc.policies.EvaluateMessagingAccess(ctx, policy)
+		policy, err := svc.policies.EvaluateMessagingAccess(ctx, ar)
 		if err != nil {
 			return Policy{}, err
 		}
@@ -139,8 +135,8 @@ func (svc service) AddPolicy(ctx context.Context, token string, p Policy) (Polic
 	}
 
 	// If the client has `g_add` action on the object or is the owner of the object, add the policy
-	pol := Policy{Subject: userID, Object: p.Object, Actions: []string{"g_add"}}
-	if _, err := svc.policies.EvaluateGroupAccess(ctx, pol); err == nil {
+	ar := AccessRequest{Subject: userID, Object: p.Object, Action: "g_add"}
+	if _, err := svc.policies.EvaluateGroupAccess(ctx, ar); err == nil {
 		if err := svc.policyCache.Put(ctx, p); err != nil {
 			return Policy{}, err
 		}
