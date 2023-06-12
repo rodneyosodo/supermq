@@ -30,9 +30,7 @@ import (
 
 const addExistingPolicyDesc = "add existing policy"
 
-var (
-	utadminPolicy = umocks.SubjectSet{Subject: "things", Relation: []string{"g_add"}}
-)
+var utadminPolicy = umocks.SubjectSet{Subject: "things", Relation: []string{"g_add"}}
 
 func newPolicyServer(svc upolicies.Service) *httptest.Server {
 	logger := logger.NewMock()
