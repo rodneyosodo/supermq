@@ -23,11 +23,13 @@ const eof = "EOF"
 
 func newMessageService(cc policies.ThingsServiceClient) adapter.Service {
 	pub := mocks.NewPublisher()
+
 	return adapter.New(pub, cc)
 }
 
 func newMessageServer(svc adapter.Service) *httptest.Server {
 	mux := api.MakeHandler(svc)
+
 	return httptest.NewServer(mux)
 }
 

@@ -23,7 +23,7 @@ type pageRes struct {
 }
 
 type authorizeRes struct {
-	authorized bool
+	Authorized bool `json:"authorized"`
 }
 
 func (res authorizeRes) Code() int {

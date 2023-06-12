@@ -37,6 +37,7 @@ func (sdk mfSDK) CreateSubscription(topic, contact, token string) (string, error
 	}
 
 	id := strings.TrimPrefix(headers.Get("Location"), fmt.Sprintf("/%s/", subscriptionEndpoint))
+	
 	return id, nil
 }
 
@@ -77,5 +78,6 @@ func (sdk mfSDK) DeleteSubscription(id, token string) errors.SDKError {
 	url := fmt.Sprintf("%s/%s/%s", sdk.usersURL, subscriptionEndpoint, id)
 
 	_, _, err := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), nil, http.StatusNoContent)
+	
 	return err
 }

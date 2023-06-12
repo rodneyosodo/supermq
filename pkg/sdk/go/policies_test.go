@@ -26,6 +26,7 @@ func newPolicyServer(svc policies.Service) *httptest.Server {
 	logger := logger.NewMock()
 	mux := bone.New()
 	api.MakePolicyHandler(svc, mux, logger)
+
 	return httptest.NewServer(mux)
 }
 
@@ -70,7 +71,7 @@ func TestCreatePolicy(t *testing.T) {
 				Object:  object,
 				Actions: []string{"m_write", "g_add"},
 			},
-			page:  sdk.PolicyPage{Policies: []sdk.Policy{sdk.Policy(clientPolicy)}},
+			page:  sdk.PolicyPage{Policies: []sdk.Policy{clientPolicy}},
 			token: generateValidToken(t, csvc, cRepo),
 			err:   errors.NewSDKErrorWithStatus(sdk.ErrFailedCreation, http.StatusInternalServerError),
 		},
@@ -344,7 +345,7 @@ func TestListPolicies(t *testing.T) {
 				Action: "wrong",
 			},
 			response: []sdk.Policy(nil),
-			err:      errors.NewSDKErrorWithStatus(sdk.ErrFailedList, http.StatusInternalServerError),
+			err:      errors.NewSDKErrorWithStatus(apiutil.ErrMalformedPolicyAct, http.StatusInternalServerError),
 		},
 	}
 

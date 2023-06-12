@@ -32,7 +32,6 @@ type User struct {
 	Role        string      `json:"role,omitempty"`
 }
 
-// CreateUser creates a new client returning its id.
 func (sdk mfSDK) CreateUser(user User, token string) (User, errors.SDKError) {
 	data, err := json.Marshal(user)
 	if err != nil {
@@ -50,10 +49,10 @@ func (sdk mfSDK) CreateUser(user User, token string) (User, errors.SDKError) {
 	if err := json.Unmarshal(body, &user); err != nil {
 		return User{}, errors.NewSDKError(err)
 	}
+
 	return user, nil
 }
 
-// Users returns page of users.
 func (sdk mfSDK) Users(pm PageMetadata, token string) (UsersPage, errors.SDKError) {
 	url, err := sdk.withQueryParams(sdk.usersURL, usersEndpoint, pm)
 	if err != nil {
@@ -73,7 +72,6 @@ func (sdk mfSDK) Users(pm PageMetadata, token string) (UsersPage, errors.SDKErro
 	return cp, nil
 }
 
-// Members retrieves everything that is assigned to a group identified by groupID.
 func (sdk mfSDK) Members(groupID string, meta PageMetadata, token string) (MembersPage, errors.SDKError) {
 	url, err := sdk.withQueryParams(sdk.usersURL, fmt.Sprintf("%s/%s/%s", groupsEndpoint, groupID, membersEndpoint), meta)
 	if err != nil {
@@ -93,7 +91,6 @@ func (sdk mfSDK) Members(groupID string, meta PageMetadata, token string) (Membe
 	return mp, nil
 }
 
-// User returns user object by id.
 func (sdk mfSDK) User(id, token string) (User, errors.SDKError) {
 	url := fmt.Sprintf("%s/%s/%s", sdk.usersURL, usersEndpoint, id)
 
@@ -110,7 +107,6 @@ func (sdk mfSDK) User(id, token string) (User, errors.SDKError) {
 	return user, nil
 }
 
-// User returns user object by id.
 func (sdk mfSDK) UserProfile(token string) (User, errors.SDKError) {
 	url := fmt.Sprintf("%s/%s/profile", sdk.usersURL, usersEndpoint)
 
@@ -127,7 +123,6 @@ func (sdk mfSDK) UserProfile(token string) (User, errors.SDKError) {
 	return user, nil
 }
 
-// UpdateUser updates existing user.
 func (sdk mfSDK) UpdateUser(user User, token string) (User, errors.SDKError) {
 	data, err := json.Marshal(user)
 	if err != nil {
@@ -145,10 +140,10 @@ func (sdk mfSDK) UpdateUser(user User, token string) (User, errors.SDKError) {
 	if err := json.Unmarshal(body, &user); err != nil {
 		return User{}, errors.NewSDKError(err)
 	}
+	
 	return user, nil
 }
 
-// UpdateUserTags updates the user's tags.
 func (sdk mfSDK) UpdateUserTags(user User, token string) (User, errors.SDKError) {
 	data, err := json.Marshal(user)
 	if err != nil {
@@ -166,10 +161,10 @@ func (sdk mfSDK) UpdateUserTags(user User, token string) (User, errors.SDKError)
 	if err := json.Unmarshal(body, &user); err != nil {
 		return User{}, errors.NewSDKError(err)
 	}
+	
 	return user, nil
 }
 
-// UpdateUserIdentity updates the user's identity
 func (sdk mfSDK) UpdateUserIdentity(user User, token string) (User, errors.SDKError) {
 	ucir := updateClientIdentityReq{token: token, id: user.ID, Identity: user.Credentials.Identity}
 
@@ -193,7 +188,6 @@ func (sdk mfSDK) UpdateUserIdentity(user User, token string) (User, errors.SDKEr
 	return user, nil
 }
 
-// UpdatePassword updates user password.
 func (sdk mfSDK) UpdatePassword(oldPass, newPass, token string) (User, errors.SDKError) {
 	var ucsr = updateClientSecretReq{OldSecret: oldPass, NewSecret: newPass}
 
@@ -217,7 +211,6 @@ func (sdk mfSDK) UpdatePassword(oldPass, newPass, token string) (User, errors.SD
 	return user, nil
 }
 
-// UpdateUserOwner updates the user's owner.
 func (sdk mfSDK) UpdateUserOwner(user User, token string) (User, errors.SDKError) {
 	data, err := json.Marshal(user)
 	if err != nil {
@@ -239,12 +232,10 @@ func (sdk mfSDK) UpdateUserOwner(user User, token string) (User, errors.SDKError
 	return user, nil
 }
 
-// EnableUser changes the status of the user to enabled.
 func (sdk mfSDK) EnableUser(id, token string) (User, errors.SDKError) {
 	return sdk.changeClientStatus(token, id, enableEndpoint)
 }
 
-// DisableUser changes the status of the user to disabled.
 func (sdk mfSDK) DisableUser(id, token string) (User, errors.SDKError) {
 	return sdk.changeClientStatus(token, id, disableEndpoint)
 }

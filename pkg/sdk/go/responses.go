@@ -112,3 +112,12 @@ type SubscriptionPage struct {
 type identifyThingResp struct {
 	ID string `json:"id,omitempty"`
 }
+
+type authorizeRes struct {
+	Authorized bool `json:"authorized"`
+}
+
+type canAccessRes struct {
+	ThingID    string `json:"thing_id"`
+	Authorized bool   `json:"authorized"`
+}

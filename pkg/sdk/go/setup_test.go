@@ -75,12 +75,14 @@ func generateValidToken(t *testing.T, svc clients.Service, cRepo *umocks.ClientR
 	token, err := svc.IssueToken(context.Background(), client.Credentials.Identity, client.Credentials.Secret)
 	assert.True(t, errors.Contains(err, nil), fmt.Sprintf("Create token expected nil got %s\n", err))
 	repoCall.Unset()
+	
 	return token.AccessToken
 }
 
 func generateUUID(t *testing.T) string {
 	ulid, err := idProvider.ID()
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	
 	return ulid
 }
 
@@ -150,6 +152,7 @@ func convertClientPage(p sdk.PageMetadata) mfclients.Page {
 	if err != nil {
 		return mfclients.Page{}
 	}
+	
 	return mfclients.Page{
 		Status:   status,
 		Total:    p.Total,
@@ -179,6 +182,7 @@ func convertGroup(g sdk.Group) mfgroups.Group {
 	if err != nil {
 		return mfgroups.Group{}
 	}
+	
 	return mfgroups.Group{
 		ID:          g.ID,
 		Owner:       g.OwnerID,
@@ -218,6 +222,7 @@ func convertClient(c sdk.User) mfclients.Client {
 	if err != nil {
 		return mfclients.Client{}
 	}
+	
 	return mfclients.Client{
 		ID:          c.ID,
 		Name:        c.Name,

@@ -53,6 +53,7 @@ func (sdk mfSDK) CreateGroup(g Group, token string) (Group, errors.SDKError) {
 	if err := json.Unmarshal(body, &g); err != nil {
 		return Group{}, errors.NewSDKError(err)
 	}
+	
 	return g, nil
 }
 
@@ -80,6 +81,7 @@ func (sdk mfSDK) Groups(pm PageMetadata, token string) (GroupsPage, errors.SDKEr
 	if err != nil {
 		return GroupsPage{}, errors.NewSDKError(err)
 	}
+	
 	return sdk.getGroups(url, token)
 }
 
@@ -89,6 +91,7 @@ func (sdk mfSDK) Parents(id string, pm PageMetadata, token string) (GroupsPage, 
 	if err != nil {
 		return GroupsPage{}, errors.NewSDKError(err)
 	}
+	
 	return sdk.getGroups(url, token)
 }
 
@@ -98,6 +101,7 @@ func (sdk mfSDK) Children(id string, pm PageMetadata, token string) (GroupsPage,
 	if err != nil {
 		return GroupsPage{}, errors.NewSDKError(err)
 	}
+	
 	return sdk.getGroups(url, token)
 }
 
@@ -111,6 +115,7 @@ func (sdk mfSDK) getGroups(url, token string) (GroupsPage, errors.SDKError) {
 	if err := json.Unmarshal(body, &tp); err != nil {
 		return GroupsPage{}, errors.NewSDKError(err)
 	}
+	
 	return tp, nil
 }
 
@@ -149,12 +154,10 @@ func (sdk mfSDK) UpdateGroup(g Group, token string) (Group, errors.SDKError) {
 	return g, nil
 }
 
-// EnableGroup removes the group identified with the provided ID.
 func (sdk mfSDK) EnableGroup(id, token string) (Group, errors.SDKError) {
 	return sdk.changeGroupStatus(id, enableEndpoint, token)
 }
 
-// DisableGroup removes the group identified with the provided ID.
 func (sdk mfSDK) DisableGroup(id, token string) (Group, errors.SDKError) {
 	return sdk.changeGroupStatus(id, disableEndpoint, token)
 }

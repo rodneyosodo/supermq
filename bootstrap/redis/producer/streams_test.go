@@ -5,6 +5,7 @@ package producer_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http/httptest"
 	"strconv"
@@ -576,6 +577,23 @@ func test(t *testing.T, expected, actual map[string]interface{}, description str
 
 		delete(expected, "timestamp")
 		delete(actual, "timestamp")
+
+		ech := expected["channels"]
+		ach := actual["channels"]
+
+		che := []int{}
+		err = json.Unmarshal([]byte(ech.(string)), &che)
+		require.Nil(t, err, fmt.Sprintf("%s: expected to get a valid channels, got %s", description, err))
+
+		cha := []int{}
+		err = json.Unmarshal([]byte(ach.(string)), &cha)
+		require.Nil(t, err, fmt.Sprintf("%s: expected to get a valid channels, got %s", description, err))
+
+		if assert.ElementsMatchf(t, che, cha, "%s: got incorrect channels\n", description) {
+			delete(expected, "channels")
+			delete(actual, "channels")
+		}
+
 		assert.Equal(t, expected, actual, fmt.Sprintf("%s: got incorrect event\n", description))
 	}
 }

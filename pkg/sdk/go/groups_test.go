@@ -30,6 +30,7 @@ func newGroupsServer(svc groups.Service) *httptest.Server {
 	logger := logger.NewMock()
 	mux := bone.New()
 	api.MakeGroupsHandler(svc, mux, logger)
+
 	return httptest.NewServer(mux)
 }
 

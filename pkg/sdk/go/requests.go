@@ -3,7 +3,7 @@
 
 package sdk
 
-// updateClientSecretReq is used to update the client secret
+// updateClientSecretReq is used to update the client secret.
 type updateClientSecretReq struct {
 	OldSecret string `json:"old_secret,omitempty"`
 	NewSecret string `json:"new_secret,omitempty"`
@@ -13,20 +13,20 @@ type updateThingSecretReq struct {
 	Secret string `json:"secret,omitempty"`
 }
 
-// updateClientIdentityReq is used to update the client identity
+// updateClientIdentityReq is used to update the client identity.
 type updateClientIdentityReq struct {
 	token    string
 	id       string
 	Identity string `json:"identity,omitempty"`
 }
 
-// UserPasswordReq contains old and new passwords
+// UserPasswordReq contains old and new passwords.
 type UserPasswordReq struct {
 	OldPassword string `json:"old_password,omitempty"`
 	Password    string `json:"password,omitempty"`
 }
 
-// ConnectionIDs contains ID lists of things and channels to be connected
+// ConnectionIDs contains ID lists of things and channels to be connected.
 type ConnectionIDs struct {
 	ChannelIDs []string `json:"group_ids"`
 	ThingIDs   []string `json:"client_ids"`
@@ -38,6 +38,15 @@ type tokenReq struct {
 	Secret   string `json:"secret"`
 }
 
-type identifyThingReq struct {
-	Token string `json:"token,omitempty"`
+type shareThingReq struct {
+	GroupID string   `json:"group_id"`
+	UserID  string   `json:"user_id"`
+	Actions []string `json:"actions"`
+}
+
+type canAccessReq struct {
+	ClientSecret string `json:"secret"`
+	GroupID      string `json:"group_id"`
+	Action       string `json:"action"`
+	EntityType   string `json:"entity_type"`
 }
