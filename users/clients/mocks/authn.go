@@ -56,7 +56,7 @@ func (svc authServiceMock) Issue(ctx context.Context, in *policies.IssueReq, opt
 func (svc authServiceMock) Authorize(ctx context.Context, req *policies.AuthorizeReq, _ ...grpc.CallOption) (r *policies.AuthorizeRes, err error) {
 	for _, policy := range svc.authz[req.GetSub()] {
 		for _, r := range policy.Relation {
-			if r == req.GetAct() && policy.Subject == req.GetSub() {
+			if r == req.GetAct() && policy.Subject == req.GetObj() {
 				return &policies.AuthorizeRes{Authorized: true}, nil
 			}
 		}

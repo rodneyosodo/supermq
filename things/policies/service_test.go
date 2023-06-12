@@ -31,7 +31,7 @@ func newService(tokens map[string]string) (policies.Service, *pmocks.PolicyRepos
 	adminPolicy := mocks.MockSubjectSet{Object: "things", Relation: clients.AdminRelationKey}
 	auth := mocks.NewAuthService(tokens, map[string][]mocks.MockSubjectSet{adminEmail: {adminPolicy}})
 	idProvider := uuid.NewMock()
-	policiesCache := pmocks.NewChannelCache()
+	policiesCache := pmocks.NewCache()
 	pRepo := new(pmocks.PolicyRepository)
 	uRepo := new(umocks.PolicyRepository)
 

@@ -116,8 +116,8 @@ var cmdChannels = []cobra.Command{
 				return
 			}
 			pm := mfxsdk.PageMetadata{
-				Offset:       uint64(Offset),
-				Limit:        uint64(Limit),
+				Offset: uint64(Offset),
+				Limit:  uint64(Limit),
 			}
 			cl, err := sdk.ThingsByChannel(args[0], pm, args[1])
 			if err != nil {
