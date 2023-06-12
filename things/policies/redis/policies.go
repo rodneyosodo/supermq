@@ -7,39 +7,41 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/things/policies"
 )
 
-const (
-	separator   = ":"
-	keyDuration = 0
-)
+const separator = ":"
 
 var _ policies.Cache = (*pcache)(nil)
 
 type pcache struct {
-	client *redis.Client
+	client      *redis.Client
+	keyDuration time.Duration
 }
 
 // NewCache returns redis policy cache implementation.
-func NewCache(client *redis.Client) policies.Cache {
-	return pcache{client: client}
+func NewCache(client *redis.Client, duration time.Duration) policies.Cache {
+	return pcache{
+		client:      client,
+		keyDuration: duration,
+	}
 }
 
-func (cc pcache) Put(ctx context.Context, policy policies.Policy) error {
+func (pc pcache) Put(ctx context.Context, policy policies.Policy) error {
 	k, v := kv(policy)
-	if err := cc.client.Set(ctx, k, v, keyDuration).Err(); err != nil {
+	if err := pc.client.Set(ctx, k, v, pc.keyDuration).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
 	return nil
 }
 
-func (cc pcache) Get(ctx context.Context, policy policies.Policy) (policies.Policy, error) {
+func (pc pcache) Get(ctx context.Context, policy policies.Policy) (policies.Policy, error) {
 	k, _ := kv(policy)
-	res := cc.client.Get(ctx, k)
+	res := pc.client.Get(ctx, k)
 	// Nil response indicates non-existent key in Redis client.
 	if res == nil || res.Err() == redis.Nil {
 		return policies.Policy{}, errors.ErrNotFound
@@ -55,9 +57,9 @@ func (cc pcache) Get(ctx context.Context, policy policies.Policy) (policies.Poli
 	return policy, nil
 }
 
-func (cc pcache) Remove(ctx context.Context, policy policies.Policy) error {
+func (pc pcache) Remove(ctx context.Context, policy policies.Policy) error {
 	obj, _ := kv(policy)
-	if err := cc.client.Del(ctx, obj).Err(); err != nil {
+	if err := pc.client.Del(ctx, obj).Err(); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 	return nil
