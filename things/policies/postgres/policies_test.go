@@ -145,10 +145,10 @@ func TestPoliciesEvaluate(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		p := policies.Policy{
+		p := policies.AccessRequest{
 			Subject: tc.Subject,
 			Object:  tc.Object,
-			Actions: []string{tc.Action},
+			Action:  tc.Action,
 		}
 		switch tc.Domain {
 		case "client":

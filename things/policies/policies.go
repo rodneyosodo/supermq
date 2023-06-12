@@ -44,13 +44,13 @@ type Repository interface {
 	Save(ctx context.Context, p Policy) (Policy, error)
 
 	// EvaluateMessagingAccess is used to evaluate if thing has access to channel.
-	EvaluateMessagingAccess(ctx context.Context, p Policy) (Policy, error)
+	EvaluateMessagingAccess(ctx context.Context, ar AccessRequest) (Policy, error)
 
 	// EvaluateThingAccess is used to evaluate if user has access to a thing.
-	EvaluateThingAccess(ctx context.Context, p Policy) (Policy, error)
+	EvaluateThingAccess(ctx context.Context, ar AccessRequest) (Policy, error)
 
 	// EvaluateGroupAccess is used to evaluate if user has access to a group.
-	EvaluateGroupAccess(ctx context.Context, p Policy) (Policy, error)
+	EvaluateGroupAccess(ctx context.Context, ar AccessRequest) (Policy, error)
 
 	// Update updates the policy type.
 	Update(ctx context.Context, p Policy) (Policy, error)
@@ -98,18 +98,6 @@ type Cache interface {
 
 	// Remove deletes a client connection to a group.
 	Remove(ctx context.Context, policy Policy) error
-}
-
-// ClientCache contains thing caching interface.
-type ClientCache interface {
-	// Save stores pair thing key, thing id.
-	Save(context.Context, string, string) error
-
-	// ID returns thing ID for given key.
-	ID(context.Context, string) (string, error)
-
-	// Removes thing from cache.
-	Remove(context.Context, string) error
 }
 
 // Validate returns an error if policy representation is invalid.
