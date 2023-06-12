@@ -50,38 +50,43 @@ func (pr prepo) Save(ctx context.Context, policy policies.Policy) (policies.Poli
 	return toPolicy(dbp)
 }
 
-func (pr prepo) EvaluateMessagingAccess(ctx context.Context, p policies.Policy) (policies.Policy, error) {
+func (pr prepo) EvaluateMessagingAccess(ctx context.Context, ar policies.AccessRequest) (policies.Policy, error) {
 	query := fmt.Sprintf(`SELECT subject, object, actions 
 	FROM policies p INNER JOIN clients c ON c.id = p.subject
-	WHERE c.secret = :subject AND p.object = :object AND '%s' = ANY(p.actions)`, p.Actions[0])
+	WHERE c.secret = :subject AND p.object = :object AND '%s' = ANY(p.actions)`, ar.Action)
 
-	return pr.evaluate(ctx, query, p)
+	return pr.evaluate(ctx, query, ar)
 }
 
-func (pr prepo) EvaluateThingAccess(ctx context.Context, p policies.Policy) (policies.Policy, error) {
+func (pr prepo) EvaluateThingAccess(ctx context.Context, ar policies.AccessRequest) (policies.Policy, error) {
 	// Evaluates if two clients are connected to the same group and the subject has the specified action
 	// or subject is the owner of the object
 	query := fmt.Sprintf(`(SELECT subject FROM policies p 
 		WHERE p.subject = :subject AND '%s' = ANY(p.actions) AND object IN (SELECT object FROM policies WHERE subject = :object))
 		UNION
-		(SELECT id as subject FROM clients c WHERE c.owner_id = :subject AND c.id = :object) LIMIT 1;`, p.Actions[0])
+		(SELECT id as subject FROM clients c WHERE c.owner_id = :subject AND c.id = :object) LIMIT 1;`, ar.Action)
 
-	return pr.evaluate(ctx, query, p)
+	return pr.evaluate(ctx, query, ar)
 }
 
-func (pr prepo) EvaluateGroupAccess(ctx context.Context, p policies.Policy) (policies.Policy, error) {
+func (pr prepo) EvaluateGroupAccess(ctx context.Context, ar policies.AccessRequest) (policies.Policy, error) {
 	// Evaluates if client is connected to the specified group and has the required action
 	query := fmt.Sprintf(`(SELECT policies.subject FROM policies
 		WHERE policies.subject = :subject AND policies.object = :object AND '%s' = ANY(policies.actions))
 		UNION
 		(SELECT groups.owner_id as subject FROM groups
-		WHERE groups.owner_id = :subject AND groups.id = :object)`, p.Actions[0])
+		WHERE groups.owner_id = :subject AND groups.id = :object)`, ar.Action)
 
-	return pr.evaluate(ctx, query, p)
+	return pr.evaluate(ctx, query, ar)
 }
 
-func (pr prepo) evaluate(ctx context.Context, query string, policy policies.Policy) (policies.Policy, error) {
-	dbp, err := toDBPolicy(policy)
+func (pr prepo) evaluate(ctx context.Context, query string, aReq policies.AccessRequest) (policies.Policy, error) {
+	p := policies.Policy{
+		Subject: aReq.Subject,
+		Object:  aReq.Object,
+		Actions: []string{aReq.Action},
+	}
+	dbp, err := toDBPolicy(p)
 	if err != nil {
 		return policies.Policy{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
