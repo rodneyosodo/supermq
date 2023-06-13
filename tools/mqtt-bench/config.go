@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package bench
 
 // Keep struct names exported, otherwise Viper unmarshalling won't work.
