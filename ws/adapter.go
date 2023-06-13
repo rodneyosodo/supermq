@@ -1,8 +1,6 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-// Package ws contains the domain concept definitions needed to support
-// Mainflux ws adapter service functionality
 package ws
 
 import (
@@ -14,9 +12,7 @@ import (
 	"github.com/mainflux/mainflux/things/policies"
 )
 
-const (
-	chansPrefix = "channels"
-)
+const chansPrefix = "channels"
 
 var (
 	// ErrFailedMessagePublish indicates that message publishing failed.
@@ -46,13 +42,20 @@ var (
 
 // Service specifies web socket service API.
 type Service interface {
-	// Publish Message
+	// Publish publishes the message to the internal message broker.
+	// ThingKey is used for authorization.
+	// If the message is published successfully, nil is returned otherwise
+	// error is returned.
 	Publish(ctx context.Context, thingKey string, msg *messaging.Message) error
 
-	// Subscribes to a channel with specified id.
+	// Subscribe subscribes message from the broker using the thingKey for authorization,
+	// and the channelID for subscription. Subtopic is optional.
+	// If the subscription is successful, nil is returned otherwise error is returned.
 	Subscribe(ctx context.Context, thingKey, chanID, subtopic string, client *Client) error
 
-	// Unsubscribe method is used to stop observing resource.
+	// Unsubscribe unsubscribes message from the broker using the thingKey for authorization,
+	// and the channelID for subscription. Subtopic is optional.
+	// If the unsubscription is successful, nil is returned otherwise error is returned.
 	Unsubscribe(ctx context.Context, thingKey, chanID, subtopic string) error
 }
 
@@ -71,7 +74,6 @@ func New(auth policies.ThingsServiceClient, pubsub messaging.PubSub) Service {
 	}
 }
 
-// Publish publishes the message using the broker
 func (svc *adapterService) Publish(ctx context.Context, thingKey string, msg *messaging.Message) error {
 	thid, err := svc.authorize(ctx, thingKey, msg.GetChannel())
 	if err != nil {
@@ -91,7 +93,6 @@ func (svc *adapterService) Publish(ctx context.Context, thingKey string, msg *me
 	return nil
 }
 
-// Subscribe subscribes the thingKey and channelID to the topic
 func (svc *adapterService) Subscribe(ctx context.Context, thingKey, chanID, subtopic string, c *Client) error {
 	if chanID == "" || thingKey == "" {
 		return ErrUnauthorizedAccess
@@ -116,7 +117,6 @@ func (svc *adapterService) Subscribe(ctx context.Context, thingKey, chanID, subt
 	return nil
 }
 
-// Subscribe subscribes the thingKey and channelID  to the topic
 func (svc *adapterService) Unsubscribe(ctx context.Context, thingKey, chanID, subtopic string) error {
 	if chanID == "" || thingKey == "" {
 		return ErrUnauthorizedAccess
@@ -135,6 +135,8 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, thingKey, chanID, su
 	return svc.pubsub.Unsubscribe(ctx, thid, subject)
 }
 
+// authorize checks if the thingKey is authorized to access the channel
+// and returns the thingID if it is.
 func (svc *adapterService) authorize(ctx context.Context, thingKey, chanID string) (string, error) {
 	ar := &policies.AuthorizeReq{
 		Sub:        thingKey,

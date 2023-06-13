@@ -25,13 +25,13 @@ const (
 )
 
 func TestHealth(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
 	uauth := cmocks.NewAuthService(users, map[string][]cmocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
 
-	pRepo := new(pmocks.PolicyRepository)
+	pRepo := new(pmocks.Repository)
 	psvc := policies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := clients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)

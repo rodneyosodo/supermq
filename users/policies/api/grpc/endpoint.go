@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package grpc
 
 import (
@@ -15,8 +18,8 @@ func authorizeEndpoint(svc policies.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return authorizeRes{}, err
 		}
-		policy := policies.Policy{Subject: req.Sub, Object: req.Obj, Actions: []string{req.Act}}
-		err := svc.Authorize(ctx, req.EntityType, policy)
+		aReq := policies.AccessRequest{Subject: req.Sub, Object: req.Obj, Action: req.Act, Entity: req.EntityType}
+		err := svc.Authorize(ctx, aReq)
 		if err != nil {
 			return authorizeRes{}, err
 		}
@@ -94,7 +97,7 @@ func listPoliciesEndpoint(svc policies.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listPoliciesReq)
 		pp := policies.Page{Subject: req.Sub, Object: req.Obj, Action: req.Act, Limit: 10}
-		page, err := svc.ListPolicy(ctx, req.Token, pp)
+		page, err := svc.ListPolicies(ctx, req.Token, pp)
 		if err != nil {
 			return listPoliciesRes{}, err
 		}

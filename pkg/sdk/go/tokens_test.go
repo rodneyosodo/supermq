@@ -18,9 +18,9 @@ import (
 )
 
 func TestIssueToken(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	svc := clients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	ts := newClientServer(svc)
@@ -88,9 +88,9 @@ func TestIssueToken(t *testing.T) {
 }
 
 func TestRefreshToken(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	svc := clients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	ts := newClientServer(svc)

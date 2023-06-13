@@ -65,7 +65,7 @@ var (
 	refreshDuration = time.Minute * 10
 )
 
-func generateValidToken(t *testing.T, svc clients.Service, cRepo *umocks.ClientRepository) string {
+func generateValidToken(t *testing.T, svc clients.Service, cRepo *umocks.Repository) string {
 	client := mfclients.Client{
 		ID:   generateUUID(t),
 		Name: "validtoken",

@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package postgres
 
 import (
@@ -20,9 +23,9 @@ type groupRepository struct {
 	db postgres.Database
 }
 
-// NewGroupRepo instantiates a PostgreSQL implementation of group
+// NewRepository instantiates a PostgreSQL implementation of group
 // repository.
-func NewGroupRepo(db postgres.Database) mfgroups.Repository {
+func NewRepository(db postgres.Database) mfgroups.Repository {
 	return &groupRepository{
 		db: db,
 	}

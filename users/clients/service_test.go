@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package clients_test
 
 import (
@@ -43,9 +46,9 @@ var (
 )
 
 func TestRegisterClient(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -254,9 +257,9 @@ func TestRegisterClient(t *testing.T) {
 }
 
 func TestViewClient(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -317,9 +320,9 @@ func TestViewClient(t *testing.T) {
 }
 
 func TestListClients(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -603,9 +606,9 @@ func TestListClients(t *testing.T) {
 }
 
 func TestUpdateClient(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -679,9 +682,9 @@ func TestUpdateClient(t *testing.T) {
 }
 
 func TestUpdateClientTags(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -738,9 +741,9 @@ func TestUpdateClientTags(t *testing.T) {
 }
 
 func TestUpdateClientIdentity(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -799,9 +802,9 @@ func TestUpdateClientIdentity(t *testing.T) {
 }
 
 func TestUpdateClientOwner(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -858,9 +861,9 @@ func TestUpdateClientOwner(t *testing.T) {
 }
 
 func TestUpdateClientSecret(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -928,9 +931,9 @@ func TestUpdateClientSecret(t *testing.T) {
 }
 
 func TestEnableClient(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -1058,9 +1061,9 @@ func TestEnableClient(t *testing.T) {
 }
 
 func TestDisableClient(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -1188,9 +1191,9 @@ func TestDisableClient(t *testing.T) {
 }
 
 func TestListMembers(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -1311,9 +1314,9 @@ func TestListMembers(t *testing.T) {
 }
 
 func TestIssueToken(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -1365,9 +1368,9 @@ func TestIssueToken(t *testing.T) {
 }
 
 func TestRefreshToken(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 

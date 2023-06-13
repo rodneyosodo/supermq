@@ -38,18 +38,18 @@ func newThingsServer(svc clients.Service, psvc policies.Service) *httptest.Serve
 	logger := mflog.NewMock()
 	mux := bone.New()
 	api.MakeHandler(svc, mux, logger)
-	papi.MakePolicyHandler(svc, psvc, mux, logger)
+	papi.MakeHandler(svc, psvc, mux, logger)
 	return httptest.NewServer(mux)
 }
 
 func TestCreateThing(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
 	uauth := cmocks.NewAuthService(users, map[string][]cmocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
 
-	pRepo := new(pmocks.PolicyRepository)
+	pRepo := new(pmocks.Repository)
 	psvc := policies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := clients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
@@ -194,13 +194,13 @@ func TestCreateThing(t *testing.T) {
 }
 
 func TestCreateThings(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
 	uauth := cmocks.NewAuthService(users, map[string][]cmocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
 
-	pRepo := new(pmocks.PolicyRepository)
+	pRepo := new(pmocks.Repository)
 	psvc := policies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := clients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
@@ -287,13 +287,13 @@ func TestCreateThings(t *testing.T) {
 }
 
 func TestListThings(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
 	uauth := cmocks.NewAuthService(users, map[string][]cmocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
 
-	pRepo := new(pmocks.PolicyRepository)
+	pRepo := new(pmocks.Repository)
 	psvc := policies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := clients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
@@ -474,13 +474,13 @@ func TestListThings(t *testing.T) {
 }
 
 func TestListThingsByChannel(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
 	uauth := cmocks.NewAuthService(users, map[string][]cmocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
 
-	pRepo := new(pmocks.PolicyRepository)
+	pRepo := new(pmocks.Repository)
 	psvc := policies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := clients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
@@ -616,13 +616,13 @@ func TestListThingsByChannel(t *testing.T) {
 }
 
 func TestThing(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
 	uauth := cmocks.NewAuthService(users, map[string][]cmocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
 
-	pRepo := new(pmocks.PolicyRepository)
+	pRepo := new(pmocks.Repository)
 	psvc := policies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := clients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
@@ -694,13 +694,13 @@ func TestThing(t *testing.T) {
 }
 
 func TestUpdateThing(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
 	uauth := cmocks.NewAuthService(users, map[string][]cmocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
 
-	pRepo := new(pmocks.PolicyRepository)
+	pRepo := new(pmocks.Repository)
 	psvc := policies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := clients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
@@ -787,13 +787,13 @@ func TestUpdateThing(t *testing.T) {
 }
 
 func TestUpdateThingTags(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
 	uauth := cmocks.NewAuthService(users, map[string][]cmocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
 
-	pRepo := new(pmocks.PolicyRepository)
+	pRepo := new(pmocks.Repository)
 	psvc := policies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := clients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
@@ -879,13 +879,13 @@ func TestUpdateThingTags(t *testing.T) {
 }
 
 func TestUpdateThingSecret(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
 	uauth := cmocks.NewAuthService(users, map[string][]cmocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
 
-	pRepo := new(pmocks.PolicyRepository)
+	pRepo := new(pmocks.Repository)
 	psvc := policies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := clients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
@@ -951,13 +951,13 @@ func TestUpdateThingSecret(t *testing.T) {
 }
 
 func TestUpdateThingOwner(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
 	uauth := cmocks.NewAuthService(users, map[string][]cmocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
 
-	pRepo := new(pmocks.PolicyRepository)
+	pRepo := new(pmocks.Repository)
 	psvc := policies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := clients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
@@ -1042,13 +1042,13 @@ func TestUpdateThingOwner(t *testing.T) {
 }
 
 func TestEnableThing(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
 	uauth := cmocks.NewAuthService(users, map[string][]cmocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
 
-	pRepo := new(pmocks.PolicyRepository)
+	pRepo := new(pmocks.Repository)
 	psvc := policies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := clients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
@@ -1173,13 +1173,13 @@ func TestEnableThing(t *testing.T) {
 }
 
 func TestDisableThing(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
 	uauth := cmocks.NewAuthService(users, map[string][]cmocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
 
-	pRepo := new(pmocks.PolicyRepository)
+	pRepo := new(pmocks.Repository)
 	psvc := policies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := clients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
@@ -1304,13 +1304,13 @@ func TestDisableThing(t *testing.T) {
 }
 
 func TestIdentify(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
 	uauth := cmocks.NewAuthService(users, map[string][]cmocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
 
-	pRepo := new(pmocks.PolicyRepository)
+	pRepo := new(pmocks.Repository)
 	psvc := policies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := clients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
@@ -1363,13 +1363,13 @@ func TestIdentify(t *testing.T) {
 }
 
 func TestShareThing(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
 	uauth := cmocks.NewAuthService(users, map[string][]cmocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
 
-	pRepo := new(pmocks.PolicyRepository)
+	pRepo := new(pmocks.Repository)
 	psvc := policies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := clients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)

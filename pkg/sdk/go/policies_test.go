@@ -35,15 +35,15 @@ var utadminPolicy = umocks.SubjectSet{Subject: "things", Relation: []string{"g_a
 func newPolicyServer(svc upolicies.Service) *httptest.Server {
 	logger := logger.NewMock()
 	mux := bone.New()
-	uapi.MakePolicyHandler(svc, mux, logger)
+	uapi.MakeHandler(svc, mux, logger)
 
 	return httptest.NewServer(mux)
 }
 
 func TestCreatePolicy(t *testing.T) {
-	cRepo := new(umocks.ClientRepository)
-	pRepo := new(upmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(umocks.Repository)
+	pRepo := new(upmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
@@ -153,14 +153,14 @@ func TestCreatePolicy(t *testing.T) {
 
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
-		repoCall1 := pRepo.On("Retrieve", mock.Anything, mock.Anything).Return(convertUserPolicyPage(tc.page), nil)
+		repoCall1 := pRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(convertUserPolicyPage(tc.page), nil)
 		repoCall2 := pRepo.On("Update", mock.Anything, mock.Anything).Return(tc.err)
 		repoCall3 := pRepo.On("Save", mock.Anything, mock.Anything).Return(tc.err)
 		err := mfsdk.CreatePolicy(tc.policy, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		if tc.err == nil {
-			ok := repoCall.Parent.AssertCalled(t, "Retrieve", mock.Anything, mock.Anything)
-			assert.True(t, ok, fmt.Sprintf("Retrieve was not called on %s", tc.desc))
+			ok := repoCall.Parent.AssertCalled(t, "RetrieveAll", mock.Anything, mock.Anything)
+			assert.True(t, ok, fmt.Sprintf("RetrieveAll was not called on %s", tc.desc))
 			ok = repoCall2.Parent.AssertCalled(t, "Save", mock.Anything, mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("Save was not called on %s", tc.desc))
 			if tc.desc == addExistingPolicyDesc {
@@ -176,9 +176,9 @@ func TestCreatePolicy(t *testing.T) {
 }
 
 func TestAuthorize(t *testing.T) {
-	cRepo := new(umocks.ClientRepository)
-	pRepo := new(upmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(umocks.Repository)
+	pRepo := new(upmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
@@ -281,9 +281,9 @@ func TestAuthorize(t *testing.T) {
 }
 
 func TestAssign(t *testing.T) {
-	cRepo := new(umocks.ClientRepository)
-	pRepo := new(upmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(umocks.Repository)
+	pRepo := new(upmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
@@ -393,14 +393,14 @@ func TestAssign(t *testing.T) {
 
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
-		repoCall1 := pRepo.On("Retrieve", mock.Anything, mock.Anything).Return(convertUserPolicyPage(tc.page), nil)
+		repoCall1 := pRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(convertUserPolicyPage(tc.page), nil)
 		repoCall2 := pRepo.On("Update", mock.Anything, mock.Anything).Return(tc.err)
 		repoCall3 := pRepo.On("Save", mock.Anything, mock.Anything).Return(tc.err)
 		err := mfsdk.Assign(tc.policy.Actions, tc.policy.Subject, tc.policy.Object, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		if tc.err == nil {
-			ok := repoCall.Parent.AssertCalled(t, "Retrieve", mock.Anything, mock.Anything)
-			assert.True(t, ok, fmt.Sprintf("Retrieve was not called on %s", tc.desc))
+			ok := repoCall.Parent.AssertCalled(t, "RetrieveAll", mock.Anything, mock.Anything)
+			assert.True(t, ok, fmt.Sprintf("RetrieveAll was not called on %s", tc.desc))
 			ok = repoCall2.Parent.AssertCalled(t, "Save", mock.Anything, mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("Save was not called on %s", tc.desc))
 			if tc.desc == addExistingPolicyDesc {
@@ -415,9 +415,9 @@ func TestAssign(t *testing.T) {
 	}
 }
 func TestUpdatePolicy(t *testing.T) {
-	cRepo := new(umocks.ClientRepository)
-	pRepo := new(upmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(umocks.Repository)
+	pRepo := new(upmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
@@ -465,7 +465,7 @@ func TestUpdatePolicy(t *testing.T) {
 		policy.Actions = tc.action
 		policy.CreatedAt = time.Now()
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
-		repoCall1 := pRepo.On("Retrieve", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(upolicies.PolicyPage{}, nil)
+		repoCall1 := pRepo.On("RetrieveAll", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(upolicies.PolicyPage{}, nil)
 		repoCall2 := pRepo.On("Update", mock.Anything, mock.Anything).Return(tc.err)
 		err := mfsdk.UpdatePolicy(policy, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
@@ -478,13 +478,13 @@ func TestUpdatePolicy(t *testing.T) {
 }
 
 func TestUpdateThingsPolicy(t *testing.T) {
-	cRepo := new(tmocks.ClientRepository)
-	gRepo := new(tgmocks.GroupRepository)
+	cRepo := new(tmocks.Repository)
+	gRepo := new(tgmocks.Repository)
 	uauth := umocks.NewAuthService(users, map[string][]umocks.SubjectSet{adminID: {utadminPolicy}})
 	thingCache := tmocks.NewCache()
 	policiesCache := tpmocks.NewCache()
 
-	pRepo := new(tpmocks.PolicyRepository)
+	pRepo := new(tpmocks.Repository)
 	psvc := tpolicies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := tclients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
@@ -531,7 +531,7 @@ func TestUpdateThingsPolicy(t *testing.T) {
 	for _, tc := range cases {
 		policy.Actions = tc.action
 		policy.CreatedAt = time.Now()
-		repoCall := pRepo.On("Retrieve", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(tpolicies.PolicyPage{}, nil)
+		repoCall := pRepo.On("RetrieveAll", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(tpolicies.PolicyPage{}, nil)
 		repoCall1 := pRepo.On("Update", mock.Anything, mock.Anything).Return(policies.Policy{}, tc.err)
 		err := mfsdk.UpdateThingsPolicy(policy, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
@@ -543,9 +543,9 @@ func TestUpdateThingsPolicy(t *testing.T) {
 }
 
 func TestListPolicies(t *testing.T) {
-	cRepo := new(umocks.ClientRepository)
-	pRepo := new(upmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(umocks.Repository)
+	pRepo := new(upmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
@@ -665,21 +665,21 @@ func TestListPolicies(t *testing.T) {
 
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
-		repoCall1 := pRepo.On("Retrieve", mock.Anything, mock.Anything).Return(convertUserPolicyPage(sdk.PolicyPage{Policies: tc.response}), tc.err)
+		repoCall1 := pRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(convertUserPolicyPage(sdk.PolicyPage{Policies: tc.response}), tc.err)
 		pp, err := mfsdk.ListPolicies(tc.page, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, pp.Policies, fmt.Sprintf("%s: expected %v, got %v", tc.desc, tc.response, pp))
-		ok := repoCall.Parent.AssertCalled(t, "Retrieve", mock.Anything, mock.Anything)
-		assert.True(t, ok, fmt.Sprintf("Retrieve was not called on %s", tc.desc))
+		ok := repoCall.Parent.AssertCalled(t, "RetrieveAll", mock.Anything, mock.Anything)
+		assert.True(t, ok, fmt.Sprintf("RetrieveAll was not called on %s", tc.desc))
 		repoCall.Unset()
 		repoCall1.Unset()
 	}
 }
 
 func TestDeletePolicy(t *testing.T) {
-	cRepo := new(umocks.ClientRepository)
-	pRepo := new(upmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(umocks.Repository)
+	pRepo := new(upmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
@@ -696,7 +696,7 @@ func TestDeletePolicy(t *testing.T) {
 	cpr := sdk.Policy{Object: authoritiesObj, Actions: []string{"m_read", "g_add", "c_delete"}, Subject: sub}
 
 	repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
-	repoCall1 := pRepo.On("Retrieve", mock.Anything, mock.Anything).Return(convertUserPolicyPage(sdk.PolicyPage{Policies: []sdk.Policy{cpr}}), nil)
+	repoCall1 := pRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(convertUserPolicyPage(sdk.PolicyPage{Policies: []sdk.Policy{cpr}}), nil)
 	repoCall2 := pRepo.On("Delete", mock.Anything, mock.Anything).Return(nil)
 	err := mfsdk.DeletePolicy(pr, generateValidToken(t, csvc, cRepo))
 	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -707,7 +707,7 @@ func TestDeletePolicy(t *testing.T) {
 	repoCall.Unset()
 
 	repoCall = pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
-	repoCall1 = pRepo.On("Retrieve", mock.Anything, mock.Anything).Return(convertUserPolicyPage(sdk.PolicyPage{Policies: []sdk.Policy{cpr}}), nil)
+	repoCall1 = pRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(convertUserPolicyPage(sdk.PolicyPage{Policies: []sdk.Policy{cpr}}), nil)
 	repoCall2 = pRepo.On("Delete", mock.Anything, mock.Anything).Return(sdk.ErrFailedRemoval)
 	err = mfsdk.DeletePolicy(pr, invalidToken)
 	assert.Equal(t, err, errors.NewSDKErrorWithStatus(errors.ErrAuthentication, http.StatusUnauthorized), fmt.Sprintf("expected %s got %s", pr, err))
@@ -719,9 +719,9 @@ func TestDeletePolicy(t *testing.T) {
 }
 
 func TestUnassign(t *testing.T) {
-	cRepo := new(umocks.ClientRepository)
-	pRepo := new(upmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(umocks.Repository)
+	pRepo := new(upmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
@@ -738,7 +738,7 @@ func TestUnassign(t *testing.T) {
 	cpr := sdk.Policy{Object: authoritiesObj, Actions: []string{"m_read", "g_add", "c_delete"}, Subject: sub}
 
 	repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
-	repoCall1 := pRepo.On("Retrieve", mock.Anything, mock.Anything).Return(convertUserPolicyPage(sdk.PolicyPage{Policies: []sdk.Policy{cpr}}), nil)
+	repoCall1 := pRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(convertUserPolicyPage(sdk.PolicyPage{Policies: []sdk.Policy{cpr}}), nil)
 	repoCall2 := pRepo.On("Delete", mock.Anything, mock.Anything).Return(nil)
 	err := mfsdk.Unassign(pr.Subject, pr.Object, generateValidToken(t, csvc, cRepo))
 	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -749,7 +749,7 @@ func TestUnassign(t *testing.T) {
 	repoCall.Unset()
 
 	repoCall = pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
-	repoCall1 = pRepo.On("Retrieve", mock.Anything, mock.Anything).Return(convertUserPolicyPage(sdk.PolicyPage{Policies: []sdk.Policy{cpr}}), nil)
+	repoCall1 = pRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(convertUserPolicyPage(sdk.PolicyPage{Policies: []sdk.Policy{cpr}}), nil)
 	repoCall2 = pRepo.On("Delete", mock.Anything, mock.Anything).Return(sdk.ErrFailedRemoval)
 	err = mfsdk.Unassign(pr.Subject, pr.Object, invalidToken)
 	assert.Equal(t, err, errors.NewSDKErrorWithStatus(errors.ErrAuthentication, http.StatusUnauthorized), fmt.Sprintf("expected %s got %s", pr, err))
@@ -761,13 +761,13 @@ func TestUnassign(t *testing.T) {
 }
 
 func TestConnect(t *testing.T) {
-	cRepo := new(tmocks.ClientRepository)
-	gRepo := new(tgmocks.GroupRepository)
+	cRepo := new(tmocks.Repository)
+	gRepo := new(tgmocks.Repository)
 	uauth := umocks.NewAuthService(users, map[string][]umocks.SubjectSet{adminID: {utadminPolicy}})
 	thingCache := tmocks.NewCache()
 	policiesCache := tpmocks.NewCache()
 
-	pRepo := new(tpmocks.PolicyRepository)
+	pRepo := new(tpmocks.Repository)
 	psvc := tpolicies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := tclients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
@@ -900,13 +900,13 @@ func TestConnect(t *testing.T) {
 }
 
 func TestConnectThing(t *testing.T) {
-	cRepo := new(tmocks.ClientRepository)
-	gRepo := new(tgmocks.GroupRepository)
+	cRepo := new(tmocks.Repository)
+	gRepo := new(tgmocks.Repository)
 	uauth := umocks.NewAuthService(users, map[string][]umocks.SubjectSet{adminID: {utadminPolicy}})
 	thingCache := tmocks.NewCache()
 	policiesCache := tpmocks.NewCache()
 
-	pRepo := new(tpmocks.PolicyRepository)
+	pRepo := new(tpmocks.Repository)
 	psvc := tpolicies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := tclients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
@@ -1038,13 +1038,13 @@ func TestConnectThing(t *testing.T) {
 }
 
 func TestDisconnectThing(t *testing.T) {
-	cRepo := new(tmocks.ClientRepository)
-	gRepo := new(tgmocks.GroupRepository)
+	cRepo := new(tmocks.Repository)
+	gRepo := new(tgmocks.Repository)
 	uauth := umocks.NewAuthService(users, map[string][]umocks.SubjectSet{adminID: {utadminPolicy}})
 	thingCache := tmocks.NewCache()
 	policiesCache := tpmocks.NewCache()
 
-	pRepo := new(tpmocks.PolicyRepository)
+	pRepo := new(tpmocks.Repository)
 	psvc := tpolicies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := tclients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
@@ -1075,13 +1075,13 @@ func TestDisconnectThing(t *testing.T) {
 }
 
 func TestDisconnect(t *testing.T) {
-	cRepo := new(tmocks.ClientRepository)
-	gRepo := new(tgmocks.GroupRepository)
+	cRepo := new(tmocks.Repository)
+	gRepo := new(tgmocks.Repository)
 	uauth := umocks.NewAuthService(users, map[string][]umocks.SubjectSet{adminID: {utadminPolicy}})
 	thingCache := tmocks.NewCache()
 	policiesCache := tpmocks.NewCache()
 
-	pRepo := new(tpmocks.PolicyRepository)
+	pRepo := new(tpmocks.Repository)
 	psvc := tpolicies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := tclients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)

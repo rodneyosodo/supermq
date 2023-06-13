@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package clients
 
 import (
@@ -12,10 +15,6 @@ type ClientService interface {
 	// RegisterClient creates new client. In case of the failed registration, a
 	// non-nil error value is returned.
 	RegisterClient(ctx context.Context, token string, client clients.Client) (clients.Client, error)
-
-	// LoginClient authenticates the client given its credentials. Successful
-	// authentication generates new access token. Failed invocations are
-	// identified by the non-nil error values in the response.
 
 	// ViewClient retrieves client info for a given client ID and an authorized token.
 	ViewClient(ctx context.Context, token, id string) (clients.Client, error)
@@ -35,14 +34,14 @@ type ClientService interface {
 	// UpdateClientTags updates the client's tags.
 	UpdateClientTags(ctx context.Context, token string, client clients.Client) (clients.Client, error)
 
-	// UpdateClientIdentity updates the client's identity
+	// UpdateClientIdentity updates the client's identity.
 	UpdateClientIdentity(ctx context.Context, token, id, identity string) (clients.Client, error)
 
 	// GenerateResetToken email where mail will be sent.
 	// host is used for generating reset link.
 	GenerateResetToken(ctx context.Context, email, host string) error
 
-	// UpdateClientSecret updates the client's secret
+	// UpdateClientSecret updates the client's secret.
 	UpdateClientSecret(ctx context.Context, token, oldSecret, newSecret string) (clients.Client, error)
 
 	// ResetSecret change users secret in reset flow.
@@ -55,12 +54,12 @@ type ClientService interface {
 	// UpdateClientOwner updates the client's owner.
 	UpdateClientOwner(ctx context.Context, token string, client clients.Client) (clients.Client, error)
 
-	// EnableClient logically enableds the client identified with the provided ID
+	// EnableClient logically enableds the client identified with the provided ID.
 	EnableClient(ctx context.Context, token, id string) (clients.Client, error)
 
-	// DisableClient logically disables the client identified with the provided ID
+	// DisableClient logically disables the client identified with the provided ID.
 	DisableClient(ctx context.Context, token, id string) (clients.Client, error)
 
-	// Identify returns the client id from the given token
+	// Identify returns the client id from the given token.
 	Identify(ctx context.Context, tkn string) (string, error)
 }

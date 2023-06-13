@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package clients
 
 import (
@@ -37,24 +40,24 @@ var (
 	ErrPasswordFormat = errors.New("password does not meet the requirements")
 )
 
-// Service unites Clients and Group services.
+// Service unites Clients and JWT services.
 type Service interface {
 	ClientService
-	jwt.TokenService
+	jwt.Service
 }
 
 type service struct {
 	clients    mfclients.Repository
-	policies   policies.PolicyRepository
+	policies   policies.Repository
 	idProvider mainflux.IDProvider
 	hasher     Hasher
-	tokens     jwt.TokenRepository
+	tokens     jwt.Repository
 	email      Emailer
 	passRegex  *regexp.Regexp
 }
 
 // NewService returns a new Clients service implementation.
-func NewService(c mfclients.Repository, p policies.PolicyRepository, t jwt.TokenRepository, e Emailer, h Hasher, idp mainflux.IDProvider, pr *regexp.Regexp) Service {
+func NewService(c mfclients.Repository, p policies.Repository, t jwt.Repository, e Emailer, h Hasher, idp mainflux.IDProvider, pr *regexp.Regexp) Service {
 	return service{
 		clients:    c,
 		policies:   p,
@@ -422,7 +425,11 @@ func (svc service) authorize(ctx context.Context, subject, object, action string
 	if err := svc.policies.CheckAdmin(ctx, policy.Subject); err == nil {
 		return nil
 	}
-	return svc.policies.Evaluate(ctx, entityType, policy)
+	aReq := policies.AccessRequest{Subject: subject, Object: object, Action: action, Entity: entityType}
+	if _, err := svc.policies.EvaluateUserAccess(ctx, aReq); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (svc service) Identify(ctx context.Context, token string) (string, error) {

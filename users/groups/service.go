@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package groups
 
 import (
@@ -25,20 +28,15 @@ const (
 	entityType        = "group"
 )
 
-// Service unites Clients and Group services.
-type Service interface {
-	GroupService
-}
-
 type service struct {
 	groups     groups.Repository
-	policies   policies.PolicyRepository
-	tokens     jwt.TokenRepository
+	policies   policies.Repository
+	tokens     jwt.Repository
 	idProvider mainflux.IDProvider
 }
 
 // NewService returns a new Clients service implementation.
-func NewService(g groups.Repository, p policies.PolicyRepository, t jwt.TokenRepository, idp mainflux.IDProvider) Service {
+func NewService(g groups.Repository, p policies.Repository, t jwt.Repository, idp mainflux.IDProvider) Service {
 	return service{
 		groups:     g,
 		policies:   p,
@@ -177,7 +175,11 @@ func (svc service) authorizeByID(ctx context.Context, subject, object, action st
 	if err := svc.policies.CheckAdmin(ctx, policy.Subject); err == nil {
 		return nil
 	}
-	return svc.policies.Evaluate(ctx, entityType, policy)
+	aReq := policies.AccessRequest{Subject: subject, Object: object, Action: action, Entity: entityType}
+	if _, err := svc.policies.EvaluateUserAccess(ctx, aReq); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (svc service) authorizeByToken(ctx context.Context, token, object, action string) error {

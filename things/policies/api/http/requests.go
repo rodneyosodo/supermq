@@ -1,4 +1,7 @@
-package api
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
+package http
 
 import (
 	"github.com/mainflux/mainflux/internal/api"

@@ -15,11 +15,22 @@ import (
 var _ messaging.PubSub = (*mockPubSub)(nil)
 
 type MockPubSub interface {
+	// Publish publishes message to the channel.
 	Publish(context.Context, string, *messaging.Message) error
+
+	// Subscribe subscribes messages from the channel.
 	Subscribe(context.Context, string, string, messaging.MessageHandler) error
+
+	// Unsubscribe unsubscribes messages from the channel.
 	Unsubscribe(context.Context, string, string) error
+
+	// SetFail sets the fail flag.
 	SetFail(bool)
+
+	// SetConn sets the connection.
 	SetConn(*websocket.Conn)
+
+	// Close closes the connection.
 	Close() error
 }
 

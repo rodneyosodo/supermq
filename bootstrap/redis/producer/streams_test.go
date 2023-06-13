@@ -103,7 +103,7 @@ func newThingsServer(csvc clients.Service, gsvc groups.Service, psvc tpolicies.S
 	mux := bone.New()
 	capi.MakeHandler(csvc, mux, logger)
 	gapi.MakeHandler(gsvc, mux, logger)
-	papi.MakePolicyHandler(csvc, psvc, mux, logger)
+	papi.MakeHandler(csvc, psvc, mux, logger)
 	return httptest.NewServer(mux)
 }
 

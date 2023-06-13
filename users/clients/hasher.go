@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package clients
 
 // Hasher specifies an API for generating hashes of an arbitrary textual

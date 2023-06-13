@@ -32,14 +32,14 @@ func newChannelsServer(csvc clients.Service, svc groups.Service, psvc policies.S
 	logger := logger.NewMock()
 	mux := bone.New()
 	api.MakeHandler(svc, mux, logger)
-	papi.MakePolicyHandler(csvc, psvc, mux, logger)
+	papi.MakeHandler(csvc, psvc, mux, logger)
 	return httptest.NewServer(mux)
 }
 
 func TestCreateChannel(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
-	pRepo := new(pmocks.PolicyRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
+	pRepo := new(pmocks.Repository)
 	uauth := umocks.NewAuthService(users, map[string][]umocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
@@ -155,9 +155,9 @@ func TestCreateChannel(t *testing.T) {
 }
 
 func TestCreateChannels(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
-	pRepo := new(pmocks.PolicyRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
+	pRepo := new(pmocks.Repository)
 	uauth := umocks.NewAuthService(users, map[string][]umocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
@@ -237,9 +237,9 @@ func TestCreateChannels(t *testing.T) {
 }
 
 func TestListChannels(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
-	pRepo := new(pmocks.PolicyRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
+	pRepo := new(pmocks.Repository)
 	uauth := umocks.NewAuthService(users, map[string][]umocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
@@ -369,9 +369,9 @@ func TestListChannels(t *testing.T) {
 }
 
 func TestViewChannel(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
-	pRepo := new(pmocks.PolicyRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
+	pRepo := new(pmocks.Repository)
 	uauth := umocks.NewAuthService(users, map[string][]umocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
@@ -453,9 +453,9 @@ func TestViewChannel(t *testing.T) {
 }
 
 func TestUpdateChannel(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
-	pRepo := new(pmocks.PolicyRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
+	pRepo := new(pmocks.Repository)
 	uauth := umocks.NewAuthService(users, map[string][]umocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
@@ -627,9 +627,9 @@ func TestUpdateChannel(t *testing.T) {
 }
 
 func TestListChannelsByThing(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
-	pRepo := new(pmocks.PolicyRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
+	pRepo := new(pmocks.Repository)
 	uauth := umocks.NewAuthService(users, map[string][]umocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
@@ -766,9 +766,9 @@ func TestListChannelsByThing(t *testing.T) {
 }
 
 func TestEnableChannel(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
-	pRepo := new(pmocks.PolicyRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
+	pRepo := new(pmocks.Repository)
 	uauth := umocks.NewAuthService(users, map[string][]umocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
@@ -836,9 +836,9 @@ func TestEnableChannel(t *testing.T) {
 }
 
 func TestDisableChannel(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	gRepo := new(gmocks.GroupRepository)
-	pRepo := new(pmocks.PolicyRepository)
+	cRepo := new(mocks.Repository)
+	gRepo := new(gmocks.Repository)
+	pRepo := new(pmocks.Repository)
 	uauth := umocks.NewAuthService(users, map[string][]umocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()

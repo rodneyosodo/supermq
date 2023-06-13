@@ -21,7 +21,7 @@ func GenerateUUID(t *testing.T, idProvider mainflux.IDProvider) string {
 	return ulid
 }
 
-func GenerateValidToken(t *testing.T, clientID string, svc clients.Service, cRepo *cmocks.ClientRepository, phasher clients.Hasher) string {
+func GenerateValidToken(t *testing.T, clientID string, svc clients.Service, cRepo *cmocks.Repository, phasher clients.Hasher) string {
 	client := mfclients.Client{
 		ID:   clientID,
 		Name: "validtoken",
