@@ -1,6 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
+// Package main contains mongodb-reader main function to start the mongodb-reader service.
 package main
 
 import (

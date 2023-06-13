@@ -1,6 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
+// Package main contains smtp-notifier main function to start the smtp-notifier service.
 package main
 
 import (

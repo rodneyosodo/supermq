@@ -1,6 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
+// Package main contains websocket-adapter main function to start the websocket-adapter service.
 package main
 
 import (

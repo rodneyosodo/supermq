@@ -1,3 +1,7 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
+// Package main contains influxdb-reader main function to start the influxdb-reader service.
 package main
 
 import (

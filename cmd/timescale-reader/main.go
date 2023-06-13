@@ -1,6 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
+// Package main contains timescale-reader main function to start the timescale-reader service.
 package main
 
 import (

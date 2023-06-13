@@ -1,6 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
+// Package main contains timescale-writer main function to start the timescale-writer service.
 package main
 
 import (

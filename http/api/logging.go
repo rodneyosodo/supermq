@@ -27,6 +27,8 @@ func LoggingMiddleware(svc http.Service, logger mflog.Logger) http.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
+// Publish logs the publish request. It logs the time it took to complete the request.
+// If the request fails, it logs the error.
 func (lm *loggingMiddleware) Publish(ctx context.Context, token string, msg *messaging.Message) (err error) {
 	defer func(begin time.Time) {
 		destChannel := msg.Channel

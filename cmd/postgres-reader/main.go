@@ -1,6 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
+// Package main contains postgres-reader main function to start the postgres-reader service.
 package main
 
 import (

@@ -28,6 +28,8 @@ func LoggingMiddleware(consumer consumers.BlockingConsumer, logger mflog.Logger)
 	}
 }
 
+// ConsumeBlocking logs the consume request. It logs the time it took to complete the request.
+// If the request fails, it logs the error.
 func (lm *loggingMiddleware) ConsumeBlocking(msgs interface{}) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))

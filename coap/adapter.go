@@ -24,7 +24,8 @@ var ErrUnsubscribe = errors.New("unable to unsubscribe")
 
 // Service specifies CoAP service API.
 type Service interface {
-	// Publish Messssage
+	// Publish publishes message to specified channel.
+	// Key is used to authorize publisher.
 	Publish(ctx context.Context, key string, msg *messaging.Message) error
 
 	// Subscribes to channel with specified id, subtopic and adds subscription to

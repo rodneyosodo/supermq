@@ -19,11 +19,22 @@ type database struct {
 
 // Database provides a database interface
 type Database interface {
+	// NamedQueryContext executes a named query against the database and returns
 	NamedQueryContext(context.Context, string, interface{}) (*sqlx.Rows, error)
+
+	// NamedExecContext executes a named query against the database and returns
 	NamedExecContext(context.Context, string, interface{}) (sql.Result, error)
+
+	// QueryRowxContext queries the database and returns an *sqlx.Row
 	QueryRowxContext(context.Context, string, ...interface{}) *sqlx.Row
+
+	// QueryxContext queries the database and returns an *sqlx.Rows
 	QueryxContext(context.Context, string, ...interface{}) (*sqlx.Rows, error)
+
+	// ExecContext executes a query without returning any rows
 	ExecContext(context.Context, string, ...interface{}) (sql.Result, error)
+
+	// BeginTxx begins a transaction and returns an *sqlx.Tx
 	BeginTxx(ctx context.Context, opts *sql.TxOptions) (*sqlx.Tx, error)
 }
 
