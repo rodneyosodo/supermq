@@ -52,19 +52,19 @@ func init() {
 // The operations are:
 // - Create a user
 // - Create other users
-// - Do Read, Update and Change of Status operations on users
+// - Do Read, Update and Change of Status operations on users.
 
 // - Create groups using hierarchy
-// - Do Read, Update and Change of Status operations on groups
+// - Do Read, Update and Change of Status operations on groups.
 
 // - Create things
-// - Do Read, Update and Change of Status operations on things
+// - Do Read, Update and Change of Status operations on things.
 
 // - Create channels
-// - Do Read, Update and Change of Status operations on channels
+// - Do Read, Update and Change of Status operations on channels.
 
 // - Connect thing to channel
-// - Publish message from HTTP, MQTT, WS and CoAP Adapters
+// - Publish message from HTTP, MQTT, WS and CoAP Adapters.
 func Test(conf Config) {
 	sdkConf := sdk.Config{
 		ThingsURL:       fmt.Sprintf("http://%s", conf.Host),

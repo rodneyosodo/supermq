@@ -11,7 +11,7 @@ import (
 	upolicies "github.com/mainflux/mainflux/users/policies"
 )
 
-// PolicyTypes contains a list of the available policy types currently supported
+// PolicyTypes contains a list of the available policy types currently supported.
 var PolicyTypes = []string{WriteAction, ReadAction}
 
 // Policy represents an argument struct for making a policy related function calls.
@@ -126,7 +126,7 @@ func (p Policy) Validate() error {
 	return nil
 }
 
-// ValidateAction check if the action is in policies
+// ValidateAction check if the action is in policies.
 func ValidateAction(act string) bool {
 	for _, v := range PolicyTypes {
 		if v == act {

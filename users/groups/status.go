@@ -8,7 +8,7 @@ import "github.com/mainflux/mainflux/internal/apiutil"
 // Status represents Group status.
 type Status uint8
 
-// Possible Group status values
+// Possible Group status values.
 const (
 	// EnabledStatus represents enabled Group.
 	EnabledStatus Status = iota

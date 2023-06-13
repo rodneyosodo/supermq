@@ -18,7 +18,7 @@ import (
 	"github.com/pelletier/go-toml"
 )
 
-// Benchmark - main benchmarking function
+// Benchmark - main benchmarking function.
 func Benchmark(cfg Config) {
 	checkConnection(cfg.MQTT.Broker.URL, 1)
 	logger, err := mflog.New(os.Stdout, mflog.Debug.String())

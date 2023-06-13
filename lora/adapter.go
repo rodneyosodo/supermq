@@ -77,7 +77,7 @@ func New(publisher messaging.Publisher, thingsRM, channelsRM, connectRM RouteMap
 	}
 }
 
-// Publish forwards messages from Lora MQTT broker to Mainflux Message broker
+// Publish forwards messages from Lora MQTT broker to Mainflux Message broker.
 func (as *adapterService) Publish(ctx context.Context, m *Message) error {
 	// Get route map of lora application
 	thingID, err := as.thingsRM.Get(ctx, m.DevEUI)

@@ -11,7 +11,7 @@ import (
 	mfclients "github.com/mainflux/mainflux/pkg/clients"
 )
 
-// MailSent message response when link is sent
+// MailSent message response when link is sent.
 const MailSent = "Email with reset link is sent"
 
 var (

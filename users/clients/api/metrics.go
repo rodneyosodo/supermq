@@ -21,7 +21,7 @@ type metricsMiddleware struct {
 	svc     clients.Service
 }
 
-// MetricsMiddleware instruments policies service by tracking request count and latency
+// MetricsMiddleware instruments policies service by tracking request count and latency.
 func MetricsMiddleware(svc clients.Service, counter metrics.Counter, latency metrics.Histogram) clients.Service {
 	return &metricsMiddleware{
 		counter: counter,

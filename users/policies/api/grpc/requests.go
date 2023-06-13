@@ -11,7 +11,7 @@ import (
 // 1. subject - an action invoker (client)
 // 2. object - an entity over which action will be executed (client, group, computation, dataset)
 // 3. action - type of action that will be executed (read/write)
-// 4. entity_type - type of entity (client, group, computation, dataset)
+// 4. entity_type - type of entity (client, group, computation, dataset).
 type authReq struct {
 	Sub        string
 	Obj        string

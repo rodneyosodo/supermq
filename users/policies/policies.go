@@ -150,7 +150,7 @@ func (p Policy) Validate() error {
 	return nil
 }
 
-// ValidateAction check if the action is in policies
+// ValidateAction check if the action is in policies.
 func ValidateAction(act string) bool {
 	for _, v := range PolicyTypes {
 		if v == act {

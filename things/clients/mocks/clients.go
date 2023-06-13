@@ -19,7 +19,7 @@ type Repository struct {
 	mock.Mock
 }
 
-// RetrieveByIdentity retrieves client by its unique credentials
+// RetrieveByIdentity retrieves client by its unique credentials.
 func (*Repository) RetrieveByIdentity(ctx context.Context, identity string) (mfclients.Client, error) {
 	return mfclients.Client{}, nil
 }

@@ -31,7 +31,7 @@ type ServiceConf struct {
 	MfCertsURL     string `toml:"mf_certs_url"`
 }
 
-// Bootstrap represetns the Bootstrap config
+// Bootstrap represetns the Bootstrap config.
 type Bootstrap struct {
 	X509Provision bool                   `toml:"x509_provision"`
 	Provision     bool                   `toml:"provision"`
@@ -39,7 +39,7 @@ type Bootstrap struct {
 	Content       map[string]interface{} `toml:"content"`
 }
 
-// Gateway represetns the Gateway config
+// Gateway represetns the Gateway config.
 type Gateway struct {
 	Type            string `toml:"type" json:"type"`
 	ExternalID      string `toml:"external_id" json:"external_id"`
@@ -50,12 +50,12 @@ type Gateway struct {
 	CfgID           string `toml:"cfg_id" json:"cfg_id"`
 }
 
-// Cert represetns the certificate config
+// Cert represetns the certificate config.
 type Cert struct {
 	TTL string `json:"ttl" toml:"ttl"`
 }
 
-// Config struct of Provision
+// Config struct of Provision.
 type Config struct {
 	File      string             `toml:"file"`
 	Server    ServiceConf        `toml:"server" mapstructure:"server"`
@@ -65,7 +65,7 @@ type Config struct {
 	Cert      Cert               `toml:"cert" mapstructure:"cert"`
 }
 
-// Save - store config in a file
+// Save - store config in a file.
 func Save(c Config, file string) error {
 	b, err := toml.Marshal(c)
 	if err != nil {
@@ -77,7 +77,7 @@ func Save(c Config, file string) error {
 	return nil
 }
 
-// Read - retrieve config from a file
+// Read - retrieve config from a file.
 func Read(file string) (Config, error) {
 	data, err := os.ReadFile(file)
 	c := Config{}

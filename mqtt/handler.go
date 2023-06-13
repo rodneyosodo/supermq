@@ -24,7 +24,7 @@ var _ session.Handler = (*handler)(nil)
 
 const protocol = "mqtt"
 
-// Log message formats
+// Log message formats.
 const (
 	LogInfoSubscribed   = "subscribed with client_id %s to topics %s"
 	LogInfoUnsubscribed = "unsubscribed client_id %s from topics %s"
@@ -33,7 +33,7 @@ const (
 	LogInfoPublished    = "published with client_id %s to the topic %s"
 )
 
-// Error wrappers for MQTT errors
+// Error wrappers for MQTT errors.
 var (
 	ErrMalformedSubtopic            = errors.New("malformed subtopic")
 	ErrClientNotInitialized         = errors.New("client is not initialized")
@@ -54,7 +54,7 @@ var (
 
 var channelRegExp = regexp.MustCompile(`^\/?channels\/([\w\-]+)\/messages(\/[^?]*)?(\?.*)?$`)
 
-// Event implements events.Event interface
+// Event implements events.Event interface.
 type handler struct {
 	publishers []messaging.Publisher
 	auth       policies.ThingsServiceClient
@@ -62,7 +62,7 @@ type handler struct {
 	es         redis.EventStore
 }
 
-// NewHandler creates new Handler entity
+// NewHandler creates new Handler entity.
 func NewHandler(publishers []messaging.Publisher, es redis.EventStore,
 	logger logger.Logger, auth policies.ThingsServiceClient) session.Handler {
 	return &handler{
@@ -74,7 +74,7 @@ func NewHandler(publishers []messaging.Publisher, es redis.EventStore,
 }
 
 // AuthConnect is called on device connection,
-// prior forwarding to the MQTT broker
+// prior forwarding to the MQTT broker.
 func (h *handler) AuthConnect(ctx context.Context) error {
 	s, ok := session.FromContext(ctx)
 	if !ok {
@@ -107,7 +107,7 @@ func (h *handler) AuthConnect(ctx context.Context) error {
 }
 
 // AuthPublish is called on device publish,
-// prior forwarding to the MQTT broker
+// prior forwarding to the MQTT broker.
 func (h *handler) AuthPublish(ctx context.Context, topic *string, payload *[]byte) error {
 	if topic == nil {
 		return ErrMissingTopicPub
@@ -121,7 +121,7 @@ func (h *handler) AuthPublish(ctx context.Context, topic *string, payload *[]byt
 }
 
 // AuthSubscribe is called on device publish,
-// prior forwarding to the MQTT broker
+// prior forwarding to the MQTT broker.
 func (h *handler) AuthSubscribe(ctx context.Context, topics *[]string) error {
 	s, ok := session.FromContext(ctx)
 	if !ok {
@@ -141,7 +141,7 @@ func (h *handler) AuthSubscribe(ctx context.Context, topics *[]string) error {
 	return nil
 }
 
-// Connect - after client successfully connected
+// Connect - after client successfully connected.
 func (h *handler) Connect(ctx context.Context) {
 	s, ok := session.FromContext(ctx)
 	if !ok {
@@ -151,7 +151,7 @@ func (h *handler) Connect(ctx context.Context) {
 	h.logger.Info(fmt.Sprintf(LogInfoConnected, s.ID))
 }
 
-// Publish - after client successfully published
+// Publish - after client successfully published.
 func (h *handler) Publish(ctx context.Context, topic *string, payload *[]byte) {
 	s, ok := session.FromContext(ctx)
 	if !ok {
@@ -193,7 +193,7 @@ func (h *handler) Publish(ctx context.Context, topic *string, payload *[]byte) {
 	}
 }
 
-// Subscribe - after client successfully subscribed
+// Subscribe - after client successfully subscribed.
 func (h *handler) Subscribe(ctx context.Context, topics *[]string) {
 	s, ok := session.FromContext(ctx)
 	if !ok {
@@ -203,7 +203,7 @@ func (h *handler) Subscribe(ctx context.Context, topics *[]string) {
 	h.logger.Info(fmt.Sprintf(LogInfoSubscribed, s.ID, strings.Join(*topics, ",")))
 }
 
-// Unsubscribe - after client unsubscribed
+// Unsubscribe - after client unsubscribed.
 func (h *handler) Unsubscribe(ctx context.Context, topics *[]string) {
 	s, ok := session.FromContext(ctx)
 	if !ok {
@@ -213,7 +213,7 @@ func (h *handler) Unsubscribe(ctx context.Context, topics *[]string) {
 	h.logger.Info(fmt.Sprintf(LogInfoUnsubscribed, s.ID, strings.Join(*topics, ",")))
 }
 
-// Disconnect - connection with broker or client lost
+// Disconnect - connection with broker or client lost.
 func (h *handler) Disconnect(ctx context.Context) {
 	s, ok := session.FromContext(ctx)
 	if !ok {

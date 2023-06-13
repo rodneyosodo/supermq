@@ -16,7 +16,7 @@ type Config struct {
 	RawOutput bool   `toml:"raw_output"`
 }
 
-// read - retrieve config from a file
+// read - retrieve config from a file.
 func read(file string) (Config, error) {
 	data, err := os.ReadFile(file)
 	c := Config{}

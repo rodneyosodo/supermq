@@ -17,7 +17,7 @@ type thingsServiceMock struct {
 	channels map[string]string
 }
 
-// NewThingsService returns mock implementation of things service
+// NewThingsService returns mock implementation of things service.
 func NewThingsService(channels map[string]string) policies.ThingsServiceClient {
 	return &thingsServiceMock{channels}
 }

@@ -10,7 +10,7 @@ import (
 // Role represents Client role.
 type Role uint8
 
-// Possible Client role values
+// Possible Client role values.
 const (
 	UserRole Role = iota
 	AdminRole

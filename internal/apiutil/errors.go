@@ -114,10 +114,10 @@ var (
 	// ErrMissingOwner indicates missing entity owner.
 	ErrMissingOwner = errors.New("missing entity owner")
 
-	// ErrMissingPolicyOwner indicated malformed policy owner
+	// ErrMissingPolicyOwner indicated malformed policy owner.
 	ErrMissingPolicyOwner = errors.New("malformed policy owner")
 
-	// ErrMissingPolicyEntityType indicates malformed policy entity type
+	// ErrMissingPolicyEntityType indicates malformed policy entity type.
 	ErrMissingPolicyEntityType = errors.New("malformed or missing entity type")
 
 	// ErrMissingName indicates missing identity name.
@@ -129,15 +129,15 @@ var (
 	// ErrInvalidLevel indicates an invalid group level.
 	ErrInvalidLevel = errors.New("invalid group level (should be between 0 and 5)")
 
-	// ErrNotFoundParam indicates that the parameter was not found in the query
+	// ErrNotFoundParam indicates that the parameter was not found in the query.
 	ErrNotFoundParam = errors.New("parameter not found in the query")
 
-	// ErrMalformedEntity indicates a malformed entity specification
+	// ErrMalformedEntity indicates a malformed entity specification.
 	ErrMalformedEntity = errors.New("malformed entity specification")
 
-	// ErrInvalidQueryParams indicates invalid query parameters
+	// ErrInvalidQueryParams indicates invalid query parameters.
 	ErrInvalidQueryParams = errors.New("invalid query parameters")
 
-	// ErrInvalidVisibilityType indicates invalid visibility type
+	// ErrInvalidVisibilityType indicates invalid visibility type.
 	ErrInvalidVisibilityType = errors.New("invalid visibility type")
 )

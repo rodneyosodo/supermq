@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	// Measurement for SenML messages
+	// Measurement for SenML messages.
 	defMeasurement = "messages"
 )
 

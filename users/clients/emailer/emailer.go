@@ -17,7 +17,7 @@ type emailer struct {
 	agent    *email.Agent
 }
 
-// New creates new emailer utility
+// New creates new emailer utility.
 func New(url string, c *email.Config) (clients.Emailer, error) {
 	e, err := email.New(c)
 	return &emailer{resetURL: url, agent: e}, err

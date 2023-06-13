@@ -39,7 +39,7 @@ type mockPubSub struct {
 	conn *websocket.Conn
 }
 
-// NewPubSub returns mock message publisher-subscriber
+// NewPubSub returns mock message publisher-subscriber.
 func NewPubSub() MockPubSub {
 	return &mockPubSub{false, nil}
 }
