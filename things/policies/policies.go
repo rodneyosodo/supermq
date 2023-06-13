@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package policies
 
 import (
@@ -8,7 +11,7 @@ import (
 	upolicies "github.com/mainflux/mainflux/users/policies"
 )
 
-// PolicyTypes contains a list of the available policy types currently supported
+// PolicyTypes contains a list of the available policy types currently supported.
 var PolicyTypes = []string{WriteAction, ReadAction}
 
 // Policy represents an argument struct for making a policy related function calls.
@@ -90,13 +93,13 @@ type Service interface {
 
 // Cache contains channel-thing connection caching interface.
 type Cache interface {
-	// Put connects group to a client with the specified action.
+	// Put adds policy to cahce.
 	Put(ctx context.Context, policy Policy) error
 
-	// Get checks if a client is connected to group.
+	// Get retrieves policy from cache.
 	Get(ctx context.Context, policy Policy) (Policy, error)
 
-	// Remove deletes a client connection to a group.
+	// Remove deletes a policy from cache.
 	Remove(ctx context.Context, policy Policy) error
 }
 
@@ -123,7 +126,7 @@ func (p Policy) Validate() error {
 	return nil
 }
 
-// ValidateAction check if the action is in policies
+// ValidateAction check if the action is in policies.
 func ValidateAction(act string) bool {
 	for _, v := range PolicyTypes {
 		if v == act {

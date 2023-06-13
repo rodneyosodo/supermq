@@ -1,3 +1,7 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
+// Package main contains things main function to start the things service.
 package main
 
 import (
@@ -34,8 +38,9 @@ import (
 	redischcache "github.com/mainflux/mainflux/things/groups/redis"
 	gtracing "github.com/mainflux/mainflux/things/groups/tracing"
 	tpolicies "github.com/mainflux/mainflux/things/policies"
+	papi "github.com/mainflux/mainflux/things/policies/api"
 	grpcapi "github.com/mainflux/mainflux/things/policies/api/grpc"
-	papi "github.com/mainflux/mainflux/things/policies/api/http"
+	httpapi "github.com/mainflux/mainflux/things/policies/api/http"
 	ppostgres "github.com/mainflux/mainflux/things/policies/postgres"
 	redispcache "github.com/mainflux/mainflux/things/policies/redis"
 	ppracing "github.com/mainflux/mainflux/things/policies/tracing"
@@ -64,7 +69,7 @@ type config struct {
 	StandaloneID     string `env:"MF_THINGS_STANDALONE_ID"       envDefault:""`
 	StandaloneToken  string `env:"MF_THINGS_STANDALONE_TOKEN"    envDefault:""`
 	JaegerURL        string `env:"MF_JAEGER_URL"                 envDefault:"http://jaeger:14268/api/traces"`
-	CacheKeyDuration string `env:"MF_THINGS_AUTH_CACHE_DURATION" envDefault:"10m"`
+	CacheKeyDuration string `env:"MF_THINGS_CACHE_KEY_DURATION"  envDefault:"10m"`
 }
 
 func main() {
@@ -136,7 +141,7 @@ func main() {
 		logger.Fatal(fmt.Sprintf("failed to load %s gRPC server configuration : %s", svcName, err))
 	}
 	mux := bone.New()
-	hsp := httpserver.New(ctx, cancel, "things-policies", httpServerConfig, papi.MakePolicyHandler(csvc, psvc, mux, logger), logger)
+	hsp := httpserver.New(ctx, cancel, "things-policies", httpServerConfig, httpapi.MakeHandler(csvc, psvc, mux, logger), logger)
 	hsc := httpserver.New(ctx, cancel, "things-clients", httpServerConfig, capi.MakeHandler(csvc, mux, logger), logger)
 	hsg := httpserver.New(ctx, cancel, "things-groups", httpServerConfig, gapi.MakeHandler(gsvc, mux, logger), logger)
 
@@ -191,16 +196,16 @@ func newService(db *sqlx.DB, auth upolicies.AuthServiceClient, cacheClient *redi
 	gsvc = redischcache.NewEventStoreMiddleware(gsvc, esClient)
 	psvc = redispcache.NewEventStoreMiddleware(psvc, esClient)
 
-	csvc = ctracing.TracingMiddleware(csvc, tracer)
+	csvc = ctracing.New(csvc, tracer)
 	csvc = capi.LoggingMiddleware(csvc, logger)
 	counter, latency := internal.MakeMetrics(svcName, "api")
 	csvc = capi.MetricsMiddleware(csvc, counter, latency)
 
-	gsvc = gtracing.TracingMiddleware(gsvc, tracer)
+	gsvc = gtracing.New(gsvc, tracer)
 	gsvc = gapi.LoggingMiddleware(gsvc, logger)
 	counter, latency = internal.MakeMetrics(fmt.Sprintf("%s_groups", svcName), "api")
 	gsvc = gapi.MetricsMiddleware(gsvc, counter, latency)
-	psvc = ppracing.TracingMiddleware(psvc, tracer)
+	psvc = ppracing.New(psvc, tracer)
 	psvc = papi.LoggingMiddleware(psvc, logger)
 	counter, latency = internal.MakeMetrics(fmt.Sprintf("%s_policies", svcName), "api")
 	psvc = papi.MetricsMiddleware(psvc, counter, latency)

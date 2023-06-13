@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package groups
 
 import (
@@ -13,7 +16,6 @@ import (
 	upolicies "github.com/mainflux/mainflux/users/policies"
 )
 
-// Possible token types are access and refresh tokens.
 const (
 	thingsObjectKey   = "things"
 	updateRelationKey = "g_update"

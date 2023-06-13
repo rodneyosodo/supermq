@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package api
 
 import (
@@ -57,6 +60,7 @@ const (
 	DescDir      = "desc"
 )
 
+// ValidateUUID validates UUID format.
 func ValidateUUID(extID string) (err error) {
 	id, err := uuid.FromString(extID)
 	if id.String() != extID || err != nil {

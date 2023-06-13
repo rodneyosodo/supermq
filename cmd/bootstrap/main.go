@@ -1,5 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
+
+// Package main contains bootstrap main function to start the bootstrap service.
 package main
 
 import (
@@ -127,7 +129,7 @@ func newService(auth policies.AuthServiceClient, db *sqlx.DB, logger mflog.Logge
 
 	svc := bootstrap.New(auth, repoConfig, sdk, []byte(cfg.EncKey))
 	svc = redisprod.NewEventStoreMiddleware(svc, esClient)
-	svc = api.NewLoggingMiddleware(svc, logger)
+	svc = api.LoggingMiddleware(svc, logger)
 	counter, latency := internal.MakeMetrics(svcName, "api")
 	svc = api.MetricsMiddleware(svc, counter, latency)
 

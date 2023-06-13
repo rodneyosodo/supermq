@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package groups_test
 
 import (
@@ -40,13 +43,13 @@ var (
 	token          = "token"
 )
 
-func newService(tokens map[string]string) (groups.Service, *gmocks.GroupRepository, *pmocks.PolicyRepository) {
+func newService(tokens map[string]string) (groups.Service, *gmocks.Repository, *pmocks.Repository) {
 	adminPolicy := mocks.MockSubjectSet{Object: ID, Relation: []string{"g_add", "g_update", "g_list", "g_delete"}}
 	auth := mocks.NewAuthService(tokens, map[string][]mocks.MockSubjectSet{adminEmail: {adminPolicy}})
 	idProvider := uuid.NewMock()
 
-	gRepo := new(gmocks.GroupRepository)
-	pRepo := new(pmocks.PolicyRepository)
+	gRepo := new(gmocks.Repository)
+	pRepo := new(pmocks.Repository)
 	policiesCache := pmocks.NewCache()
 
 	psvc := policies.NewService(auth, pRepo, policiesCache, idProvider)

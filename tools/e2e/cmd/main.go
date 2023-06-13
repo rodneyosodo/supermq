@@ -1,6 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
+// Package main contains e2e tool for testing Mainflux.
 package main
 
 import (

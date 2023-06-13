@@ -19,7 +19,7 @@ type EventStore interface {
 	Disconnect(clientID string) error
 }
 
-// EventStore is a struct used to store event streams in Redis
+// EventStore is a struct used to store event streams in Redis.
 type eventStore struct {
 	client   *redis.Client
 	instance string
@@ -50,12 +50,12 @@ func (es eventStore) storeEvent(clientID, eventType string) error {
 	return es.client.XAdd(context.Background(), record).Err()
 }
 
-// Connect issues event on MQTT CONNECT
+// Connect issues event on MQTT CONNECT.
 func (es eventStore) Connect(clientID string) error {
 	return es.storeEvent(clientID, "connect")
 }
 
-// Disconnect issues event on MQTT CONNECT
+// Disconnect issues event on MQTT CONNECT.
 func (es eventStore) Disconnect(clientID string) error {
 	return es.storeEvent(clientID, "disconnect")
 }

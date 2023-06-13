@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package groups
 
 import "github.com/mainflux/mainflux/internal/apiutil"
@@ -5,7 +8,7 @@ import "github.com/mainflux/mainflux/internal/apiutil"
 // Status represents Group status.
 type Status uint8
 
-// Possible Group status values
+// Possible Group status values.
 const (
 	// EnabledStatus represents enabled Group.
 	EnabledStatus Status = iota

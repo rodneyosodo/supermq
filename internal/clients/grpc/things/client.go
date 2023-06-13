@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package things
 
 import (
@@ -12,7 +15,7 @@ const envThingsAuthGrpcPrefix = "MF_THINGS_AUTH_GRPC_"
 
 var errGrpcConfig = errors.New("failed to load grpc configuration")
 
-// Setup loads Things gRPC configuration from environment variable and creates new Things gRPC API
+// Setup loads Things gRPC configuration from environment variable and creates new Things gRPC API.
 func Setup(envPrefix, jaegerURL string) (policies.ThingsServiceClient, grpcClient.ClientHandler, error) {
 	config := grpcClient.Config{}
 	if err := env.Parse(&config, env.Options{Prefix: envThingsAuthGrpcPrefix, AltPrefix: envPrefix}); err != nil {

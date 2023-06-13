@@ -14,10 +14,10 @@ import (
 )
 
 var (
-	// ErrFailedCertCreation failed to create certificate
+	// ErrFailedCertCreation failed to create certificate.
 	ErrFailedCertCreation = errors.New("failed to create client certificate")
 
-	// ErrFailedCertRevocation failed to revoke certificate
+	// ErrFailedCertRevocation failed to revoke certificate.
 	ErrFailedCertRevocation = errors.New("failed to revoke certificate")
 
 	ErrFailedToRemoveCertFromDB = errors.New("failed to remove cert serial from db")
@@ -51,7 +51,7 @@ type certsService struct {
 	pki       pki.Agent
 }
 
-// New returns new Certs service
+// New returns new Certs service.
 func New(auth policies.AuthServiceClient, certs Repository, sdk mfsdk.SDK, pki pki.Agent) Service {
 	return &certsService{
 		certsRepo: certs,
@@ -61,12 +61,12 @@ func New(auth policies.AuthServiceClient, certs Repository, sdk mfsdk.SDK, pki p
 	}
 }
 
-// Revoke defines the conditions to revoke a certificate
+// Revoke defines the conditions to revoke a certificate.
 type Revoke struct {
 	RevocationTime time.Time `mapstructure:"revocation_time"`
 }
 
-// Cert defines the certificate paremeters
+// Cert defines the certificate paremeters.
 type Cert struct {
 	OwnerID        string    `json:"owner_id" mapstructure:"owner_id"`
 	ThingID        string    `json:"thing_id" mapstructure:"thing_id"`

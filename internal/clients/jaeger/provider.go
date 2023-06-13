@@ -21,7 +21,7 @@ var (
 	errNoSvcName = errors.New("Service Name is empty")
 )
 
-// NewProvider initializes Jaeger TraceProvider
+// NewProvider initializes Jaeger TraceProvider.
 func NewProvider(svcName, url string) (*tracesdk.TracerProvider, error) {
 	if url == "" {
 		return nil, errNoURL

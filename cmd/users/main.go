@@ -1,6 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
+// Package main contains users main function to start the users service.
 package main
 
 import (
@@ -36,9 +37,11 @@ import (
 	gtracing "github.com/mainflux/mainflux/users/groups/tracing"
 	"github.com/mainflux/mainflux/users/hasher"
 	"github.com/mainflux/mainflux/users/jwt"
+	jtracing "github.com/mainflux/mainflux/users/jwt/tracing"
 	"github.com/mainflux/mainflux/users/policies"
+	papi "github.com/mainflux/mainflux/users/policies/api"
 	grpcapi "github.com/mainflux/mainflux/users/policies/api/grpc"
-	papi "github.com/mainflux/mainflux/users/policies/api/http"
+	httpapi "github.com/mainflux/mainflux/users/policies/api/http"
 	ppostgres "github.com/mainflux/mainflux/users/policies/postgres"
 	ptracing "github.com/mainflux/mainflux/users/policies/tracing"
 	clientsPg "github.com/mainflux/mainflux/users/postgres"
@@ -120,9 +123,9 @@ func main() {
 		logger.Fatal(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err.Error()))
 	}
 	mux := bone.New()
-	hsc := httpserver.New(ctx, cancel, svcName, httpServerConfig, capi.MakeClientsHandler(csvc, mux, logger), logger)
-	hsg := httpserver.New(ctx, cancel, svcName, httpServerConfig, gapi.MakeGroupsHandler(gsvc, mux, logger), logger)
-	hsp := httpserver.New(ctx, cancel, svcName, httpServerConfig, papi.MakePolicyHandler(psvc, mux, logger), logger)
+	hsc := httpserver.New(ctx, cancel, svcName, httpServerConfig, capi.MakeHandler(csvc, mux, logger), logger)
+	hsg := httpserver.New(ctx, cancel, svcName, httpServerConfig, gapi.MakeHandler(gsvc, mux, logger), logger)
+	hsp := httpserver.New(ctx, cancel, svcName, httpServerConfig, httpapi.MakeHandler(psvc, mux, logger), logger)
 
 	registerAuthServiceServer := func(srv *grpc.Server) {
 		reflection.Register(srv)
@@ -151,11 +154,11 @@ func main() {
 	}
 }
 
-func newService(db *sqlx.DB, tracer trace.Tracer, c config, ec email.Config, logger mflog.Logger) (clients.Service, groups.GroupService, policies.PolicyService) {
+func newService(db *sqlx.DB, tracer trace.Tracer, c config, ec email.Config, logger mflog.Logger) (clients.Service, groups.Service, policies.Service) {
 	database := postgres.NewDatabase(db, tracer)
-	cRepo := cpostgres.NewClientRepo(database)
-	gRepo := gpostgres.NewGroupRepo(database)
-	pRepo := ppostgres.NewPolicyRepo(database)
+	cRepo := cpostgres.NewRepository(database)
+	gRepo := gpostgres.NewRepository(database)
+	pRepo := ppostgres.NewRepository(database)
 
 	idp := uuid.New()
 	hsr := hasher.New()
@@ -168,8 +171,8 @@ func newService(db *sqlx.DB, tracer trace.Tracer, c config, ec email.Config, log
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to parse refresh token duration: %s", err.Error()))
 	}
-	tokenizer := jwt.NewTokenRepo([]byte(c.SecretKey), aDuration, rDuration)
-	tokenizer = jwt.NewTokenRepoMiddleware(tokenizer, tracer)
+	tokenizer := jwt.NewRepository([]byte(c.SecretKey), aDuration, rDuration)
+	tokenizer = jtracing.New(tokenizer, tracer)
 
 	emailer, err := emailer.New(c.ResetURL, &ec)
 	if err != nil {
@@ -179,17 +182,17 @@ func newService(db *sqlx.DB, tracer trace.Tracer, c config, ec email.Config, log
 	gsvc := groups.NewService(gRepo, pRepo, tokenizer, idp)
 	psvc := policies.NewService(pRepo, tokenizer, idp)
 
-	csvc = ctracing.TracingMiddleware(csvc, tracer)
+	csvc = ctracing.New(csvc, tracer)
 	csvc = capi.LoggingMiddleware(csvc, logger)
 	counter, latency := internal.MakeMetrics(svcName, "api")
 	csvc = capi.MetricsMiddleware(csvc, counter, latency)
 
-	gsvc = gtracing.TracingMiddleware(gsvc, tracer)
+	gsvc = gtracing.New(gsvc, tracer)
 	gsvc = gapi.LoggingMiddleware(gsvc, logger)
 	counter, latency = internal.MakeMetrics("groups", "api")
 	gsvc = gapi.MetricsMiddleware(gsvc, counter, latency)
 
-	psvc = ptracing.TracingMiddleware(psvc, tracer)
+	psvc = ptracing.New(psvc, tracer)
 	psvc = papi.LoggingMiddleware(psvc, logger)
 	counter, latency = internal.MakeMetrics("policies", "api")
 	psvc = papi.MetricsMiddleware(psvc, counter, latency)

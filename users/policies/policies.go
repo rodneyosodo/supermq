@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package policies
 
 import (
@@ -37,59 +40,94 @@ type Policy struct {
 	UpdatedBy string    `json:"updated_by,omitempty"`
 }
 
+// AccessRequest represents an access control request for Authorization.
+type AccessRequest struct {
+	Subject string `json:"subject"`
+	Object  string `json:"object"`
+	Action  string `json:"action"`
+	Entity  string `json:"entity"`
+}
+
 // PolicyPage contains a page of policies.
 type PolicyPage struct {
 	Page
 	Policies []Policy
 }
 
-// PolicyRepository specifies an account persistence API.
-type PolicyRepository interface {
-	// Save creates a policy for the given Subject, so that, after
-	// Save, `Subject` has a `relation` on `group_id`. Returns a non-nil
-	// error in case of failures.
+// Repository specifies a policy persistence API.
+type Repository interface {
+	// Save creates a policy for the given Policy Subject and Object combination.
+	// It returns an error if the policy already exists or the operation failed
+	// otherwise it returns nil.
 	Save(ctx context.Context, p Policy) error
 
-	// CheckAdmin checks if the user is an admin user
+	// CheckAdmin checks if the user is an admin user.
+	// It returns an error if the user is not an admin user or the operation failed
+	// otherwise it returns nil.
 	CheckAdmin(ctx context.Context, id string) error
 
-	// Evaluate is used to evaluate if you have the correct permissions.
-	// We evaluate if we are in the same group first then evaluate if the
-	// object has that action over the subject
-	Evaluate(ctx context.Context, entityType string, p Policy) error
+	// EvaluateUserAccess is used to evaluate if user has access to another user.
+	// It returns an error and an empty policy if the user does not have access
+	// otherwise it returns nil and the policy.
+	EvaluateUserAccess(ctx context.Context, ar AccessRequest) (Policy, error)
+
+	// EvaluateGroupAccess is used to evaluate if user has access to a group.
+	// It returns an error and an empty policy if the user does not have access
+	// otherwise it returns nil and the policy.
+	EvaluateGroupAccess(ctx context.Context, ar AccessRequest) (Policy, error)
 
 	// Update updates the policy type.
+	// It overwrites the existing policy actions with the new policy actions.
+	// It returns an error if the policy does not exist or the operation failed
+	// otherwise it returns nil.
 	Update(ctx context.Context, p Policy) error
 
-	// Retrieve retrieves policy for a given input.
-	Retrieve(ctx context.Context, pm Page) (PolicyPage, error)
+	// RetrieveAll retrieves policies based on the given policy structure.
+	// It returns an error with an empty policy page if the operation failed
+	// otherwise it returns nil and the policy page.
+	RetrieveAll(ctx context.Context, pm Page) (PolicyPage, error)
 
-	// Delete deletes the policy
+	// Delete deletes the policy for the given Policy Subject and Object combination.
+	// It returns an error if the policy does not exist or the operation failed
+	// otherwise it returns nil.
 	Delete(ctx context.Context, p Policy) error
 }
 
-// PolicyService represents a authorization service. It exposes
-// functionalities through `auth` to perform authorization.
-type PolicyService interface {
+type Service interface {
 	// Authorize checks authorization of the given `subject`. Basically,
-	// Authorize verifies that Is `subject` allowed to `relation` on
+	// Authorize verifies that Is `subject` allowed `action` on
 	// `object`. Authorize returns a non-nil error if the subject has
 	// no relation on the object (which simply means the operation is
 	// denied).
-	Authorize(ctx context.Context, entityType string, p Policy) error
+	Authorize(ctx context.Context, ar AccessRequest) error
 
 	// AddPolicy creates a policy for the given subject, so that, after
 	// AddPolicy, `subject` has a `relation` on `object`. Returns a non-nil
 	// error in case of failures.
+	// AddPolicy adds a policy is added if:
+	//
+	//  1. The subject is admin
+	//
+	//  2. The subject has `g_add` action on the object or is the owner of the object.
 	AddPolicy(ctx context.Context, token string, p Policy) error
 
 	// UpdatePolicy updates policies based on the given policy structure.
+	// UpdatePolicy updates a policy if:
+	//
+	//  1. The subject is admin.
+	//
+	//  2. The subject is the owner of the policy.
 	UpdatePolicy(ctx context.Context, token string, p Policy) error
 
-	// ListPolicy lists policies based on the given policy structure.
-	ListPolicy(ctx context.Context, token string, pm Page) (PolicyPage, error)
+	// ListPolicies lists policies based on the given policy structure.
+	ListPolicies(ctx context.Context, token string, pm Page) (PolicyPage, error)
 
 	// DeletePolicy removes a policy.
+	// DeletePolicy deletes a policy if:
+	//
+	//  1. The subject is admin.
+	//
+	//  2. The subject is the owner of the policy.
 	DeletePolicy(ctx context.Context, token string, p Policy) error
 }
 
@@ -112,7 +150,7 @@ func (p Policy) Validate() error {
 	return nil
 }
 
-// ValidateAction check if the action is in policies
+// ValidateAction check if the action is in policies.
 func ValidateAction(act string) bool {
 	for _, v := range PolicyTypes {
 		if v == act {

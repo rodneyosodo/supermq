@@ -90,7 +90,7 @@ func New(cfg Config, sdk SDK.SDK, logger mflog.Logger) Service {
 	}
 }
 
-// Mapping retrieves current configuration
+// Mapping retrieves current configuration.
 func (ps *provisionService) Mapping(token string) (map[string]interface{}, error) {
 	userFilter := SDK.PageMetadata{
 		Email:    "",
@@ -106,7 +106,7 @@ func (ps *provisionService) Mapping(token string) (map[string]interface{}, error
 }
 
 // Provision is provision method for creating setup according to
-// provision layout specified in config.toml
+// provision layout specified in config.toml.
 func (ps *provisionService) Provision(token, name, externalID, externalKey string) (res Result, err error) {
 	var channels []SDK.Channel
 	var things []SDK.Thing

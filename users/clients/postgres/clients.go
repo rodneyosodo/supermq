@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package postgres
 
 import (
@@ -21,9 +24,9 @@ type clientRepo struct {
 	db postgres.Database
 }
 
-// NewClientRepo instantiates a PostgreSQL
+// NewRepository instantiates a PostgreSQL
 // implementation of Clients repository.
-func NewClientRepo(db postgres.Database) mfclients.Repository {
+func NewRepository(db postgres.Database) mfclients.Repository {
 	return &clientRepo{
 		db: db,
 	}

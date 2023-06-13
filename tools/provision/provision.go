@@ -28,7 +28,7 @@ const (
 	defReaderURL = "http://localhost:9005"
 )
 
-// MfConn - structure describing Mainflux connection set
+// MfConn - structure describing Mainflux connection set.
 type MfConn struct {
 	ChannelID string
 	ThingID   string
@@ -37,7 +37,7 @@ type MfConn struct {
 	MTLSKey   string
 }
 
-// Config - provisioning configuration
+// Config - provisioning configuration.
 type Config struct {
 	Host     string
 	Username string
@@ -49,7 +49,7 @@ type Config struct {
 	Prefix   string
 }
 
-// Provision - function that does actual provisiong
+// Provision - function that does actual provisiong.
 func Provision(conf Config) {
 	const (
 		rsaBits = 4096

@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package postgres
 
 import (
@@ -14,7 +17,7 @@ var (
 	// ErrUnassignFromGroup indicates failure to unassign member from a group.
 	ErrUnassignFromGroup = errors.New("failed to unassign member from a group")
 
-	// ErrMissingParent indicates that parent can't be found
+	// ErrMissingParent indicates that parent can't be found.
 	ErrMissingParent = errors.New("failed to retrieve parent")
 
 	// ErrGroupNotEmpty indicates group is not empty, can't be deleted.
@@ -26,7 +29,7 @@ var (
 	// ErrFailedToRetrieveMembers failed to retrieve group members.
 	ErrFailedToRetrieveMembers = errors.New("failed to retrieve group members")
 
-	// ErrFailedToRetrieveMembership failed to retrieve memberships
+	// ErrFailedToRetrieveMembership failed to retrieve memberships.
 	ErrFailedToRetrieveMembership = errors.New("failed to retrieve memberships")
 
 	// ErrFailedToRetrieveAll failed to retrieve groups.

@@ -20,7 +20,7 @@ type database struct {
 	tracer trace.Tracer
 }
 
-// Database provides a database interface
+// Database provides a database interface.
 type Database interface {
 	NamedExecContext(context.Context, string, interface{}) (sql.Result, error)
 	QueryRowxContext(context.Context, string, ...interface{}) *sqlx.Row
@@ -28,7 +28,7 @@ type Database interface {
 	GetContext(context.Context, interface{}, string, ...interface{}) error
 }
 
-// NewDatabase creates a SubscriptionsDatabase instance
+// NewDatabase creates a SubscriptionsDatabase instance.
 func NewDatabase(db *sqlx.DB, tracer trace.Tracer) Database {
 	return &database{
 		db:     db,

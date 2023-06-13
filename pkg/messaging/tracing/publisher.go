@@ -1,3 +1,5 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
 package tracing
 
 import (
@@ -8,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Traced operations
+// Traced operations.
 const publishOP = "publish_op"
 
 var _ messaging.Publisher = (*publisherMiddleware)(nil)

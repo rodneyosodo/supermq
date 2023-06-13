@@ -1,5 +1,6 @@
-// Package postgres_test contains tests for PostgreSQL repository
-// implementations.
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package postgres_test
 
 import (

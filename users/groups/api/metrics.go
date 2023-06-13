@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package api
 
 import (
@@ -17,7 +20,7 @@ type metricsMiddleware struct {
 	svc     groups.Service
 }
 
-// MetricsMiddleware returns a new metrics middleware wrapper.
+// MetricsMiddleware instruments policies service by tracking request count and latency.
 func MetricsMiddleware(svc groups.Service, counter metrics.Counter, latency metrics.Histogram) groups.Service {
 	return &metricsMiddleware{
 		counter: counter,
@@ -26,6 +29,7 @@ func MetricsMiddleware(svc groups.Service, counter metrics.Counter, latency metr
 	}
 }
 
+// CreateGroup instruments CreateGroup method with metrics.
 func (ms *metricsMiddleware) CreateGroup(ctx context.Context, token string, g mfgroups.Group) (mfgroups.Group, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_group").Add(1)
@@ -34,6 +38,7 @@ func (ms *metricsMiddleware) CreateGroup(ctx context.Context, token string, g mf
 	return ms.svc.CreateGroup(ctx, token, g)
 }
 
+// UpdateGroup instruments UpdateGroup method with metrics.
 func (ms *metricsMiddleware) UpdateGroup(ctx context.Context, token string, group mfgroups.Group) (rGroup mfgroups.Group, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_group").Add(1)
@@ -42,6 +47,7 @@ func (ms *metricsMiddleware) UpdateGroup(ctx context.Context, token string, grou
 	return ms.svc.UpdateGroup(ctx, token, group)
 }
 
+// ViewGroup instruments ViewGroup method with metrics.
 func (ms *metricsMiddleware) ViewGroup(ctx context.Context, token, id string) (g mfgroups.Group, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_group").Add(1)
@@ -50,6 +56,7 @@ func (ms *metricsMiddleware) ViewGroup(ctx context.Context, token, id string) (g
 	return ms.svc.ViewGroup(ctx, token, id)
 }
 
+// ListGroups instruments ListGroups method with metrics.
 func (ms *metricsMiddleware) ListGroups(ctx context.Context, token string, gp mfgroups.GroupsPage) (cg mfgroups.GroupsPage, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_groups").Add(1)
@@ -58,6 +65,7 @@ func (ms *metricsMiddleware) ListGroups(ctx context.Context, token string, gp mf
 	return ms.svc.ListGroups(ctx, token, gp)
 }
 
+// EnableGroup instruments EnableGroup method with metrics.
 func (ms *metricsMiddleware) EnableGroup(ctx context.Context, token string, id string) (g mfgroups.Group, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "enable_group").Add(1)
@@ -66,6 +74,7 @@ func (ms *metricsMiddleware) EnableGroup(ctx context.Context, token string, id s
 	return ms.svc.EnableGroup(ctx, token, id)
 }
 
+// DisableGroup instruments DisableGroup method with metrics.
 func (ms *metricsMiddleware) DisableGroup(ctx context.Context, token string, id string) (g mfgroups.Group, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "disable_group").Add(1)
@@ -74,6 +83,7 @@ func (ms *metricsMiddleware) DisableGroup(ctx context.Context, token string, id 
 	return ms.svc.DisableGroup(ctx, token, id)
 }
 
+// ListMemberships instruments ListMemberships method with metrics.
 func (ms *metricsMiddleware) ListMemberships(ctx context.Context, token, clientID string, gp mfgroups.GroupsPage) (mp mfgroups.MembershipsPage, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_memberships").Add(1)

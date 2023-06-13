@@ -45,12 +45,12 @@ type Client struct {
 
 var _ ClientHandler = (*Client)(nil)
 
-// NewClientHandler create new client handler for gRPC client
+// NewClientHandler create new client handler for gRPC client.
 func NewClientHandler(c *Client) ClientHandler {
 	return c
 }
 
-// Connect creates new gRPC client and connect to gRPC server
+// Connect creates new gRPC client and connect to gRPC server.
 func Connect(cfg Config) (*gogrpc.ClientConn, bool, error) {
 	var opts []gogrpc.DialOption
 	secure := false
@@ -74,7 +74,7 @@ func Connect(cfg Config) (*gogrpc.ClientConn, bool, error) {
 	return conn, secure, nil
 }
 
-// Setup load gRPC configuration from environment variable, creates new gRPC client and connect to gRPC server
+// Setup load gRPC configuration from environment variable, creates new gRPC client and connect to gRPC server.
 func Setup(config Config, svcName, jaegerURL string) (*Client, ClientHandler, error) {
 	secure := false
 

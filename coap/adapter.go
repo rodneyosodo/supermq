@@ -19,12 +19,13 @@ import (
 
 const chansPrefix = "channels"
 
-// ErrUnsubscribe indicates an error to unsubscribe
+// ErrUnsubscribe indicates an error to unsubscribe.
 var ErrUnsubscribe = errors.New("unable to unsubscribe")
 
 // Service specifies CoAP service API.
 type Service interface {
-	// Publish Messssage
+	// Publish publishes message to specified channel.
+	// Key is used to authorize publisher.
 	Publish(ctx context.Context, key string, msg *messaging.Message) error
 
 	// Subscribes to channel with specified id, subtopic and adds subscription to
@@ -37,7 +38,7 @@ type Service interface {
 
 var _ Service = (*adapterService)(nil)
 
-// Observers is a map of maps,
+// Observers is a map of maps,.
 type adapterService struct {
 	auth    policies.ThingsServiceClient
 	pubsub  messaging.PubSub

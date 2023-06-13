@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package policies
 
 import (
@@ -9,24 +12,19 @@ import (
 	"github.com/mainflux/mainflux/users/jwt"
 )
 
-// Possible token types are access and refresh tokens.
-const (
-	AccessToken = "access"
-)
+const AccessToken = "access"
 
-// Service unites Clients and Group services.
-type Service interface {
-	PolicyService
-}
+// ErrInvalidEntityType indicates that the entity type is invalid.
+var ErrInvalidEntityType = errors.New("invalid entity type")
 
 type service struct {
-	policies   PolicyRepository
+	policies   Repository
 	idProvider mainflux.IDProvider
-	tokens     jwt.TokenRepository
+	tokens     jwt.Repository
 }
 
-// NewService returns a new Clients service implementation.
-func NewService(p PolicyRepository, t jwt.TokenRepository, idp mainflux.IDProvider) Service {
+// NewService returns a new Policies service implementation.
+func NewService(p Repository, t jwt.Repository, idp mainflux.IDProvider) Service {
 	return service{
 		policies:   p,
 		tokens:     t,
@@ -34,15 +32,23 @@ func NewService(p PolicyRepository, t jwt.TokenRepository, idp mainflux.IDProvid
 	}
 }
 
-func (svc service) Authorize(ctx context.Context, entityType string, p Policy) error {
-	if err := p.Validate(); err != nil {
-		return err
-	}
-	if err := svc.policies.CheckAdmin(ctx, p.Subject); err == nil {
+func (svc service) Authorize(ctx context.Context, ar AccessRequest) error {
+	if err := svc.policies.CheckAdmin(ctx, ar.Subject); err == nil {
 		return nil
 	}
-
-	return svc.policies.Evaluate(ctx, entityType, p)
+	switch ar.Entity {
+	case "client":
+		if _, err := svc.policies.EvaluateUserAccess(ctx, ar); err != nil {
+			return err
+		}
+	case "group":
+		if _, err := svc.policies.EvaluateGroupAccess(ctx, ar); err != nil {
+			return err
+		}
+	default:
+		return ErrInvalidEntityType
+	}
+	return nil
 }
 
 // AddPolicy adds a policy is added if:
@@ -60,7 +66,7 @@ func (svc service) AddPolicy(ctx context.Context, token string, p Policy) error 
 	}
 
 	pm := Page{Subject: p.Subject, Object: p.Object, Offset: 0, Limit: 1}
-	page, err := svc.policies.Retrieve(ctx, pm)
+	page, err := svc.policies.RetrieveAll(ctx, pm)
 	if err != nil {
 		return err
 	}
@@ -85,8 +91,8 @@ func (svc service) AddPolicy(ctx context.Context, token string, p Policy) error 
 	}
 
 	// check if the client has `g_add` action on the object or is the owner of the object
-	pol := Policy{Subject: id, Object: p.Object, Actions: []string{"g_add"}}
-	if err := svc.policies.Evaluate(ctx, "group", pol); err == nil {
+	pol := AccessRequest{Subject: id, Object: p.Object, Action: "g_add", Entity: "group"}
+	if _, err := svc.policies.EvaluateGroupAccess(ctx, pol); err == nil {
 		return svc.policies.Save(ctx, p)
 	}
 
@@ -110,7 +116,7 @@ func (svc service) UpdatePolicy(ctx context.Context, token string, p Policy) err
 	return svc.policies.Update(ctx, p)
 }
 
-func (svc service) ListPolicy(ctx context.Context, token string, pm Page) (PolicyPage, error) {
+func (svc service) ListPolicies(ctx context.Context, token string, pm Page) (PolicyPage, error) {
 	id, err := svc.identify(ctx, token)
 	if err != nil {
 		return PolicyPage{}, err
@@ -120,13 +126,13 @@ func (svc service) ListPolicy(ctx context.Context, token string, pm Page) (Polic
 	}
 	// If the user is admin, return all policies
 	if err := svc.policies.CheckAdmin(ctx, id); err == nil {
-		return svc.policies.Retrieve(ctx, pm)
+		return svc.policies.RetrieveAll(ctx, pm)
 	}
 
 	// If the user is not admin, return only the policies that they created
 	pm.OwnerID = id
 
-	return svc.policies.Retrieve(ctx, pm)
+	return svc.policies.RetrieveAll(ctx, pm)
 }
 
 func (svc service) DeletePolicy(ctx context.Context, token string, p Policy) error {
@@ -152,7 +158,7 @@ func (svc service) checkPolicy(ctx context.Context, clientID string, p Policy) e
 
 	// Check if the client is the owner of the policy
 	pm := Page{Subject: p.Subject, Object: p.Object, OwnerID: clientID, Offset: 0, Limit: 1}
-	page, err := svc.policies.Retrieve(ctx, pm)
+	page, err := svc.policies.RetrieveAll(ctx, pm)
 	if err != nil {
 		return err
 	}
@@ -163,6 +169,7 @@ func (svc service) checkPolicy(ctx context.Context, clientID string, p Policy) e
 	return errors.ErrAuthorization
 }
 
+// identify returns the client ID associated with the provided token.
 func (svc service) identify(ctx context.Context, token string) (string, error) {
 	claims, err := svc.tokens.Parse(ctx, token)
 	if err != nil {

@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package postgres_test
 
 import (
@@ -37,7 +40,7 @@ var (
 func TestClientsSave(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
 	postgres.NewDatabase(db, tracer)
-	repo := cpostgres.NewClientRepo(database)
+	repo := cpostgres.NewRepository(database)
 
 	uid := testsutil.GenerateUUID(t, idProvider)
 
@@ -183,7 +186,7 @@ func TestClientsSave(t *testing.T) {
 func TestClientsRetrieveByID(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
 	postgres.NewDatabase(db, tracer)
-	repo := cpostgres.NewClientRepo(database)
+	repo := cpostgres.NewRepository(database)
 
 	client := mfclients.Client{
 		ID:   testsutil.GenerateUUID(t, idProvider),
@@ -222,7 +225,7 @@ func TestClientsRetrieveByID(t *testing.T) {
 func TestClientsRetrieveByIdentity(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
 	postgres.NewDatabase(db, tracer)
-	repo := cpostgres.NewClientRepo(database)
+	repo := cpostgres.NewRepository(database)
 
 	client := mfclients.Client{
 		ID:   testsutil.GenerateUUID(t, idProvider),
@@ -254,9 +257,9 @@ func TestClientsRetrieveByIdentity(t *testing.T) {
 func TestClientsRetrieveAll(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
 	postgres.NewDatabase(db, tracer)
-	repo := cpostgres.NewClientRepo(database)
-	grepo := gpostgres.NewGroupRepo(database)
-	prepo := ppostgres.NewPolicyRepo(database)
+	repo := cpostgres.NewRepository(database)
+	grepo := gpostgres.NewRepository(database)
+	prepo := ppostgres.NewRepository(database)
 
 	var nClients = uint64(200)
 	var ownerID string
@@ -522,7 +525,7 @@ func TestClientsRetrieveAll(t *testing.T) {
 func TestClientsUpdateMetadata(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
 	postgres.NewDatabase(db, tracer)
-	repo := cpostgres.NewClientRepo(database)
+	repo := cpostgres.NewRepository(database)
 
 	client1 := mfclients.Client{
 		ID:   testsutil.GenerateUUID(t, idProvider),
@@ -680,7 +683,7 @@ func TestClientsUpdateMetadata(t *testing.T) {
 func TestClientsUpdateTags(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
 	postgres.NewDatabase(db, tracer)
-	repo := cpostgres.NewClientRepo(database)
+	repo := cpostgres.NewRepository(database)
 
 	client1 := mfclients.Client{
 		ID:   testsutil.GenerateUUID(t, idProvider),
@@ -757,7 +760,7 @@ func TestClientsUpdateTags(t *testing.T) {
 func TestClientsUpdateSecret(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
 	postgres.NewDatabase(db, tracer)
-	repo := cpostgres.NewClientRepo(database)
+	repo := cpostgres.NewRepository(database)
 
 	client1 := mfclients.Client{
 		ID:   testsutil.GenerateUUID(t, idProvider),
@@ -842,7 +845,7 @@ func TestClientsUpdateSecret(t *testing.T) {
 func TestClientsUpdateIdentity(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
 	postgres.NewDatabase(db, tracer)
-	repo := cpostgres.NewClientRepo(database)
+	repo := cpostgres.NewRepository(database)
 
 	client1 := mfclients.Client{
 		ID:   testsutil.GenerateUUID(t, idProvider),
@@ -922,7 +925,7 @@ func TestClientsUpdateIdentity(t *testing.T) {
 func TestClientsUpdateOwner(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
 	postgres.NewDatabase(db, tracer)
-	repo := cpostgres.NewClientRepo(database)
+	repo := cpostgres.NewRepository(database)
 
 	client1 := mfclients.Client{
 		ID:   testsutil.GenerateUUID(t, idProvider),
@@ -999,7 +1002,7 @@ func TestClientsUpdateOwner(t *testing.T) {
 func TestClientsChangeStatus(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
 	postgres.NewDatabase(db, tracer)
-	repo := cpostgres.NewClientRepo(database)
+	repo := cpostgres.NewRepository(database)
 
 	client1 := mfclients.Client{
 		ID:   testsutil.GenerateUUID(t, idProvider),

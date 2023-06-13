@@ -20,10 +20,10 @@ var (
 	// It can be due to networking error or invalid/unauthenticated request.
 	ErrThings = errors.New("failed to receive response from Things service")
 
-	// ErrExternalKey indicates a non-existent bootstrap configuration for given external key
+	// ErrExternalKey indicates a non-existent bootstrap configuration for given external key.
 	ErrExternalKey = errors.New("failed to get bootstrap configuration for given external key")
 
-	// ErrExternalKeySecure indicates error in getting bootstrap configuration for given encrypted external key
+	// ErrExternalKeySecure indicates error in getting bootstrap configuration for given encrypted external key.
 	ErrExternalKeySecure = errors.New("failed to get bootstrap configuration for given encrypted external key")
 
 	// ErrBootstrap indicates error in getting bootstrap configuration.
@@ -431,7 +431,7 @@ func (bs bootstrapService) connectionChannels(channels, existing []string, token
 // Method updateList accepts config and channel IDs and returns three lists:
 // 1) IDs of Channels to be added
 // 2) IDs of Channels to be removed
-// 3) IDs of common Channels for these two configs
+// 3) IDs of common Channels for these two configs.
 func (bs bootstrapService) updateList(cfg Config, connections []string) (add, remove []string) {
 	disconnect := make(map[string]bool, len(cfg.MFChannels))
 	for _, c := range cfg.MFChannels {

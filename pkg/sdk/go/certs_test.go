@@ -60,7 +60,7 @@ func newCertService() (certs.Service, error) {
 	uauth := bsmocks.NewAuthClient(map[string]string{adminToken: adminID})
 	policiesCache := pmocks.NewCache()
 
-	pRepo := new(pmocks.PolicyRepository)
+	pRepo := new(pmocks.Repository)
 	psvc := policies.NewService(uauth, pRepo, policiesCache, idProvider)
 	server := newThingsServer(newCertsThingsService(uauth), psvc)
 

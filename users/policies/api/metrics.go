@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package api
 
 import (
@@ -16,7 +19,7 @@ type metricsMiddleware struct {
 	svc     policies.Service
 }
 
-// MetricsMiddleware returns a new metrics middleware wrapper.
+// MetricsMiddleware instruments policies service by tracking request count and latency.
 func MetricsMiddleware(svc policies.Service, counter metrics.Counter, latency metrics.Histogram) policies.Service {
 	return &metricsMiddleware{
 		counter: counter,
@@ -25,14 +28,16 @@ func MetricsMiddleware(svc policies.Service, counter metrics.Counter, latency me
 	}
 }
 
-func (ms *metricsMiddleware) Authorize(ctx context.Context, entityType string, p policies.Policy) (err error) {
+// Authorize instruments Authorize method with metrics.
+func (ms *metricsMiddleware) Authorize(ctx context.Context, ar policies.AccessRequest) (err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "authorize").Add(1)
 		ms.latency.With("method", "authorize").Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return ms.svc.Authorize(ctx, entityType, p)
+	return ms.svc.Authorize(ctx, ar)
 }
 
+// AddPolicy instruments AddPolicy method with metrics.
 func (ms *metricsMiddleware) AddPolicy(ctx context.Context, token string, p policies.Policy) (err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "add_policy").Add(1)
@@ -41,6 +46,7 @@ func (ms *metricsMiddleware) AddPolicy(ctx context.Context, token string, p poli
 	return ms.svc.AddPolicy(ctx, token, p)
 }
 
+// UpdatePolicy instruments UpdatePolicy method with metrics.
 func (ms *metricsMiddleware) UpdatePolicy(ctx context.Context, token string, p policies.Policy) (err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_policy").Add(1)
@@ -49,14 +55,16 @@ func (ms *metricsMiddleware) UpdatePolicy(ctx context.Context, token string, p p
 	return ms.svc.UpdatePolicy(ctx, token, p)
 }
 
-func (ms *metricsMiddleware) ListPolicy(ctx context.Context, token string, cp policies.Page) (cg policies.PolicyPage, err error) {
+// ListPolicies instruments ListPolicies method with metrics.
+func (ms *metricsMiddleware) ListPolicies(ctx context.Context, token string, cp policies.Page) (cg policies.PolicyPage, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_policies").Add(1)
 		ms.latency.With("method", "list_policies").Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return ms.svc.ListPolicy(ctx, token, cp)
+	return ms.svc.ListPolicies(ctx, token, cp)
 }
 
+// DeletePolicy instruments DeletePolicy method with metrics.
 func (ms *metricsMiddleware) DeletePolicy(ctx context.Context, token string, p policies.Policy) (err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "delete_policy").Add(1)

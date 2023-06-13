@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package api
 
 import (
@@ -18,7 +21,7 @@ type metricsMiddleware struct {
 	svc     clients.Service
 }
 
-// MetricsMiddleware returns a new metrics middleware wrapper.
+// MetricsMiddleware instruments policies service by tracking request count and latency.
 func MetricsMiddleware(svc clients.Service, counter metrics.Counter, latency metrics.Histogram) clients.Service {
 	return &metricsMiddleware{
 		counter: counter,
@@ -27,6 +30,7 @@ func MetricsMiddleware(svc clients.Service, counter metrics.Counter, latency met
 	}
 }
 
+// RegisterClient instruments RegisterClient method with metrics.
 func (ms *metricsMiddleware) RegisterClient(ctx context.Context, token string, client mfclients.Client) (mfclients.Client, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "register_client").Add(1)
@@ -35,6 +39,7 @@ func (ms *metricsMiddleware) RegisterClient(ctx context.Context, token string, c
 	return ms.svc.RegisterClient(ctx, token, client)
 }
 
+// IssueToken instruments IssueToken method with metrics.
 func (ms *metricsMiddleware) IssueToken(ctx context.Context, identity, secret string) (jwt.Token, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "issue_token").Add(1)
@@ -43,6 +48,7 @@ func (ms *metricsMiddleware) IssueToken(ctx context.Context, identity, secret st
 	return ms.svc.IssueToken(ctx, identity, secret)
 }
 
+// RefreshToken instruments RefreshToken method with metrics.
 func (ms *metricsMiddleware) RefreshToken(ctx context.Context, accessToken string) (token jwt.Token, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "refresh_token").Add(1)
@@ -51,6 +57,7 @@ func (ms *metricsMiddleware) RefreshToken(ctx context.Context, accessToken strin
 	return ms.svc.RefreshToken(ctx, accessToken)
 }
 
+// ViewClient instruments ViewClient method with metrics.
 func (ms *metricsMiddleware) ViewClient(ctx context.Context, token, id string) (mfclients.Client, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_client").Add(1)
@@ -59,6 +66,7 @@ func (ms *metricsMiddleware) ViewClient(ctx context.Context, token, id string) (
 	return ms.svc.ViewClient(ctx, token, id)
 }
 
+// ViewProfile instruments ViewProfile method with metrics.
 func (ms *metricsMiddleware) ViewProfile(ctx context.Context, token string) (mfclients.Client, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_profile").Add(1)
@@ -67,6 +75,7 @@ func (ms *metricsMiddleware) ViewProfile(ctx context.Context, token string) (mfc
 	return ms.svc.ViewProfile(ctx, token)
 }
 
+// ListClients instruments ListClients method with metrics.
 func (ms *metricsMiddleware) ListClients(ctx context.Context, token string, pm mfclients.Page) (mfclients.ClientsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_clients").Add(1)
@@ -75,6 +84,7 @@ func (ms *metricsMiddleware) ListClients(ctx context.Context, token string, pm m
 	return ms.svc.ListClients(ctx, token, pm)
 }
 
+// UpdateClient instruments UpdateClient method with metrics.
 func (ms *metricsMiddleware) UpdateClient(ctx context.Context, token string, client mfclients.Client) (mfclients.Client, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_client_name_and_metadata").Add(1)
@@ -83,6 +93,7 @@ func (ms *metricsMiddleware) UpdateClient(ctx context.Context, token string, cli
 	return ms.svc.UpdateClient(ctx, token, client)
 }
 
+// UpdateClientTags instruments UpdateClientTags method with metrics.
 func (ms *metricsMiddleware) UpdateClientTags(ctx context.Context, token string, client mfclients.Client) (mfclients.Client, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_client_tags").Add(1)
@@ -91,6 +102,7 @@ func (ms *metricsMiddleware) UpdateClientTags(ctx context.Context, token string,
 	return ms.svc.UpdateClientTags(ctx, token, client)
 }
 
+// UpdateClientIdentity instruments UpdateClientIdentity method with metrics.
 func (ms *metricsMiddleware) UpdateClientIdentity(ctx context.Context, token, id, identity string) (mfclients.Client, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_client_identity").Add(1)
@@ -99,6 +111,7 @@ func (ms *metricsMiddleware) UpdateClientIdentity(ctx context.Context, token, id
 	return ms.svc.UpdateClientIdentity(ctx, token, id, identity)
 }
 
+// UpdateClientSecret instruments UpdateClientSecret method with metrics.
 func (ms *metricsMiddleware) UpdateClientSecret(ctx context.Context, token, oldSecret, newSecret string) (mfclients.Client, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_client_secret").Add(1)
@@ -107,6 +120,7 @@ func (ms *metricsMiddleware) UpdateClientSecret(ctx context.Context, token, oldS
 	return ms.svc.UpdateClientSecret(ctx, token, oldSecret, newSecret)
 }
 
+// GenerateResetToken instruments GenerateResetToken method with metrics.
 func (ms *metricsMiddleware) GenerateResetToken(ctx context.Context, email, host string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "generate_reset_token").Add(1)
@@ -115,6 +129,7 @@ func (ms *metricsMiddleware) GenerateResetToken(ctx context.Context, email, host
 	return ms.svc.GenerateResetToken(ctx, email, host)
 }
 
+// ResetSecret instruments ResetSecret method with metrics.
 func (ms *metricsMiddleware) ResetSecret(ctx context.Context, token, secret string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "reset_secret").Add(1)
@@ -123,6 +138,7 @@ func (ms *metricsMiddleware) ResetSecret(ctx context.Context, token, secret stri
 	return ms.svc.ResetSecret(ctx, token, secret)
 }
 
+// SendPasswordReset instruments SendPasswordReset method with metrics.
 func (ms *metricsMiddleware) SendPasswordReset(ctx context.Context, host, email, user, token string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "send_password_reset").Add(1)
@@ -131,6 +147,7 @@ func (ms *metricsMiddleware) SendPasswordReset(ctx context.Context, host, email,
 	return ms.svc.SendPasswordReset(ctx, host, email, user, token)
 }
 
+// UpdateClientOwner instruments UpdateClientOwner method with metrics.
 func (ms *metricsMiddleware) UpdateClientOwner(ctx context.Context, token string, client mfclients.Client) (mfclients.Client, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_client_owner").Add(1)
@@ -139,6 +156,7 @@ func (ms *metricsMiddleware) UpdateClientOwner(ctx context.Context, token string
 	return ms.svc.UpdateClientOwner(ctx, token, client)
 }
 
+// EnableClient instruments EnableClient method with metrics.
 func (ms *metricsMiddleware) EnableClient(ctx context.Context, token string, id string) (mfclients.Client, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "enable_client").Add(1)
@@ -147,6 +165,7 @@ func (ms *metricsMiddleware) EnableClient(ctx context.Context, token string, id 
 	return ms.svc.EnableClient(ctx, token, id)
 }
 
+// DisableClient instruments DisableClient method with metrics.
 func (ms *metricsMiddleware) DisableClient(ctx context.Context, token string, id string) (mfclients.Client, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "disable_client").Add(1)
@@ -155,6 +174,7 @@ func (ms *metricsMiddleware) DisableClient(ctx context.Context, token string, id
 	return ms.svc.DisableClient(ctx, token, id)
 }
 
+// ListMembers instruments ListMembers method with metrics.
 func (ms *metricsMiddleware) ListMembers(ctx context.Context, token, groupID string, pm mfclients.Page) (mp mfclients.MembersPage, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_members").Add(1)
@@ -163,6 +183,7 @@ func (ms *metricsMiddleware) ListMembers(ctx context.Context, token, groupID str
 	return ms.svc.ListMembers(ctx, token, groupID, pm)
 }
 
+// Identify instruments Identify method with metrics.
 func (ms *metricsMiddleware) Identify(ctx context.Context, token string) (string, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "identify").Add(1)

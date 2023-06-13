@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package groups_test
 
 import (
@@ -45,10 +48,10 @@ var (
 )
 
 func TestCreateGroup(t *testing.T) {
-	cRepo := new(cmocks.ClientRepository)
-	gRepo := new(mocks.GroupRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(cmocks.Repository)
+	gRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := cmocks.NewEmailer()
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)
@@ -122,10 +125,10 @@ func TestCreateGroup(t *testing.T) {
 }
 
 func TestUpdateGroup(t *testing.T) {
-	cRepo := new(cmocks.ClientRepository)
-	gRepo := new(mocks.GroupRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(cmocks.Repository)
+	gRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := cmocks.NewEmailer()
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)
@@ -267,10 +270,10 @@ func TestUpdateGroup(t *testing.T) {
 }
 
 func TestViewGroup(t *testing.T) {
-	cRepo := new(cmocks.ClientRepository)
-	gRepo := new(mocks.GroupRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(cmocks.Repository)
+	gRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := cmocks.NewEmailer()
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)
@@ -326,10 +329,10 @@ func TestViewGroup(t *testing.T) {
 }
 
 func TestListGroups(t *testing.T) {
-	cRepo := new(cmocks.ClientRepository)
-	gRepo := new(mocks.GroupRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(cmocks.Repository)
+	gRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := cmocks.NewEmailer()
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)
@@ -420,10 +423,10 @@ func TestListGroups(t *testing.T) {
 }
 
 func TestEnableGroup(t *testing.T) {
-	cRepo := new(cmocks.ClientRepository)
-	gRepo := new(mocks.GroupRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(cmocks.Repository)
+	gRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := cmocks.NewEmailer()
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)
@@ -551,10 +554,10 @@ func TestEnableGroup(t *testing.T) {
 }
 
 func TestDisableGroup(t *testing.T) {
-	cRepo := new(cmocks.ClientRepository)
-	gRepo := new(mocks.GroupRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(cmocks.Repository)
+	gRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := cmocks.NewEmailer()
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)
@@ -682,10 +685,10 @@ func TestDisableGroup(t *testing.T) {
 }
 
 func TestListMemberships(t *testing.T) {
-	cRepo := new(cmocks.ClientRepository)
-	gRepo := new(mocks.GroupRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(cmocks.Repository)
+	gRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := cmocks.NewEmailer()
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)

@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	// ErrConnect indicates that connection to MQTT broker failed
+	// ErrConnect indicates that connection to MQTT broker failed.
 	ErrConnect = errors.New("failed to connect to MQTT broker")
 
 	// ErrSubscribeTimeout indicates that the subscription failed due to timeout.

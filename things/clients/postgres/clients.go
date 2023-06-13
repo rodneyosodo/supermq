@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package postgres
 
 import (
@@ -29,7 +32,7 @@ func NewRepository(db postgres.Database) mfclients.Repository {
 	}
 }
 
-// RetrieveByIdentity retrieves client by its unique credentials
+// RetrieveByIdentity retrieves client by its unique credentials.
 func (clientRepo) RetrieveByIdentity(ctx context.Context, identity string) (mfclients.Client, error) {
 	return mfclients.Client{}, nil
 }
@@ -276,7 +279,7 @@ func (repo clientRepo) ChangeStatus(ctx context.Context, client mfclients.Client
 	return repo.update(ctx, client, q)
 }
 
-// generic update function
+// generic update function.
 func (repo clientRepo) update(ctx context.Context, client mfclients.Client, query string) (mfclients.Client, error) {
 	dbc, err := toDBClient(client)
 	if err != nil {

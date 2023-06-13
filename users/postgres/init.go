@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package postgres
 
 import (
@@ -5,7 +8,7 @@ import (
 	migrate "github.com/rubenv/sql-migrate"
 )
 
-// Migration of Users service
+// Migration of Users service.
 func Migration() *migrate.MemoryMigrationSource {
 	return &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{

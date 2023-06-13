@@ -1,3 +1,7 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
+// Package main contains mqtt-adapter main function to start the mqtt-adapter service.
 package main
 
 import (

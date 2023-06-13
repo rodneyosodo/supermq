@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package postgres_test
 
 import (
@@ -43,7 +46,7 @@ var (
 
 func TestGroupSave(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
-	groupRepo := gpostgres.NewGroupRepo(database)
+	groupRepo := gpostgres.NewRepository(database)
 
 	usrID := testsutil.GenerateUUID(t, idProvider)
 	grpID := testsutil.GenerateUUID(t, idProvider)
@@ -171,7 +174,7 @@ func TestGroupSave(t *testing.T) {
 
 func TestGroupRetrieveByID(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
-	groupRepo := gpostgres.NewGroupRepo(database)
+	groupRepo := gpostgres.NewRepository(database)
 
 	uid := testsutil.GenerateUUID(t, idProvider)
 	group1 := mfgroups.Group{
@@ -219,7 +222,7 @@ func TestGroupRetrieveByID(t *testing.T) {
 
 func TestGroupRetrieveAll(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
-	groupRepo := gpostgres.NewGroupRepo(database)
+	groupRepo := gpostgres.NewRepository(database)
 
 	var nGroups = uint64(200)
 	var ownerID = testsutil.GenerateUUID(t, idProvider)
@@ -337,7 +340,7 @@ func TestGroupRetrieveAll(t *testing.T) {
 
 func TestGroupUpdate(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
-	groupRepo := gpostgres.NewGroupRepo(database)
+	groupRepo := gpostgres.NewRepository(database)
 
 	uid := testsutil.GenerateUUID(t, idProvider)
 
@@ -462,9 +465,9 @@ func TestGroupUpdate(t *testing.T) {
 func TestClientsMemberships(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
 	postgres.NewDatabase(db, tracer)
-	crepo := cpostgres.NewClientRepo(database)
-	grepo := gpostgres.NewGroupRepo(database)
-	prepo := ppostgres.NewPolicyRepo(database)
+	crepo := cpostgres.NewRepository(database)
+	grepo := gpostgres.NewRepository(database)
+	prepo := ppostgres.NewRepository(database)
 
 	clientA := mfclients.Client{
 		ID:   testsutil.GenerateUUID(t, idProvider),
@@ -535,7 +538,7 @@ func TestClientsMemberships(t *testing.T) {
 func TestGroupChangeStatus(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
 	dbMiddleware := postgres.NewDatabase(db, tracer)
-	repo := gpostgres.NewGroupRepo(dbMiddleware)
+	repo := gpostgres.NewRepository(dbMiddleware)
 
 	group1 := mfgroups.Group{
 		ID:     testsutil.GenerateUUID(t, idProvider),

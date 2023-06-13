@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package api
 
 import (
@@ -19,8 +22,8 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/go-kit/kit/otelkit"
 )
 
-// MakeClientsHandler returns a HTTP handler for API endpoints.
-func MakeClientsHandler(svc clients.Service, mux *bone.Mux, logger mflog.Logger) http.Handler {
+// MakeHandler returns a HTTP handler for API endpoints.
+func MakeHandler(svc clients.Service, mux *bone.Mux, logger mflog.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, api.EncodeError)),
 	}

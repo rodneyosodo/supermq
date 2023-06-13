@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package jwt
 
 import (
@@ -25,9 +28,9 @@ type Claims struct {
 	Type     string // Type denotes the type of claim. Either AccessToken or RefreshToken.
 }
 
-// TokenService specifies an API that must be fulfilled by the domain service
+// Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
-type TokenService interface {
+type Service interface {
 	// IssueToken issues a new access and refresh token.
 	IssueToken(ctx context.Context, identity, secret string) (Token, error)
 
@@ -37,8 +40,8 @@ type TokenService interface {
 	RefreshToken(ctx context.Context, accessToken string) (Token, error)
 }
 
-// TokenRepository specifies an account persistence API.
-type TokenRepository interface {
+// Repository specifies an account persistence API.
+type Repository interface {
 	// Issue issues a new access and refresh token.
 	Issue(ctx context.Context, claim Claims) (Token, error)
 

@@ -10,7 +10,7 @@ import (
 type emailerMock struct {
 }
 
-// NewEmailer provides emailer instance for  the test
+// NewEmailer provides emailer instance for  the test.
 func NewEmailer() clients.Emailer {
 	return &emailerMock{}
 }

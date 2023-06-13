@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package api
 
 import (
@@ -174,7 +177,7 @@ func updateClientIdentityEndpoint(svc clients.Service) endpoint.Endpoint {
 // Email with a link is being sent to the user.
 // When user clicks on a link it should get the ui with form to
 // enter new password, when form is submitted token and new password
-// must be sent as PUT request to 'password/reset' passwordResetEndpoint
+// must be sent as PUT request to 'password/reset' passwordResetEndpoint.
 func passwordResetRequestEndpoint(svc clients.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(passwResetReq)

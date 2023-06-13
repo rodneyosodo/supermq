@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package policies_test
 
 import (
@@ -27,13 +30,13 @@ var (
 	token         = "token"
 )
 
-func newService(tokens map[string]string) (policies.Service, *pmocks.PolicyRepository, *umocks.PolicyRepository) {
+func newService(tokens map[string]string) (policies.Service, *pmocks.Repository, *umocks.Repository) {
 	adminPolicy := mocks.MockSubjectSet{Object: "things", Relation: clients.AdminRelationKey}
 	auth := mocks.NewAuthService(tokens, map[string][]mocks.MockSubjectSet{adminEmail: {adminPolicy}})
 	idProvider := uuid.NewMock()
 	policiesCache := pmocks.NewCache()
-	pRepo := new(pmocks.PolicyRepository)
-	uRepo := new(umocks.PolicyRepository)
+	pRepo := new(pmocks.Repository)
+	uRepo := new(umocks.Repository)
 
 	return policies.NewService(auth, pRepo, policiesCache, idProvider), pRepo, uRepo
 }

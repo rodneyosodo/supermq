@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package policies_test
 
 import (
@@ -35,9 +38,9 @@ var (
 )
 
 func TestAddPolicy(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 	svc := policies.NewService(pRepo, tokenizer, idProvider)
@@ -137,19 +140,20 @@ func TestAddPolicy(t *testing.T) {
 
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", context.Background(), mock.Anything).Return(nil)
-		repoCall1 := pRepo.On("Retrieve", context.Background(), mock.Anything).Return(tc.page, nil)
+		repoCall1 := pRepo.On("RetrieveAll", context.Background(), mock.Anything).Return(tc.page, nil)
 		repoCall2 := pRepo.On("Update", context.Background(), mock.Anything).Return(tc.err)
 		repoCall3 := pRepo.On("Save", context.Background(), mock.Anything).Return(tc.err)
 		err := svc.AddPolicy(context.Background(), tc.token, tc.policy)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if err == nil {
 			tc.policy.Subject = tc.token
-			err = svc.Authorize(context.Background(), "client", tc.policy)
+			aReq := policies.AccessRequest{Subject: tc.policy.Subject, Object: tc.policy.Object, Action: tc.policy.Actions[0], Entity: "client"}
+			err = svc.Authorize(context.Background(), aReq)
 			require.Nil(t, err, fmt.Sprintf("checking shared %v policy expected to be succeed: %#v", tc.policy, err))
 			ok := repoCall.Parent.AssertCalled(t, "CheckAdmin", context.Background(), mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("CheckAdmin was not called on %s", tc.desc))
-			ok = repoCall1.Parent.AssertCalled(t, "Retrieve", context.Background(), mock.Anything)
-			assert.True(t, ok, fmt.Sprintf("Retrieve was not called on %s", tc.desc))
+			ok = repoCall1.Parent.AssertCalled(t, "RetrieveAll", context.Background(), mock.Anything)
+			assert.True(t, ok, fmt.Sprintf("RetrieveAll was not called on %s", tc.desc))
 			ok = repoCall3.Parent.AssertCalled(t, "Save", context.Background(), mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("Save was not called on %s", tc.desc))
 			if tc.desc == "add existing policy" {
@@ -166,61 +170,70 @@ func TestAddPolicy(t *testing.T) {
 }
 
 func TestAuthorize(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 	svc := policies.NewService(pRepo, tokenizer, idProvider)
 
 	cases := []struct {
 		desc   string
-		policy policies.Policy
-		domain string
+		policy policies.AccessRequest
 		err    error
 	}{
 		{
 			desc: "check valid policy in client domain",
-			policy: policies.Policy{
+			policy: policies.AccessRequest{
 				Object:  testsutil.GenerateUUID(t, idProvider),
-				Actions: []string{"c_update"},
-				Subject: testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), csvc, cRepo, phasher)},
-			domain: "client",
-			err:    nil,
+				Action:  "c_update",
+				Subject: testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), csvc, cRepo, phasher),
+				Entity:  "client",
+			},
+			err: nil,
 		},
 		{
 			desc: "check valid policy in group domain",
-			policy: policies.Policy{
+			policy: policies.AccessRequest{
 				Object:  testsutil.GenerateUUID(t, idProvider),
-				Actions: []string{"g_update"},
-				Subject: testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), csvc, cRepo, phasher)},
-			domain: "group",
-			err:    errors.ErrConflict,
+				Action:  "g_update",
+				Subject: testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), csvc, cRepo, phasher),
+				Entity:  "group",
+			},
+			err: errors.ErrConflict,
 		},
 		{
 			desc: "check invalid policy in client domain",
-			policy: policies.Policy{
+			policy: policies.AccessRequest{
 				Object:  testsutil.GenerateUUID(t, idProvider),
-				Actions: []string{"c_update"},
-				Subject: testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), csvc, cRepo, phasher)},
-			domain: "client",
-			err:    nil,
+				Action:  "c_update",
+				Subject: testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), csvc, cRepo, phasher),
+				Entity:  "client",
+			},
+			err: nil,
 		},
 		{
 			desc: "check invalid policy in group domain",
-			policy: policies.Policy{
+			policy: policies.AccessRequest{
 				Object:  testsutil.GenerateUUID(t, idProvider),
-				Actions: []string{"g_update"},
-				Subject: testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), csvc, cRepo, phasher)},
-			domain: "group",
-			err:    nil,
+				Action:  "g_update",
+				Subject: testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), csvc, cRepo, phasher),
+				Entity:  "group",
+			},
+			err: nil,
 		},
 	}
 
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", context.Background(), mock.Anything).Return(tc.err)
-		repoCall1 := pRepo.On("Evaluate", context.Background(), tc.domain, mock.Anything).Return(tc.err)
-		err := svc.Authorize(context.Background(), tc.domain, tc.policy)
+		repoCall1 := &mock.Call{}
+		switch tc.policy.Entity {
+		case "client":
+			repoCall1 = pRepo.On("EvaluateUserAccess", context.Background(), mock.Anything).Return(policies.Policy{}, tc.err)
+		case "group":
+			repoCall1 = pRepo.On("EvaluateGroupAccess", context.Background(), mock.Anything).Return(policies.Policy{}, tc.err)
+		}
+		err := svc.Authorize(context.Background(), tc.policy)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if tc.err == nil {
 			ok := repoCall.Parent.AssertCalled(t, "CheckAdmin", context.Background(), mock.Anything)
@@ -233,9 +246,9 @@ func TestAuthorize(t *testing.T) {
 }
 
 func TestDeletePolicy(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 	svc := policies.NewService(pRepo, tokenizer, idProvider)
@@ -253,9 +266,9 @@ func TestDeletePolicy(t *testing.T) {
 }
 
 func TestListPolicies(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 	svc := policies.NewService(pRepo, tokenizer, idProvider)
@@ -337,13 +350,13 @@ func TestListPolicies(t *testing.T) {
 
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", context.Background(), mock.Anything).Return(nil)
-		repoCall1 := pRepo.On("Retrieve", context.Background(), tc.page).Return(tc.response, tc.err)
-		page, err := svc.ListPolicy(context.Background(), tc.token, tc.page)
+		repoCall1 := pRepo.On("RetrieveAll", context.Background(), tc.page).Return(tc.response, tc.err)
+		page, err := svc.ListPolicies(context.Background(), tc.token, tc.page)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page, fmt.Sprintf("%s: expected size %v got %v\n", tc.desc, tc.response, page))
 		if tc.err == nil {
-			ok := repoCall.Parent.AssertCalled(t, "Retrieve", context.Background(), tc.page)
-			assert.True(t, ok, fmt.Sprintf("Retrieve was not called on %s", tc.desc))
+			ok := repoCall.Parent.AssertCalled(t, "RetrieveAll", context.Background(), tc.page)
+			assert.True(t, ok, fmt.Sprintf("RetrieveAll was not called on %s", tc.desc))
 		}
 		repoCall1.Unset()
 		repoCall.Unset()
@@ -352,9 +365,9 @@ func TestListPolicies(t *testing.T) {
 }
 
 func TestUpdatePolicies(t *testing.T) {
-	cRepo := new(mocks.ClientRepository)
-	pRepo := new(pmocks.PolicyRepository)
-	tokenizer := jwt.NewTokenRepo([]byte(secret), accessDuration, refreshDuration)
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 	svc := policies.NewService(pRepo, tokenizer, idProvider)
@@ -390,7 +403,7 @@ func TestUpdatePolicies(t *testing.T) {
 	for _, tc := range cases {
 		policy.Actions = tc.action
 		repoCall := pRepo.On("CheckAdmin", context.Background(), mock.Anything).Return(nil)
-		repoCall1 := pRepo.On("Retrieve", context.Background(), mock.Anything).Return(policies.PolicyPage{Policies: []policies.Policy{policy}}, nil)
+		repoCall1 := pRepo.On("RetrieveAll", context.Background(), mock.Anything).Return(policies.PolicyPage{Policies: []policies.Policy{policy}}, nil)
 		repoCall2 := pRepo.On("Update", context.Background(), mock.Anything).Return(tc.err)
 		err := svc.UpdatePolicy(context.Background(), tc.token, policy)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))

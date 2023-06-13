@@ -11,7 +11,7 @@ import (
 // Status represents Client status.
 type Status uint8
 
-// Possible Client status values
+// Possible Client status values.
 const (
 	// EnabledStatus represents enabled Client.
 	EnabledStatus Status = iota
@@ -65,12 +65,12 @@ func ToStatus(status string) (Status, error) {
 	return Status(0), apiutil.ErrInvalidStatus
 }
 
-// Custom Marshaller for Client/Groups
+// Custom Marshaller for Client/Groups.
 func (s Status) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s.String())
 }
 
-// Custom Unmarshaler for Client/Groups
+// Custom Unmarshaler for Client/Groups.
 func (s *Status) UnmarshalJSON(data []byte) error {
 	str := strings.Trim(string(data), "\"")
 	val, err := ToStatus(str)

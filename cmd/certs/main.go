@@ -1,11 +1,11 @@
+// Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
+
+// Package main contains certs main function to start the certs service.
 package main
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"log"
 	"os"
@@ -25,7 +25,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	authClient "github.com/mainflux/mainflux/internal/clients/grpc/auth"
 	pgClient "github.com/mainflux/mainflux/internal/clients/postgres"
-	"github.com/mainflux/mainflux/pkg/errors"
 	mfsdk "github.com/mainflux/mainflux/pkg/sdk/go"
 )
 
@@ -35,13 +34,6 @@ const (
 	envPrefixHttp  = "MF_CERTS_HTTP_"
 	defDB          = "certs"
 	defSvcHttpPort = "9019"
-)
-
-var (
-	errFailedCertLoading     = errors.New("failed to load certificate")
-	errFailedCertDecode      = errors.New("failed to decode certificate")
-	errCACertificateNotExist = errors.New("CA certificate does not exist")
-	errCAKeyNotExist         = errors.New("CA certificate key does not exist")
 )
 
 type config struct {
@@ -78,11 +70,6 @@ func main() {
 		log.Fatalf("failed to init logger: %s", err)
 	}
 
-	tlsCert, caCert, err := loadCertificates(cfg, logger)
-	if err != nil {
-		logger.Error("Failed to load CA certificates for issuing client certs")
-	}
-
 	if cfg.PkiHost == "" {
 		logger.Fatal("No host specified for PKI engine")
 	}
@@ -106,7 +93,7 @@ func main() {
 	defer authHandler.Close()
 	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 
-	svc := newService(auth, db, logger, tlsCert, caCert, cfg, pkiClient)
+	svc := newService(auth, db, logger, cfg, pkiClient)
 
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
 	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
@@ -127,7 +114,7 @@ func main() {
 	}
 }
 
-func newService(auth policies.AuthServiceClient, db *sqlx.DB, logger mflog.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent vault.Agent) certs.Service {
+func newService(auth policies.AuthServiceClient, db *sqlx.DB, logger mflog.Logger, cfg config, pkiAgent vault.Agent) certs.Service {
 	certsRepo := certsPg.NewRepository(db, logger)
 	config := mfsdk.Config{
 		CertsURL:  cfg.CertsURL,
@@ -135,47 +122,8 @@ func newService(auth policies.AuthServiceClient, db *sqlx.DB, logger mflog.Logge
 	}
 	sdk := mfsdk.NewSDK(config)
 	svc := certs.New(auth, certsRepo, sdk, pkiAgent)
-	svc = api.NewLoggingMiddleware(svc, logger)
+	svc = api.LoggingMiddleware(svc, logger)
 	counter, latency := internal.MakeMetrics(svcName, "api")
 	svc = api.MetricsMiddleware(svc, counter, latency)
 	return svc
-}
-
-func loadCertificates(conf config, logger mflog.Logger) (tls.Certificate, *x509.Certificate, error) {
-	var tlsCert tls.Certificate
-	var caCert *x509.Certificate
-
-	if conf.SignCAPath == "" || conf.SignCAKeyPath == "" {
-		return tlsCert, caCert, nil
-	}
-
-	if _, err := os.Stat(conf.SignCAPath); os.IsNotExist(err) {
-		return tlsCert, caCert, errCACertificateNotExist
-	}
-
-	if _, err := os.Stat(conf.SignCAKeyPath); os.IsNotExist(err) {
-		return tlsCert, caCert, errCAKeyNotExist
-	}
-
-	tlsCert, err := tls.LoadX509KeyPair(conf.SignCAPath, conf.SignCAKeyPath)
-	if err != nil {
-		return tlsCert, caCert, errors.Wrap(errFailedCertLoading, err)
-	}
-
-	b, err := os.ReadFile(conf.SignCAPath)
-	if err != nil {
-		return tlsCert, caCert, errors.Wrap(errFailedCertLoading, err)
-	}
-
-	block, _ := pem.Decode(b)
-	if block == nil {
-		logger.Fatal("No PEM data found, failed to decode CA")
-	}
-
-	caCert, err = x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return tlsCert, caCert, errors.Wrap(errFailedCertDecode, err)
-	}
-
-	return tlsCert, caCert, nil
 }

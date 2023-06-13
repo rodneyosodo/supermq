@@ -16,7 +16,7 @@ type mockClient struct {
 	elems map[string][]string // (password:channel, []actions) for Authorize
 }
 
-// NewClient returns a new mock Things gRPC client
+// NewClient returns a new mock Things gRPC client.
 func NewClient(ids map[string]string, elems map[string][]string) policies.ThingsServiceClient {
 	return mockClient{elems: elems, ids: ids}
 }
@@ -41,7 +41,7 @@ func (cli mockClient) Identify(ctx context.Context, in *policies.Key, opts ...gr
 	return &policies.ClientID{}, errors.ErrAuthentication
 }
 
-// Key generates key for internal auth map
+// Key generates key for internal auth map.
 func Key(ar *policies.AuthorizeReq) string {
 	return fmt.Sprintf("%s%s%s", ar.Sub, separator, ar.Obj)
 }

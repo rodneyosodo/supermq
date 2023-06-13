@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package jwt
 
 import (
@@ -11,7 +14,7 @@ import (
 
 const issuerName = "clients.auth"
 
-var _ TokenRepository = (*tokenRepo)(nil)
+var _ Repository = (*tokenRepo)(nil)
 
 type tokenRepo struct {
 	secret          []byte
@@ -19,8 +22,8 @@ type tokenRepo struct {
 	refreshDuration time.Duration
 }
 
-// NewTokenRepo instantiates an implementation of Token repository.
-func NewTokenRepo(secret []byte, aduration, rduration time.Duration) TokenRepository {
+// NewRepository instantiates an implementation of Token repository.
+func NewRepository(secret []byte, aduration, rduration time.Duration) Repository {
 	return &tokenRepo{
 		secret:          secret,
 		accessDuration:  aduration,

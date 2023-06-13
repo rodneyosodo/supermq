@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package mocks
 
 import (
@@ -7,47 +10,47 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type PolicyRepository struct {
+type Repository struct {
 	mock.Mock
 }
 
-func (m *PolicyRepository) Delete(ctx context.Context, p policies.Policy) error {
+func (m *Repository) Delete(ctx context.Context, p policies.Policy) error {
 	ret := m.Called(ctx, p)
 
 	return ret.Error(0)
 }
 
-func (m *PolicyRepository) Retrieve(ctx context.Context, pm policies.Page) (policies.PolicyPage, error) {
+func (m *Repository) Retrieve(ctx context.Context, pm policies.Page) (policies.PolicyPage, error) {
 	ret := m.Called(ctx, pm)
 
 	return ret.Get(0).(policies.PolicyPage), ret.Error(1)
 }
 
-func (m *PolicyRepository) Save(ctx context.Context, p policies.Policy) (policies.Policy, error) {
+func (m *Repository) Save(ctx context.Context, p policies.Policy) (policies.Policy, error) {
 	ret := m.Called(ctx, p)
 
 	return ret.Get(0).(policies.Policy), ret.Error(1)
 }
 
-func (m *PolicyRepository) Update(ctx context.Context, p policies.Policy) (policies.Policy, error) {
+func (m *Repository) Update(ctx context.Context, p policies.Policy) (policies.Policy, error) {
 	ret := m.Called(ctx, p)
 
 	return ret.Get(0).(policies.Policy), ret.Error(1)
 }
 
-func (m *PolicyRepository) EvaluateMessagingAccess(ctx context.Context, ar policies.AccessRequest) (policies.Policy, error) {
+func (m *Repository) EvaluateMessagingAccess(ctx context.Context, ar policies.AccessRequest) (policies.Policy, error) {
 	ret := m.Called(ctx, ar)
 
 	return ret.Get(0).(policies.Policy), ret.Error(1)
 }
 
-func (m *PolicyRepository) EvaluateThingAccess(ctx context.Context, ar policies.AccessRequest) (policies.Policy, error) {
+func (m *Repository) EvaluateThingAccess(ctx context.Context, ar policies.AccessRequest) (policies.Policy, error) {
 	ret := m.Called(ctx, ar)
 
 	return ret.Get(0).(policies.Policy), ret.Error(1)
 }
 
-func (m *PolicyRepository) EvaluateGroupAccess(ctx context.Context, ar policies.AccessRequest) (policies.Policy, error) {
+func (m *Repository) EvaluateGroupAccess(ctx context.Context, ar policies.AccessRequest) (policies.Policy, error) {
 	ret := m.Called(ctx, ar)
 
 	return ret.Get(0).(policies.Policy), ret.Error(1)

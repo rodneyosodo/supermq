@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package postgres_test
 
 import (
@@ -26,8 +29,8 @@ var (
 
 func TestPoliciesSave(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
-	repo := ppostgres.NewPolicyRepo(database)
-	crepo := cpostgres.NewClientRepo(database)
+	repo := ppostgres.NewRepository(database)
+	crepo := cpostgres.NewRepository(database)
 
 	uid := testsutil.GenerateUUID(t, idProvider)
 
@@ -82,9 +85,9 @@ func TestPoliciesSave(t *testing.T) {
 
 func TestPoliciesEvaluate(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
-	repo := ppostgres.NewPolicyRepo(database)
-	crepo := cpostgres.NewClientRepo(database)
-	grepo := gpostgres.NewGroupRepo(database)
+	repo := ppostgres.NewRepository(database)
+	crepo := cpostgres.NewRepository(database)
+	grepo := gpostgres.NewRepository(database)
 
 	client1 := mfclients.Client{
 		ID:   testsutil.GenerateUUID(t, idProvider),
@@ -153,20 +156,26 @@ func TestPoliciesEvaluate(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		p := policies.Policy{
+		aReq := policies.AccessRequest{
 			Subject: tc.Subject,
 			Object:  tc.Object,
-			Actions: []string{tc.Action},
+			Action:  tc.Action,
 		}
-		err := repo.Evaluate(context.Background(), tc.Domain, p)
+		var err error
+		switch tc.Domain {
+		case "client":
+			_, err = repo.EvaluateUserAccess(context.Background(), aReq)
+		case "group":
+			_, err = repo.EvaluateGroupAccess(context.Background(), aReq)
+		}
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
 
 func TestPoliciesRetrieve(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
-	repo := ppostgres.NewPolicyRepo(database)
-	crepo := cpostgres.NewClientRepo(database)
+	repo := ppostgres.NewRepository(database)
+	crepo := cpostgres.NewRepository(database)
 
 	uid := testsutil.GenerateUUID(t, idProvider)
 
@@ -211,15 +220,15 @@ func TestPoliciesRetrieve(t *testing.T) {
 			Subject: tc.Subject,
 			Object:  tc.Object,
 		}
-		_, err := repo.Retrieve(context.Background(), pm)
+		_, err := repo.RetrieveAll(context.Background(), pm)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
 
 func TestPoliciesUpdate(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
-	repo := ppostgres.NewPolicyRepo(database)
-	crepo := cpostgres.NewClientRepo(database)
+	repo := ppostgres.NewRepository(database)
+	crepo := cpostgres.NewRepository(database)
 
 	cid := testsutil.GenerateUUID(t, idProvider)
 	pid := testsutil.GenerateUUID(t, idProvider)
@@ -338,7 +347,7 @@ func TestPoliciesUpdate(t *testing.T) {
 	for _, tc := range cases {
 		err := repo.Update(context.Background(), tc.policy)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
-		policPage, err := repo.Retrieve(context.Background(), policies.Page{
+		policPage, err := repo.RetrieveAll(context.Background(), policies.Page{
 			Offset:  uint64(0),
 			Limit:   uint64(10),
 			Subject: tc.policy.Subject,
@@ -352,8 +361,8 @@ func TestPoliciesUpdate(t *testing.T) {
 func TestPoliciesRetrievalAll(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
 	postgres.NewDatabase(db, tracer)
-	repo := ppostgres.NewPolicyRepo(database)
-	crepo := cpostgres.NewClientRepo(database)
+	repo := ppostgres.NewRepository(database)
+	crepo := cpostgres.NewRepository(database)
 
 	var nPolicies = uint64(10)
 
@@ -609,7 +618,7 @@ func TestPoliciesRetrievalAll(t *testing.T) {
 		},
 	}
 	for desc, tc := range cases {
-		page, err := repo.Retrieve(context.Background(), tc.pm)
+		page, err := repo.RetrieveAll(context.Background(), tc.pm)
 		size := uint64(len(page.Policies))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
@@ -618,8 +627,8 @@ func TestPoliciesRetrievalAll(t *testing.T) {
 
 func TestPoliciesDelete(t *testing.T) {
 	t.Cleanup(func() { testsutil.CleanUpDB(t, db) })
-	repo := ppostgres.NewPolicyRepo(database)
-	crepo := cpostgres.NewClientRepo(database)
+	repo := ppostgres.NewRepository(database)
+	crepo := cpostgres.NewRepository(database)
 
 	client := mfclients.Client{
 		ID:   testsutil.GenerateUUID(t, idProvider),
@@ -671,7 +680,7 @@ func TestPoliciesDelete(t *testing.T) {
 		Object:  objectID,
 		Action:  "c_delete",
 	}
-	policyPage, err := repo.Retrieve(context.Background(), pm)
+	policyPage, err := repo.RetrieveAll(context.Background(), pm)
 	assert.Equal(t, uint64(0), policyPage.Total, fmt.Sprintf("retrieve policies unexpected total %d\n", policyPage.Total))
 	require.Nil(t, err, fmt.Sprintf("retrieve policies unexpected error: %s", err))
 }

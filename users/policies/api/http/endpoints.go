@@ -1,4 +1,7 @@
-package api
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
+package http
 
 import (
 	"context"
@@ -13,12 +16,13 @@ func authorizeEndpoint(svc policies.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return authorizeRes{Authorized: false}, err
 		}
-		policy := policies.Policy{
+		aReq := policies.AccessRequest{
 			Subject: req.Subject,
 			Object:  req.Object,
-			Actions: []string{req.Action},
+			Action:  req.Action,
+			Entity:  req.EntityType,
 		}
-		err := svc.Authorize(ctx, req.EntityType, policy)
+		err := svc.Authorize(ctx, aReq)
 		if err != nil {
 			return authorizeRes{Authorized: false}, err
 		}
@@ -86,7 +90,7 @@ func listPolicyEndpoint(svc policies.Service) endpoint.Endpoint {
 			Object:  req.Object,
 			Action:  req.Actions,
 		}
-		page, err := svc.ListPolicy(ctx, req.token, pm)
+		page, err := svc.ListPolicies(ctx, req.token, pm)
 		if err != nil {
 			return listPolicyRes{}, err
 		}

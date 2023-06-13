@@ -1,4 +1,7 @@
-package api
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
+package http
 
 import (
 	"context"
@@ -17,7 +20,7 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakePolicyHandler(svc policies.Service, mux *bone.Mux, logger logger.Logger) http.Handler {
+func MakeHandler(svc policies.Service, mux *bone.Mux, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, api.EncodeError)),
 	}

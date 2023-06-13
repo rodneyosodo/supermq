@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package groups
 
 import (
@@ -6,7 +9,7 @@ import (
 	"github.com/mainflux/mainflux/pkg/groups"
 )
 
-type GroupService interface {
+type Service interface {
 	// CreateGroup creates new  group.
 	CreateGroup(ctx context.Context, token string, g groups.Group) (groups.Group, error)
 

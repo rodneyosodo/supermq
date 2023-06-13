@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package postgres
 
 import (
@@ -14,25 +17,20 @@ import (
 	"github.com/mainflux/mainflux/users/policies"
 )
 
-var _ policies.PolicyRepository = (*policyRepository)(nil)
+var _ policies.Repository = (*prepo)(nil)
 
-var (
-	// ErrInvalidEntityType indicates that the entity type is invalid.
-	ErrInvalidEntityType = errors.New("invalid entity type")
-)
-
-type policyRepository struct {
+type prepo struct {
 	db postgres.Database
 }
 
-// NewPolicyRepo instantiates a PostgreSQL implementclients.Serviceation of policy repository.
-func NewPolicyRepo(db postgres.Database) policies.PolicyRepository {
-	return &policyRepository{
+// NewRepository instantiates a PostgreSQL implementation of policy repository.
+func NewRepository(db postgres.Database) policies.Repository {
+	return &prepo{
 		db: db,
 	}
 }
 
-func (pr policyRepository) Save(ctx context.Context, policy policies.Policy) error {
+func (pr prepo) Save(ctx context.Context, policy policies.Policy) error {
 	q := `INSERT INTO policies (owner_id, subject, object, actions, created_at)
 		VALUES (:owner_id, :subject, :object, :actions, :created_at)`
 
@@ -51,7 +49,7 @@ func (pr policyRepository) Save(ctx context.Context, policy policies.Policy) err
 	return nil
 }
 
-func (pr policyRepository) CheckAdmin(ctx context.Context, id string) error {
+func (pr prepo) CheckAdmin(ctx context.Context, id string) error {
 	q := fmt.Sprintf(`SELECT id FROM clients WHERE id = '%s' AND role = '%d';`, id, clients.AdminRole)
 
 	var clientID string
@@ -65,48 +63,54 @@ func (pr policyRepository) CheckAdmin(ctx context.Context, id string) error {
 	return nil
 }
 
-func (pr policyRepository) Evaluate(ctx context.Context, entityType string, policy policies.Policy) error {
-	q := ""
-	switch entityType {
-	case "client":
-		// Evaluates if two clients are connected to the same group and the subject has the specified action
-		// or subject is the owner of the object
-		q = fmt.Sprintf(`(SELECT subject FROM policies p 
-		WHERE p.subject = :subject AND '%s' = ANY(p.actions) AND object IN (SELECT object FROM policies WHERE subject = :object))
-		UNION
-		(SELECT id as subject FROM clients c WHERE c.owner_id = :subject AND c.id = :object) LIMIT 1;`, policy.Actions[0])
-	case "group":
-		// Evaluates if client is a member to that group and has the specified action or is the owner of the group
-		q = fmt.Sprintf(`(SELECT subject FROM policies p WHERE p.subject = :subject AND p.object = :object AND '%s' = ANY(p.actions))
-		UNION
-		(SELECT id as subject FROM groups g WHERE g.owner_id = :subject AND g.id = :object)`, policy.Actions[0])
+func (pr prepo) EvaluateUserAccess(ctx context.Context, ar policies.AccessRequest) (policies.Policy, error) {
+	// Evaluates if two clients are connected to the same group and the subject has the specified action
+	// or subject is the owner of the object
+	query := fmt.Sprintf(`(SELECT subject FROM policies p 
+	WHERE p.subject = :subject AND '%s' = ANY(p.actions) AND object IN (SELECT object FROM policies WHERE subject = :object))
+	UNION
+	(SELECT id as subject FROM clients c WHERE c.owner_id = :subject AND c.id = :object) LIMIT 1;`, ar.Action)
 
-	default:
-		return ErrInvalidEntityType
-	}
+	return pr.evaluate(ctx, query, ar)
+}
 
-	dbu, err := toDBPolicy(policy)
-	if err != nil {
-		return errors.Wrap(errors.ErrAuthorization, err)
+func (pr prepo) EvaluateGroupAccess(ctx context.Context, ar policies.AccessRequest) (policies.Policy, error) {
+	// Evaluates if client is a member to that group and has the specified action or is the owner of the group
+	query := fmt.Sprintf(`(SELECT subject FROM policies p WHERE p.subject = :subject AND p.object = :object AND '%s' = ANY(p.actions))
+	UNION
+	(SELECT id as subject FROM groups g WHERE g.owner_id = :subject AND g.id = :object)`, ar.Action)
+
+	return pr.evaluate(ctx, query, ar)
+}
+
+func (pr prepo) evaluate(ctx context.Context, query string, aReq policies.AccessRequest) (policies.Policy, error) {
+	p := policies.Policy{
+		Subject: aReq.Subject,
+		Object:  aReq.Object,
+		Actions: []string{aReq.Action},
 	}
-	row, err := pr.db.NamedQueryContext(ctx, q, dbu)
+	dbp, err := toDBPolicy(p)
 	if err != nil {
-		return postgres.HandleError(err, errors.ErrAuthorization)
+		return policies.Policy{}, errors.Wrap(errors.ErrAuthorization, err)
+	}
+	row, err := pr.db.NamedQueryContext(ctx, query, dbp)
+	if err != nil {
+		return policies.Policy{}, postgres.HandleError(err, errors.ErrAuthorization)
 	}
 
 	defer row.Close()
 
 	if ok := row.Next(); !ok {
-		return errors.Wrap(errors.ErrAuthorization, row.Err())
+		return policies.Policy{}, errors.Wrap(errors.ErrAuthorization, row.Err())
 	}
-	var rPolicy dbPolicy
-	if err := row.StructScan(&rPolicy); err != nil {
-		return err
+	dbp = dbPolicy{}
+	if err := row.StructScan(&dbp); err != nil {
+		return policies.Policy{}, err
 	}
-	return nil
+	return toPolicy(dbp)
 }
 
-func (pr policyRepository) Update(ctx context.Context, policy policies.Policy) error {
+func (pr prepo) Update(ctx context.Context, policy policies.Policy) error {
 	if err := policy.Validate(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
@@ -125,7 +129,7 @@ func (pr policyRepository) Update(ctx context.Context, policy policies.Policy) e
 	return nil
 }
 
-func (pr policyRepository) Retrieve(ctx context.Context, pm policies.Page) (policies.PolicyPage, error) {
+func (pr prepo) RetrieveAll(ctx context.Context, pm policies.Page) (policies.PolicyPage, error) {
 	var query []string
 	var emq string
 
@@ -193,7 +197,7 @@ func (pr policyRepository) Retrieve(ctx context.Context, pm policies.Page) (poli
 	return page, nil
 }
 
-func (pr policyRepository) Delete(ctx context.Context, p policies.Policy) error {
+func (pr prepo) Delete(ctx context.Context, p policies.Policy) error {
 	dbp := dbPolicy{
 		Subject: p.Subject,
 		Object:  p.Object,
@@ -216,8 +220,8 @@ type dbPolicy struct {
 }
 
 func toDBPolicy(p policies.Policy) (dbPolicy, error) {
-	var ps pgtype.TextArray
-	if err := ps.Set(p.Actions); err != nil {
+	var actions pgtype.TextArray
+	if err := actions.Set(p.Actions); err != nil {
 		return dbPolicy{}, err
 	}
 	var updatedAt sql.NullTime
@@ -232,7 +236,7 @@ func toDBPolicy(p policies.Policy) (dbPolicy, error) {
 		OwnerID:   p.OwnerID,
 		Subject:   p.Subject,
 		Object:    p.Object,
-		Actions:   ps,
+		Actions:   actions,
 		CreatedAt: p.CreatedAt,
 		UpdatedAt: updatedAt,
 		UpdatedBy: updatedBy,
@@ -240,9 +244,9 @@ func toDBPolicy(p policies.Policy) (dbPolicy, error) {
 }
 
 func toPolicy(dbp dbPolicy) (policies.Policy, error) {
-	var ps []string
+	var actions []string
 	for _, e := range dbp.Actions.Elements {
-		ps = append(ps, e.String)
+		actions = append(actions, e.String)
 	}
 	var updatedAt time.Time
 	if dbp.UpdatedAt.Valid {
@@ -256,7 +260,7 @@ func toPolicy(dbp dbPolicy) (policies.Policy, error) {
 		OwnerID:   dbp.OwnerID,
 		Subject:   dbp.Subject,
 		Object:    dbp.Object,
-		Actions:   ps,
+		Actions:   actions,
 		CreatedAt: dbp.CreatedAt,
 		UpdatedAt: updatedAt,
 		UpdatedBy: updatedBy,
