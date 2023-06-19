@@ -122,7 +122,7 @@ func TestAddPolicy(t *testing.T) {
 		repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, tc.err)
 		repoCall1 := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, tc.err)
 		repoCall2 := pRepo.On("Save", context.Background(), mock.Anything).Return(tc.policy, tc.err)
-		_, err := svc.AddPolicy(context.Background(), tc.token, tc.policy)
+		_, err := svc.AddPolicy(context.Background(), tc.token, policies.ThingClient, tc.policy)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if err == nil {
 			tc.policy.Subject = tc.token
