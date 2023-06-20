@@ -117,20 +117,18 @@ func (svc service) AddPolicy(ctx context.Context, token string, p Policy) (Polic
 	p.UpdatedAt = time.Now()
 	p.UpdatedBy = userID
 
+	if err := svc.policyCache.Remove(ctx, p); err != nil {
+		return Policy{}, err
+	}
+
 	// If the client is admin, add the policy
 	if err := svc.checkAdmin(ctx, userID); err == nil {
-		if err := svc.policyCache.Put(ctx, p); err != nil {
-			return Policy{}, err
-		}
 		return svc.policies.Save(ctx, p)
 	}
 
 	// If the client has `g_add` action on the object or is the owner of the object, add the policy
 	ar := AccessRequest{Subject: userID, Object: p.Object, Action: "g_add"}
 	if _, err := svc.policies.EvaluateGroupAccess(ctx, ar); err == nil {
-		if err := svc.policyCache.Put(ctx, p); err != nil {
-			return Policy{}, err
-		}
 		return svc.policies.Save(ctx, p)
 	}
 
