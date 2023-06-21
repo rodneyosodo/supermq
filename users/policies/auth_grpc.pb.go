@@ -30,7 +30,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthServiceClient interface {
-	// Identify identifies the given token and returns the user ID.
+	// Identify identifies the user based on the given token.
 	Identify(ctx context.Context, in *IdentifyReq, opts ...grpc.CallOption) (*IdentifyRes, error)
 	// Authorize authorizes the given subject to perform the given action on the
 	// given object.
@@ -67,7 +67,7 @@ func (c *authServiceClient) Authorize(ctx context.Context, in *AuthorizeReq, opt
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility
 type AuthServiceServer interface {
-	// Identify identifies the given token and returns the user ID.
+	// Identify identifies the user based on the given token.
 	Identify(context.Context, *IdentifyReq) (*IdentifyRes, error)
 	// Authorize authorizes the given subject to perform the given action on the
 	// given object.
