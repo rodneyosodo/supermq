@@ -38,7 +38,7 @@ func newPolicyServer(svc upolicies.Service) *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func TestCreatePolicy(t *testing.T) {
+func TestCreatePolicyUser(t *testing.T) {
 	cRepo := new(umocks.Repository)
 	pRepo := new(upmocks.Repository)
 	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
@@ -152,7 +152,7 @@ func TestCreatePolicy(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := pRepo.On("Save", mock.Anything, mock.Anything).Return(tc.err)
-		err := mfsdk.CreatePolicy(tc.policy, tc.token)
+		err := mfsdk.CreateUserPolicy(tc.policy, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		if tc.err == nil {
 			ok := repoCall1.Parent.AssertCalled(t, "Save", mock.Anything, mock.Anything)
@@ -445,7 +445,7 @@ func TestUpdatePolicy(t *testing.T) {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := pRepo.On("RetrieveAll", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(upolicies.PolicyPage{}, nil)
 		repoCall2 := pRepo.On("Update", mock.Anything, mock.Anything).Return(tc.err)
-		err := mfsdk.UpdatePolicy(policy, tc.token)
+		err := mfsdk.UpdateUserPolicy(policy, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		ok := repoCall1.Parent.AssertCalled(t, "Update", mock.Anything, mock.Anything)
 		assert.True(t, ok, fmt.Sprintf("Update was not called on %s", tc.desc))
@@ -511,7 +511,7 @@ func TestUpdateThingsPolicy(t *testing.T) {
 		policy.CreatedAt = time.Now()
 		repoCall := pRepo.On("RetrieveAll", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(tpolicies.PolicyPage{}, nil)
 		repoCall1 := pRepo.On("Update", mock.Anything, mock.Anything).Return(policies.Policy{}, tc.err)
-		err := mfsdk.UpdateThingsPolicy(policy, tc.token)
+		err := mfsdk.UpdateThingPolicy(policy, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		ok := repoCall.Parent.AssertCalled(t, "Update", mock.Anything, mock.Anything)
 		assert.True(t, ok, fmt.Sprintf("Update was not called on %s", tc.desc))
@@ -644,7 +644,7 @@ func TestListPolicies(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 		repoCall1 := pRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(convertUserPolicyPage(sdk.PolicyPage{Policies: tc.response}), tc.err)
-		pp, err := mfsdk.ListPolicies(tc.page, tc.token)
+		pp, err := mfsdk.ListUserPolicies(tc.page, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, pp.Policies, fmt.Sprintf("%s: expected %v, got %v", tc.desc, tc.response, pp))
 		ok := repoCall.Parent.AssertCalled(t, "RetrieveAll", mock.Anything, mock.Anything)
@@ -676,7 +676,7 @@ func TestDeletePolicy(t *testing.T) {
 	repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 	repoCall1 := pRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(convertUserPolicyPage(sdk.PolicyPage{Policies: []sdk.Policy{cpr}}), nil)
 	repoCall2 := pRepo.On("Delete", mock.Anything, mock.Anything).Return(nil)
-	err := mfsdk.DeletePolicy(pr, generateValidToken(t, csvc, cRepo))
+	err := mfsdk.DeleteUserPolicy(pr, generateValidToken(t, csvc, cRepo))
 	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	ok := repoCall1.Parent.AssertCalled(t, "Delete", mock.Anything, mock.Anything)
 	assert.True(t, ok, "Delete was not called on valid policy")
@@ -687,7 +687,7 @@ func TestDeletePolicy(t *testing.T) {
 	repoCall = pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
 	repoCall1 = pRepo.On("RetrieveAll", mock.Anything, mock.Anything).Return(convertUserPolicyPage(sdk.PolicyPage{Policies: []sdk.Policy{cpr}}), nil)
 	repoCall2 = pRepo.On("Delete", mock.Anything, mock.Anything).Return(sdk.ErrFailedRemoval)
-	err = mfsdk.DeletePolicy(pr, invalidToken)
+	err = mfsdk.DeleteUserPolicy(pr, invalidToken)
 	assert.Equal(t, err, errors.NewSDKErrorWithStatus(errors.ErrAuthentication, http.StatusUnauthorized), fmt.Sprintf("expected %s got %s", pr, err))
 	ok = repoCall.Parent.AssertCalled(t, "Delete", mock.Anything, mock.Anything)
 	assert.True(t, ok, "Delete was not called on invalid policy")

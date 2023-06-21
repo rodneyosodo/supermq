@@ -7,22 +7,18 @@ type authorizeRes struct {
 	authorized bool
 }
 
-type identityRes struct {
+type identifyRes struct {
 	id string
 }
 
 type issueRes struct {
-	value string
+	token string
 }
 
 type addPolicyRes struct {
-	authorized bool
+	added bool
 }
 
 type deletePolicyRes struct {
 	deleted bool
-}
-
-type listPoliciesRes struct {
-	objects []string
 }

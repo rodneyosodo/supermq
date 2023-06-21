@@ -55,10 +55,16 @@ func (res listPolicyRes) Empty() bool {
 	return false
 }
 
-type deletePolicyRes struct{}
+type deletePolicyRes struct {
+	deleted bool
+}
 
 func (res deletePolicyRes) Code() int {
-	return http.StatusNoContent
+	if res.deleted {
+		return http.StatusNoContent
+	}
+
+	return http.StatusBadRequest
 }
 
 func (res deletePolicyRes) Headers() map[string]string {

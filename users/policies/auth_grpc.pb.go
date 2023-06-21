@@ -22,24 +22,28 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AuthService_Authorize_FullMethodName    = "/mainflux.users.policies.AuthService/Authorize"
 	AuthService_Issue_FullMethodName        = "/mainflux.users.policies.AuthService/Issue"
 	AuthService_Identify_FullMethodName     = "/mainflux.users.policies.AuthService/Identify"
+	AuthService_Authorize_FullMethodName    = "/mainflux.users.policies.AuthService/Authorize"
 	AuthService_AddPolicy_FullMethodName    = "/mainflux.users.policies.AuthService/AddPolicy"
 	AuthService_DeletePolicy_FullMethodName = "/mainflux.users.policies.AuthService/DeletePolicy"
-	AuthService_ListPolicies_FullMethodName = "/mainflux.users.policies.AuthService/ListPolicies"
 )
 
 // AuthServiceClient is the client API for AuthService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthServiceClient interface {
+	// Issue issues a new token for the given identity.
+	Issue(ctx context.Context, in *IssueReq, opts ...grpc.CallOption) (*IssueRes, error)
+	// Identify identifies the user based on the given token.
+	Identify(ctx context.Context, in *IdentifyReq, opts ...grpc.CallOption) (*IdentifyRes, error)
+	// Authorize authorizes the given subject to perform the given action on the
+	// given object.
 	Authorize(ctx context.Context, in *AuthorizeReq, opts ...grpc.CallOption) (*AuthorizeRes, error)
-	Issue(ctx context.Context, in *IssueReq, opts ...grpc.CallOption) (*Token, error)
-	Identify(ctx context.Context, in *Token, opts ...grpc.CallOption) (*UserIdentity, error)
+	// AddPolicy adds a new policy for the given subject, object and action.
 	AddPolicy(ctx context.Context, in *AddPolicyReq, opts ...grpc.CallOption) (*AddPolicyRes, error)
+	// DeletePolicy deletes the policy for the given subject and object.
 	DeletePolicy(ctx context.Context, in *DeletePolicyReq, opts ...grpc.CallOption) (*DeletePolicyRes, error)
-	ListPolicies(ctx context.Context, in *ListPoliciesReq, opts ...grpc.CallOption) (*ListPoliciesRes, error)
 }
 
 type authServiceClient struct {
@@ -50,17 +54,8 @@ func NewAuthServiceClient(cc grpc.ClientConnInterface) AuthServiceClient {
 	return &authServiceClient{cc}
 }
 
-func (c *authServiceClient) Authorize(ctx context.Context, in *AuthorizeReq, opts ...grpc.CallOption) (*AuthorizeRes, error) {
-	out := new(AuthorizeRes)
-	err := c.cc.Invoke(ctx, AuthService_Authorize_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *authServiceClient) Issue(ctx context.Context, in *IssueReq, opts ...grpc.CallOption) (*Token, error) {
-	out := new(Token)
+func (c *authServiceClient) Issue(ctx context.Context, in *IssueReq, opts ...grpc.CallOption) (*IssueRes, error) {
+	out := new(IssueRes)
 	err := c.cc.Invoke(ctx, AuthService_Issue_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -68,9 +63,18 @@ func (c *authServiceClient) Issue(ctx context.Context, in *IssueReq, opts ...grp
 	return out, nil
 }
 
-func (c *authServiceClient) Identify(ctx context.Context, in *Token, opts ...grpc.CallOption) (*UserIdentity, error) {
-	out := new(UserIdentity)
+func (c *authServiceClient) Identify(ctx context.Context, in *IdentifyReq, opts ...grpc.CallOption) (*IdentifyRes, error) {
+	out := new(IdentifyRes)
 	err := c.cc.Invoke(ctx, AuthService_Identify_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) Authorize(ctx context.Context, in *AuthorizeReq, opts ...grpc.CallOption) (*AuthorizeRes, error) {
+	out := new(AuthorizeRes)
+	err := c.cc.Invoke(ctx, AuthService_Authorize_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -95,25 +99,21 @@ func (c *authServiceClient) DeletePolicy(ctx context.Context, in *DeletePolicyRe
 	return out, nil
 }
 
-func (c *authServiceClient) ListPolicies(ctx context.Context, in *ListPoliciesReq, opts ...grpc.CallOption) (*ListPoliciesRes, error) {
-	out := new(ListPoliciesRes)
-	err := c.cc.Invoke(ctx, AuthService_ListPolicies_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility
 type AuthServiceServer interface {
+	// Issue issues a new token for the given identity.
+	Issue(context.Context, *IssueReq) (*IssueRes, error)
+	// Identify identifies the user based on the given token.
+	Identify(context.Context, *IdentifyReq) (*IdentifyRes, error)
+	// Authorize authorizes the given subject to perform the given action on the
+	// given object.
 	Authorize(context.Context, *AuthorizeReq) (*AuthorizeRes, error)
-	Issue(context.Context, *IssueReq) (*Token, error)
-	Identify(context.Context, *Token) (*UserIdentity, error)
+	// AddPolicy adds a new policy for the given subject, object and action.
 	AddPolicy(context.Context, *AddPolicyReq) (*AddPolicyRes, error)
+	// DeletePolicy deletes the policy for the given subject and object.
 	DeletePolicy(context.Context, *DeletePolicyReq) (*DeletePolicyRes, error)
-	ListPolicies(context.Context, *ListPoliciesReq) (*ListPoliciesRes, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -121,23 +121,20 @@ type AuthServiceServer interface {
 type UnimplementedAuthServiceServer struct {
 }
 
-func (UnimplementedAuthServiceServer) Authorize(context.Context, *AuthorizeReq) (*AuthorizeRes, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Authorize not implemented")
-}
-func (UnimplementedAuthServiceServer) Issue(context.Context, *IssueReq) (*Token, error) {
+func (UnimplementedAuthServiceServer) Issue(context.Context, *IssueReq) (*IssueRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Issue not implemented")
 }
-func (UnimplementedAuthServiceServer) Identify(context.Context, *Token) (*UserIdentity, error) {
+func (UnimplementedAuthServiceServer) Identify(context.Context, *IdentifyReq) (*IdentifyRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Identify not implemented")
+}
+func (UnimplementedAuthServiceServer) Authorize(context.Context, *AuthorizeReq) (*AuthorizeRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Authorize not implemented")
 }
 func (UnimplementedAuthServiceServer) AddPolicy(context.Context, *AddPolicyReq) (*AddPolicyRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddPolicy not implemented")
 }
 func (UnimplementedAuthServiceServer) DeletePolicy(context.Context, *DeletePolicyReq) (*DeletePolicyRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeletePolicy not implemented")
-}
-func (UnimplementedAuthServiceServer) ListPolicies(context.Context, *ListPoliciesReq) (*ListPoliciesRes, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListPolicies not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 
@@ -150,24 +147,6 @@ type UnsafeAuthServiceServer interface {
 
 func RegisterAuthServiceServer(s grpc.ServiceRegistrar, srv AuthServiceServer) {
 	s.RegisterService(&AuthService_ServiceDesc, srv)
-}
-
-func _AuthService_Authorize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AuthorizeReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuthServiceServer).Authorize(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuthService_Authorize_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).Authorize(ctx, req.(*AuthorizeReq))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _AuthService_Issue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -189,7 +168,7 @@ func _AuthService_Issue_Handler(srv interface{}, ctx context.Context, dec func(i
 }
 
 func _AuthService_Identify_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Token)
+	in := new(IdentifyReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -201,7 +180,25 @@ func _AuthService_Identify_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: AuthService_Identify_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).Identify(ctx, req.(*Token))
+		return srv.(AuthServiceServer).Identify(ctx, req.(*IdentifyReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_Authorize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthorizeReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).Authorize(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_Authorize_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).Authorize(ctx, req.(*AuthorizeReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -242,24 +239,6 @@ func _AuthService_DeletePolicy_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AuthService_ListPolicies_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListPoliciesReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuthServiceServer).ListPolicies(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuthService_ListPolicies_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).ListPolicies(ctx, req.(*ListPoliciesReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -267,10 +246,6 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "mainflux.users.policies.AuthService",
 	HandlerType: (*AuthServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Authorize",
-			Handler:    _AuthService_Authorize_Handler,
-		},
 		{
 			MethodName: "Issue",
 			Handler:    _AuthService_Issue_Handler,
@@ -280,16 +255,16 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AuthService_Identify_Handler,
 		},
 		{
+			MethodName: "Authorize",
+			Handler:    _AuthService_Authorize_Handler,
+		},
+		{
 			MethodName: "AddPolicy",
 			Handler:    _AuthService_AddPolicy_Handler,
 		},
 		{
 			MethodName: "DeletePolicy",
 			Handler:    _AuthService_DeletePolicy_Handler,
-		},
-		{
-			MethodName: "ListPolicies",
-			Handler:    _AuthService_ListPolicies_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

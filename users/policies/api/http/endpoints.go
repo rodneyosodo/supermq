@@ -14,7 +14,7 @@ func authorizeEndpoint(svc policies.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(authorizeReq)
 		if err := req.validate(); err != nil {
-			return authorizeRes{Authorized: false}, err
+			return authorizeRes{}, err
 		}
 		aReq := policies.AccessRequest{
 			Subject: req.Subject,
@@ -24,10 +24,10 @@ func authorizeEndpoint(svc policies.Service) endpoint.Endpoint {
 		}
 		err := svc.Authorize(ctx, aReq)
 		if err != nil {
-			return authorizeRes{Authorized: false}, err
+			return authorizeRes{}, err
 		}
 
-		return authorizeRes{Authorized: true}, nil
+		return authorizeRes{authorized: true}, nil
 	}
 }
 
@@ -70,8 +70,7 @@ func updatePolicyEndpoint(svc policies.Service) endpoint.Endpoint {
 			return updatePolicyRes{}, err
 		}
 
-		res := updatePolicyRes{updated: false}
-		return res, nil
+		return updatePolicyRes{updated: true}, nil
 	}
 }
 
@@ -112,7 +111,7 @@ func deletePolicyEndpoint(svc policies.Service) endpoint.Endpoint {
 			return deletePolicyRes{}, err
 		}
 
-		return deletePolicyRes{}, nil
+		return deletePolicyRes{deleted: true}, nil
 	}
 }
 

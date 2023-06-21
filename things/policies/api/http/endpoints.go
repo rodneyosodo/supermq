@@ -18,7 +18,7 @@ func identifyEndpoint(svc clients.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		id, err := svc.Identify(ctx, req.Secret)
+		id, err := svc.Identify(ctx, req.secret)
 		if err != nil {
 			return nil, err
 		}
@@ -59,8 +59,8 @@ func connectEndpoint(svc policies.Service) endpoint.Endpoint {
 			cr.Actions = policies.PolicyTypes
 		}
 		policy := policies.Policy{
-			Subject: cr.ClientID,
-			Object:  cr.GroupID,
+			Subject: cr.Subject,
+			Object:  cr.Object,
 			Actions: cr.Actions,
 		}
 		policy, err := svc.AddPolicy(ctx, cr.token, policy)
@@ -83,8 +83,8 @@ func connectThingsEndpoint(svc policies.Service) endpoint.Endpoint {
 			cr.Actions = policies.PolicyTypes
 		}
 		ps := []policies.Policy{}
-		for _, tid := range cr.ClientIDs {
-			for _, cid := range cr.GroupIDs {
+		for _, tid := range cr.Subjects {
+			for _, cid := range cr.Objects {
 				policy := policies.Policy{
 					Subject: tid,
 					Object:  cid,
@@ -157,8 +157,8 @@ func disconnectEndpoint(svc policies.Service) endpoint.Endpoint {
 			cr.Actions = policies.PolicyTypes
 		}
 		policy := policies.Policy{
-			Subject: cr.ClientID,
-			Object:  cr.GroupID,
+			Subject: cr.Subject,
+			Object:  cr.Object,
 			Actions: cr.Actions,
 		}
 		if err := svc.DeletePolicy(ctx, cr.token, policy); err != nil {
@@ -175,8 +175,8 @@ func disconnectThingsEndpoint(svc policies.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		for _, tid := range req.ClientIDs {
-			for _, cid := range req.GroupIDs {
+		for _, tid := range req.Subjects {
+			for _, cid := range req.Objects {
 				policy := policies.Policy{
 					Subject: tid,
 					Object:  cid,

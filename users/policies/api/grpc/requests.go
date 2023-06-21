@@ -13,34 +13,34 @@ import (
 // 3. action - type of action that will be executed (read/write)
 // 4. entity_type - type of entity (client, group, computation, dataset).
 type authReq struct {
-	Sub        string
-	Obj        string
-	Act        string
-	EntityType string
+	subject    string
+	object     string
+	action     string
+	entityType string
 }
 
 func (req authReq) validate() error {
-	if req.Sub == "" {
+	if req.subject == "" {
 		return apiutil.ErrMissingPolicySub
 	}
-	if req.Obj == "" {
+	if req.object == "" {
 		return apiutil.ErrMissingPolicyObj
 	}
-	if req.Act == "" {
+	if req.action == "" {
 		return apiutil.ErrMalformedPolicyAct
 	}
-	if req.EntityType == "" {
+	if req.entityType == "" {
 		return apiutil.ErrMissingPolicyEntityType
 	}
 
 	return nil
 }
 
-type identityReq struct {
+type identifyReq struct {
 	token string
 }
 
-func (req identityReq) validate() error {
+func (req identifyReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -49,40 +49,40 @@ func (req identityReq) validate() error {
 }
 
 type issueReq struct {
-	email    string
-	password string
+	identity string
+	secret   string
 }
 
 func (req issueReq) validate() error {
-	if req.email == "" {
-		return apiutil.ErrMissingEmail
+	if req.identity == "" {
+		return apiutil.ErrMissingIdentity
 	}
-	if req.password == "" {
-		return apiutil.ErrMissingPass
+	if req.secret == "" {
+		return apiutil.ErrMissingSecret
 	}
 	return nil
 }
 
 type addPolicyReq struct {
-	Token string
-	Sub   string
-	Obj   string
-	Act   []string
+	token   string
+	subject string
+	object  string
+	action  []string
 }
 
 func (req addPolicyReq) validate() error {
-	if req.Token == "" {
+	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
-	if req.Sub == "" {
+	if req.subject == "" {
 		return apiutil.ErrMissingPolicySub
 	}
 
-	if req.Obj == "" {
+	if req.object == "" {
 		return apiutil.ErrMissingPolicyObj
 	}
 
-	if len(req.Act) == 0 {
+	if len(req.action) == 0 {
 		return apiutil.ErrMalformedPolicyAct
 	}
 
@@ -90,31 +90,24 @@ func (req addPolicyReq) validate() error {
 }
 
 type policyReq struct {
-	Token string
-	Sub   string
-	Obj   string
-	Act   string
+	token   string
+	subject string
+	object  string
+	action  string
 }
 
 func (req policyReq) validate() error {
-	if req.Sub == "" {
+	if req.subject == "" {
 		return apiutil.ErrMissingPolicySub
 	}
 
-	if req.Obj == "" {
+	if req.object == "" {
 		return apiutil.ErrMissingPolicyObj
 	}
 
-	if req.Act == "" {
+	if req.action == "" {
 		return apiutil.ErrMalformedPolicyAct
 	}
 
 	return nil
-}
-
-type listPoliciesReq struct {
-	Token string
-	Sub   string
-	Obj   string
-	Act   string
 }

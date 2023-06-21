@@ -10,9 +10,11 @@ import (
 )
 
 const (
-	policiesEndpoint  = "policies"
-	authorizeEndpoint = "authorize"
-	accessEndpoint    = "access"
+	policiesEndpoint     = "policies"
+	usersPolicyEndpoint  = "users/policies"
+	thingsPolicyEndpoint = "things/policies"
+	authorizeEndpoint    = "authorize"
+	accessEndpoint       = "access"
 )
 
 // Policy represents an argument struct for making a policy related function calls.
@@ -51,13 +53,13 @@ func (sdk mfSDK) Authorize(accessReq AccessRequest, token string) (bool, errors.
 	return resp.Authorized, nil
 }
 
-func (sdk mfSDK) CreatePolicy(p Policy, token string) errors.SDKError {
+func (sdk mfSDK) CreateUserPolicy(p Policy, token string) errors.SDKError {
 	data, err := json.Marshal(p)
 	if err != nil {
 		return errors.NewSDKError(err)
 	}
 
-	url := fmt.Sprintf("%s/%s", sdk.usersURL, policiesEndpoint)
+	url := fmt.Sprintf("%s/%s", sdk.usersURL, usersPolicyEndpoint)
 	_, _, sdkerr := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), data, http.StatusCreated)
 	if sdkerr != nil {
 		return sdkerr
@@ -66,13 +68,13 @@ func (sdk mfSDK) CreatePolicy(p Policy, token string) errors.SDKError {
 	return nil
 }
 
-func (sdk mfSDK) UpdatePolicy(p Policy, token string) errors.SDKError {
+func (sdk mfSDK) UpdateUserPolicy(p Policy, token string) errors.SDKError {
 	data, err := json.Marshal(p)
 	if err != nil {
 		return errors.NewSDKError(err)
 	}
 
-	url := fmt.Sprintf("%s/%s", sdk.usersURL, policiesEndpoint)
+	url := fmt.Sprintf("%s/%s", sdk.usersURL, usersPolicyEndpoint)
 
 	_, _, sdkerr := sdk.processRequest(http.MethodPut, url, token, string(CTJSON), data, http.StatusNoContent)
 	if sdkerr != nil {
@@ -82,8 +84,8 @@ func (sdk mfSDK) UpdatePolicy(p Policy, token string) errors.SDKError {
 	return nil
 }
 
-func (sdk mfSDK) ListPolicies(pm PageMetadata, token string) (PolicyPage, errors.SDKError) {
-	url, err := sdk.withQueryParams(sdk.usersURL, policiesEndpoint, pm)
+func (sdk mfSDK) ListUserPolicies(pm PageMetadata, token string) (PolicyPage, errors.SDKError) {
+	url, err := sdk.withQueryParams(sdk.usersURL, usersPolicyEndpoint, pm)
 	if err != nil {
 		return PolicyPage{}, errors.NewSDKError(err)
 	}
@@ -101,36 +103,96 @@ func (sdk mfSDK) ListPolicies(pm PageMetadata, token string) (PolicyPage, errors
 	return pp, nil
 }
 
-func (sdk mfSDK) DeletePolicy(p Policy, token string) errors.SDKError {
-	url := fmt.Sprintf("%s/%s/%s/%s", sdk.usersURL, policiesEndpoint, p.Subject, p.Object)
-
-	_, _, sdkerr := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), nil, http.StatusNoContent)
-
-	return sdkerr
-}
-
-func (sdk mfSDK) Assign(memberType []string, memberID, groupID, token string) errors.SDKError {
-	var policy = Policy{
-		Subject: memberID,
-		Object:  groupID,
-		Actions: memberType,
-	}
-	data, err := json.Marshal(policy)
+func (sdk mfSDK) DeleteUserPolicy(p Policy, token string) errors.SDKError {
+	data, err := json.Marshal(p)
 	if err != nil {
 		return errors.NewSDKError(err)
 	}
-	url := fmt.Sprintf("%s/%s", sdk.usersURL, policiesEndpoint)
-	_, _, sdkerr := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), data, http.StatusCreated)
+
+	url := fmt.Sprintf("%s/%s", sdk.usersURL, usersPolicyEndpoint)
+	_, _, sdkerr := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), data, http.StatusNoContent)
 
 	return sdkerr
 }
 
-func (sdk mfSDK) Unassign(memberID, groupID, token string) errors.SDKError {
-	url := fmt.Sprintf("%s/%s/%s/%s", sdk.usersURL, policiesEndpoint, memberID, groupID)
+func (sdk mfSDK) CreateThingPolicy(p Policy, token string) errors.SDKError {
+	data, err := json.Marshal(p)
+	if err != nil {
+		return errors.NewSDKError(err)
+	}
 
-	_, _, sdkerr := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), nil, http.StatusNoContent)
+	url := fmt.Sprintf("%s/%s", sdk.thingsURL, thingsPolicyEndpoint)
+	_, _, sdkerr := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), data, http.StatusCreated)
+	if sdkerr != nil {
+		return sdkerr
+	}
+
+	return nil
+}
+
+func (sdk mfSDK) UpdateThingPolicy(p Policy, token string) errors.SDKError {
+	data, err := json.Marshal(p)
+	if err != nil {
+		return errors.NewSDKError(err)
+	}
+
+	url := fmt.Sprintf("%s/%s", sdk.thingsURL, thingsPolicyEndpoint)
+
+	_, _, sdkerr := sdk.processRequest(http.MethodPut, url, token, string(CTJSON), data, http.StatusNoContent)
+	if sdkerr != nil {
+		return sdkerr
+	}
+
+	return nil
+}
+
+func (sdk mfSDK) ListThingPolicies(pm PageMetadata, token string) (PolicyPage, errors.SDKError) {
+	url, err := sdk.withQueryParams(sdk.thingsURL, thingsPolicyEndpoint, pm)
+	if err != nil {
+		return PolicyPage{}, errors.NewSDKError(err)
+	}
+
+	_, body, sdkerr := sdk.processRequest(http.MethodGet, url, token, string(CTJSON), nil, http.StatusOK)
+	if sdkerr != nil {
+		return PolicyPage{}, sdkerr
+	}
+
+	var pp PolicyPage
+	if err := json.Unmarshal(body, &pp); err != nil {
+		return PolicyPage{}, errors.NewSDKError(err)
+	}
+
+	return pp, nil
+}
+
+func (sdk mfSDK) DeleteThingPolicy(p Policy, token string) errors.SDKError {
+	data, err := json.Marshal(p)
+	if err != nil {
+		return errors.NewSDKError(err)
+	}
+
+	url := fmt.Sprintf("%s/%s", sdk.thingsURL, thingsPolicyEndpoint)
+	_, _, sdkerr := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), data, http.StatusNoContent)
 
 	return sdkerr
+}
+
+func (sdk mfSDK) Assign(actions []string, userID, groupID, token string) errors.SDKError {
+	var policy = Policy{
+		Subject: userID,
+		Object:  groupID,
+		Actions: actions,
+	}
+	return sdk.CreateUserPolicy(policy, token)
+}
+
+func (sdk mfSDK) Unassign(userID, groupID, token string) errors.SDKError {
+	var policy = Policy{
+		Subject: userID,
+		Object:  groupID,
+	}
+
+	return sdk.DeleteUserPolicy(policy, token)
 }
 
 func (sdk mfSDK) Connect(connIDs ConnectionIDs, token string) errors.SDKError {
@@ -158,60 +220,26 @@ func (sdk mfSDK) Disconnect(connIDs ConnectionIDs, token string) errors.SDKError
 	return sdkerr
 }
 
-func (sdk mfSDK) ConnectThing(thingID, chanID, token string) errors.SDKError {
-	url := fmt.Sprintf("%s/%s/%s/%s/%s", sdk.thingsURL, channelsEndpoint, chanID, thingsEndpoint, thingID)
+func (sdk mfSDK) ConnectThing(thingID, channelID, token string) errors.SDKError {
+	var policy = Policy{
+		Subject: thingID,
+		Object:  channelID,
+	}
 
-	_, _, err := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), nil, http.StatusCreated)
-
-	return err
+	return sdk.CreateThingPolicy(policy, token)
 }
 
-func (sdk mfSDK) DisconnectThing(thingID, chanID, token string) errors.SDKError {
-	url := fmt.Sprintf("%s/%s/%s/%s/%s", sdk.thingsURL, channelsEndpoint, chanID, thingsEndpoint, thingID)
-
-	_, _, err := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), nil, http.StatusNoContent)
-
-	return err
-}
-
-func (sdk mfSDK) UpdateThingsPolicy(p Policy, token string) errors.SDKError {
-	data, err := json.Marshal(p)
-	if err != nil {
-		return errors.NewSDKError(err)
+func (sdk mfSDK) DisconnectThing(thingID, channelID, token string) errors.SDKError {
+	var policy = Policy{
+		Subject: thingID,
+		Object:  channelID,
 	}
 
-	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, thingsEndpoint, policiesEndpoint)
-
-	_, _, sdkerr := sdk.processRequest(http.MethodPut, url, token, string(CTJSON), data, http.StatusOK)
-	if sdkerr != nil {
-		return sdkerr
-	}
-
-	return nil
-}
-
-func (sdk mfSDK) ListThingsPolicies(pm PageMetadata, token string) (PolicyPage, errors.SDKError) {
-	url, err := sdk.withQueryParams(fmt.Sprintf("%s/%s", sdk.thingsURL, thingsEndpoint), policiesEndpoint, pm)
-	if err != nil {
-		return PolicyPage{}, errors.NewSDKError(err)
-	}
-
-	_, body, sdkerr := sdk.processRequest(http.MethodGet, url, token, string(CTJSON), nil, http.StatusOK)
-	if sdkerr != nil {
-		return PolicyPage{}, sdkerr
-	}
-
-	var pp PolicyPage
-	if err := json.Unmarshal(body, &pp); err != nil {
-		return PolicyPage{}, errors.NewSDKError(err)
-	}
-
-	return pp, nil
+	return sdk.DeleteThingPolicy(policy, token)
 }
 
 func (sdk mfSDK) ThingCanAccess(accessReq AccessRequest, token string) (bool, string, errors.SDKError) {
-	creq := canAccessReq{ClientSecret: accessReq.Subject, GroupID: accessReq.Object, Action: accessReq.Action, EntityType: accessReq.EntityType}
-	data, err := json.Marshal(creq)
+	data, err := json.Marshal(accessReq)
 	if err != nil {
 		return false, "", errors.NewSDKError(err)
 	}

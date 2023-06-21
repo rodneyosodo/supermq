@@ -28,7 +28,7 @@ var cmdPolicies = []cobra.Command{
 				logError(err)
 				return
 			}
-			if err := sdk.CreatePolicy(policy, args[1]); err != nil {
+			if err := sdk.CreateUserPolicy(policy, args[1]); err != nil {
 				logError(err)
 				return
 			}
@@ -55,12 +55,12 @@ var cmdPolicies = []cobra.Command{
 				return
 			}
 			if args[0] == "things" {
-				if err := sdk.UpdateThingsPolicy(policy, args[2]); err != nil {
+				if err := sdk.UpdateThingPolicy(policy, args[2]); err != nil {
 					logError(err)
 					return
 				}
 			}
-			if err := sdk.UpdatePolicy(policy, args[1]); err != nil {
+			if err := sdk.UpdateUserPolicy(policy, args[1]); err != nil {
 				logError(err)
 				return
 			}
@@ -85,7 +85,7 @@ var cmdPolicies = []cobra.Command{
 				Limit:  uint64(Limit),
 			}
 			if args[0] == "things" {
-				policies, err := sdk.ListThingsPolicies(pm, args[1])
+				policies, err := sdk.ListThingPolicies(pm, args[1])
 				if err != nil {
 					logError(err)
 					return
@@ -94,7 +94,7 @@ var cmdPolicies = []cobra.Command{
 				return
 			}
 			if args[0] == "users" {
-				policies, err := sdk.ListPolicies(pm, args[0])
+				policies, err := sdk.ListUserPolicies(pm, args[0])
 				if err != nil {
 					logError(err)
 					return
@@ -122,7 +122,7 @@ var cmdPolicies = []cobra.Command{
 				logError(err)
 				return
 			}
-			if err := sdk.DeletePolicy(policy, args[1]); err != nil {
+			if err := sdk.DeleteUserPolicy(policy, args[1]); err != nil {
 				logError(err)
 				return
 			}

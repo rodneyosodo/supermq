@@ -26,10 +26,14 @@ type pageRes struct {
 }
 
 type authorizeRes struct {
-	Authorized bool `json:"authorized"`
+	authorized bool
 }
 
 func (res authorizeRes) Code() int {
+	if !res.authorized {
+		return http.StatusForbidden
+	}
+
 	return http.StatusOK
 }
 
@@ -87,7 +91,11 @@ type updatePolicyRes struct {
 }
 
 func (res updatePolicyRes) Code() int {
-	return http.StatusNoContent
+	if res.updated {
+		return http.StatusNoContent
+	}
+
+	return http.StatusBadRequest
 }
 
 func (res updatePolicyRes) Headers() map[string]string {
@@ -115,10 +123,16 @@ func (res listPolicyRes) Empty() bool {
 	return false
 }
 
-type deletePolicyRes struct{}
+type deletePolicyRes struct {
+	deleted bool
+}
 
 func (res deletePolicyRes) Code() int {
-	return http.StatusNoContent
+	if res.deleted {
+		return http.StatusNoContent
+	}
+
+	return http.StatusBadRequest
 }
 
 func (res deletePolicyRes) Headers() map[string]string {
