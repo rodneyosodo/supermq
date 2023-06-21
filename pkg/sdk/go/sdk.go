@@ -699,6 +699,8 @@ type SDK interface {
 	//
 	// The subject in this case is the `userID` and the object is the `groupID`.
 	//
+	// The subject in this case is the `userID` and the object is the `groupID`.
+	//
 	// example:
 	//  aReq := sdk.AccessRequest{
 	//    Subject:    "userID:1",
