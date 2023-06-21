@@ -212,7 +212,7 @@ func TestClientsRetrieveAll(t *testing.T) {
 	prepo := ppostgres.NewRepository(database)
 
 	var nClients = uint64(200)
-	var ownerID string
+	var ownerID = testsutil.GenerateUUID(t, idProvider)
 
 	meta := mfclients.Metadata{
 		"admin": "true",
@@ -240,9 +240,6 @@ func TestClientsRetrieveAll(t *testing.T) {
 			},
 			Metadata: mfclients.Metadata{},
 			Status:   mfclients.EnabledStatus,
-		}
-		if i == 1 {
-			ownerID = client.ID
 		}
 		if i%10 == 0 {
 			client.Owner = ownerID
@@ -374,11 +371,11 @@ func TestClientsRetrieveAll(t *testing.T) {
 				Owner:  ownerID,
 				Status: mfclients.AllStatus,
 			},
-			response: []mfclients.Client{expectedClients[10], expectedClients[20], expectedClients[30], expectedClients[40], expectedClients[50], expectedClients[60],
+			response: []mfclients.Client{expectedClients[0], expectedClients[10], expectedClients[20], expectedClients[30], expectedClients[40], expectedClients[50], expectedClients[60],
 				expectedClients[70], expectedClients[80], expectedClients[90], expectedClients[100], expectedClients[110], expectedClients[120], expectedClients[130],
 				expectedClients[140], expectedClients[150], expectedClients[160], expectedClients[170], expectedClients[180], expectedClients[190],
 			},
-			size: 19,
+			size: 20,
 		},
 		"retrieve clients by wrong owner": {
 			pm: mfclients.Page{
@@ -390,6 +387,33 @@ func TestClientsRetrieveAll(t *testing.T) {
 			},
 			response: []mfclients.Client{},
 			size:     0,
+		},
+		"retrieve all clients shared by": {
+			pm: mfclients.Page{
+				Offset:   0,
+				Limit:    nClients,
+				Total:    nClients,
+				SharedBy: expectedClients[0].ID,
+				Action:   "c_list",
+				Status:   mfclients.AllStatus,
+			},
+			response: expectedClients,
+			size:     nClients,
+		},
+		"retrieve all clients shared by and owned by": {
+			pm: mfclients.Page{
+				Offset:   0,
+				Limit:    nClients,
+				Total:    nClients,
+				SharedBy: ownerID,
+				Owner:    ownerID,
+				Status:   mfclients.AllStatus,
+			},
+			response: []mfclients.Client{expectedClients[0], expectedClients[10], expectedClients[20], expectedClients[30], expectedClients[40], expectedClients[50], expectedClients[60],
+				expectedClients[70], expectedClients[80], expectedClients[90], expectedClients[100], expectedClients[110], expectedClients[120], expectedClients[130],
+				expectedClients[140], expectedClients[150], expectedClients[160], expectedClients[170], expectedClients[180], expectedClients[190],
+			},
+			size: 20,
 		},
 		"retrieve all clients by disabled status": {
 			pm: mfclients.Page{

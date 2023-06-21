@@ -1156,7 +1156,6 @@ func TestListMembers(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		fmt.Println(tc.desc)
 		repoCall1 := cRepo.On("Members", context.Background(), tc.groupID, tc.page).Return(tc.response, tc.err)
 		page, err := svc.ListClientsByGroup(context.Background(), tc.token, tc.groupID, tc.page)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
