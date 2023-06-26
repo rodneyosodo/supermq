@@ -205,6 +205,12 @@ func newThingsServer(csvc clients.Service, gsvc groups.Service, psvc tpolicies.S
 	capi.MakeHandler(csvc, mux, logger, instanceID)
 	gapi.MakeHandler(gsvc, mux, logger)
 	papi.MakeHandler(csvc, psvc, mux, logger)
+
+	// Define a custom route to redirect /things/policies to /policies
+	mux.HandleFunc("/things/policies", func(w http.ResponseWriter, req *http.Request) {
+		http.Redirect(w, req, "/policies", http.StatusPermanentRedirect)
+	})
+
 	return httptest.NewServer(mux)
 }
 

@@ -90,7 +90,7 @@ func (client grpcClient) Authorize(ctx context.Context, req *policies.AuthorizeR
 
 func decodeAuthorizeResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*policies.AuthorizeRes)
-	return authorizeRes{authorized: res.Authorized}, nil
+	return authorizeRes{authorized: res.GetAuthorized()}, nil
 }
 
 func encodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

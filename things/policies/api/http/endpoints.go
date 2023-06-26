@@ -31,7 +31,7 @@ func authorizeEndpoint(svc policies.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(authorizeReq)
 		if err := req.validate(); err != nil {
-			return nil, err
+			return authorizeRes{}, err
 		}
 		ar := policies.AccessRequest{
 			Subject: req.Subject,
@@ -41,7 +41,7 @@ func authorizeEndpoint(svc policies.Service) endpoint.Endpoint {
 		}
 		policy, err := svc.Authorize(ctx, ar)
 		if err != nil {
-			return authorizeRes{Authorized: false}, err
+			return authorizeRes{}, err
 		}
 
 		return authorizeRes{ThingID: policy.Subject, Authorized: true}, nil
@@ -53,7 +53,7 @@ func connectEndpoint(svc policies.Service) endpoint.Endpoint {
 		cr := request.(createPolicyReq)
 
 		if err := cr.validate(); err != nil {
-			return nil, err
+			return addPolicyRes{}, err
 		}
 		if len(cr.Actions) == 0 {
 			cr.Actions = policies.PolicyTypes
@@ -68,7 +68,7 @@ func connectEndpoint(svc policies.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return policyRes{[]policies.Policy{policy}, true}, nil
+		return addPolicyRes{created: true, Policy: policy}, nil
 	}
 }
 
@@ -77,12 +77,12 @@ func connectThingsEndpoint(svc policies.Service) endpoint.Endpoint {
 		cr := request.(createPoliciesReq)
 
 		if err := cr.validate(); err != nil {
-			return nil, err
+			return listPolicyRes{}, err
 		}
 		if len(cr.Actions) == 0 {
 			cr.Actions = policies.PolicyTypes
 		}
-		ps := []policies.Policy{}
+		var pols []policies.Policy
 		for _, tid := range cr.Subjects {
 			for _, cid := range cr.Objects {
 				policy := policies.Policy{
@@ -90,14 +90,20 @@ func connectThingsEndpoint(svc policies.Service) endpoint.Endpoint {
 					Object:  cid,
 					Actions: cr.Actions,
 				}
-				if _, err := svc.AddPolicy(ctx, cr.token, policy); err != nil {
-					return nil, err
+				p, err := svc.AddPolicy(ctx, cr.token, policy)
+				if err != nil {
+					return listPolicyRes{}, err
 				}
-				ps = append(ps, policy)
+				pols = append(pols, p)
 			}
 		}
 
-		return policyRes{created: true, Policies: ps}, nil
+		return listPolicyRes{
+			Policies: pols,
+			pageRes: pageRes{
+				Total: uint64(len(pols)),
+			},
+		}, nil
 	}
 }
 
@@ -106,7 +112,7 @@ func updatePolicyEndpoint(svc policies.Service) endpoint.Endpoint {
 		cr := request.(policyReq)
 
 		if err := cr.validate(); err != nil {
-			return nil, err
+			return updatePolicyRes{}, err
 		}
 		policy := policies.Policy{
 			Subject: cr.Subject,
@@ -115,10 +121,10 @@ func updatePolicyEndpoint(svc policies.Service) endpoint.Endpoint {
 		}
 		policy, err := svc.UpdatePolicy(ctx, cr.token, policy)
 		if err != nil {
-			return nil, err
+			return updatePolicyRes{}, err
 		}
 
-		return policyRes{[]policies.Policy{policy}, false}, nil
+		return updatePolicyRes{updated: true, Policy: policy}, nil
 	}
 }
 
@@ -129,7 +135,7 @@ func listPoliciesEndpoint(svc policies.Service) endpoint.Endpoint {
 		if err := lpr.validate(); err != nil {
 			return nil, err
 		}
-		policy := policies.Page{
+		pm := policies.Page{
 			Limit:   lpr.limit,
 			Offset:  lpr.offset,
 			Subject: lpr.client,
@@ -137,12 +143,19 @@ func listPoliciesEndpoint(svc policies.Service) endpoint.Endpoint {
 			Action:  lpr.action,
 			OwnerID: lpr.owner,
 		}
-		policyPage, err := svc.ListPolicies(ctx, lpr.token, policy)
+		policyPage, err := svc.ListPolicies(ctx, lpr.token, pm)
 		if err != nil {
 			return nil, err
 		}
 
-		return listPolicyRes{policyPage}, nil
+		return listPolicyRes{
+			Policies: policyPage.Policies,
+			pageRes: pageRes{
+				Total:  policyPage.Total,
+				Offset: policyPage.Offset,
+				Limit:  policyPage.Limit,
+			},
+		}, nil
 	}
 }
 
@@ -150,7 +163,7 @@ func disconnectEndpoint(svc policies.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		cr := request.(createPolicyReq)
 		if err := cr.validate(); err != nil {
-			return nil, err
+			return deletePolicyRes{}, err
 		}
 
 		if len(cr.Actions) == 0 {
@@ -162,10 +175,10 @@ func disconnectEndpoint(svc policies.Service) endpoint.Endpoint {
 			Actions: cr.Actions,
 		}
 		if err := svc.DeletePolicy(ctx, cr.token, policy); err != nil {
-			return nil, err
+			return deletePolicyRes{}, err
 		}
 
-		return deletePolicyRes{}, nil
+		return deletePolicyRes{deleted: true}, nil
 	}
 }
 
@@ -173,7 +186,7 @@ func disconnectThingsEndpoint(svc policies.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(createPoliciesReq)
 		if err := req.validate(); err != nil {
-			return nil, err
+			return deletePolicyRes{}, err
 		}
 		for _, tid := range req.Subjects {
 			for _, cid := range req.Objects {
@@ -182,11 +195,11 @@ func disconnectThingsEndpoint(svc policies.Service) endpoint.Endpoint {
 					Object:  cid,
 				}
 				if err := svc.DeletePolicy(ctx, req.token, policy); err != nil {
-					return nil, err
+					return deletePolicyRes{}, err
 				}
 			}
 		}
 
-		return deletePolicyRes{}, nil
+		return deletePolicyRes{deleted: true}, nil
 	}
 }

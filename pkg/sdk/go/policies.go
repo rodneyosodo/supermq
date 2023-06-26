@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	policiesEndpoint     = "policies"
 	usersPolicyEndpoint  = "users/policies"
 	thingsPolicyEndpoint = "things/policies"
 	authorizeEndpoint    = "authorize"
@@ -28,10 +27,10 @@ type Policy struct {
 }
 
 type AccessRequest struct {
-	Subject    string `json:"subject"`
-	Object     string `json:"object"`
-	Action     string `json:"action"`
-	EntityType string `json:"entity_type"`
+	Subject    string `json:"subject,omitempty"`
+	Object     string `json:"object,omitempty"`
+	Action     string `json:"action,omitempty"`
+	EntityType string `json:"entity_type,omitempty"`
 }
 
 func (sdk mfSDK) Authorize(accessReq AccessRequest, token string) (bool, errors.SDKError) {
@@ -41,16 +40,12 @@ func (sdk mfSDK) Authorize(accessReq AccessRequest, token string) (bool, errors.
 	}
 
 	url := fmt.Sprintf("%s/%s", sdk.usersURL, authorizeEndpoint)
-	_, body, sdkerr := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), data, http.StatusOK)
+	_, _, sdkerr := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), data, http.StatusOK)
 	if sdkerr != nil {
 		return false, sdkerr
 	}
-	resp := authorizeRes{}
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return false, errors.NewSDKError(err)
-	}
 
-	return resp.Authorized, nil
+	return true, nil
 }
 
 func (sdk mfSDK) CreateUserPolicy(p Policy, token string) errors.SDKError {
@@ -203,7 +198,7 @@ func (sdk mfSDK) Connect(connIDs ConnectionIDs, token string) errors.SDKError {
 
 	url := fmt.Sprintf("%s/%s", sdk.thingsURL, connectEndpoint)
 
-	_, _, sdkerr := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), data, http.StatusCreated)
+	_, _, sdkerr := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), data, http.StatusOK)
 
 	return sdkerr
 }
@@ -215,7 +210,7 @@ func (sdk mfSDK) Disconnect(connIDs ConnectionIDs, token string) errors.SDKError
 	}
 
 	url := fmt.Sprintf("%s/%s", sdk.thingsURL, disconnectEndpoint)
-	_, _, sdkerr := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), data, http.StatusNoContent)
+	_, _, sdkerr := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), data, http.StatusNoContent)
 
 	return sdkerr
 }

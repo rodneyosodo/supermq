@@ -18,11 +18,9 @@ import (
 const (
 	MyKey             = "mine"
 	thingsObjectKey   = "things"
-	addRelationKey    = "g_add"
 	updateRelationKey = "c_update"
 	listRelationKey   = "c_list"
 	deleteRelationKey = "c_delete"
-	groupEntityType   = "group"
 	clientEntityType  = "client"
 )
 

@@ -46,13 +46,6 @@ func MakeHandler(csvc clients.Service, psvc policies.Service, mux *bone.Mux, log
 		opts...,
 	))
 
-	mux.Post("/connect", kithttp.NewServer(
-		otelkit.EndpointMiddleware(otelkit.WithOperation("bulk_connect"))(connectThingsEndpoint(psvc)),
-		decodeConnectList,
-		api.EncodeResponse,
-		opts...,
-	))
-
 	mux.Put("/policies", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("update_policy"))(updatePolicyEndpoint(psvc)),
 		decodeUpdatePolicy,
@@ -67,14 +60,21 @@ func MakeHandler(csvc clients.Service, psvc policies.Service, mux *bone.Mux, log
 		opts...,
 	))
 
-	mux.Delete("/disconnect", kithttp.NewServer(
+	mux.Delete("/policies", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("disconnect"))(disconnectEndpoint(psvc)),
 		decodeDisconnectThing,
 		api.EncodeResponse,
 		opts...,
 	))
 
-	mux.Delete("/policies/bulk", kithttp.NewServer(
+	mux.Post("/connect", kithttp.NewServer(
+		otelkit.EndpointMiddleware(otelkit.WithOperation("bulk_connect"))(connectThingsEndpoint(psvc)),
+		decodeConnectList,
+		api.EncodeResponse,
+		opts...,
+	))
+
+	mux.Delete("/disconnect", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("bulk_disconnect"))(disconnectThingsEndpoint(psvc)),
 		decodeConnectList,
 		api.EncodeResponse,

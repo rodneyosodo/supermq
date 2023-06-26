@@ -10,13 +10,16 @@ import (
 	"github.com/go-zoo/bone"
 	"github.com/mainflux/mainflux/internal/apiutil"
 	"github.com/mainflux/mainflux/logger"
+	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
+	"github.com/mainflux/mainflux/things/clients"
 	tclients "github.com/mainflux/mainflux/things/clients"
 	tmocks "github.com/mainflux/mainflux/things/clients/mocks"
 	tgmocks "github.com/mainflux/mainflux/things/groups/mocks"
 	"github.com/mainflux/mainflux/things/policies"
 	tpolicies "github.com/mainflux/mainflux/things/policies"
+	tapi "github.com/mainflux/mainflux/things/policies/api/http"
 	tpmocks "github.com/mainflux/mainflux/things/policies/mocks"
 	uclients "github.com/mainflux/mainflux/users/clients"
 	umocks "github.com/mainflux/mainflux/users/clients/mocks"
@@ -30,10 +33,28 @@ import (
 
 var utadminPolicy = umocks.SubjectSet{Subject: "things", Relation: []string{"g_add"}}
 
-func newPolicyServer(svc upolicies.Service) *httptest.Server {
+func newUsersPolicyServer(svc upolicies.Service) *httptest.Server {
 	logger := logger.NewMock()
 	mux := bone.New()
 	uapi.MakeHandler(svc, mux, logger)
+
+	// Define a custom route to redirect /users/policies to /policies
+	mux.HandleFunc("/users/policies", func(w http.ResponseWriter, req *http.Request) {
+		http.Redirect(w, req, "/policies", http.StatusPermanentRedirect)
+	})
+
+	return httptest.NewServer(mux)
+}
+
+func newThingsPolicyServer(svc clients.Service, psvc policies.Service) *httptest.Server {
+	logger := mflog.NewMock()
+	mux := bone.New()
+	tapi.MakeHandler(svc, psvc, mux, logger)
+
+	// Define a custom route to redirect /things/policies to /policies
+	mux.HandleFunc("/things/policies", func(w http.ResponseWriter, req *http.Request) {
+		http.Redirect(w, req, "/policies", http.StatusPermanentRedirect)
+	})
 
 	return httptest.NewServer(mux)
 }
@@ -45,7 +66,7 @@ func TestCreatePolicyUser(t *testing.T) {
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
-	ts := newPolicyServer(svc)
+	ts := newUsersPolicyServer(svc)
 	defer ts.Close()
 	conf := sdk.Config{
 		UsersURL: ts.URL,
@@ -170,7 +191,7 @@ func TestAuthorize(t *testing.T) {
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
-	ts := newPolicyServer(svc)
+	ts := newUsersPolicyServer(svc)
 	defer ts.Close()
 	conf := sdk.Config{
 		UsersURL: ts.URL,
@@ -275,7 +296,7 @@ func TestAssign(t *testing.T) {
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
-	ts := newPolicyServer(svc)
+	ts := newUsersPolicyServer(svc)
 	defer ts.Close()
 	conf := sdk.Config{
 		UsersURL: ts.URL,
@@ -399,7 +420,7 @@ func TestUpdatePolicy(t *testing.T) {
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
-	ts := newPolicyServer(svc)
+	ts := newUsersPolicyServer(svc)
 	defer ts.Close()
 
 	conf := sdk.Config{
@@ -466,7 +487,7 @@ func TestUpdateThingsPolicy(t *testing.T) {
 	psvc := tpolicies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := tclients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
-	ts := newThingsServer(svc, psvc)
+	ts := newThingsPolicyServer(svc, psvc)
 	defer ts.Close()
 
 	conf := sdk.Config{
@@ -527,7 +548,7 @@ func TestListPolicies(t *testing.T) {
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
-	ts := newPolicyServer(svc)
+	ts := newUsersPolicyServer(svc)
 	defer ts.Close()
 
 	conf := sdk.Config{
@@ -661,7 +682,7 @@ func TestDeletePolicy(t *testing.T) {
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
-	ts := newPolicyServer(svc)
+	ts := newUsersPolicyServer(svc)
 	defer ts.Close()
 
 	conf := sdk.Config{
@@ -703,7 +724,7 @@ func TestUnassign(t *testing.T) {
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
-	ts := newPolicyServer(svc)
+	ts := newUsersPolicyServer(svc)
 	defer ts.Close()
 
 	conf := sdk.Config{
@@ -749,7 +770,7 @@ func TestConnect(t *testing.T) {
 	psvc := tpolicies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := tclients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
-	ts := newThingsServer(svc, psvc)
+	ts := newThingsPolicyServer(svc, psvc)
 	defer ts.Close()
 
 	conf := sdk.Config{
@@ -878,7 +899,7 @@ func TestConnectThing(t *testing.T) {
 	psvc := tpolicies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := tclients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
-	ts := newThingsServer(svc, psvc)
+	ts := newThingsPolicyServer(svc, psvc)
 	defer ts.Close()
 
 	conf := sdk.Config{
@@ -1006,7 +1027,7 @@ func TestDisconnectThing(t *testing.T) {
 	psvc := tpolicies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := tclients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
-	ts := newThingsServer(svc, psvc)
+	ts := newThingsPolicyServer(svc, psvc)
 	defer ts.Close()
 
 	conf := sdk.Config{
@@ -1043,7 +1064,7 @@ func TestDisconnect(t *testing.T) {
 	psvc := tpolicies.NewService(uauth, pRepo, policiesCache, idProvider)
 
 	svc := tclients.NewService(uauth, psvc, cRepo, gRepo, thingCache, idProvider)
-	ts := newThingsServer(svc, psvc)
+	ts := newThingsPolicyServer(svc, psvc)
 	defer ts.Close()
 
 	conf := sdk.Config{

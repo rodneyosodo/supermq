@@ -54,7 +54,7 @@ func (res addPolicyRes) Code() int {
 		return http.StatusCreated
 	}
 
-	return http.StatusOK
+	return http.StatusBadRequest
 }
 
 func (res addPolicyRes) Headers() map[string]string {
