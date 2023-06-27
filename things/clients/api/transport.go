@@ -311,7 +311,7 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 			Limit:    l,
 			Metadata: m,
 		},
-		groupID: bone.GetValue(r, "thingID"),
+		groupID: bone.GetValue(r, "chanID"),
 	}
 	return req, nil
 }
