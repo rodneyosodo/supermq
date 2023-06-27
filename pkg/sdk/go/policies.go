@@ -99,13 +99,8 @@ func (sdk mfSDK) ListUserPolicies(pm PageMetadata, token string) (PolicyPage, er
 }
 
 func (sdk mfSDK) DeleteUserPolicy(p Policy, token string) errors.SDKError {
-	data, err := json.Marshal(p)
-	if err != nil {
-		return errors.NewSDKError(err)
-	}
-
-	url := fmt.Sprintf("%s/%s", sdk.usersURL, usersPolicyEndpoint)
-	_, _, sdkerr := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), data, http.StatusNoContent)
+	url := fmt.Sprintf("%s/%s/%s/%s", sdk.usersURL, usersPolicyEndpoint, p.Subject, p.Object)
+	_, _, sdkerr := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), nil, http.StatusNoContent)
 
 	return sdkerr
 }
@@ -161,13 +156,8 @@ func (sdk mfSDK) ListThingPolicies(pm PageMetadata, token string) (PolicyPage, e
 }
 
 func (sdk mfSDK) DeleteThingPolicy(p Policy, token string) errors.SDKError {
-	data, err := json.Marshal(p)
-	if err != nil {
-		return errors.NewSDKError(err)
-	}
-
-	url := fmt.Sprintf("%s/%s", sdk.thingsURL, thingsPolicyEndpoint)
-	_, _, sdkerr := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), data, http.StatusNoContent)
+	url := fmt.Sprintf("%s/%s/%s/%s", sdk.thingsURL, thingsPolicyEndpoint, p.Subject, p.Object)
+	_, _, sdkerr := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), nil, http.StatusNoContent)
 
 	return sdkerr
 }
@@ -210,7 +200,7 @@ func (sdk mfSDK) Disconnect(connIDs ConnectionIDs, token string) errors.SDKError
 	}
 
 	url := fmt.Sprintf("%s/%s", sdk.thingsURL, disconnectEndpoint)
-	_, _, sdkerr := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), data, http.StatusNoContent)
+	_, _, sdkerr := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), data, http.StatusNoContent)
 
 	return sdkerr
 }

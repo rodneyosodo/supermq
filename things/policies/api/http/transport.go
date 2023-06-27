@@ -60,7 +60,7 @@ func MakeHandler(csvc clients.Service, psvc policies.Service, mux *bone.Mux, log
 		opts...,
 	))
 
-	mux.Delete("/policies", kithttp.NewServer(
+	mux.Delete("/policies/:subject/:object", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("disconnect"))(disconnectEndpoint(psvc)),
 		decodeDisconnectThing,
 		api.EncodeResponse,
@@ -74,7 +74,7 @@ func MakeHandler(csvc clients.Service, psvc policies.Service, mux *bone.Mux, log
 		opts...,
 	))
 
-	mux.Delete("/disconnect", kithttp.NewServer(
+	mux.Post("/disconnect", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("bulk_disconnect"))(disconnectThingsEndpoint(psvc)),
 		decodeConnectList,
 		api.EncodeResponse,
@@ -99,13 +99,10 @@ func decodeConnectThing(_ context.Context, r *http.Request) (interface{}, error)
 }
 
 func decodeDisconnectThing(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
-		return nil, errors.ErrUnsupportedContentType
-	}
-
-	req := createPolicyReq{token: apiutil.ExtractBearerToken(r)}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	req := createPolicyReq{
+		token:   apiutil.ExtractBearerToken(r),
+		Subject: bone.GetValue(r, api.SubjectKey),
+		Object:  bone.GetValue(r, api.ObjectKey),
 	}
 
 	return req, nil

@@ -52,7 +52,7 @@ func MakeHandler(svc policies.Service, mux *bone.Mux, logger logger.Logger) http
 		opts...,
 	))
 
-	mux.Delete("/policies", kithttp.NewServer(
+	mux.Delete("/policies/:subject/:object", kithttp.NewServer(
 		otelkit.EndpointMiddleware(otelkit.WithOperation("delete_policy"))(deletePolicyEndpoint(svc)),
 		deletePolicyRequest,
 		api.EncodeResponse,
@@ -157,13 +157,10 @@ func decodeListPoliciesRequest(_ context.Context, r *http.Request) (interface{},
 }
 
 func deletePolicyRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
-		return nil, errors.ErrUnsupportedContentType
-	}
-
-	req := deletePolicyReq{token: apiutil.ExtractBearerToken(r)}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	req := deletePolicyReq{
+		token:   apiutil.ExtractBearerToken(r),
+		Subject: bone.GetValue(r, api.SubjectKey),
+		Object:  bone.GetValue(r, api.ObjectKey),
 	}
 
 	return req, nil
