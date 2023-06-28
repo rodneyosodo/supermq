@@ -62,14 +62,13 @@ func (pe policyEvent) Encode() (map[string]interface{}, error) {
 
 type authorizeEvent struct {
 	policies.AccessRequest
-	entityType string
 }
 
 func (ae authorizeEvent) Encode() (map[string]interface{}, error) {
 	// We don't want to send the key over the stream, so we don't send the subject.
 	val := map[string]interface{}{
 		"operation":   authorize,
-		"entity_type": ae.entityType,
+		"entity_type": ae.Entity,
 	}
 
 	if ae.Object != "" {

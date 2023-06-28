@@ -40,26 +40,26 @@ func NewEventStoreMiddleware(ctx context.Context, svc groups.Service, client *re
 }
 
 func (es *eventStore) CreateGroups(ctx context.Context, token string, groups ...mfgroups.Group) ([]mfgroups.Group, error) {
-	gs, err := es.svc.CreateGroups(ctx, token, groups...)
+	grps, err := es.svc.CreateGroups(ctx, token, groups...)
 	if err != nil {
-		return gs, err
+		return grps, err
 	}
 
-	for _, group := range gs {
+	for _, group := range grps {
 		event := createGroupEvent{
 			group,
 		}
 		if err := es.Publish(ctx, event); err != nil {
-			return gs, err
+			return grps, err
 		}
 	}
-	return gs, nil
+	return grps, nil
 }
 
 func (es *eventStore) UpdateGroup(ctx context.Context, token string, group mfgroups.Group) (mfgroups.Group, error) {
 	group, err := es.svc.UpdateGroup(ctx, token, group)
 	if err != nil {
-		return mfgroups.Group{}, err
+		return group, err
 	}
 
 	event := updateGroupEvent{
@@ -75,7 +75,7 @@ func (es *eventStore) UpdateGroup(ctx context.Context, token string, group mfgro
 func (es *eventStore) ViewGroup(ctx context.Context, token, id string) (mfgroups.Group, error) {
 	group, err := es.svc.ViewGroup(ctx, token, id)
 	if err != nil {
-		return mfgroups.Group{}, err
+		return group, err
 	}
 	event := viewGroupEvent{
 		group,
@@ -90,7 +90,7 @@ func (es *eventStore) ViewGroup(ctx context.Context, token, id string) (mfgroups
 func (es *eventStore) ListGroups(ctx context.Context, token string, pm mfgroups.GroupsPage) (mfgroups.GroupsPage, error) {
 	gp, err := es.svc.ListGroups(ctx, token, pm)
 	if err != nil {
-		return mfgroups.GroupsPage{}, err
+		return gp, err
 	}
 	event := listGroupEvent{
 		pm,
@@ -105,7 +105,7 @@ func (es *eventStore) ListGroups(ctx context.Context, token string, pm mfgroups.
 func (es *eventStore) ListMemberships(ctx context.Context, token, clientID string, pm mfgroups.GroupsPage) (mfgroups.MembershipsPage, error) {
 	mp, err := es.svc.ListMemberships(ctx, token, clientID, pm)
 	if err != nil {
-		return mfgroups.MembershipsPage{}, err
+		return mp, err
 	}
 	event := listGroupMembershipEvent{
 		pm, clientID,
@@ -118,21 +118,21 @@ func (es *eventStore) ListMemberships(ctx context.Context, token, clientID strin
 }
 
 func (es *eventStore) EnableGroup(ctx context.Context, token, id string) (mfgroups.Group, error) {
-	cli, err := es.svc.EnableGroup(ctx, token, id)
+	group, err := es.svc.EnableGroup(ctx, token, id)
 	if err != nil {
-		return mfgroups.Group{}, err
+		return group, err
 	}
 
-	return es.delete(ctx, cli)
+	return es.delete(ctx, group)
 }
 
 func (es *eventStore) DisableGroup(ctx context.Context, token, id string) (mfgroups.Group, error) {
-	cli, err := es.svc.DisableGroup(ctx, token, id)
+	group, err := es.svc.DisableGroup(ctx, token, id)
 	if err != nil {
-		return mfgroups.Group{}, err
+		return group, err
 	}
 
-	return es.delete(ctx, cli)
+	return es.delete(ctx, group)
 }
 
 func (es *eventStore) delete(ctx context.Context, group mfgroups.Group) (mfgroups.Group, error) {

@@ -78,9 +78,12 @@ type updateClientEvent struct {
 
 func (uce updateClientEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
-		"operation":  clientUpdate + "." + uce.operation,
+		"operation":  clientUpdate,
 		"updated_at": uce.UpdatedAt,
 		"updated_by": uce.UpdatedBy,
+	}
+	if uce.operation != "" {
+		val["operation"] = clientUpdate + "_" + uce.operation
 	}
 
 	if uce.ID != "" {
@@ -92,6 +95,9 @@ func (uce updateClientEvent) Encode() (map[string]interface{}, error) {
 	if len(uce.Tags) > 0 {
 		tags := fmt.Sprintf("[%s]", strings.Join(uce.Tags, ","))
 		val["tags"] = tags
+	}
+	if uce.Owner != "" {
+		val["owner"] = uce.Owner
 	}
 	if uce.Credentials.Identity != "" {
 		val["identity"] = uce.Credentials.Identity
@@ -224,6 +230,10 @@ func (lce listClientEvent) Encode() (map[string]interface{}, error) {
 	}
 	if lce.Subject != "" {
 		val["subject"] = lce.Subject
+	}
+	if len(lce.IDs) > 0 {
+		ids := fmt.Sprintf("[%s]", strings.Join(lce.IDs, ","))
+		val["ids"] = ids
 	}
 	if lce.Identity != "" {
 		val["identity"] = lce.Identity

@@ -39,25 +39,25 @@ func NewEventStoreMiddleware(ctx context.Context, svc policies.Service, client *
 }
 
 func (es *eventStore) Authorize(ctx context.Context, ar policies.AccessRequest) (policies.Policy, error) {
-	id, err := es.svc.Authorize(ctx, ar)
+	policy, err := es.svc.Authorize(ctx, ar)
 	if err != nil {
-		return policies.Policy{}, err
+		return policy, err
 	}
 
 	event := authorizeEvent{
-		ar, ar.Entity,
+		ar,
 	}
 	if err := es.Publish(ctx, event); err != nil {
-		return id, err
+		return policy, err
 	}
 
-	return id, nil
+	return policy, nil
 }
 
 func (es *eventStore) AddPolicy(ctx context.Context, token string, policy policies.Policy) (policies.Policy, error) {
 	policy, err := es.svc.AddPolicy(ctx, token, policy)
 	if err != nil {
-		return policies.Policy{}, err
+		return policy, err
 	}
 
 	event := policyEvent{
@@ -73,7 +73,7 @@ func (es *eventStore) AddPolicy(ctx context.Context, token string, policy polici
 func (es *eventStore) UpdatePolicy(ctx context.Context, token string, policy policies.Policy) (policies.Policy, error) {
 	policy, err := es.svc.UpdatePolicy(ctx, token, policy)
 	if err != nil {
-		return policies.Policy{}, err
+		return policy, err
 	}
 
 	event := policyEvent{
@@ -87,19 +87,19 @@ func (es *eventStore) UpdatePolicy(ctx context.Context, token string, policy pol
 }
 
 func (es *eventStore) ListPolicies(ctx context.Context, token string, page policies.Page) (policies.PolicyPage, error) {
-	policypage, err := es.svc.ListPolicies(ctx, token, page)
+	pp, err := es.svc.ListPolicies(ctx, token, page)
 	if err != nil {
-		return policies.PolicyPage{}, err
+		return pp, err
 	}
 
 	event := listPoliciesEvent{
 		page,
 	}
 	if err := es.Publish(ctx, event); err != nil {
-		return policypage, err
+		return pp, err
 	}
 
-	return policypage, nil
+	return pp, nil
 }
 
 func (es *eventStore) DeletePolicy(ctx context.Context, token string, policy policies.Policy) error {
