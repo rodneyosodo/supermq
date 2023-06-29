@@ -5,28 +5,25 @@ package certs_test
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"net/http/httptest"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/mainflux/mainflux"
+	"github.com/go-zoo/bone"
 	bsmocks "github.com/mainflux/mainflux/bootstrap/mocks"
 	"github.com/mainflux/mainflux/certs"
 	"github.com/mainflux/mainflux/certs/mocks"
 	"github.com/mainflux/mainflux/logger"
+	mfclients "github.com/mainflux/mainflux/pkg/clients"
 	"github.com/mainflux/mainflux/pkg/errors"
 	mfsdk "github.com/mainflux/mainflux/pkg/sdk/go"
-	"github.com/mainflux/mainflux/things"
-	httpapi "github.com/mainflux/mainflux/things/api/things/http"
-	thmocks "github.com/mainflux/mainflux/things/mocks"
-	"github.com/opentracing/opentracing-go/mocktracer"
+	"github.com/mainflux/mainflux/things/clients"
+	httpapi "github.com/mainflux/mainflux/things/clients/api"
+	thmocks "github.com/mainflux/mainflux/things/clients/mocks"
+	upolicies "github.com/mainflux/mainflux/users/policies"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -50,10 +47,12 @@ const (
 
 func newService(tokens map[string]string) (certs.Service, error) {
 	ac := bsmocks.NewAuthClient(map[string]string{token: email})
+
 	server := newThingsServer(newThingsService(ac))
 
-	policies := []thmocks.MockSubjectSet{{Object: "users", Relation: "member"}}
-	auth := thmocks.NewAuthService(tokens, map[string][]thmocks.MockSubjectSet{email: policies})
+	policies := []thmocks.MockSubjectSet{{Object: "token", Relation: clients.AdminRelationKey}}
+	auth := thmocks.NewAuthService(tokens, map[string][]thmocks.MockSubjectSet{token: policies})
+
 	config := mfsdk.Config{
 		ThingsURL: server.URL,
 	}
@@ -61,7 +60,7 @@ func newService(tokens map[string]string) (certs.Service, error) {
 	sdk := mfsdk.NewSDK(config)
 	repo := mocks.NewCertsRepository()
 
-	tlsCert, caCert, err := loadCertificates(caPath, caKeyPath)
+	tlsCert, caCert, err := certs.LoadCertificates(caPath, caKeyPath)
 	if err != nil {
 		return nil, err
 	}
@@ -76,18 +75,20 @@ func newService(tokens map[string]string) (certs.Service, error) {
 	return certs.New(auth, repo, sdk, pki), nil
 }
 
-func newThingsService(auth mainflux.AuthServiceClient) things.Service {
-	ths := make(map[string]things.Thing, thingsNum)
+func newThingsService(auth upolicies.AuthServiceClient) clients.Service {
+	ths := make(map[string]mfclients.Client, thingsNum)
 	for i := 0; i < thingsNum; i++ {
 		id := strconv.Itoa(i + 1)
-		ths[id] = things.Thing{
-			ID:    id,
-			Key:   thingKey,
+		ths[id] = mfclients.Client{
+			ID: id,
+			Credentials: mfclients.Credentials{
+				Secret: thingKey,
+			},
 			Owner: email,
 		}
 	}
 
-	return bsmocks.NewThingsService(ths, map[string]things.Channel{}, auth)
+	return bsmocks.NewThingsService(ths, auth)
 }
 
 func TestIssueCert(t *testing.T) {
@@ -128,7 +129,7 @@ func TestIssueCert(t *testing.T) {
 	for _, tc := range cases {
 		c, err := svc.IssueCert(context.Background(), tc.token, tc.thingID, tc.ttl)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
-		cert, _ := readCert([]byte(c.ClientCert))
+		cert, _ := certs.ReadCert([]byte(c.ClientCert))
 		if cert != nil {
 			assert.True(t, strings.Contains(cert.Subject.CommonName, thingKey), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		}
@@ -363,51 +364,9 @@ func TestViewCert(t *testing.T) {
 	}
 }
 
-func newThingsServer(svc things.Service) *httptest.Server {
+func newThingsServer(svc clients.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(mocktracer.New(), svc, logger)
+	mux := bone.New()
+	httpapi.MakeHandler(svc, mux, logger)
 	return httptest.NewServer(mux)
-}
-
-func loadCertificates(caPath, caKeyPath string) (tls.Certificate, *x509.Certificate, error) {
-	var tlsCert tls.Certificate
-	var caCert *x509.Certificate
-
-	if caPath == "" || caKeyPath == "" {
-		return tlsCert, caCert, nil
-	}
-
-	if _, err := os.Stat(caPath); os.IsNotExist(err) {
-		return tlsCert, caCert, err
-	}
-
-	if _, err := os.Stat(caKeyPath); os.IsNotExist(err) {
-		return tlsCert, caCert, err
-	}
-
-	tlsCert, err := tls.LoadX509KeyPair(caPath, caKeyPath)
-	if err != nil {
-		return tlsCert, caCert, errors.Wrap(err, err)
-	}
-
-	b, err := os.ReadFile(caPath)
-	if err != nil {
-		return tlsCert, caCert, err
-	}
-
-	caCert, err = readCert(b)
-	if err != nil {
-		return tlsCert, caCert, errors.Wrap(err, err)
-	}
-
-	return tlsCert, caCert, nil
-}
-
-func readCert(b []byte) (*x509.Certificate, error) {
-	block, _ := pem.Decode(b)
-	if block == nil {
-		return nil, errors.New("failed to decode PEM data")
-	}
-
-	return x509.ParseCertificate(block.Bytes)
 }

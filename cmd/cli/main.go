@@ -1,6 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
+// Package main contains cli main function to run the cli.
 package main
 
 import (
@@ -17,7 +18,6 @@ const defURL string = "http://localhost"
 func main() {
 	msgContentType := string(sdk.CTJSONSenML)
 	sdkConf := sdk.Config{
-		AuthURL:         defURL,
 		ThingsURL:       defURL,
 		UsersURL:        defURL,
 		ReaderURL:       defURL,
@@ -50,7 +50,8 @@ func main() {
 	provisionCmd := cli.NewProvisionCmd()
 	bootstrapCmd := cli.NewBootstrapCmd()
 	certsCmd := cli.NewCertsCmd()
-	keysCmd := cli.NewKeysCmd()
+	subscriptionsCmd := cli.NewSubscriptionCmd()
+	policiesCmd := cli.NewPolicyCmd()
 
 	// Root Commands
 	rootCmd.AddCommand(healthCmd)
@@ -62,17 +63,10 @@ func main() {
 	rootCmd.AddCommand(provisionCmd)
 	rootCmd.AddCommand(bootstrapCmd)
 	rootCmd.AddCommand(certsCmd)
-	rootCmd.AddCommand(keysCmd)
+	rootCmd.AddCommand(subscriptionsCmd)
+	rootCmd.AddCommand(policiesCmd)
 
 	// Root Flags
-	rootCmd.PersistentFlags().StringVarP(
-		&sdkConf.AuthURL,
-		"auth-url",
-		"a",
-		sdkConf.AuthURL,
-		"Auth service URL",
-	)
-
 	rootCmd.PersistentFlags().StringVarP(
 		&sdkConf.BootstrapURL,
 		"bootstrap-url",
@@ -158,7 +152,7 @@ func main() {
 		&cli.Limit,
 		"limit",
 		"l",
-		100,
+		10,
 		"Limit query parameter",
 	)
 
@@ -202,6 +196,29 @@ func main() {
 		"User status query parameter",
 	)
 
+	rootCmd.PersistentFlags().StringVarP(
+		&cli.State,
+		"state",
+		"z",
+		"",
+		"Bootstrap state query parameter",
+	)
+
+	rootCmd.PersistentFlags().StringVarP(
+		&cli.Topic,
+		"topic",
+		"T",
+		"",
+		"Subscription topic query parameter",
+	)
+
+	rootCmd.PersistentFlags().StringVarP(
+		&cli.Contact,
+		"contact",
+		"C",
+		"",
+		"Subscription contact query parameter",
+	)
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}

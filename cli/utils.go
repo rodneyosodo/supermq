@@ -13,21 +13,27 @@ import (
 )
 
 var (
-	// Limit query parameter
+	// Limit query parameter.
 	Limit uint = 10
-	// Offset query parameter
+	// Offset query parameter.
 	Offset uint = 0
-	// Name query parameter
+	// Name query parameter.
 	Name string = ""
-	// Email query parameter
+	// Email query parameter.
 	Email string = ""
-	// Metadata query parameter
+	// Metadata query parameter.
 	Metadata string = ""
-	// Status query parameter
+	// Status query parameter.
 	Status string = ""
-	// ConfigPath config path parameter
+	// ConfigPath config path parameter.
 	ConfigPath string = ""
-	// RawOutput raw output mode
+	// State query parameter.
+	State string = ""
+	// Topic query parameter.
+	Topic string = ""
+	// Contact query parameter.
+	Contact string = ""
+	// RawOutput raw output mode.
 	RawOutput bool = false
 )
 

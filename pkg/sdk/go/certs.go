@@ -12,7 +12,10 @@ import (
 	"github.com/mainflux/mainflux/pkg/errors"
 )
 
-const certsEndpoint = "certs"
+const (
+	certsEndpoint   = "certs"
+	serialsEndpoint = "serials"
+)
 
 // Cert represents certs data.
 type Cert struct {
@@ -43,6 +46,7 @@ func (sdk mfSDK) IssueCert(thingID, valid, token string) (Cert, errors.SDKError)
 	if err := json.Unmarshal(body, &c); err != nil {
 		return Cert{}, errors.NewSDKError(err)
 	}
+	
 	return c, nil
 }
 
@@ -59,6 +63,21 @@ func (sdk mfSDK) ViewCert(id, token string) (Cert, errors.SDKError) {
 	}
 
 	return cert, nil
+}
+
+func (sdk mfSDK) ViewCertByThing(thingID, token string) (CertSerials, errors.SDKError) {
+	url := fmt.Sprintf("%s/%s/%s", sdk.certsURL, serialsEndpoint, thingID)
+	_, body, err := sdk.processRequest(http.MethodGet, url, token, string(CTJSON), nil, http.StatusOK)
+	if err != nil {
+		return CertSerials{}, err
+	}
+
+	var cs CertSerials
+	if err := json.Unmarshal(body, &cs); err != nil {
+		return CertSerials{}, errors.NewSDKError(err)
+	}
+
+	return cs, nil
 }
 
 func (sdk mfSDK) RevokeCert(id, token string) (time.Time, errors.SDKError) {

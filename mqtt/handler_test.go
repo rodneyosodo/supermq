@@ -1,7 +1,11 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package mqtt_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log"
 	"testing"
@@ -11,16 +15,20 @@ import (
 	"github.com/mainflux/mainflux/mqtt/mocks"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/mainflux/mainflux/things/policies"
 	"github.com/mainflux/mproxy/pkg/session"
 	"github.com/stretchr/testify/assert"
 )
 
 const (
 	thingID               = "513d02d2-16c1-4f23-98be-9e12f8fee898"
+	thingID1              = "513d02d2-16c1-4f23-98be-9e12f8fee899"
+	password              = "password"
+	password1             = "password1"
 	chanID                = "123e4567-e89b-12d3-a456-000000000001"
 	invalidID             = "invalidID"
 	clientID              = "clientID"
-	password              = "password"
+	clientID1             = "clientID1"
 	subtopic              = "testSubtopic"
 	invalidChannelIDTopic = "channels/**/messages"
 )
@@ -35,12 +43,17 @@ var (
 	invalidChanIDTopics = []string{fmt.Sprintf(topicMsg, invalidTopic)}
 	//Test log messages for cases the handler does not provide a return value.
 	logBuffer     = bytes.Buffer{}
-	sessionClient = session.Client{
+	sessionClient = session.Session{
 		ID:       clientID,
 		Username: thingID,
 		Password: []byte(password),
 	}
-	invalidThingSessionClient = session.Client{
+	sessionClientSub = session.Session{
+		ID:       clientID1,
+		Username: thingID1,
+		Password: []byte(password1),
+	}
+	invalidThingSessionClient = session.Session{
 		ID:       clientID,
 		Username: invalidID,
 		Password: []byte(password),
@@ -53,7 +66,7 @@ func TestAuthConnect(t *testing.T) {
 	cases := []struct {
 		desc    string
 		err     error
-		session *session.Client
+		session *session.Session
 	}{
 		{
 			desc:    "connect without active session",
@@ -63,7 +76,7 @@ func TestAuthConnect(t *testing.T) {
 		{
 			desc: "connect without clientID",
 			err:  mqtt.ErrMissingClientID,
-			session: &session.Client{
+			session: &session.Session{
 				ID:       "",
 				Username: thingID,
 				Password: []byte(password),
@@ -72,7 +85,7 @@ func TestAuthConnect(t *testing.T) {
 		{
 			desc: "connect with invalid password",
 			err:  errors.ErrAuthentication,
-			session: &session.Client{
+			session: &session.Session{
 				ID:       clientID,
 				Username: thingID,
 				Password: []byte(""),
@@ -91,7 +104,11 @@ func TestAuthConnect(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := handler.AuthConnect(tc.session)
+		ctx := context.TODO()
+		if tc.session != nil {
+			ctx = session.NewContext(ctx, tc.session)
+		}
+		err := handler.AuthConnect(ctx)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -101,35 +118,42 @@ func TestAuthPublish(t *testing.T) {
 
 	cases := []struct {
 		desc    string
-		client  *session.Client
+		session *session.Session
 		err     error
 		topic   *string
 		payload []byte
 	}{
 		{
-			desc:    "publish with inactive client",
-			client:  nil,
+			desc:    "publish with an inactive client",
+			session: nil,
 			err:     mqtt.ErrClientNotInitialized,
 			topic:   &topic,
 			payload: payload,
 		},
 		{
 			desc:    "publish without topic",
-			client:  &sessionClient,
+			session: &sessionClient,
 			err:     mqtt.ErrMissingTopicPub,
 			topic:   nil,
 			payload: payload,
 		},
 		{
 			desc:    "publish with malformed topic",
-			client:  &sessionClient,
+			session: &sessionClient,
 			err:     mqtt.ErrMalformedTopic,
 			topic:   &invalidTopic,
 			payload: payload,
 		},
 		{
+			desc:    "publish with invalid access rights",
+			session: &sessionClientSub,
+			err:     errors.ErrAuthorization,
+			topic:   &topic,
+			payload: payload,
+		},
+		{
 			desc:    "publish successfully",
-			client:  &sessionClient,
+			session: &sessionClient,
 			err:     nil,
 			topic:   &topic,
 			payload: payload,
@@ -137,7 +161,11 @@ func TestAuthPublish(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := handler.AuthPublish(tc.client, tc.topic, &tc.payload)
+		ctx := context.TODO()
+		if tc.session != nil {
+			ctx = session.NewContext(ctx, tc.session)
+		}
+		err := handler.AuthPublish(ctx, tc.topic, &tc.payload)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -146,51 +174,55 @@ func TestAuthSubscribe(t *testing.T) {
 	handler := newHandler()
 
 	cases := []struct {
-		desc   string
-		client *session.Client
-		err    error
-		topic  *[]string
+		desc    string
+		session *session.Session
+		err     error
+		topic   *[]string
 	}{
 		{
-			desc:   "subscribe without active session",
-			client: nil,
-			err:    mqtt.ErrClientNotInitialized,
-			topic:  &topics,
+			desc:    "subscribe without active session",
+			session: nil,
+			err:     mqtt.ErrClientNotInitialized,
+			topic:   &topics,
 		},
 		{
-			desc:   "subscribe without topics",
-			client: &sessionClient,
-			err:    mqtt.ErrMissingTopicSub,
-			topic:  nil,
+			desc:    "subscribe without topics",
+			session: &sessionClient,
+			err:     mqtt.ErrMissingTopicSub,
+			topic:   nil,
 		},
 		{
-			desc:   "subscribe with invalid topics",
-			client: &sessionClient,
-			err:    mqtt.ErrMalformedTopic,
-			topic:  &invalidTopics,
+			desc:    "subscribe with invalid topics",
+			session: &sessionClient,
+			err:     mqtt.ErrMalformedTopic,
+			topic:   &invalidTopics,
 		},
 		{
-			desc:   "subscribe with invalid channel ID",
-			client: &sessionClient,
-			err:    mqtt.ErrAuthentication,
-			topic:  &invalidChanIDTopics,
+			desc:    "subscribe with invalid channel ID",
+			session: &sessionClient,
+			err:     errors.ErrAuthorization,
+			topic:   &invalidChanIDTopics,
 		},
 		{
-			desc:   "subscribe with invalid thing ID",
-			client: &invalidThingSessionClient,
-			err:    mqtt.ErrAuthentication,
-			topic:  &topics,
+			desc:    "subscribe with active session, valid topics, but invalid access rights",
+			session: &sessionClient,
+			err:     errors.ErrAuthorization,
+			topic:   &topics,
 		},
 		{
-			desc:   "subscribe with active session and valid topics",
-			client: &sessionClient,
-			err:    nil,
-			topic:  &topics,
+			desc:    "subscribe successfully",
+			session: &sessionClientSub,
+			err:     nil,
+			topic:   &topics,
 		},
 	}
 
 	for _, tc := range cases {
-		err := handler.AuthSubscribe(tc.client, tc.topic)
+		ctx := context.TODO()
+		if tc.session != nil {
+			ctx = session.NewContext(ctx, tc.session)
+		}
+		err := handler.AuthSubscribe(ctx, tc.topic)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -200,24 +232,28 @@ func TestConnect(t *testing.T) {
 	logBuffer.Reset()
 
 	cases := []struct {
-		desc   string
-		client *session.Client
-		logMsg string
+		desc    string
+		session *session.Session
+		logMsg  string
 	}{
 		{
-			desc:   "connect without active session",
-			client: nil,
-			logMsg: mqtt.LogErrFailedConnect + mqtt.ErrClientNotInitialized.Error(),
+			desc:    "connect without active session",
+			session: nil,
+			logMsg:  errors.Wrap(mqtt.ErrFailedConnect, mqtt.ErrClientNotInitialized).Error(),
 		},
 		{
-			desc:   "connect with active session",
-			client: &sessionClient,
-			logMsg: fmt.Sprintf(mqtt.LogInfoConnected, clientID),
+			desc:    "connect with active session",
+			session: &sessionClient,
+			logMsg:  fmt.Sprintf(mqtt.LogInfoConnected, clientID),
 		},
 	}
 
 	for _, tc := range cases {
-		handler.Connect(tc.client)
+		ctx := context.TODO()
+		if tc.session != nil {
+			ctx = session.NewContext(ctx, tc.session)
+		}
+		handler.Connect(ctx)
 		assert.Contains(t, logBuffer.String(), tc.logMsg)
 	}
 }
@@ -232,56 +268,56 @@ func TestPublish(t *testing.T) {
 
 	cases := []struct {
 		desc    string
-		client  *session.Client
+		session *session.Session
 		topic   string
 		payload []byte
 		logMsg  string
 	}{
 		{
 			desc:    "publish without active session",
-			client:  nil,
+			session: nil,
 			topic:   topic,
 			payload: payload,
 			logMsg:  mqtt.ErrClientNotInitialized.Error(),
 		},
 		{
 			desc:    "publish with invalid topic",
-			client:  &sessionClient,
+			session: &sessionClient,
 			topic:   invalidTopic,
 			payload: payload,
 			logMsg:  fmt.Sprintf(mqtt.LogInfoPublished, clientID, invalidTopic),
 		},
 		{
 			desc:    "publish with invalid channel ID",
-			client:  &sessionClient,
+			session: &sessionClient,
 			topic:   invalidChannelIDTopic,
 			payload: payload,
-			logMsg:  mqtt.LogErrFailedPublish + mqtt.ErrMalformedTopic.Error(),
+			logMsg:  errors.Wrap(mqtt.ErrFailedPublish, mqtt.ErrMalformedTopic).Error(),
 		},
 		{
 			desc:    "publish with malformed subtopic",
-			client:  &sessionClient,
+			session: &sessionClient,
 			topic:   malformedSubtopics,
 			payload: payload,
 			logMsg:  mqtt.ErrMalformedSubtopic.Error(),
 		},
 		{
 			desc:    "publish with subtopic containing wrong character",
-			client:  &sessionClient,
+			session: &sessionClient,
 			topic:   wrongCharSubtopics,
 			payload: payload,
 			logMsg:  mqtt.ErrMalformedSubtopic.Error(),
 		},
 		{
 			desc:    "publish with subtopic",
-			client:  &sessionClient,
+			session: &sessionClient,
 			topic:   validSubtopic,
 			payload: payload,
 			logMsg:  subtopic,
 		},
 		{
 			desc:    "publish without subtopic",
-			client:  &sessionClient,
+			session: &sessionClient,
 			topic:   topic,
 			payload: payload,
 			logMsg:  "",
@@ -289,7 +325,11 @@ func TestPublish(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		handler.Publish(tc.client, &tc.topic, &tc.payload)
+		ctx := context.TODO()
+		if tc.session != nil {
+			ctx = session.NewContext(ctx, tc.session)
+		}
+		handler.Publish(ctx, &tc.topic, &tc.payload)
 		assert.Contains(t, logBuffer.String(), tc.logMsg)
 	}
 }
@@ -299,27 +339,31 @@ func TestSubscribe(t *testing.T) {
 	logBuffer.Reset()
 
 	cases := []struct {
-		desc   string
-		client *session.Client
-		topic  []string
-		logMsg string
+		desc    string
+		session *session.Session
+		topic   []string
+		logMsg  string
 	}{
 		{
-			desc:   "subscribe without active session",
-			client: nil,
-			topic:  topics,
-			logMsg: mqtt.LogErrFailedSubscribe + mqtt.ErrClientNotInitialized.Error(),
+			desc:    "subscribe without active session",
+			session: nil,
+			topic:   topics,
+			logMsg:  errors.Wrap(mqtt.ErrFailedSubscribe, mqtt.ErrClientNotInitialized).Error(),
 		},
 		{
-			desc:   "subscribe with valid session and topics",
-			client: &sessionClient,
-			topic:  topics,
-			logMsg: fmt.Sprintf(mqtt.LogInfoSubscribed, clientID, topics[0]),
+			desc:    "subscribe with valid session and topics",
+			session: &sessionClient,
+			topic:   topics,
+			logMsg:  fmt.Sprintf(mqtt.LogInfoSubscribed, clientID, topics[0]),
 		},
 	}
 
 	for _, tc := range cases {
-		handler.Subscribe(tc.client, &tc.topic)
+		ctx := context.TODO()
+		if tc.session != nil {
+			ctx = session.NewContext(ctx, tc.session)
+		}
+		handler.Subscribe(ctx, &tc.topic)
 		assert.Contains(t, logBuffer.String(), tc.logMsg)
 	}
 }
@@ -329,27 +373,31 @@ func TestUnsubscribe(t *testing.T) {
 	logBuffer.Reset()
 
 	cases := []struct {
-		desc   string
-		client *session.Client
-		topic  []string
-		logMsg string
+		desc    string
+		session *session.Session
+		topic   []string
+		logMsg  string
 	}{
 		{
-			desc:   "unsubscribe without active session",
-			client: nil,
-			topic:  topics,
-			logMsg: mqtt.LogErrFailedUnsubscribe + mqtt.ErrClientNotInitialized.Error(),
+			desc:    "unsubscribe without active session",
+			session: nil,
+			topic:   topics,
+			logMsg:  errors.Wrap(mqtt.ErrFailedUnsubscribe, mqtt.ErrClientNotInitialized).Error(),
 		},
 		{
-			desc:   "unsubscribe with valid session and topics",
-			client: &sessionClient,
-			topic:  topics,
-			logMsg: fmt.Sprintf(mqtt.LogInfoUnsubscribed, clientID, topics[0]),
+			desc:    "unsubscribe with valid session and topics",
+			session: &sessionClient,
+			topic:   topics,
+			logMsg:  fmt.Sprintf(mqtt.LogInfoUnsubscribed, clientID, topics[0]),
 		},
 	}
 
 	for _, tc := range cases {
-		handler.Unsubscribe(tc.client, &tc.topic)
+		ctx := context.TODO()
+		if tc.session != nil {
+			ctx = session.NewContext(ctx, tc.session)
+		}
+		handler.Unsubscribe(ctx, &tc.topic)
 		assert.Contains(t, logBuffer.String(), tc.logMsg)
 	}
 }
@@ -359,27 +407,31 @@ func TestDisconnect(t *testing.T) {
 	logBuffer.Reset()
 
 	cases := []struct {
-		desc   string
-		client *session.Client
-		topic  []string
-		logMsg string
+		desc    string
+		session *session.Session
+		topic   []string
+		logMsg  string
 	}{
 		{
-			desc:   "disconnect without active session",
-			client: nil,
-			topic:  topics,
-			logMsg: mqtt.LogErrFailedDisconnect + mqtt.ErrClientNotInitialized.Error(),
+			desc:    "disconnect without active session",
+			session: nil,
+			topic:   topics,
+			logMsg:  errors.Wrap(mqtt.ErrFailedDisconnect, mqtt.ErrClientNotInitialized).Error(),
 		},
 		{
-			desc:   "disconnect with valid session",
-			client: &sessionClient,
-			topic:  topics,
-			logMsg: fmt.Sprintf(mqtt.LogInfoDisconnected, clientID, thingID),
+			desc:    "disconnect with valid session",
+			session: &sessionClient,
+			topic:   topics,
+			logMsg:  mqtt.ErrClientNotInitialized.Error(),
 		},
 	}
 
 	for _, tc := range cases {
-		handler.Disconnect(tc.client)
+		ctx := context.TODO()
+		if tc.session != nil {
+			ctx = session.NewContext(ctx, tc.session)
+		}
+		handler.Disconnect(ctx)
 		assert.Contains(t, logBuffer.String(), tc.logMsg)
 	}
 }
@@ -389,8 +441,11 @@ func newHandler() session.Handler {
 	if err != nil {
 		log.Fatalf("failed to create logger: %s", err)
 	}
-
-	authClient := mocks.NewClient(map[string]string{password: thingID}, map[string]interface{}{chanID: thingID})
+	k := mocks.Key(&policies.AuthorizeReq{Sub: password, Obj: chanID})
+	elems := map[string][]string{k: {policies.WriteAction}}
+	k = mocks.Key(&policies.AuthorizeReq{Sub: password1, Obj: chanID})
+	elems[k] = []string{policies.ReadAction}
+	authClient := mocks.NewClient(map[string]string{password: thingID, password1: thingID1}, elems)
 	eventStore := mocks.NewEventStore()
 	return mqtt.NewHandler([]messaging.Publisher{mocks.NewPublisher()}, eventStore, logger, authClient)
 }
