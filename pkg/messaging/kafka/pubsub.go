@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"strings"
 	"sync"
@@ -23,7 +24,7 @@ const (
 	chansPrefix                  = "channels"
 	SubjectAllChannels           = "channels.*"
 	offset                       = kafka.LastOffset
-	defaultScanningInterval      = 1000 * time.Millisecond
+	defaultScanningInterval      = 10 * time.Millisecond
 	topicsRoot                   = "/brokers/topics"
 	zkTimeout                    = time.Second
 	readerWaitTime               = time.Second
@@ -207,6 +208,10 @@ func (ps *pubsub) configReader(ctx context.Context, id, topic string, s map[stri
 				return
 			default:
 				message, err := reader.ReadMessage(ctx)
+				if err == io.EOF {
+					// This is because the reader has been closed.
+					return
+				}
 				if err != nil {
 					ps.logger.Warn(fmt.Sprintf("Failed to read message: %s", err))
 					continue

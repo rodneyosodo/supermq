@@ -82,8 +82,6 @@ func (pub *publisher) Close() error {
 	return pub.conn.Close()
 }
 
-// formatTopic replaces all '>' with '#' in topic string
-// because RabbitMQ uses '#' as wildcard for topics
 func formatTopic(topic string) string {
-	return strings.Replace(topic, ">", "#", 1)
+	return strings.Replace(topic, ">", "#", -1)
 }
