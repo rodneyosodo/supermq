@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 	}
 
 	container, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "johnnypark/kafka-zookeeper",
+		Repository: "spotify/kafka",
 		Tag:        "latest",
 		Env: []string{
 			"ADVERTISED_HOST=127.0.0.1",
@@ -43,12 +43,8 @@ func TestMain(m *testing.M) {
 		},
 		PortBindings: map[docker.Port][]docker.PortBinding{
 			"9092/tcp": {{HostIP: "localhost", HostPort: "9092/tcp"}},
+			"2181/tcp": {{HostIP: "localhost", HostPort: "2181/tcp"}},
 		},
-	}, func(config *docker.HostConfig) {
-		config.AutoRemove = true
-		config.RestartPolicy = docker.RestartPolicy{
-			Name: "no",
-		}
 	})
 	if err != nil {
 		log.Fatalf("Could not start container: %s", err)
@@ -80,6 +76,9 @@ func TestMain(m *testing.M) {
 	}
 
 	code := m.Run()
+	if err := pubsub.Close(); err != nil {
+		log.Fatalf("Could not close pubsub: %s", err)
+	}
 	if err := pool.Purge(container); err != nil {
 		log.Fatalf("Could not purge container: %s", err)
 	}

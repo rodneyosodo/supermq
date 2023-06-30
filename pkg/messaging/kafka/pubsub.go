@@ -91,9 +91,6 @@ func (ps *pubsub) Subscribe(ctx context.Context, id, topic string, handler messa
 	}
 	topic = formatTopic(topic)
 
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
 	if topic == SubjectAllChannels {
 		go ps.subscribeToAllChannels(ctx, id, handler)
 		return nil
@@ -173,6 +170,8 @@ func (s subscription) close() error {
 
 // checkSubscribed checks if topic and topic ID are already subscribed.
 func (ps *pubsub) checkSubscribed(topic, id string) (map[string]subscription, error) {
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
 	// Check topic
 	s, ok := ps.subscriptions[topic]
 	switch ok {
@@ -190,6 +189,9 @@ func (ps *pubsub) checkSubscribed(topic, id string) (map[string]subscription, er
 
 // configReader configures reader for given topic and starts consuming messages.
 func (ps *pubsub) configReader(ctx context.Context, id, topic string, s map[string]subscription, handler messaging.MessageHandler) {
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:                []string{ps.url},
 		GroupID:                id,

@@ -79,8 +79,6 @@ func TestPublisher(t *testing.T) {
 			Subtopic: tc.subtopic,
 			Payload:  tc.payload,
 		}
-		assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
 		err = pubsub.Publish(context.TODO(), topic, &expectedMsg)
 		assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 

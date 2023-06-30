@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	topic       = "topic"
 	chansPrefix = "channels"
 	channel     = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
 	subtopic    = "engine"
@@ -28,8 +27,16 @@ var (
 )
 
 func TestPubsub(t *testing.T) {
-	err := pubsub.Subscribe(context.TODO(), clientID, fmt.Sprintf("%s.*", chansPrefix), handler{})
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	expectedMsg := messaging.Message{
+		Payload: data,
+	}
+	err := publisher.Publish(context.TODO(), channel, &expectedMsg)
+	require.Nil(t, err, fmt.Sprintf("failed to publish message: %s", err))
+	err = publisher.Publish(context.TODO(), fmt.Sprintf("%s.%s", channel, subtopic), &expectedMsg)
+	require.Nil(t, err, fmt.Sprintf("failed to publish message: %s", err))
+
+	err = pubsub.Subscribe(context.TODO(), clientID, fmt.Sprintf("%s.*", chansPrefix), handler{})
+	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
 		desc     string
@@ -39,41 +46,39 @@ func TestPubsub(t *testing.T) {
 		err      error
 	}{
 		{
-			desc:    "publish message with empty topic",
-			topic:   "",
-			err:     kafka.ErrEmptyTopic,
-			payload: data,
+			desc:     "publish message with empty topic",
+			topic:    "",
+			subtopic: "",
+			err:      kafka.ErrEmptyTopic,
+			payload:  data,
 		},
 		{
-			desc:    "publish message with nil payload",
-			topic:   channel,
-			payload: nil,
-			err:     nil,
+			desc:     "publish message with nil payload",
+			topic:    channel,
+			subtopic: "",
+			payload:  nil,
+			err:      nil,
 		},
 		{
-			desc:    "publish message with string payload",
-			topic:   channel,
-			payload: data,
-			err:     nil,
-		},
-		{
-			desc:    "publish message with topic",
-			payload: data,
-			topic:   channel,
-			err:     nil,
+			desc:     "publish message with payload",
+			topic:    channel,
+			subtopic: subtopic,
+			payload:  data,
+			err:      nil,
 		},
 		{
 			desc:     "publish message with subtopic",
-			payload:  data,
+			topic:    "",
 			subtopic: subtopic,
+			payload:  data,
 			err:      kafka.ErrEmptyTopic,
 		},
 		{
 			desc:     "publish message with topic and subtopic",
-			payload:  data,
 			topic:    channel,
 			subtopic: subtopic,
 			err:      nil,
+			payload:  data,
 		},
 	}
 
@@ -100,28 +105,28 @@ func TestPubsub(t *testing.T) {
 	}{
 		{
 			desc:         "Subscribe to a topic with an ID",
-			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, channel),
 			topicID:      "topicid1",
 			errorMessage: nil,
 			pubsub:       true,
 		},
 		{
 			desc:         "Subscribe to the same topic with a different ID",
-			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, channel),
 			topicID:      "topicid2",
 			errorMessage: nil,
 			pubsub:       true,
 		},
 		{
 			desc:         "Subscribe to an already subscribed topic with an ID",
-			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, channel),
 			topicID:      "topicid1",
 			errorMessage: kafka.ErrAlreadySubscribed,
 			pubsub:       true,
 		},
 		{
 			desc:         "Unsubscribe to a topic with an ID",
-			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, channel),
 			topicID:      "topicid1",
 			errorMessage: nil,
 			pubsub:       false,
@@ -135,49 +140,49 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Unsubscribe to the same topic with a different ID",
-			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, channel),
 			topicID:      "topicid2",
 			errorMessage: nil,
 			pubsub:       false,
 		},
 		{
 			desc:         "Unsubscribe to the same topic with a different ID not subscribed",
-			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, channel),
 			topicID:      "topicid3",
 			errorMessage: kafka.ErrNotSubscribed,
 			pubsub:       false,
 		},
 		{
 			desc:         "Unsubscribe to an already unsubscribed topic with an ID",
-			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, channel),
 			topicID:      "topicid1",
 			errorMessage: kafka.ErrNotSubscribed,
 			pubsub:       false,
 		},
 		{
 			desc:         "Subscribe to a topic with a subtopic with an ID",
-			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
+			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, channel, subtopic),
 			topicID:      "topicid1",
 			errorMessage: nil,
 			pubsub:       true,
 		},
 		{
 			desc:         "Subscribe to an already subscribed topic with a subtopic with an ID",
-			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
+			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, channel, subtopic),
 			topicID:      "topicid1",
 			errorMessage: kafka.ErrAlreadySubscribed,
 			pubsub:       true,
 		},
 		{
 			desc:         "Unsubscribe to a topic with a subtopic with an ID",
-			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
+			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, channel, subtopic),
 			topicID:      "topicid1",
 			errorMessage: nil,
 			pubsub:       false,
 		},
 		{
 			desc:         "Unsubscribe to an already unsubscribed topic with a subtopic with an ID",
-			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
+			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, channel, subtopic),
 			topicID:      "topicid1",
 			errorMessage: kafka.ErrNotSubscribed,
 			pubsub:       false,
@@ -198,14 +203,14 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Subscribe to a topic with empty id",
-			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, channel),
 			topicID:      "",
 			errorMessage: kafka.ErrEmptyID,
 			pubsub:       true,
 		},
 		{
 			desc:         "Unsubscribe to a topic with empty id",
-			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
+			topic:        fmt.Sprintf("%s.%s", chansPrefix, channel),
 			topicID:      "",
 			errorMessage: kafka.ErrEmptyID,
 			pubsub:       false,
@@ -234,7 +239,6 @@ func TestPubsub(t *testing.T) {
 type handler struct{}
 
 func (h handler) Handle(msg *messaging.Message) error {
-	fmt.Printf("Message %s\n", msg.String())
 	msgChan <- msg
 	return nil
 }
