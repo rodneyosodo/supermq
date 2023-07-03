@@ -265,7 +265,7 @@ services:
       MF_SEND_TELEMETRY: ${MF_SEND_TELEMETRY}
       MF_HTTP_ADAPTER_INSTANCE_ID: ${MF_HTTP_ADAPTER_INSTANCE_ID}
     ports:
-      - ${MF_HTTP_ADAPTER_PORT}:${MF_HTTP_ADAPTER_PORT}
+      - ${MF_HTTP_ADAPTER_HTTP_PORT}:${MF_HTTP_ADAPTER_HTTP_PORT}
     networks:
       - mainflux-base-net
 
