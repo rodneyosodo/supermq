@@ -96,6 +96,13 @@ func main() {
 		return
 	}
 
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
+	}
+
 	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, instanceID)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
@@ -115,7 +122,10 @@ func main() {
 		exitCode = 1
 		return
 	}
-	pubSub = pstracing.NewPubSub(tracer, pubSub)
+	pubSub, err = pstracing.NewPubSub(httpServerConfig, tracer, pubSub)
+	if err != nil {
+		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
+	}
 	defer pubSub.Close()
 
 	auth, authHandler, err := authClient.Setup(svcName)
@@ -134,12 +144,6 @@ func main() {
 		return
 	}
 
-	httpServerConfig := server.Config{Port: defSvcHTTPPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
-		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
-		exitCode = 1
-		return
-	}
 	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(svc, logger, instanceID), logger)
 
 	if cfg.SendTelemetry {

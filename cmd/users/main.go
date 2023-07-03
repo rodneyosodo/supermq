@@ -117,6 +117,9 @@ func main() {
 	}
 
 	dbConfig := pgClient.Config{Name: defDB}
+	if err := dbConfig.LoadEnv(envPrefixDB); err != nil {
+		logger.Fatal(err.Error())
+	}
 	db, err := pgClient.SetupWithConfig(envPrefixDB, *clientsPg.Migration(), dbConfig)
 	if err != nil {
 		logger.Error(err.Error())
@@ -138,7 +141,7 @@ func main() {
 	}()
 	tracer := tp.Tracer(svcName)
 
-	csvc, gsvc, psvc := newService(ctx, db, tracer, cfg, ec, logger)
+	csvc, gsvc, psvc := newService(ctx, db, dbConfig, tracer, cfg, ec, logger)
 
 	httpServerConfig := server.Config{Port: defSvcHTTPPort}
 	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
@@ -185,8 +188,11 @@ func main() {
 	}
 }
 
-func newService(ctx context.Context, db *sqlx.DB, tracer trace.Tracer, c config, ec email.Config, logger mflog.Logger) (clients.Service, groups.Service, policies.Service) {
-	database := postgres.NewDatabase(db, tracer)
+func newService(ctx context.Context, db *sqlx.DB, dbConfig pgClient.Config, tracer trace.Tracer, c config, ec email.Config, logger mflog.Logger) (clients.Service, groups.Service, policies.Service) {
+	database, err := postgres.NewDatabase(db, dbConfig, tracer)
+	if err != nil {
+		logger.Error(err.Error())
+	}
 	cRepo := cpostgres.NewRepository(database)
 	gRepo := gpostgres.NewRepository(database)
 	pRepo := ppostgres.NewRepository(database)

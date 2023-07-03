@@ -87,6 +87,13 @@ func main() {
 		}
 	}
 
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
+	}
+
 	cacheClient, err := redisClient.Setup(envPrefixCache)
 	if err != nil {
 		logger.Error(err.Error())
@@ -146,17 +153,14 @@ func main() {
 		exitCode = 1
 		return
 	}
-	pubSub = pstracing.NewPubSub(tracer, pubSub)
+	pubSub, err = pstracing.NewPubSub(httpServerConfig, tracer, pubSub)
+	if err != nil {
+		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
+	}
 	defer pubSub.Close()
 
 	svc := newService(ctx, svcName, pubSub, cfg.ChannelID, auth, tracer, db, cacheClient, esClient, logger)
 
-	httpServerConfig := server.Config{Port: defSvcHTTPPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
-		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
-		exitCode = 1
-		return
-	}
 	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, twapi.MakeHandler(svc, logger, instanceID), logger)
 
 	if cfg.SendTelemetry {

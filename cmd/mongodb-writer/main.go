@@ -73,6 +73,13 @@ func main() {
 		}
 	}
 
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
+	}
+
 	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, instanceID)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
@@ -92,19 +99,15 @@ func main() {
 		exitCode = 1
 		return
 	}
-	pubSub = tracing.NewPubSub(tracer, pubSub)
+	pubSub, err = tracing.NewPubSub(httpServerConfig, tracer, pubSub)
+	if err != nil {
+		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
+	}
 	defer pubSub.Close()
 
 	db, err := mongoClient.Setup(envPrefixDB)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to setup mongo database : %s", err))
-		exitCode = 1
-		return
-	}
-
-	httpServerConfig := server.Config{Port: defSvcHTTPPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
-		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return
 	}

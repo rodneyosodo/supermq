@@ -87,6 +87,13 @@ func main() {
 		}
 	}
 
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
+	}
+
 	rmConn, err := redisClient.Setup(envPrefixRouteMap)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to setup route map redis client : %s", err))
@@ -114,7 +121,10 @@ func main() {
 		exitCode = 1
 		return
 	}
-	pub = tracing.New(tracer, pub)
+	pub, err = tracing.New(httpServerConfig, tracer, pub)
+	if err != nil {
+		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
+	}
 	defer pub.Close()
 
 	svc := newService(pub, rmConn, thingsRMPrefix, channelsRMPrefix, connsRMPrefix, logger)
@@ -140,12 +150,6 @@ func main() {
 
 	go subscribeToThingsES(svc, esConn, cfg.ESConsumerName, logger)
 
-	httpServerConfig := server.Config{Port: defSvcHTTPPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
-		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
-		exitCode = 1
-		return
-	}
 	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(instanceID), logger)
 
 	if cfg.SendTelemetry {

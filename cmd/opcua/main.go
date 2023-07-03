@@ -84,6 +84,13 @@ func main() {
 		}
 	}
 
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
+	}
+
 	rmConn, err := redisClient.Setup(envPrefixRouteMap)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to setup %s bootstrap event store redis client : %s", svcName, err))
@@ -123,7 +130,10 @@ func main() {
 		exitCode = 1
 		return
 	}
-	pubSub = tracing.NewPubSub(tracer, pubSub)
+	pubSub, err = tracing.NewPubSub(httpServerConfig, tracer, pubSub)
+	if err != nil {
+		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
+	}
 	defer pubSub.Close()
 
 	sub := gopcua.NewSubscriber(ctx, pubSub, thingRM, chanRM, connRM, logger)
@@ -134,12 +144,6 @@ func main() {
 	go subscribeToStoredSubs(ctx, sub, opcConfig, logger)
 	go subscribeToThingsES(ctx, svc, esConn, cfg.ESConsumerName, logger)
 
-	httpServerConfig := server.Config{Port: defSvcHTTPPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
-		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
-		exitCode = 1
-		return
-	}
 	hs := httpserver.New(ctx, httpCancel, svcName, httpServerConfig, api.MakeHandler(svc, logger, instanceID), logger)
 
 	if cfg.SendTelemetry {

@@ -75,6 +75,13 @@ func main() {
 		}
 	}
 
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
+	}
+
 	// Create new to cassandra client
 	csdSession, err := cassandraClient.SetupDB(envPrefixDB, cassandra.Table)
 	if err != nil {
@@ -97,13 +104,6 @@ func main() {
 	}()
 	tracer := tp.Tracer(svcName)
 
-	httpServerConfig := server.Config{Port: defSvcHTTPPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
-		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
-		exitCode = 1
-		return
-	}
-
 	// Create new cassandra-writer repo
 	repo := newService(csdSession, logger)
 	repo = consumerTracing.NewBlocking(tracer, repo, httpServerConfig)
@@ -115,7 +115,10 @@ func main() {
 		exitCode = 1
 		return
 	}
-	pubSub = tracing.NewPubSub(tracer, pubSub)
+	pubSub, err = tracing.NewPubSub(httpServerConfig, tracer, pubSub)
+	if err != nil {
+		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
+	}
 	defer pubSub.Close()
 
 	// Start new consumer
@@ -125,7 +128,6 @@ func main() {
 		return
 	}
 
-	// Create new http server
 	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(svcName, instanceID), logger)
 
 	if cfg.SendTelemetry {

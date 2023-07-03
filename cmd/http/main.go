@@ -73,6 +73,13 @@ func main() {
 		}
 	}
 
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefix}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
+	}
+
 	tc, tcHandler, err := thingsClient.Setup()
 	if err != nil {
 		logger.Error(err.Error())
@@ -102,17 +109,14 @@ func main() {
 		exitCode = 1
 		return
 	}
-	pub = pstracing.New(tracer, pub)
+	pub, err = pstracing.New(httpServerConfig, tracer, pub)
+	if err != nil {
+		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
+	}
 	defer pub.Close()
 
 	svc := newService(pub, tc, logger, tracer)
 
-	httpServerConfig := server.Config{Port: defSvcHTTPPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefix}); err != nil {
-		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
-		exitCode = 1
-		return
-	}
 	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(svc, instanceID), logger)
 
 	if cfg.SendTelemetry {

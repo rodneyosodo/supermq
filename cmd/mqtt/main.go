@@ -20,6 +20,7 @@ import (
 	jaegerClient "github.com/mainflux/mainflux/internal/clients/jaeger"
 	redisClient "github.com/mainflux/mainflux/internal/clients/redis"
 	"github.com/mainflux/mainflux/internal/env"
+	"github.com/mainflux/mainflux/internal/server"
 	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/mqtt"
 	mqttredis "github.com/mainflux/mainflux/mqtt/redis"
@@ -99,6 +100,11 @@ func main() {
 		}
 	}
 
+	serverConfig := server.Config{
+		Host: cfg.HTTPTargetHost,
+		Port: cfg.HTTPTargetPort,
+	}
+
 	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, instanceID)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
@@ -118,7 +124,10 @@ func main() {
 		exitCode = 1
 		return
 	}
-	nps = tracing.NewPubSub(tracer, nps)
+	nps, err = tracing.NewPubSub(serverConfig, tracer, nps)
+	if err != nil {
+		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
+	}
 	defer nps.Close()
 
 	mpub, err := mqttpub.NewPublisher(fmt.Sprintf("%s:%s", cfg.MQTTTargetHost, cfg.MQTTTargetPort), cfg.MQTTForwarderTimeout)
@@ -127,7 +136,10 @@ func main() {
 		exitCode = 1
 		return
 	}
-	mpub = tracing.New(tracer, mpub)
+	mpub, err = tracing.New(serverConfig, tracer, mpub)
+	if err != nil {
+		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
+	}
 
 	fwd := mqtt.NewForwarder(brokers.SubjectAllChannels, logger)
 	fwd = mqtttracing.New(tracer, fwd, brokers.SubjectAllChannels)
@@ -143,7 +155,10 @@ func main() {
 		exitCode = 1
 		return
 	}
-	np = tracing.New(tracer, np)
+	np, err = tracing.New(serverConfig, tracer, np)
+	if err != nil {
+		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
+	}
 	defer np.Close()
 
 	ec, err := redisClient.Setup(envPrefixES)
