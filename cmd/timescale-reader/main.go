@@ -31,6 +31,7 @@ import (
 const (
 	svcName        = "timescaledb-reader"
 	envPrefix      = "MF_TIMESCALE_READER_"
+	envPrefixDB    = "MF_TIMESCALE_"
 	envPrefixHttp  = "MF_TIMESCALE_READER_HTTP_"
 	defDB          = "messages"
 	defSvcHttpPort = "9011"
@@ -65,7 +66,7 @@ func main() {
 	}
 
 	dbConfig := pgClient.Config{Name: defDB}
-	if err := dbConfig.LoadEnv(envPrefix); err != nil {
+	if err := dbConfig.LoadEnv(envPrefixDB); err != nil {
 		logger.Fatal(err.Error())
 	}
 	db, err := pgClient.Connect(dbConfig)

@@ -30,11 +30,11 @@ import (
 )
 
 const (
-	svcName           = "influxdb-reader"
-	envPrefix         = "MF_INFLUX_READER_"
-	envPrefixHttp     = "MF_INFLUX_READER_HTTP_"
-	envPrefixInfluxdb = "MF_INFLUXDB_"
-	defSvcHttpPort    = "9005"
+	svcName        = "influxdb-reader"
+	envPrefix      = "MF_INFLUX_READER_"
+	envPrefixHttp  = "MF_INFLUX_READER_HTTP_"
+	envPrefixDB    = "MF_INFLUXDB_"
+	defSvcHttpPort = "9005"
 )
 
 type config struct {

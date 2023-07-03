@@ -40,6 +40,7 @@ import (
 const (
 	svcName        = "smpp-notifier"
 	envPrefix      = "MF_SMPP_NOTIFIER_"
+	envPrefixDB    = "MF_SMPP_NOTIFIER_DB_"
 	envPrefixHttp  = "MF_SMPP_NOTIFIER_HTTP_"
 	defDB          = "subscriptions"
 	defSvcHttpPort = "9014"
@@ -78,7 +79,7 @@ func main() {
 	}
 
 	dbConfig := pgClient.Config{Name: defDB}
-	db, err := pgClient.SetupWithConfig(envPrefix, *notifierPg.Migration(), dbConfig)
+	db, err := pgClient.SetupWithConfig(envPrefixDB, *notifierPg.Migration(), dbConfig)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

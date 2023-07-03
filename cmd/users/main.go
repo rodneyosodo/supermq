@@ -55,6 +55,7 @@ import (
 const (
 	svcName        = "users"
 	envPrefix      = "MF_USERS_"
+	envPrefixDB    = "MF_USERS_DB_"
 	envPrefixHttp  = "MF_USERS_HTTP_"
 	envPrefixGrpc  = "MF_USERS_GRPC_"
 	defDB          = "users"
@@ -110,7 +111,7 @@ func main() {
 	}
 
 	dbConfig := pgClient.Config{Name: defDB}
-	db, err := pgClient.SetupWithConfig(envPrefix, *clientsPg.Migration(), dbConfig)
+	db, err := pgClient.SetupWithConfig(envPrefixDB, *clientsPg.Migration(), dbConfig)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

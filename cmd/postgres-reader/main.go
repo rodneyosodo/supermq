@@ -31,6 +31,7 @@ import (
 const (
 	svcName        = "postgres-reader"
 	envPrefix      = "MF_POSTGRES_READER_"
+	envPrefixDB    = "MF_POSTGRES_"
 	envPrefixHttp  = "MF_POSTGRES_READER_HTTP_"
 	defDB          = "messages"
 	defSvcHttpPort = "9009"

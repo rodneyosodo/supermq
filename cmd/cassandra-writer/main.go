@@ -34,6 +34,7 @@ import (
 const (
 	svcName        = "cassandra-writer"
 	envPrefix      = "MF_CASSANDRA_WRITER_"
+	envPrefixDB    = "MF_CASSANDRA_"
 	envPrefixHttp  = "MF_CASSANDRA_WRITER_HTTP_"
 	defSvcHttpPort = "9004"
 )
@@ -71,7 +72,7 @@ func main() {
 	}
 
 	// Create new to cassandra client
-	csdSession, err := cassandraClient.SetupDB(envPrefix, cassandra.Table)
+	csdSession, err := cassandraClient.SetupDB(envPrefixDB, cassandra.Table)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

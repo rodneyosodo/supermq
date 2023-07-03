@@ -48,7 +48,7 @@ const (
 )
 
 type config struct {
-	LogLevel       string        `env:"MF_BOOTSTRAP_LOG_LEVEL"              envDefault:"info"`
+	LogLevel       string        `env:"MF_LORA_ADAPTER_LOG_LEVEL"           envDefault:"info"`
 	LoraMsgURL     string        `env:"MF_LORA_ADAPTER_MESSAGES_URL"        envDefault:"tcp://localhost:1883"`
 	LoraMsgUser    string        `env:"MF_LORA_ADAPTER_MESSAGES_USER"       envDefault:""`
 	LoraMsgPass    string        `env:"MF_LORA_ADAPTER_MESSAGES_PASS"       envDefault:""`

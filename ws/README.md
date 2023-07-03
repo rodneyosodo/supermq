@@ -10,7 +10,7 @@ default values.
 
 | Variable                     | Description                                         | Default               |
 |------------------------------|-----------------------------------------------------|-----------------------|
-| MF_WS_ADAPTER_PORT           | Service WS port                                     | 8190                  |
+| MF_WS_ADAPTER_HTTP_PORT      | Service WS port                                     | 8190                  |
 | MF_BROKER_URL                | Message broker instance URL                         | nats://localhost:4222 |
 | MF_WS_ADAPTER_LOG_LEVEL      | Log level for the WS Adapter                        | info                  |
 | MF_WS_ADAPTER_CLIENT_TLS     | Flag that indicates if TLS should be turned on      | false                 |
@@ -41,7 +41,7 @@ make install
 
 # set the environment variables and run the service
 MF_Broker_URL=[Message broker instance URL] \
-MF_WS_ADAPTER_PORT=[Service WS port] \
+MF_WS_ADAPTER_HTTP_PORT=[Service WS port] \
 MF_WS_ADAPTER_LOG_LEVEL=[WS adapter log level] \
 MF_WS_ADAPTER_CLIENT_TLS=[Flag that indicates if TLS should be turned on] \
 MF_WS_ADAPTER_CA_CERTS=[Path to trusted CAs in PEM format] \

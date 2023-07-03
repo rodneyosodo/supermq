@@ -34,6 +34,7 @@ import (
 const (
 	svcName        = "timescaledb-writer"
 	envPrefix      = "MF_TIMESCALE_WRITER_"
+	envPrefixDB    = "MF_TIMESCALE_"
 	envPrefixHttp  = "MF_TIMESCALE_WRITER_HTTP_"
 	defDB          = "messages"
 	defSvcHttpPort = "9012"
@@ -71,7 +72,7 @@ func main() {
 	}
 
 	dbConfig := pgClient.Config{Name: defDB}
-	db, err := pgClient.SetupWithConfig(envPrefix, *timescale.Migration(), dbConfig)
+	db, err := pgClient.SetupWithConfig(envPrefixDB, *timescale.Migration(), dbConfig)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

@@ -53,9 +53,6 @@ type config struct {
 	// Sign and issue certificates without 3rd party PKI
 	SignCAPath    string `env:"MF_CERTS_SIGN_CA_PATH"        envDefault:"ca.crt"`
 	SignCAKeyPath string `env:"MF_CERTS_SIGN_CA_KEY_PATH"    envDefault:"ca.key"`
-	// used in pki mock , need to clean up certs in separate PR
-	SignRSABits    int    `env:"MF_CERTS_SIGN_RSA_BITS,"     envDefault:""`
-	SignHoursValid string `env:"MF_CERTS_SIGN_HOURS_VALID"   envDefault:"2048h"`
 
 	// 3rd party PKI API access settings
 	PkiHost  string `env:"MF_CERTS_VAULT_HOST"    envDefault:""`

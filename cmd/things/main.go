@@ -57,10 +57,11 @@ import (
 const (
 	svcName            = "things"
 	envPrefix          = "MF_THINGS_"
+	envPrefixDB        = "MF_THINGS_DB_"
 	envPrefixCache     = "MF_THINGS_CACHE_"
 	envPrefixES        = "MF_THINGS_ES_"
 	envPrefixHttp      = "MF_THINGS_HTTP_"
-	envPrefixAuthGrpc  = "MF_THINGS_AUTH_GRPC_"
+	envPrefixGRPC      = "MF_THINGS_GRPC_"
 	defDB              = "things"
 	defSvcHttpPort     = "9000"
 	defSvcAuthGrpcPort = "7000"
@@ -101,7 +102,7 @@ func main() {
 
 	// Create new database for things
 	dbConfig := pgClient.Config{Name: defDB}
-	db, err := pgClient.SetupWithConfig(envPrefix, *thingsPg.Migration(), dbConfig)
+	db, err := pgClient.SetupWithConfig(envPrefixDB, *thingsPg.Migration(), dbConfig)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

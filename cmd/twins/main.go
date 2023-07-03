@@ -43,6 +43,7 @@ const (
 	svcName        = "twins"
 	queue          = "twins"
 	envPrefix      = "MF_TWINS_"
+	envPrefixDB    = "MF_TWINS_MONGO_"
 	envPrefixHttp  = "MF_TWINS_HTTP_"
 	envPrefixCache = "MF_TWINS_CACHE_"
 	envPrefixES    = "MF_TWINS_ES_"
@@ -97,7 +98,7 @@ func main() {
 	}
 	defer esClient.Close()
 
-	db, err := mongoClient.Setup(envPrefix)
+	db, err := mongoClient.Setup(envPrefixDB)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to setup postgres database : %s", err))
 		exitCode = 1

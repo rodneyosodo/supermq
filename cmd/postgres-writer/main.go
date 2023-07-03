@@ -33,6 +33,7 @@ import (
 const (
 	svcName        = "postgres-writer"
 	envPrefix      = "MF_POSTGRES_WRITER_"
+	envPrefixDB    = "MF_POSTGRES_"
 	envPrefixHttp  = "MF_POSTGRES_WRITER_HTTP_"
 	defDB          = "messages"
 	defSvcHttpPort = "9010"
@@ -92,7 +93,7 @@ func main() {
 	defer pubSub.Close()
 
 	dbConfig := pgClient.Config{Name: defDB}
-	db, err := pgClient.SetupWithConfig(envPrefix, *writerPg.Migration(), dbConfig)
+	db, err := pgClient.SetupWithConfig(envPrefixDB, *writerPg.Migration(), dbConfig)
 	if err != nil {
 		logger.Error(err.Error())
 		exitCode = 1

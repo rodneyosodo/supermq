@@ -31,6 +31,7 @@ import (
 const (
 	svcName        = "cassandra-reader"
 	envPrefix      = "MF_CASSANDRA_READER_"
+	envPrefixDB    = "MF_CASSANDRA_"
 	envPrefixHttp  = "MF_CASSANDRA_READER_HTTP_"
 	defSvcHttpPort = "9003"
 )
@@ -86,7 +87,7 @@ func main() {
 	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 
 	// Create new cassandra client
-	csdSession, err := cassandraClient.Setup(envPrefix)
+	csdSession, err := cassandraClient.Setup(envPrefixDB)
 	if err != nil {
 		logger.Error(err.Error())
 		exitCode = 1
@@ -99,7 +100,6 @@ func main() {
 
 	// Create new http server
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
-
 	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1

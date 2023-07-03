@@ -31,7 +31,7 @@ import (
 const (
 	svcName        = "mongodb-reader"
 	envPrefix      = "MF_MONGO_READER_"
-	envPrefixDB    = "MF_MONGO_READER_DB_"
+	envPrefixDB    = "MF_MONGO_"
 	envPrefixHttp  = "MF_MONGO_READER_HTTP_"
 	defSvcHttpPort = "9007"
 )

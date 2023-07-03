@@ -37,10 +37,9 @@ import (
 )
 
 const (
-	svcName            = "mqtt"
-	envPrefix          = "MF_MQTT_ADAPTER_"
-	envPrefixES        = "MF_MQTT_ADAPTER_ES_"
-	envPrefixAuthCache = "MF_AUTH_CACHE_"
+	svcName     = "mqtt"
+	envPrefix   = "MF_MQTT_ADAPTER_"
+	envPrefixES = "MF_MQTT_ADAPTER_ES_"
 )
 
 type config struct {
@@ -150,14 +149,6 @@ func main() {
 	defer ec.Close()
 
 	es := mqttredis.NewEventStore(ec, cfg.Instance)
-
-	ac, err := redisClient.Setup(envPrefixAuthCache)
-	if err != nil {
-		logger.Error(fmt.Sprintf("failed to setup %s event store redis client : %s", svcName, err))
-		exitCode = 1
-		return
-	}
-	defer ac.Close()
 
 	tc, tcHandler, err := thingsClient.Setup(envPrefix)
 	if err != nil {

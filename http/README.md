@@ -11,7 +11,7 @@ default values.
 | Variable                    | Description                                                   | Default               |
 | --------------------------- | ------------------------------------------------------------- | --------------------- |
 | MF_HTTP_ADAPTER_LOG_LEVEL   | Log level for the HTTP Adapter                                | info                  |
-| MF_HTTP_ADAPTER_PORT        | Service HTTP port                                             | 80                    |
+| MF_HTTP_ADAPTER_HTTP_PORT   | Service HTTP port                                             | 80                    |
 | MF_BROKER_URL               | Message broker instance URL                                   | nats://localhost:4222 |
 | MF_HTTP_ADAPTER_CLIENT_TLS  | Flag that indicates if TLS should be turned on                | false                 |
 | MF_HTTP_ADAPTER_CA_CERTS    | Path to trusted CAs in PEM format                             |                       |
@@ -42,7 +42,7 @@ make install
 # set the environment variables and run the service
 MF_BROKER_URL=[Message broker instance URL] \
 MF_HTTP_ADAPTER_LOG_LEVEL=[HTTP Adapter Log Level] \
-MF_HTTP_ADAPTER_PORT=[Service HTTP port] \
+MF_HTTP_ADAPTER_HTTP_PORT=[Service HTTP port] \
 MF_HTTP_ADAPTER_CA_CERTS=[Path to trusted CAs in PEM format] \
 MF_JAEGER_URL=[Jaeger server URL] \
 MF_THINGS_AUTH_GRPC_URL=[Things service Auth gRPC URL] \
