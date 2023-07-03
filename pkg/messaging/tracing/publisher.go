@@ -77,8 +77,16 @@ func (pm *publisherMiddleware) Close() error {
 }
 
 func createSpan(ctx context.Context, host hostConfig, operation, topic, subTopic, thingID string, tracer trace.Tracer) (context.Context, trace.Span) {
+	var address string
+	if host.host != "" && host.port != "" {
+		address = host.host + ":" + host.port
+	}
+	if host.host != "" && host.port == "" {
+		address = host.host
+	}
+
 	kvOpts := []attribute.KeyValue{
-		attribute.String("peer.address", host.host+":"+host.port),
+		attribute.String("peer.address", address),
 		attribute.String("peer.hostname", host.host),
 		attribute.String("peer.ipv4", host.IPV4),
 		attribute.String("peer.ipv6", host.IPV6),
@@ -92,8 +100,14 @@ func createSpan(ctx context.Context, host hostConfig, operation, topic, subTopic
 		kvOpts = append(kvOpts, attribute.String("subscriber", thingID), attribute.String("span.kind", "consumer"))
 	}
 	kvOpts = append(kvOpts, attribute.String("topic", topic))
+
+	destination := topic
 	if subTopic != "" {
 		kvOpts = append(kvOpts, attribute.String("subtopic", topic))
+		destination = topic + "." + subTopic
 	}
+
+	kvOpts = append(kvOpts, attribute.String("message_bus.destination", destination))
+
 	return tracer.Start(ctx, operation, trace.WithAttributes(kvOpts...))
 }

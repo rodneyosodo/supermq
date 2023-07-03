@@ -135,6 +135,14 @@ func (d database) BeginTxx(ctx context.Context, opts *sql.TxOptions) (*sqlx.Tx, 
 }
 
 func (d *database) addSpanTags(ctx context.Context, method, query string) (context.Context, trace.Span) {
+	var address string
+	if d.dbHost != "" && d.dbPort != "" {
+		address = d.dbHost + ":" + d.dbPort
+	}
+	if d.dbHost != "" && d.dbPort == "" {
+		address = d.dbHost
+	}
+
 	ctx, span := d.tracer.Start(ctx,
 		fmt.Sprintf("sql_%s", method),
 		trace.WithAttributes(
@@ -143,7 +151,7 @@ func (d *database) addSpanTags(ctx context.Context, method, query string) (conte
 			attribute.String("db.user", d.dbUser),
 			attribute.String("db.statement", query),
 			attribute.String("span.kind", "client"),
-			attribute.String("peer.address", d.dbHost+":"+d.dbPort),
+			attribute.String("peer.address", address),
 			attribute.String("peer.hostname", d.dbHost),
 			attribute.String("peer.ipv4", d.dbIPV4),
 			attribute.String("peer.ipv6", d.dbIPV6),
