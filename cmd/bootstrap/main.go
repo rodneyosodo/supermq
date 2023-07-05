@@ -12,15 +12,19 @@ import (
 
 	chclient "github.com/mainflux/callhome/pkg/client"
 	"github.com/mainflux/mainflux"
+	"go.opentelemetry.io/otel/trace"
 
 	bootstrapPg "github.com/mainflux/mainflux/bootstrap/postgres"
 	rediscons "github.com/mainflux/mainflux/bootstrap/redis/consumer"
 	redisprod "github.com/mainflux/mainflux/bootstrap/redis/producer"
+	"github.com/mainflux/mainflux/bootstrap/tracing"
 	"github.com/mainflux/mainflux/internal"
 	authClient "github.com/mainflux/mainflux/internal/clients/grpc/auth"
+	jaegerClient "github.com/mainflux/mainflux/internal/clients/jaeger"
 	pgClient "github.com/mainflux/mainflux/internal/clients/postgres"
 	redisClient "github.com/mainflux/mainflux/internal/clients/redis"
 	"github.com/mainflux/mainflux/internal/env"
+	"github.com/mainflux/mainflux/internal/postgres"
 	"github.com/mainflux/mainflux/internal/server"
 	httpserver "github.com/mainflux/mainflux/internal/server/http"
 	mflog "github.com/mainflux/mainflux/logger"
@@ -48,6 +52,7 @@ type config struct {
 	EncKey         string `env:"MF_BOOTSTRAP_ENCRYPT_KEY"      envDefault:"12345678910111213141516171819202"`
 	ESConsumerName string `env:"MF_BOOTSTRAP_EVENT_CONSUMER"   envDefault:"bootstrap"`
 	ThingsURL      string `env:"MF_THINGS_URL"                 envDefault:"http://localhost:9000"`
+	JaegerURL      string `env:"MF_JAEGER_URL"                 envDefault:"http://jaeger:14268/api/traces"`
 	SendTelemetry  bool   `env:"MF_SEND_TELEMETRY"             envDefault:"true"`
 }
 
@@ -89,8 +94,19 @@ func main() {
 	defer authHandler.Close()
 	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 
+	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL)
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("failed to init Jaeger: %s", err))
+	}
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			logger.Error(fmt.Sprintf("error shutting down tracer provider: %v", err))
+		}
+	}()
+	tracer := tp.Tracer(svcName)
+
 	// Create new service
-	svc := newService(auth, db, logger, esClient, cfg)
+	svc := newService(auth, db, tracer, logger, esClient, cfg)
 
 	// Create an new HTTP server
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
@@ -126,8 +142,9 @@ func main() {
 	}
 }
 
-func newService(auth policies.AuthServiceClient, db *sqlx.DB, logger mflog.Logger, esClient *redis.Client, cfg config) bootstrap.Service {
-	repoConfig := bootstrapPg.NewConfigRepository(db, logger)
+func newService(auth policies.AuthServiceClient, db *sqlx.DB, tracer trace.Tracer, logger mflog.Logger, esClient *redis.Client, cfg config) bootstrap.Service {
+	database := postgres.NewDatabase(db, tracer)
+	repoConfig := bootstrapPg.NewConfigRepository(database, logger)
 
 	config := mfsdk.Config{
 		ThingsURL: cfg.ThingsURL,
@@ -140,6 +157,7 @@ func newService(auth policies.AuthServiceClient, db *sqlx.DB, logger mflog.Logge
 	svc = api.LoggingMiddleware(svc, logger)
 	counter, latency := internal.MakeMetrics(svcName, "api")
 	svc = api.MetricsMiddleware(svc, counter, latency)
+	svc = tracing.New(svc, tracer)
 
 	return svc
 }
