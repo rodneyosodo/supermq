@@ -181,8 +181,8 @@ func (es eventStore) ListStates(ctx context.Context, token string, offset uint64
 	return sp, nil
 }
 
-func (es eventStore) SaveStates(msg *messaging.Message) error {
-	if err := es.svc.SaveStates(msg); err != nil {
+func (es eventStore) SaveStates(ctx context.Context, msg *messaging.Message) error {
+	if err := es.svc.SaveStates(ctx, msg); err != nil {
 		return err
 	}
 	event := saveStatesEvent{
@@ -197,7 +197,7 @@ func (es eventStore) SaveStates(msg *messaging.Message) error {
 		MaxLenApprox: streamLen,
 		Values:       values,
 	}
-	if err := es.client.XAdd(context.Background(), record).Err(); err != nil {
+	if err := es.client.XAdd(ctx, record).Err(); err != nil {
 		return err
 	}
 
