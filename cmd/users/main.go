@@ -245,8 +245,7 @@ func createAdmin(ctx context.Context, c config, crepo mfclients.Repository, hsr 
 	if _, err = crepo.Save(ctx, client); err != nil {
 		return err
 	}
-	_, err = svc.IssueToken(ctx, c.AdminEmail, c.AdminPassword)
-	if err != nil {
+	if _, err = svc.IssueToken(ctx, c.AdminEmail, c.AdminPassword); err != nil {
 		return err
 	}
 
