@@ -38,16 +38,6 @@ func newUsersPolicyServer(svc upolicies.Service) *httptest.Server {
 	mux := bone.New()
 	uapi.MakeHandler(svc, mux, logger)
 
-	// Define a custom route to redirect /users/policies to /policies
-	mux.HandleFunc("/users/policies", func(w http.ResponseWriter, req *http.Request) {
-		http.Redirect(w, req, "/policies", http.StatusPermanentRedirect)
-	})
-
-	// Define a custom route to redirect /users/policies/sub/obj to /policies/sub/obj
-	mux.HandleFunc("/users/policies/:sub/:obj", func(w http.ResponseWriter, req *http.Request) {
-		http.Redirect(w, req, fmt.Sprintf("/policies/%s/%s", bone.GetValue(req, "sub"), bone.GetValue(req, "obj")), http.StatusPermanentRedirect)
-	})
-
 	return httptest.NewServer(mux)
 }
 
@@ -55,16 +45,6 @@ func newThingsPolicyServer(svc clients.Service, psvc policies.Service) *httptest
 	logger := mflog.NewMock()
 	mux := bone.New()
 	tapi.MakeHandler(svc, psvc, mux, logger)
-
-	// Define a custom route to redirect /things/policies to /policies
-	mux.HandleFunc("/things/policies", func(w http.ResponseWriter, req *http.Request) {
-		http.Redirect(w, req, "/policies", http.StatusPermanentRedirect)
-	})
-
-	// Define a custom route to redirect /things/policies/sub/obj to /policies/sub/obj
-	mux.HandleFunc("/things/policies/:sub/:obj", func(w http.ResponseWriter, req *http.Request) {
-		http.Redirect(w, req, fmt.Sprintf("/policies/%s/%s", bone.GetValue(req, "sub"), bone.GetValue(req, "obj")), http.StatusPermanentRedirect)
-	})
 
 	return httptest.NewServer(mux)
 }

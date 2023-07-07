@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	usersPolicyEndpoint  = "users/policies"
-	thingsPolicyEndpoint = "things/policies"
+	usersPolicyEndpoint  = "policies"
+	thingsPolicyEndpoint = "policies"
 	authorizeEndpoint    = "authorize"
 	accessEndpoint       = "access"
 )
