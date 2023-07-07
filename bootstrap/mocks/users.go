@@ -29,20 +29,6 @@ func (svc serviceMock) Identify(ctx context.Context, req *policies.IdentifyReq, 
 	return nil, errors.ErrAuthentication
 }
 
-func (svc serviceMock) Issue(ctx context.Context, req *policies.IssueReq, opts ...grpc.CallOption) (*policies.IssueRes, error) {
-	if id, ok := svc.users[req.GetIdentity()]; ok {
-		return &policies.IssueRes{Token: id}, nil
-	}
-	return nil, errors.ErrAuthentication
-}
-
 func (svc serviceMock) Authorize(ctx context.Context, req *policies.AuthorizeReq, _ ...grpc.CallOption) (r *policies.AuthorizeRes, err error) {
-	panic("not implemented")
-}
-
-func (svc serviceMock) AddPolicy(ctx context.Context, req *policies.AddPolicyReq, _ ...grpc.CallOption) (r *policies.AddPolicyRes, err error) {
-	panic("not implemented")
-}
-func (svc serviceMock) DeletePolicy(ctx context.Context, req *policies.DeletePolicyReq, _ ...grpc.CallOption) (r *policies.DeletePolicyRes, err error) {
 	panic("not implemented")
 }

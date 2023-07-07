@@ -35,13 +35,6 @@ func (svc authServiceMock) Identify(ctx context.Context, req *policies.IdentifyR
 	return nil, errors.ErrAuthentication
 }
 
-func (svc authServiceMock) Issue(ctx context.Context, req *policies.IssueReq, opts ...grpc.CallOption) (*policies.IssueRes, error) {
-	if id, ok := svc.users[req.GetIdentity()]; ok {
-		return &policies.IssueRes{Token: id}, nil
-	}
-	return nil, errors.ErrAuthentication
-}
-
 func (svc authServiceMock) Authorize(ctx context.Context, req *policies.AuthorizeReq, _ ...grpc.CallOption) (r *policies.AuthorizeRes, err error) {
 	for _, policy := range svc.authz[req.GetSubject()] {
 		for _, r := range policy.Relation {
@@ -51,21 +44,4 @@ func (svc authServiceMock) Authorize(ctx context.Context, req *policies.Authoriz
 		}
 	}
 	return &policies.AuthorizeRes{Authorized: false}, nil
-}
-
-func (svc authServiceMock) AddPolicy(ctx context.Context, req *policies.AddPolicyReq, opts ...grpc.CallOption) (*policies.AddPolicyRes, error) {
-	if len(req.GetAction()) == 0 || req.GetObject() == "" || req.GetSubject() == "" {
-		return &policies.AddPolicyRes{}, errors.ErrMalformedEntity
-	}
-
-	svc.authz[req.GetSubject()] = append(svc.authz[req.GetSubject()], SubjectSet{Subject: req.GetSubject(), Relation: req.GetAction()})
-	return &policies.AddPolicyRes{Added: true}, nil
-}
-
-func (svc authServiceMock) DeletePolicy(ctx context.Context, req *policies.DeletePolicyReq, opts ...grpc.CallOption) (*policies.DeletePolicyRes, error) {
-	if req.GetObject() == "" || req.GetSubject() == "" {
-		return &policies.DeletePolicyRes{}, errors.ErrMalformedEntity
-	}
-	delete(svc.authz, req.GetSubject())
-	return &policies.DeletePolicyRes{Deleted: true}, nil
 }

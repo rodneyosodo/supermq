@@ -10,15 +10,3 @@ type authorizeRes struct {
 type identifyRes struct {
 	id string
 }
-
-type issueRes struct {
-	token string
-}
-
-type addPolicyRes struct {
-	added bool
-}
-
-type deletePolicyRes struct {
-	deleted bool
-}
