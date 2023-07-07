@@ -10,6 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	users  = "users"
+	things = "things"
+)
+
 var cmdPolicies = []cobra.Command{
 	{
 		Use:   "create [ users | things ] <subject_id> <object_id> <actions> <user_auth_token>",
@@ -36,20 +41,20 @@ var cmdPolicies = []cobra.Command{
 				Actions: actions,
 			}
 
-			if args[0] == "things" {
+			switch args[0] {
+			case things:
 				if err := sdk.CreateThingPolicy(policy, args[4]); err != nil {
 					logError(err)
 					return
 				}
-			}
-			if args[0] == "users" {
+			case users:
 				if err := sdk.CreateUserPolicy(policy, args[4]); err != nil {
 					logError(err)
 					return
 				}
+			default:
+				logUsage(cmd.Use)
 			}
-
-			logOK()
 		},
 	},
 	{
@@ -77,20 +82,20 @@ var cmdPolicies = []cobra.Command{
 				Actions: actions,
 			}
 
-			if args[0] == "things" {
+			switch args[0] {
+			case things:
 				if err := sdk.UpdateThingPolicy(policy, args[4]); err != nil {
 					logError(err)
 					return
 				}
-			}
-			if args[0] == "users" {
+			case users:
 				if err := sdk.UpdateUserPolicy(policy, args[4]); err != nil {
 					logError(err)
 					return
 				}
+			default:
+				logUsage(cmd.Use)
 			}
-
-			logOK()
 		},
 	},
 	{
@@ -109,7 +114,8 @@ var cmdPolicies = []cobra.Command{
 				Offset: uint64(Offset),
 				Limit:  uint64(Limit),
 			}
-			if args[0] == "things" {
+			switch args[0] {
+			case things:
 				policies, err := sdk.ListThingPolicies(pm, args[1])
 				if err != nil {
 					logError(err)
@@ -117,8 +123,7 @@ var cmdPolicies = []cobra.Command{
 				}
 				logJSON(policies)
 				return
-			}
-			if args[0] == "users" {
+			case users:
 				policies, err := sdk.ListUserPolicies(pm, args[0])
 				if err != nil {
 					logError(err)
@@ -127,6 +132,8 @@ var cmdPolicies = []cobra.Command{
 
 				logJSON(policies)
 				return
+			default:
+				logUsage(cmd.Use)
 			}
 		},
 	},
@@ -147,20 +154,20 @@ var cmdPolicies = []cobra.Command{
 				Subject: args[1],
 				Object:  args[2],
 			}
-			if args[0] == "users" {
-				if err := sdk.DeleteUserPolicy(policy, args[3]); err != nil {
-					logError(err)
-					return
-				}
-			}
-			if args[0] == "things" {
+			switch args[0] {
+			case things:
 				if err := sdk.DeleteThingPolicy(policy, args[3]); err != nil {
 					logError(err)
 					return
 				}
+			case users:
+				if err := sdk.DeleteUserPolicy(policy, args[3]); err != nil {
+					logError(err)
+					return
+				}
+			default:
+				logUsage(cmd.Use)
 			}
-
-			logOK()
 		},
 	},
 }
