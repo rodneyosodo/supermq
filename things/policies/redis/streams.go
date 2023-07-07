@@ -5,6 +5,7 @@ package redis
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -23,6 +24,7 @@ type eventStore struct {
 	svc               policies.Service
 	client            *redis.Client
 	unpublishedEvents []*redis.XAddArgs
+	mu                sync.Mutex
 }
 
 // NewEventStoreMiddleware returns wrapper around policy service that sends
@@ -147,11 +149,13 @@ func (es *eventStore) startPublishingRoutine(ctx context.Context) {
 		select {
 		case <-ticker.C:
 			if err := es.checkRedisConnection(ctx); err == nil {
+				es.mu.Lock()
 				for i := len(es.unpublishedEvents) - 1; i >= 0; i-- {
 					if err := es.client.XAdd(ctx, es.unpublishedEvents[i]).Err(); err == nil {
 						es.unpublishedEvents = append(es.unpublishedEvents[:i], es.unpublishedEvents[i+1:]...)
 					}
 				}
+				es.mu.Unlock()
 			}
 		case <-ctx.Done():
 			return
