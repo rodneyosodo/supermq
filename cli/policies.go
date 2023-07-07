@@ -12,57 +12,82 @@ import (
 
 var cmdPolicies = []cobra.Command{
 	{
-		Use:   "create <JSON_policy> <user_auth_token>",
+		Use:   "create [ users | things ] <subject_id> <object_id> <actions> <user_auth_token>",
 		Short: "Create policy",
 		Long: "Create a new policy\n" +
 			"Usage:\n" +
-			"\tmainflux-cli policies create '{\"object\":\"<group_id>\", \"subject\":\"<user_id>\",\"actions\":[\"c_list\"]}' $USERTOKEN\n",
+			"\tmainflux-cli policies create users <user_id> <group_id> '[\"c_list\"]' $USERTOKEN\n" +
+			"\tmainflux-cli policies create things <thing_id> <channel_id> '[\"m_write\"]' $USERTOKEN\n",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 5 {
 				logUsage(cmd.Use)
 				return
 			}
 
-			var policy mfxsdk.Policy
-			if err := json.Unmarshal([]byte(args[0]), &policy); err != nil {
+			var actions []string
+			if err := json.Unmarshal([]byte(args[3]), &actions); err != nil {
 				logError(err)
 				return
 			}
-			if err := sdk.CreateUserPolicy(policy, args[1]); err != nil {
-				logError(err)
-				return
+
+			var policy = mfxsdk.Policy{
+				Subject: args[1],
+				Object:  args[2],
+				Actions: actions,
+			}
+
+			if args[0] == "things" {
+				if err := sdk.CreateThingPolicy(policy, args[4]); err != nil {
+					logError(err)
+					return
+				}
+			}
+			if args[0] == "users" {
+				if err := sdk.CreateUserPolicy(policy, args[4]); err != nil {
+					logError(err)
+					return
+				}
 			}
 
 			logOK()
 		},
 	},
 	{
-		Use:   "update [ <JSON_policy> | things <JSON_policy> ] <user_auth_token>",
+		Use:   "update [ users | things ] <subject_id> <object_id> <actions> <user_auth_token>",
 		Short: "Update policy",
 		Long: "Update policy\n" +
 			"Usage:\n" +
-			"\tmainflux-cli policies update '{\"object\":\"<group_id>\", \"subject\":\"<user_id>\",\"actions\":[\"c_list\"]}' $USERTOKEN\n" +
-			"\tmainflux-cli policies update things '{\"object\":\"<channel_id>\", \"subject\":\"<thing_id>\",\"actions\":[\"m_write\"]}' $USERTOKEN\n",
+			"\tmainflux-cli policies update users <user_id> <group_id> '[\"c_list\"]' $USERTOKEN\n" +
+			"\tmainflux-cli policies update things <thing_id> <channel_id> '[\"m_write\"]' $USERTOKEN\n",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 && len(args) != 3 {
+			if len(args) != 5 {
 				logUsage(cmd.Use)
 				return
 			}
 
-			var policy mfxsdk.Policy
-			if err := json.Unmarshal([]byte(args[0]), &policy); err != nil {
+			var actions []string
+			if err := json.Unmarshal([]byte(args[3]), &actions); err != nil {
 				logError(err)
 				return
 			}
+
+			var policy = mfxsdk.Policy{
+				Subject: args[1],
+				Object:  args[2],
+				Actions: actions,
+			}
+
 			if args[0] == "things" {
-				if err := sdk.UpdateThingPolicy(policy, args[2]); err != nil {
+				if err := sdk.UpdateThingPolicy(policy, args[4]); err != nil {
 					logError(err)
 					return
 				}
 			}
-			if err := sdk.UpdateUserPolicy(policy, args[1]); err != nil {
-				logError(err)
-				return
+			if args[0] == "users" {
+				if err := sdk.UpdateUserPolicy(policy, args[4]); err != nil {
+					logError(err)
+					return
+				}
 			}
 
 			logOK()
@@ -106,25 +131,33 @@ var cmdPolicies = []cobra.Command{
 		},
 	},
 	{
-		Use:   "remove <JSON_policy> <user_auth_token>",
+		Use:   "remove [ users | things ] <subject_id> <object_id> <user_auth_token>",
 		Short: "Remove policy",
 		Long: "Removes a policy with the provided object and subject\n" +
 			"Usage:\n" +
-			"\tmainflux-cli policies remove '{\"object\":\"<group_id>\", \"subject\":\"<user_id>\"}' $USERTOKEN\n",
+			"\tmainflux-cli policies remove users <user_id> <group_id> $USERTOKEN\n" +
+			"\tmainflux-cli policies remove things <thing_id> <channel_id> $USERTOKEN\n",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 4 {
 				logUsage(cmd.Use)
 				return
 			}
 
-			var policy mfxsdk.Policy
-			if err := json.Unmarshal([]byte(args[0]), &policy); err != nil {
-				logError(err)
-				return
+			var policy = mfxsdk.Policy{
+				Subject: args[1],
+				Object:  args[2],
 			}
-			if err := sdk.DeleteUserPolicy(policy, args[1]); err != nil {
-				logError(err)
-				return
+			if args[0] == "users" {
+				if err := sdk.DeleteUserPolicy(policy, args[3]); err != nil {
+					logError(err)
+					return
+				}
+			}
+			if args[0] == "things" {
+				if err := sdk.DeleteThingPolicy(policy, args[3]); err != nil {
+					logError(err)
+					return
+				}
 			}
 
 			logOK()
