@@ -69,6 +69,8 @@ func (es *eventStore) Publish(ctx context.Context, event Event) error {
 
 func (es *eventStore) StartPublishingRoutine(ctx context.Context) {
 	ticker := time.NewTicker(checkUnpublishedEventsInterval)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ticker.C:
@@ -86,6 +88,7 @@ func (es *eventStore) StartPublishingRoutine(ctx context.Context) {
 		}
 	}
 }
+
 func (es *eventStore) checkRedisConnection(ctx context.Context) error {
 	// A timeout is used to avoid blocking the main thread
 	ctx, cancel := context.WithTimeout(ctx, checkRedisConnectionInterval)
