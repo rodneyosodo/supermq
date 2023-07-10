@@ -5,10 +5,10 @@ package redis
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	mfredis "github.com/mainflux/mainflux/internal/clients/redis"
 	"github.com/mainflux/mainflux/things/policies"
 )
 
@@ -21,21 +21,21 @@ const (
 var _ policies.Service = (*eventStore)(nil)
 
 type eventStore struct {
-	svc               policies.Service
-	client            *redis.Client
-	unpublishedEvents []*redis.XAddArgs
-	mu                sync.Mutex
+	mfredis.Publisher
+	svc    policies.Service
+	client *redis.Client
 }
 
 // NewEventStoreMiddleware returns wrapper around policy service that sends
 // events to event store.
 func NewEventStoreMiddleware(ctx context.Context, svc policies.Service, client *redis.Client) policies.Service {
 	es := &eventStore{
-		svc:    svc,
-		client: client,
+		svc:       svc,
+		client:    client,
+		Publisher: mfredis.NewEventStore(client, streamID, streamLen),
 	}
 
-	go es.startPublishingRoutine(ctx)
+	go es.StartPublishingRoutine(ctx)
 
 	return es
 }
@@ -49,7 +49,7 @@ func (es *eventStore) Authorize(ctx context.Context, ar policies.AccessRequest) 
 	event := authorizeEvent{
 		ar, ar.Entity,
 	}
-	if err := es.publish(ctx, event); err != nil {
+	if err := es.Publish(ctx, event); err != nil {
 		return id, err
 	}
 
@@ -65,7 +65,7 @@ func (es *eventStore) AddPolicy(ctx context.Context, token string, policy polici
 	event := policyEvent{
 		policy, policyAdd,
 	}
-	if err := es.publish(ctx, event); err != nil {
+	if err := es.Publish(ctx, event); err != nil {
 		return policy, err
 	}
 
@@ -81,7 +81,7 @@ func (es *eventStore) UpdatePolicy(ctx context.Context, token string, policy pol
 	event := policyEvent{
 		policy, policyUpdate,
 	}
-	if err := es.publish(ctx, event); err != nil {
+	if err := es.Publish(ctx, event); err != nil {
 		return policy, err
 	}
 
@@ -97,7 +97,7 @@ func (es *eventStore) ListPolicies(ctx context.Context, token string, page polic
 	event := listPoliciesEvent{
 		page,
 	}
-	if err := es.publish(ctx, event); err != nil {
+	if err := es.Publish(ctx, event); err != nil {
 		return policypage, err
 	}
 
@@ -113,52 +113,5 @@ func (es *eventStore) DeletePolicy(ctx context.Context, token string, policy pol
 		policy, policyDelete,
 	}
 
-	return es.publish(ctx, event)
-}
-
-func (es *eventStore) checkRedisConnection(ctx context.Context) error {
-	// A timeout is used to avoid blocking the main thread
-	ctx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
-	defer cancel()
-
-	return es.client.Ping(ctx).Err()
-}
-
-func (es *eventStore) publish(ctx context.Context, event event) error {
-	values, err := event.Encode()
-	if err != nil {
-		return err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-
-	if err := es.checkRedisConnection(ctx); err != nil {
-		es.unpublishedEvents = append(es.unpublishedEvents, record)
-		return nil
-	}
-
-	return es.client.XAdd(ctx, record).Err()
-}
-
-func (es *eventStore) startPublishingRoutine(ctx context.Context) {
-	ticker := time.NewTicker(checkUnpublishedEventsInterval)
-	for {
-		select {
-		case <-ticker.C:
-			if err := es.checkRedisConnection(ctx); err == nil {
-				es.mu.Lock()
-				for i := len(es.unpublishedEvents) - 1; i >= 0; i-- {
-					if err := es.client.XAdd(ctx, es.unpublishedEvents[i]).Err(); err == nil {
-						es.unpublishedEvents = append(es.unpublishedEvents[:i], es.unpublishedEvents[i+1:]...)
-					}
-				}
-				es.mu.Unlock()
-			}
-		case <-ctx.Done():
-			return
-		}
-	}
+	return es.Publish(ctx, event)
 }

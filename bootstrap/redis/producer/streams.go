@@ -5,11 +5,11 @@ package producer
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/mainflux/mainflux/bootstrap"
+	mfredis "github.com/mainflux/mainflux/internal/clients/redis"
 	"github.com/mainflux/mainflux/pkg/errors"
 )
 
@@ -22,21 +22,21 @@ const (
 var _ bootstrap.Service = (*eventStore)(nil)
 
 type eventStore struct {
-	svc               bootstrap.Service
-	client            *redis.Client
-	unpublishedEvents []*redis.XAddArgs
-	mu                sync.Mutex
+	mfredis.Publisher
+	svc    bootstrap.Service
+	client *redis.Client
 }
 
 // NewEventStoreMiddleware returns wrapper around bootstrap service that sends
 // events to event store.
 func NewEventStoreMiddleware(ctx context.Context, svc bootstrap.Service, client *redis.Client) bootstrap.Service {
 	es := &eventStore{
-		svc:    svc,
-		client: client,
+		svc:       svc,
+		client:    client,
+		Publisher: mfredis.NewEventStore(client, streamID, streamLen),
 	}
 
-	go es.startPublishingRoutine(ctx)
+	go es.StartPublishingRoutine(ctx)
 
 	return es
 }
@@ -51,7 +51,7 @@ func (es *eventStore) Add(ctx context.Context, token string, cfg bootstrap.Confi
 		saved, configCreate,
 	}
 
-	if err1 := es.publish(ctx, ev); err1 != nil {
+	if err1 := es.Publish(ctx, ev); err1 != nil {
 		return saved, errors.Wrap(err, err1)
 	}
 
@@ -67,7 +67,7 @@ func (es *eventStore) View(ctx context.Context, token, id string) (bootstrap.Con
 		cfg, configList,
 	}
 
-	if err1 := es.publish(ctx, ev); err1 != nil {
+	if err1 := es.Publish(ctx, ev); err1 != nil {
 		return cfg, errors.Wrap(err, err1)
 	}
 
@@ -83,7 +83,7 @@ func (es *eventStore) Update(ctx context.Context, token string, cfg bootstrap.Co
 		cfg, configUpdate,
 	}
 
-	return es.publish(ctx, ev)
+	return es.Publish(ctx, ev)
 }
 
 func (es eventStore) UpdateCert(ctx context.Context, token, thingKey, clientCert, clientKey, caCert string) (bootstrap.Config, error) {
@@ -99,7 +99,7 @@ func (es eventStore) UpdateCert(ctx context.Context, token, thingKey, clientCert
 		caCert:     caCert,
 	}
 
-	return es.publish(ctx, ev)
+	return es.Publish(ctx, ev)
 }
 
 func (es *eventStore) UpdateConnections(ctx context.Context, token, id string, connections []string) error {
@@ -112,7 +112,7 @@ func (es *eventStore) UpdateConnections(ctx context.Context, token, id string, c
 		mfChannels: connections,
 	}
 
-	return es.publish(ctx, ev)
+	return es.Publish(ctx, ev)
 }
 
 func (es *eventStore) List(ctx context.Context, token string, filter bootstrap.Filter, offset, limit uint64) (bootstrap.ConfigsPage, error) {
@@ -128,7 +128,7 @@ func (es *eventStore) List(ctx context.Context, token string, filter bootstrap.F
 		partialMatch: filter.PartialMatch,
 	}
 
-	if err1 := es.publish(ctx, ev); err1 != nil {
+	if err1 := es.Publish(ctx, ev); err1 != nil {
 		return bp, errors.Wrap(err, err1)
 	}
 
@@ -144,7 +144,7 @@ func (es *eventStore) Remove(ctx context.Context, token, id string) error {
 		mfThing: id,
 	}
 
-	return es.publish(ctx, ev)
+	return es.Publish(ctx, ev)
 }
 
 func (es *eventStore) Bootstrap(ctx context.Context, externalKey, externalID string, secure bool) (bootstrap.Config, error) {
@@ -160,7 +160,7 @@ func (es *eventStore) Bootstrap(ctx context.Context, externalKey, externalID str
 		ev.success = false
 	}
 
-	if err1 := es.publish(ctx, ev); err1 != nil {
+	if err1 := es.Publish(ctx, ev); err1 != nil {
 		return cfg, err1
 	}
 
@@ -177,7 +177,7 @@ func (es *eventStore) ChangeState(ctx context.Context, token, id string, state b
 		state:   state,
 	}
 
-	return es.publish(ctx, ev)
+	return es.Publish(ctx, ev)
 }
 
 func (es *eventStore) RemoveConfigHandler(ctx context.Context, id string) error {
@@ -190,7 +190,7 @@ func (es *eventStore) RemoveConfigHandler(ctx context.Context, id string) error 
 		operation: configHandlerRemove,
 	}
 
-	return es.publish(ctx, ev)
+	return es.Publish(ctx, ev)
 }
 
 func (es *eventStore) RemoveChannelHandler(ctx context.Context, id string) error {
@@ -203,7 +203,7 @@ func (es *eventStore) RemoveChannelHandler(ctx context.Context, id string) error
 		operation: channelHandlerRemove,
 	}
 
-	return es.publish(ctx, ev)
+	return es.Publish(ctx, ev)
 }
 
 func (es *eventStore) UpdateChannelHandler(ctx context.Context, channel bootstrap.Channel) error {
@@ -215,7 +215,7 @@ func (es *eventStore) UpdateChannelHandler(ctx context.Context, channel bootstra
 		channel,
 	}
 
-	return es.publish(ctx, ev)
+	return es.Publish(ctx, ev)
 }
 
 func (es *eventStore) DisconnectThingHandler(ctx context.Context, channelID, thingID string) error {
@@ -228,53 +228,5 @@ func (es *eventStore) DisconnectThingHandler(ctx context.Context, channelID, thi
 		thingID,
 	}
 
-	return es.publish(ctx, ev)
-}
-
-func (es *eventStore) checkRedisConnection(ctx context.Context) error {
-	// A timeout is used to avoid blocking the main thread
-	ctx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
-	defer cancel()
-
-	return es.client.Ping(ctx).Err()
-}
-
-func (es *eventStore) publish(ctx context.Context, ev event) error {
-	values, err := ev.encode()
-	if err != nil {
-		return err
-	}
-
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-
-	if err := es.checkRedisConnection(ctx); err != nil {
-		es.unpublishedEvents = append(es.unpublishedEvents, record)
-		return nil
-	}
-
-	return es.client.XAdd(ctx, record).Err()
-}
-
-func (es *eventStore) startPublishingRoutine(ctx context.Context) {
-	ticker := time.NewTicker(checkUnpublishedEventsInterval)
-	for {
-		select {
-		case <-ticker.C:
-			if err := es.checkRedisConnection(ctx); err == nil {
-				es.mu.Lock()
-				for i := len(es.unpublishedEvents) - 1; i >= 0; i-- {
-					if err := es.client.XAdd(ctx, es.unpublishedEvents[i]).Err(); err == nil {
-						es.unpublishedEvents = append(es.unpublishedEvents[:i], es.unpublishedEvents[i+1:]...)
-					}
-				}
-				es.mu.Unlock()
-			}
-		case <-ctx.Done():
-			return
-		}
-	}
+	return es.Publish(ctx, ev)
 }

@@ -5,10 +5,10 @@ package redis
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	mfredis "github.com/mainflux/mainflux/internal/clients/redis"
 	mfgroups "github.com/mainflux/mainflux/pkg/groups"
 	"github.com/mainflux/mainflux/things/groups"
 )
@@ -22,21 +22,21 @@ const (
 var _ groups.Service = (*eventStore)(nil)
 
 type eventStore struct {
-	svc               groups.Service
-	client            *redis.Client
-	unpublishedEvents []*redis.XAddArgs
-	mu                sync.Mutex
+	mfredis.Publisher
+	svc    groups.Service
+	client *redis.Client
 }
 
 // NewEventStoreMiddleware returns wrapper around things service that sends
 // events to event store.
 func NewEventStoreMiddleware(ctx context.Context, svc groups.Service, client *redis.Client) groups.Service {
 	es := &eventStore{
-		svc:    svc,
-		client: client,
+		svc:       svc,
+		client:    client,
+		Publisher: mfredis.NewEventStore(client, streamID, streamLen),
 	}
 
-	go es.startPublishingRoutine(ctx)
+	go es.StartPublishingRoutine(ctx)
 
 	return es
 }
@@ -51,7 +51,7 @@ func (es *eventStore) CreateGroups(ctx context.Context, token string, groups ...
 		event := createGroupEvent{
 			group,
 		}
-		if err := es.publish(ctx, event); err != nil {
+		if err := es.Publish(ctx, event); err != nil {
 			return gs, err
 		}
 	}
@@ -67,7 +67,7 @@ func (es *eventStore) UpdateGroup(ctx context.Context, token string, group mfgro
 	event := updateGroupEvent{
 		group,
 	}
-	if err := es.publish(ctx, event); err != nil {
+	if err := es.Publish(ctx, event); err != nil {
 		return group, err
 	}
 
@@ -82,7 +82,7 @@ func (es *eventStore) ViewGroup(ctx context.Context, token, id string) (mfgroups
 	event := viewGroupEvent{
 		group,
 	}
-	if err := es.publish(ctx, event); err != nil {
+	if err := es.Publish(ctx, event); err != nil {
 		return group, err
 	}
 
@@ -97,7 +97,7 @@ func (es *eventStore) ListGroups(ctx context.Context, token string, pm mfgroups.
 	event := listGroupEvent{
 		pm,
 	}
-	if err := es.publish(ctx, event); err != nil {
+	if err := es.Publish(ctx, event); err != nil {
 		return gp, err
 	}
 
@@ -112,7 +112,7 @@ func (es *eventStore) ListMemberships(ctx context.Context, token, clientID strin
 	event := listGroupMembershipEvent{
 		pm, clientID,
 	}
-	if err := es.publish(ctx, event); err != nil {
+	if err := es.Publish(ctx, event); err != nil {
 		return mp, err
 	}
 
@@ -144,56 +144,9 @@ func (es *eventStore) delete(ctx context.Context, group mfgroups.Group) (mfgroup
 		updatedBy: group.UpdatedBy,
 		status:    group.Status.String(),
 	}
-	if err := es.publish(ctx, event); err != nil {
+	if err := es.Publish(ctx, event); err != nil {
 		return group, err
 	}
 
 	return group, nil
-}
-
-func (es *eventStore) checkRedisConnection(ctx context.Context) error {
-	// A timeout is used to avoid blocking the main thread
-	ctx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
-	defer cancel()
-
-	return es.client.Ping(ctx).Err()
-}
-
-func (es *eventStore) publish(ctx context.Context, event event) error {
-	values, err := event.Encode()
-	if err != nil {
-		return err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-
-	if err := es.checkRedisConnection(ctx); err != nil {
-		es.unpublishedEvents = append(es.unpublishedEvents, record)
-		return nil
-	}
-
-	return es.client.XAdd(ctx, record).Err()
-}
-
-func (es *eventStore) startPublishingRoutine(ctx context.Context) {
-	ticker := time.NewTicker(checkUnpublishedEventsInterval)
-	for {
-		select {
-		case <-ticker.C:
-			if err := es.checkRedisConnection(ctx); err == nil {
-				es.mu.Lock()
-				for i := len(es.unpublishedEvents) - 1; i >= 0; i-- {
-					if err := es.client.XAdd(ctx, es.unpublishedEvents[i]).Err(); err == nil {
-						es.unpublishedEvents = append(es.unpublishedEvents[:i], es.unpublishedEvents[i+1:]...)
-					}
-				}
-				es.mu.Unlock()
-			}
-		case <-ctx.Done():
-			return
-		}
-	}
 }
