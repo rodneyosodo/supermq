@@ -20,7 +20,7 @@ services:
     container_name: mainflux-influxdb-reader
     restart: on-failure
     environment:
-      MF_INFLUX_READER_LOG_LEVEL: debug
+      MF_INFLUX_READER_LOG_LEVEL: ${MF_INFLUX_READER_LOG_LEVEL}
       MF_INFLUX_READER_HTTP_HOST: ${MF_INFLUX_READER_HTTP_HOST}
       MF_INFLUX_READER_HTTP_PORT: ${MF_INFLUX_READER_HTTP_PORT}
       MF_INFLUX_READER_HTTP_SERVER_CERT: ${MF_INFLUX_READER_HTTP_SERVER_CERT}

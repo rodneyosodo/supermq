@@ -42,6 +42,7 @@ import (
 const (
 	svcName        = "bootstrap"
 	envPrefix      = "MF_BOOTSTRAP_"
+	envPrefixDB    = "MF_BOOTSTRAP_DB_"
 	envPrefixES    = "MF_BOOTSTRAP_ES_"
 	envPrefixHttp  = "MF_BOOTSTRAP_HTTP_"
 	defDB          = "bootstrap"
@@ -82,7 +83,7 @@ func main() {
 
 	// Create new postgres client
 	dbConfig := pgClient.Config{Name: defDB}
-	db, err := pgClient.SetupWithConfig(envPrefix, *bootstrapPg.Migration(), dbConfig)
+	db, err := pgClient.SetupWithConfig(envPrefixDB, *bootstrapPg.Migration(), dbConfig)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

@@ -37,6 +37,7 @@ import (
 const (
 	svcName        = "certs"
 	envPrefix      = "MF_CERTS_"
+	envPrefixDB    = "MF_CERTS_DB_"
 	envPrefixHttp  = "MF_CERTS_HTTP_"
 	defDB          = "certs"
 	defSvcHttpPort = "9019"
@@ -93,7 +94,7 @@ func main() {
 	}
 
 	dbConfig := pgClient.Config{Name: defDB}
-	db, err := pgClient.SetupWithConfig(envPrefix, *certsPg.Migration(), dbConfig)
+	db, err := pgClient.SetupWithConfig(envPrefixDB, *certsPg.Migration(), dbConfig)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

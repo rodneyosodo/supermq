@@ -37,8 +37,8 @@ const (
 )
 
 type config struct {
-	LogLevel      string `env:"MF_MONGO_READER_LOG_LEVEL"   envDefault:"info"`
-	SendTelemetry bool   `env:"MF_SEND_TELEMETRY"           envDefault:"true"`
+	LogLevel      string `env:"MF_MONGO_READER_LOG_LEVEL"     envDefault:"info"`
+	SendTelemetry bool   `env:"MF_SEND_TELEMETRY"             envDefault:"true"`
 	InstanceID    string `env:"MF_MONGO_READER_INSTANCE_ID"   envDefault:""`
 }
 

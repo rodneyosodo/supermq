@@ -43,7 +43,7 @@ const (
 	svcName        = "twins"
 	queue          = "twins"
 	envPrefix      = "MF_TWINS_"
-	envPrefixDB    = "MF_TWINS_MONGO_"
+	envPrefixDB    = "MF_TWINS_DB_"
 	envPrefixHttp  = "MF_TWINS_HTTP_"
 	envPrefixCache = "MF_TWINS_CACHE_"
 	envPrefixES    = "MF_TWINS_ES_"

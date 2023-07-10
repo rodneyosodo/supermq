@@ -33,7 +33,6 @@ const (
 	svcName        = "coap_adapter"
 	envPrefix      = "MF_COAP_ADAPTER_"
 	envPrefixHttp  = "MF_COAP_ADAPTER_HTTP_"
-	envPrefixCoap  = "MF_COAP_ADAPTER_COAP_"
 	defSvcHttpPort = "5683"
 	defSvcCoapPort = "5683"
 )
