@@ -1031,15 +1031,15 @@ func TestDisconnectThing(t *testing.T) {
 	repoCall := pRepo.On("Delete", mock.Anything, mock.Anything).Return(nil)
 	err := mfsdk.DisconnectThing(pr.Subject, pr.Object, adminToken)
 	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	// ok := repoCall.Parent.AssertCalled(t, "Delete", mock.Anything, mock.Anything)
-	// assert.True(t, ok, "Delete was not called on valid policy")
+	ok := repoCall.Parent.AssertCalled(t, "Delete", mock.Anything, mock.Anything)
+	assert.True(t, ok, "Delete was not called on valid policy")
 	repoCall.Unset()
 
 	repoCall = pRepo.On("Delete", mock.Anything, mock.Anything).Return(sdk.ErrFailedRemoval)
 	err = mfsdk.DisconnectThing(pr.Subject, pr.Object, invalidToken)
 	assert.Equal(t, err, errors.NewSDKErrorWithStatus(errors.ErrAuthorization, http.StatusUnauthorized), fmt.Sprintf("expected %s got %s", pr, err))
-	// ok = repoCall.Parent.AssertCalled(t, "Delete", mock.Anything, mock.Anything)
-	// assert.True(t, ok, "Delete was not called on invalid policy")
+	ok = repoCall.Parent.AssertCalled(t, "Delete", mock.Anything, mock.Anything)
+	assert.True(t, ok, "Delete was not called on invalid policy")
 	repoCall.Unset()
 }
 
