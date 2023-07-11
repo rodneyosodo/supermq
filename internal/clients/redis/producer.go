@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	checkUnpublishedEventsInterval = 1 * time.Minute
-	checkRedisConnectionInterval   = 100 * time.Millisecond
+	checkUnpublishedEventsInterval        = 1 * time.Minute
+	checkRedisConnectionInterval          = 100 * time.Millisecond
+	maxNumberOfUnpublishedEvents   uint64 = 1e6
 )
 
 // Event represents redis event.
@@ -34,7 +35,7 @@ type Publisher interface {
 
 type eventStore struct {
 	client            *redis.Client
-	unpublishedEvents []*redis.XAddArgs
+	unpublishedEvents chan *redis.XAddArgs
 	streamID          string
 	streamLen         int64
 	mu                sync.Mutex
@@ -42,9 +43,10 @@ type eventStore struct {
 
 func NewEventStore(client *redis.Client, streamID string, streamLen int64) Publisher {
 	return &eventStore{
-		client:    client,
-		streamID:  streamID,
-		streamLen: streamLen,
+		client:            client,
+		unpublishedEvents: make(chan *redis.XAddArgs, maxNumberOfUnpublishedEvents),
+		streamID:          streamID,
+		streamLen:         streamLen,
 	}
 }
 
@@ -60,7 +62,10 @@ func (es *eventStore) Publish(ctx context.Context, event Event) error {
 	}
 
 	if err := es.checkRedisConnection(ctx); err != nil {
-		es.unpublishedEvents = append(es.unpublishedEvents, record)
+		es.mu.Lock()
+		defer es.mu.Unlock()
+
+		es.unpublishedEvents <- record
 		return nil
 	}
 
@@ -77,8 +82,9 @@ func (es *eventStore) StartPublishingRoutine(ctx context.Context) {
 			if err := es.checkRedisConnection(ctx); err == nil {
 				es.mu.Lock()
 				for i := len(es.unpublishedEvents) - 1; i >= 0; i-- {
-					if err := es.client.XAdd(ctx, es.unpublishedEvents[i]).Err(); err == nil {
-						es.unpublishedEvents = append(es.unpublishedEvents[:i], es.unpublishedEvents[i+1:]...)
+					record := <-es.unpublishedEvents
+					if err := es.client.XAdd(ctx, record).Err(); err == nil {
+						continue
 					}
 				}
 				es.mu.Unlock()
