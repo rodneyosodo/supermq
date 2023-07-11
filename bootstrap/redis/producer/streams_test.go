@@ -239,13 +239,14 @@ func TestUpdate(t *testing.T) {
 			event: map[string]interface{}{
 				"name":        modified.Name,
 				"content":     modified.Content,
-				"timestamp":   time.Now().Unix(),
+				"timestamp":   time.Now().UnixNano(),
 				"operation":   configUpdate,
 				"channels":    "[1, 2]",
 				"external_id": "external_id",
 				"thing_id":    "1",
-				"owner":       email,
-				"state":       "0",
+				"owner":          email,
+				"state":          "0",
+				"occurred_at":    time.Now().UnixNano(),
 			},
 		},
 		{
@@ -568,16 +569,25 @@ func test(t *testing.T, expected, actual map[string]interface{}, description str
 	if expected != nil && actual != nil {
 		ts1 := expected["timestamp"].(int64)
 		ats := actual["timestamp"].(string)
-
 		ts2, err := strconv.ParseInt(strings.Split(ats, "-")[0], 10, 64)
 		require.Nil(t, err, fmt.Sprintf("%s: expected to get a valid timestamp, got %s", description, err))
-		ts2 = time.UnixMilli(ts2).Unix()
+		ts1 = ts1 / 1e9
+		ts2 = ts2 / 1e3
+		if assert.WithinDuration(t, time.Unix(ts1, 0), time.Unix(ts2, 0), time.Second, fmt.Sprintf("%s: timestamp is not in valid range of 1 second", description)) {
+			delete(expected, "timestamp")
+			delete(actual, "timestamp")
+		}
 
-		val := ts1 == ts2 || ts2 <= ts1+defaultTimout
-		assert.True(t, val, fmt.Sprintf("%s: timestamp is not in valid range", description))
-
-		delete(expected, "timestamp")
-		delete(actual, "timestamp")
+		oa1 := expected["occurred_at"].(int64)
+		aoa := actual["occurred_at"].(string)
+		oa2, err := strconv.ParseInt(aoa, 10, 64)
+		require.Nil(t, err, fmt.Sprintf("%s: expected to get a valid occurred_at, got %s", description, err))
+		oa1 = oa1 / 1e9
+		oa2 = oa2 / 1e9
+		if assert.WithinDuration(t, time.Unix(oa1, 0), time.Unix(oa2, 0), time.Second, fmt.Sprintf("%s: occurred_at is not in valid range of 1 second", description)) {
+			delete(expected, "occurred_at")
+			delete(actual, "occurred_at")
+		}
 
 		ech := expected["channels"]
 		ach := actual["channels"]
