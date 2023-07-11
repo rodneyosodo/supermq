@@ -99,7 +99,7 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 		return mfclients.ClientsPage{}, err
 	}
 
-	err = svc.checkAdmin(ctx, userID, thingsObjectKey, listRelationKey)
+	
 	switch {
 	// If the user is admin, fetch all things from database.
 	case err == nil:
