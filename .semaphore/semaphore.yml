@@ -553,7 +553,7 @@ blocks:
 
   - name: Lint and Test OPC-UA
     run:
-      when: "change_in('/opcua', 'cmd/opcua', {pipeline_file: 'ignore'})"
+      when: "change_in(['/opcua', 'cmd/opcua'], {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -576,7 +576,7 @@ blocks:
     dependencies:
       - Lint and Test OPC-UA
     run:
-      when: "change_in('/opcua', 'cmd/opcua', {pipeline_file: 'ignore'})"
+      when: "change_in(['/opcua', 'cmd/opcua'], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build OPC-UA
@@ -693,5 +693,4 @@ blocks:
       jobs:
         - name: Compile For RabbitMQ
           commands:
-            - make proto
             - MF_BROKER_TYPE=rabbitmq make mqtt
