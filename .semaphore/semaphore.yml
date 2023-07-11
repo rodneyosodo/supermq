@@ -214,7 +214,7 @@ blocks:
     dependencies:
       - Lint and Test HTTP
     run:
-      when: "change_in([/http', 'cmd/http], {pipeline_file: 'ignore'})"
+      when: "change_in(['http', 'cmd/http], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build HTTP
@@ -354,7 +354,7 @@ blocks:
       - Setup
       - Check Generated Protocol Buffer Files
     run:
-      when: "change_in(['provision', 'cmd/provision'], {pipeline_file: 'ignore'}) || change_in('/provision, {pipeline_file: 'ignore'})"
+      when: "change_in(['provision', 'cmd/provision'], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Lint Provision
@@ -374,7 +374,7 @@ blocks:
     dependencies:
       - Lint and Test Provision
     run:
-      when: "change_in(['provision', 'cmd/provision'], {pipeline_file: 'ignore'}) || change_in('/provision, {pipeline_file: 'ignore'})"
+      when: "change_in(['provision', 'cmd/provision'], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Provision
@@ -383,7 +383,7 @@ blocks:
 
   - name: Lint and Test Twins
     run:
-      when: "change_in(['twins', 'cmd/twins'], {pipeline_file: 'ignore'}) || change_in('/twins, {pipeline_file: 'ignore'})"
+      when: "change_in(['twins', 'cmd/twins'], {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -406,7 +406,7 @@ blocks:
     dependencies:
       - Lint and Test Twins
     run:
-      when: "change_in(['twins', 'cmd/twins'], {pipeline_file: 'ignore'}) || change_in('/twins, {pipeline_file: 'ignore'})"
+      when: "change_in(['twins', 'cmd/twins'], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Twins
@@ -489,7 +489,7 @@ blocks:
 
   - name: Lint and Test CLI
     run:
-      when: "change_in(['cli', 'cmd/cli'], {pipeline_file: 'ignore'}) || change_in('/cli, {pipeline_file: 'ignore'})"
+      when: "change_in(['cli', 'cmd/cli'], {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -512,7 +512,7 @@ blocks:
     dependencies:
       - Lint and Test CLI
     run:
-      when: "change_in(['cli', 'cmd/cli'], {pipeline_file: 'ignore'}) || change_in('/cli, {pipeline_file: 'ignore'})"
+      when: "change_in(['cli', 'cmd/cli'], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build CLI
@@ -521,7 +521,7 @@ blocks:
 
   - name: Lint and Test LoRa
     run:
-      when: "change_in(['lora', 'cmd/lora'], {pipeline_file: 'ignore'}) || change_in('/lora, {pipeline_file: 'ignore'})"
+      when: "change_in(['lora', 'cmd/lora'], {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -544,7 +544,7 @@ blocks:
     dependencies:
       - Lint and Test LoRa
     run:
-      when: "change_in(['lora', 'cmd/lora'], {pipeline_file: 'ignore'}) || change_in('/lora, {pipeline_file: 'ignore'})"
+      when: "change_in(['lora', 'cmd/lora'], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build LoRa
