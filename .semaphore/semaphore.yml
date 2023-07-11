@@ -159,7 +159,7 @@ blocks:
 
   - name: Lint and Test CoAP
     run:
-      when: "change_in('coap', {pipeline_file: 'ignore'})"
+      when: "change_in(['coap', 'cmd/coap'], {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -214,7 +214,7 @@ blocks:
     dependencies:
       - Lint and Test HTTP
     run:
-      when: "change_in(['http', 'cmd/http], {pipeline_file: 'ignore'})"
+      when: "change_in(['http', 'cmd/http'], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build HTTP
