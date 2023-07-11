@@ -32,7 +32,7 @@ blocks:
   - name: Check Generated Protocol Buffer Files
     dependencies: []
     run:
-      when: "change_in('['things/policies/auth.proto', '/users/policies/auth.proto', 'pkg/messaging/message.proto']', {pipeline_file: 'ignore'})"
+      when: "change_in('['things/policies/auth.proto', 'users/policies/auth.proto', 'pkg/messaging/message.proto']', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Check Generated Protocol Buffer Files
@@ -118,7 +118,7 @@ blocks:
     dependencies:
       - Lint and Test Users
     run:
-      when: "change_in('['users', 'cmd/users']', {pipeline_file: 'ignore'})"
+      when: "change_in(['users', 'cmd/users'], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Users
