@@ -12,6 +12,7 @@ global_job_config:
     commands:
       - checkout
       - sem-version go 1.20
+
 blocks:
   - name: Setup
     dependencies: []
@@ -19,21 +20,22 @@ blocks:
       jobs:
         - name: Setup Codecov
           commands:
-            - 'curl -Os https://uploader.codecov.io/latest/linux/codecov'
+            - curl -Os https://uploader.codecov.io/latest/linux/codecov
             - chmod +x codecov
             - ./codecov
             - cache store codecov ./codecov
         - name: Setup Golangci-lint
           commands:
-            - 'curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.53.3'
+            - "curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.53.3"
             - cache store linter ./bin/golangci-lint
+
   - name: Check Generated Protocol Buffer Files
     dependencies: []
     run:
-      when: 'change_in([''/things/policies/auth.proto'', ''/users/policies/auth.proto'', ''pkg/messaging/message.proto''], {pipeline_file: ''ignore''})'
+      when: "change_in(['/things/policies/auth.proto', '/users/policies/auth.proto', 'pkg/messaging/message.proto'], {pipeline_file: 'ignore'})"
     task:
       jobs:
-        - commands:
+          commands:
             - |
               setup_protoc() {
                 PROTOC_VERSION=23.3
@@ -90,9 +92,10 @@ blocks:
               }
             - check_files
           name: Check Generated Protocol Buffer Files
+
   - name: Lint and Test Users
     run:
-      when: 'change_in(''/users'', {pipeline_file: ''ignore''}) || change_in(''/cmd/users'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/users', '/cmd/users'], {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -102,7 +105,7 @@ blocks:
           commands:
             - cd users
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test Users
           commands:
             - cd users
@@ -110,21 +113,21 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Build Users
     dependencies:
       - Lint and Test Users
     run:
-      when: 'change_in(''/users'', {pipeline_file: ''ignore''}) || change_in(''/cmd/users'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/users', '/cmd/users'], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Users
-          commands: []
-        - commands:
+          commands:
             - make users
-          name: Nameless 2
+
   - name: Lint and Test Things
     run:
-      when: 'change_in(''/things'', {pipeline_file: ''ignore''}) || change_in(''/cmd/things'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/things', '/cmd/things'], {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -134,7 +137,7 @@ blocks:
           commands:
             - cd things
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test Things
           commands:
             - cd things
@@ -142,21 +145,21 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Build Things
     dependencies:
       - Lint and Test Things
     run:
-      when: 'change_in(''/things'', {pipeline_file: ''ignore''}) || change_in(''/cmd/things'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/things', '/cmd/things'], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Things
-          commands: []
-        - commands:
+          commands:
             - make things
-          name: Nameless 2
+
   - name: Lint and Test CoAP
     run:
-      when: 'change_in(''/coap'', {pipeline_file: ''ignore''}) || change_in(''/cmd/coap'', {pipeline_file: ''ignore''})'
+      when: "change_in('/coap', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -166,7 +169,7 @@ blocks:
           commands:
             - cd coap
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test CoAP
           commands:
             - cd coap
@@ -174,21 +177,21 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Build CoAP
     dependencies:
       - Lint and Test CoAP
     run:
-      when: 'change_in(''/coap'', {pipeline_file: ''ignore''}) || change_in(''/cmd/coap'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/coap', '/cmd/coap'], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build CoAP
-          commands: []
-        - commands:
+          commands:
             - make coap
-          name: Nameless 2
+
   - name: Lint and Test HTTP
     run:
-      when: 'change_in(''/http'', {pipeline_file: ''ignore''}) || change_in(''/cmd/http'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/http', '/cmd/http'], {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -198,7 +201,7 @@ blocks:
           commands:
             - cd http
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test HTTP
           commands:
             - cd http
@@ -206,21 +209,21 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Build HTTP
     dependencies:
       - Lint and Test HTTP
     run:
-      when: 'change_in(''/http'', {pipeline_file: ''ignore''}) || change_in(''/cmd/http'', {pipeline_file: ''ignore''})'
+      when: "change_in('[/http', '/cmd/http]', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build HTTP
-          commands: []
-        - commands:
+          commands:
             - make http
-          name: Nameless 2
+
   - name: Lint and Test MQTT
     run:
-      when: 'change_in(''/mqtt'', {pipeline_file: ''ignore''}) || change_in(''/cmd/mqtt'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/mqtt', '/cmd/mqtt'], {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -230,7 +233,7 @@ blocks:
           commands:
             - cd mqtt
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test MQTT
           commands:
             - cd mqtt
@@ -238,21 +241,21 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Build MQTT
     dependencies:
       - Lint and Test MQTT
     run:
-      when: 'change_in(''/mqtt'', {pipeline_file: ''ignore''}) || change_in(''/cmd/mqtt'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/mqtt', '/cmd/mqtt'], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build MQTT
-          commands: []
-        - commands:
+          commands:
             - make mqtt
-          name: Nameless 2
+
   - name: Lint and Test WS
     run:
-      when: 'change_in(''/ws'', {pipeline_file: ''ignore''}) || change_in(''/cmd/ws'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/ws', '/cmd/ws'], {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -262,7 +265,7 @@ blocks:
           commands:
             - cd ws
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test WS
           commands:
             - cd ws
@@ -270,21 +273,21 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Build WS
     dependencies:
       - Lint and Test WS
     run:
-      when: 'change_in(''/ws'', {pipeline_file: ''ignore''}) || change_in(''/cmd/ws'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/ws', '/cmd/ws'], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build WS
-          commands: []
-        - commands:
+          commands:
             - make ws
-          name: Nameless 2
+
   - name: Lint and Test Bootstrap
     run:
-      when: 'change_in(''/bootstrap'', {pipeline_file: ''ignore''}) || change_in(''/cmd/bootstrap'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/bootstrap', '/cmd/bootstrap'], {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -294,7 +297,7 @@ blocks:
           commands:
             - cd bootstrap
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test Bootstrap
           commands:
             - cd bootstrap
@@ -302,21 +305,21 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Build Bootstrap
     dependencies:
       - Lint and Test Bootstrap
     run:
-      when: 'change_in(''/bootstrap'', {pipeline_file: ''ignore''}) || change_in(''/cmd/bootstrap'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/bootstrap', '/cmd/bootstrap'], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Bootstrap
-          commands: []
-        - commands:
+          commands:
             - make bootstrap
-          name: Nameless 2
+
   - name: Lint and Test Certs
     run:
-      when: 'change_in(''/certs'', {pipeline_file: ''ignore''}) || change_in(''/cmd/certs'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/certs', '/cmd/certs'], {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -326,7 +329,7 @@ blocks:
           commands:
             - cd certs
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test Certs
           commands:
             - cd certs
@@ -334,31 +337,31 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Build Certs
     dependencies:
       - Lint and Test Certs
     run:
-      when: 'change_in(''/certs'', {pipeline_file: ''ignore''}) || change_in(''/cmd/certs'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/certs', '/cmd/certs'], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Certs
-          commands: []
-        - commands:
+          commands:
             - make certs
-          name: Nameless 2
+
   - name: Lint and Test Provision
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
     run:
-      when: 'change_in(''/provision'', {pipeline_file: ''ignore''}) || change_in(''/cmd/provision'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/provision', '/cmd/provision'], {pipeline_file: 'ignore'}) || change_in('/provision', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Lint Provision
           commands:
             - cd provision
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test Provision
           commands:
             - cd provision
@@ -366,21 +369,21 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Build Provision
     dependencies:
       - Lint and Test Provision
     run:
-      when: 'change_in(''/provision'', {pipeline_file: ''ignore''}) || change_in(''/cmd/provision'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/provision', '/cmd/provision'], {pipeline_file: 'ignore'}) || change_in('/provision', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Provision
-          commands: []
-        - commands:
+          commands:
             - make provision
-          name: Nameless 2
+
   - name: Lint and Test Twins
     run:
-      when: 'change_in(''/twins'', {pipeline_file: ''ignore''}) || change_in(''/cmd/twins'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/twins', '/cmd/twins'], {pipeline_file: 'ignore'}) || change_in('/twins', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -390,7 +393,7 @@ blocks:
           commands:
             - cd twins
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test Twins
           commands:
             - cd twins
@@ -398,21 +401,21 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Build Twins
     dependencies:
       - Lint and Test Twins
     run:
-      when: 'change_in(''/twins'', {pipeline_file: ''ignore''}) || change_in(''/cmd/twins'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/twins', '/cmd/twins'], {pipeline_file: 'ignore'}) || change_in('/twins', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Twins
-          commands: []
-        - commands:
+          commands:
             - make twins
-          name: Nameless 2
+
   - name: Lint and Test Readers
     run:
-      when: 'change_in(''/readers'', {pipeline_file: ''ignore''}) || change_in(''/cmd/cassandra-reader'', {pipeline_file: ''ignore''}) || change_in(''/cmd/influxdb-reader'', {pipeline_file: ''ignore''}) || change_in(''/cmd/mongodb-reader'', {pipeline_file: ''ignore''}) || change_in(''/cmd/postgres-reader'', {pipeline_file: ''ignore''}) || change_in(''/cmd/timescale-reader'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/readers', '/cmd/cassandra-reader', '/cmd/influxdb-reader', '/cmd/mongodb-reader', '/cmd/postgres-reader', '/cmd/timescale-reader'], {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -422,7 +425,7 @@ blocks:
           commands:
             - cd readers
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test Twins
           commands:
             - cd readers
@@ -430,27 +433,25 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Build Readers
     dependencies:
       - Lint and Test Readers
     run:
-      when: 'change_in(''/readers'', {pipeline_file: ''ignore''}) || change_in(''/cmd/cassandra-reader'', {pipeline_file: ''ignore''}) || change_in(''/cmd/influxdb-reader'', {pipeline_file: ''ignore''}) || change_in(''/cmd/mongodb-reader'', {pipeline_file: ''ignore''}) || change_in(''/cmd/postgres-reader'', {pipeline_file: ''ignore''}) || change_in(''/cmd/timescale-reader'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/readers', '/cmd/cassandra-reader', '/cmd/influxdb-reader', '/cmd/mongodb-reader', '/cmd/postgres-reader', '/cmd/timescale-reader'], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Readers
-          commands: []
-        - commands:
+          commands:
             - make cassandra-reader
             - make influxdb-reader
             - make mongodb-reader
             - make postgres-reader
             - make timescale-reader
-          name: Nameless 2
+
   - name: Lint and Test Consumers
     run:
-      when: >-
-        change_in('/consumers', {pipeline_file: 'ignore'}) || change_in('/cmd/cassandra-reader', {pipeline_file: 'ignore'}) || change_in('/cmd/influxdb-reader', {pipeline_file: 'ignore'}) || change_in('/cmd/mongodb-reader', {pipeline_file: 'ignore'}) || change_in('/cmd/postgres-reader', {pipeline_file: 'ignore'}) || change_in('/cmd/timescale-reader', {pipeline_file: 'ignore'}) || change_in('/cmd/smpp-notifier', {pipeline_file: 'ignore'}) || change_in('/cmd/smtp-notifier', {pipeline_file:
-        'ignore'})
+      when: "change_in(['/consumers', '/cmd/cassandra-writer', '/cmd/influxdb-writer', '/cmd/mongodb-writer', '/cmd/postgres-writer', '/cmd/timescale-writer', '/cmd/smpp-notifier', '/cmd/smtp-notifier'], {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -460,7 +461,7 @@ blocks:
           commands:
             - cd consumers
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test Consumers
           commands:
             - cd consumers
@@ -468,18 +469,16 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Build Consumers
     dependencies:
       - Lint and Test Consumers
     run:
-      when: >-
-        change_in('/consumers', {pipeline_file: 'ignore'}) || change_in('/cmd/cassandra-reader', {pipeline_file: 'ignore'}) || change_in('/cmd/influxdb-reader', {pipeline_file: 'ignore'}) || change_in('/cmd/mongodb-reader', {pipeline_file: 'ignore'}) || change_in('/cmd/postgres-reader', {pipeline_file: 'ignore'}) || change_in('/cmd/timescale-reader', {pipeline_file: 'ignore'}) || change_in('/cmd/smpp-notifier', {pipeline_file: 'ignore'}) || change_in('/cmd/smtp-notifier', {pipeline_file:
-        'ignore'})
+      when: "change_in(['/consumers', '/cmd/cassandra-writer', '/cmd/influxdb-writer', '/cmd/mongodb-writer', '/cmd/postgres-writer', '/cmd/timescale-writer', '/cmd/smpp-notifier', '/cmd/smtp-notifier'], {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Consumers
-          commands: []
-        - commands:
+          commands:
             - make cassandra-writer
             - make influxdb-writer
             - make mongodb-writer
@@ -487,10 +486,10 @@ blocks:
             - make timescale-writer
             - make smpp-notifier
             - make smtp-notifier
-          name: Nameless 2
+
   - name: Lint and Test CLI
     run:
-      when: 'change_in(''/cli'', {pipeline_file: ''ignore''}) || change_in(''/cmd/cli'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/cli', '/cmd/cli'], {pipeline_file: 'ignore'}) || change_in('/cli', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -500,7 +499,7 @@ blocks:
           commands:
             - cd cli
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test CLI
           commands:
             - cd cli
@@ -508,21 +507,21 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Build CLI
     dependencies:
       - Lint and Test CLI
     run:
-      when: 'change_in(''/cli'', {pipeline_file: ''ignore''}) || change_in(''/cmd/cli'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/cli', '/cmd/cli'], {pipeline_file: 'ignore'}) || change_in('/cli', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build CLI
-          commands: []
-        - commands:
+          commands:
             - make cli
-          name: Nameless 2
+
   - name: Lint and Test LoRa
     run:
-      when: 'change_in(''/lora'', {pipeline_file: ''ignore''}) || change_in(''/cmd/lora'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/lora', '/cmd/lora'], {pipeline_file: 'ignore'}) || change_in('/lora', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -532,7 +531,7 @@ blocks:
           commands:
             - cd lora
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test LoRa
           commands:
             - cd lora
@@ -540,21 +539,21 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Build LoRa
     dependencies:
       - Lint and Test LoRa
     run:
-      when: 'change_in(''/lora'', {pipeline_file: ''ignore''}) || change_in(''/cmd/lora'', {pipeline_file: ''ignore''})'
+      when: "change_in(['/lora', '/cmd/lora'], {pipeline_file: 'ignore'}) || change_in('/lora', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build LoRa
-          commands: []
-        - commands:
+          commands:
             - make lora
-          name: Nameless 2
+
   - name: Lint and Test OPC-UA
     run:
-      when: 'change_in(''/opcua'', {pipeline_file: ''ignore''}) || change_in(''/cmd/opcua'', {pipeline_file: ''ignore''})'
+      when: "change_in('/opcua', 'cmd/opcua', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -564,7 +563,7 @@ blocks:
           commands:
             - cd opcua
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test OPC-UA
           commands:
             - cd opcua
@@ -572,21 +571,21 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Build OPC-UA
     dependencies:
       - Lint and Test OPC-UA
     run:
-      when: 'change_in(''/opcua'', {pipeline_file: ''ignore''}) || change_in(''/cmd/opcua'', {pipeline_file: ''ignore''})'
+      when: "change_in('/opcua', 'cmd/opcua', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build OPC-UA
-          commands: []
-        - commands:
+          commands:
             - make opcua
-          name: Nameless 2
+
   - name: Lint and Test Internal
     run:
-      when: 'change_in(''/internal'', {pipeline_file: ''ignore''})'
+      when: "change_in('/internal', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -596,7 +595,7 @@ blocks:
           commands:
             - cd internal
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test Internal
           commands:
             - cd internal
@@ -604,9 +603,10 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Lint and Test Logger
     run:
-      when: 'change_in(''/logger'', {pipeline_file: ''ignore''})'
+      when: "change_in('/logger', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -616,7 +616,7 @@ blocks:
           commands:
             - cd logger
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test Logger
           commands:
             - cd logger
@@ -624,9 +624,10 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Lint and Test PKG
     run:
-      when: 'change_in(''/pkg'', {pipeline_file: ''ignore''})'
+      when: "change_in('/pkg', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -636,7 +637,7 @@ blocks:
           commands:
             - cd pkg
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test PKG
           commands:
             - cd pkg
@@ -644,9 +645,10 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Lint and Test Tools
     run:
-      when: 'change_in(''/tools'', {pipeline_file: ''ignore''})'
+      when: "change_in('/tools', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -656,7 +658,7 @@ blocks:
           commands:
             - cd tools
             - cache restore linter
-            - './bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m'
+            - "./bin/golangci-lint run --no-config --disable-all --enable gosimple,errcheck,govet,unused,goconst,godot --timeout 3m"
         - name: Test Tools
           commands:
             - cd tools
@@ -664,38 +666,32 @@ blocks:
             - go tool cover -html=coverage.out -o coverage.html
             - cache restore codecov
             - ./codecov
+
   - name: Test all
     dependencies:
       - Setup
     run:
-      when: branch = 'master'
+      when: "branch = 'master'"
     task:
       jobs:
         - name: Test all
-          commands: []
-        - commands:
+          commands:
             - make test
-          name: Nameless 2
         - name: Build all
-          commands: []
-        - commands:
+          commands:
             - make proto
             - make all
             - make -j$NPROC latest
-          name: Nameless 4
         - name: Push all
-          commands: []
-        - commands:
+          commands:
             - make push
-          name: Nameless 6
+
   - name: Compile Check For RabbitMQ
     dependencies:
       - Setup
     task:
       jobs:
         - name: Compile For RabbitMQ
-          commands: []
-        - commands:
+          commands:
             - make proto
             - MF_BROKER_TYPE=rabbitmq make mqtt
-          name: Nameless 2
