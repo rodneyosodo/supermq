@@ -113,7 +113,7 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 			pm.Owner = userID
 		}
 
-	case err != nil:
+	default:
 		// If the user is not admin, check 'sharedby' parameter from page metadata.
 		// If user provides 'sharedby' key, fetch things from policies. Otherwise,
 		// fetch things from the database based on thing's 'owner' field.
