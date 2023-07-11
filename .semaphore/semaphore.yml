@@ -95,7 +95,7 @@ blocks:
 
   - name: Lint and Test Users
     run:
-      when: "change_in('['users', '/cmd/users']', {pipeline_file: 'ignore'})"
+      when: "change_in('['users', 'cmd/users']', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -118,7 +118,7 @@ blocks:
     dependencies:
       - Lint and Test Users
     run:
-      when: "change_in('['users', '/cmd/users']', {pipeline_file: 'ignore'})"
+      when: "change_in('['users', 'cmd/users']', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Users
@@ -127,7 +127,7 @@ blocks:
 
   - name: Lint and Test Things
     run:
-      when: "change_in('['things', '/cmd/things']', {pipeline_file: 'ignore'})"
+      when: "change_in('['things', 'cmd/things']', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -150,7 +150,7 @@ blocks:
     dependencies:
       - Lint and Test Things
     run:
-      when: "change_in('['things', '/cmd/things']', {pipeline_file: 'ignore'})"
+      when: "change_in('['things', 'cmd/things']', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Things
@@ -159,7 +159,7 @@ blocks:
 
   - name: Lint and Test CoAP
     run:
-      when: "change_in('/coap', {pipeline_file: 'ignore'})"
+      when: "change_in('coap', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -182,7 +182,7 @@ blocks:
     dependencies:
       - Lint and Test CoAP
     run:
-      when: "change_in('['coap', '/cmd/coap']', {pipeline_file: 'ignore'})"
+      when: "change_in('['coap', 'cmd/coap']', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build CoAP
@@ -191,7 +191,7 @@ blocks:
 
   - name: Lint and Test HTTP
     run:
-      when: "change_in('['http', '/cmd/http']', {pipeline_file: 'ignore'})"
+      when: "change_in('['http', 'cmd/http']', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -214,7 +214,7 @@ blocks:
     dependencies:
       - Lint and Test HTTP
     run:
-      when: "change_in('[/http', '/cmd/http]', {pipeline_file: 'ignore'})"
+      when: "change_in('[/http', 'cmd/http]', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build HTTP
@@ -223,7 +223,7 @@ blocks:
 
   - name: Lint and Test MQTT
     run:
-      when: "change_in('['mqtt', '/cmd/mqtt']', {pipeline_file: 'ignore'})"
+      when: "change_in('['mqtt', 'cmd/mqtt']', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -246,7 +246,7 @@ blocks:
     dependencies:
       - Lint and Test MQTT
     run:
-      when: "change_in('['mqtt', '/cmd/mqtt']', {pipeline_file: 'ignore'})"
+      when: "change_in('['mqtt', 'cmd/mqtt']', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build MQTT
@@ -255,7 +255,7 @@ blocks:
 
   - name: Lint and Test WS
     run:
-      when: "change_in('['ws', '/cmd/ws']', {pipeline_file: 'ignore'})"
+      when: "change_in('['ws', 'cmd/ws']', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -278,7 +278,7 @@ blocks:
     dependencies:
       - Lint and Test WS
     run:
-      when: "change_in('['ws', '/cmd/ws']', {pipeline_file: 'ignore'})"
+      when: "change_in('['ws', 'cmd/ws']', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build WS
@@ -287,7 +287,7 @@ blocks:
 
   - name: Lint and Test Bootstrap
     run:
-      when: "change_in('['bootstrap', '/cmd/bootstrap']', {pipeline_file: 'ignore'})"
+      when: "change_in('['bootstrap', 'cmd/bootstrap']', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -310,7 +310,7 @@ blocks:
     dependencies:
       - Lint and Test Bootstrap
     run:
-      when: "change_in('['bootstrap', '/cmd/bootstrap']', {pipeline_file: 'ignore'})"
+      when: "change_in('['bootstrap', 'cmd/bootstrap']', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Bootstrap
@@ -319,7 +319,7 @@ blocks:
 
   - name: Lint and Test Certs
     run:
-      when: "change_in('['certs', '/cmd/certs']', {pipeline_file: 'ignore'})"
+      when: "change_in('['certs', 'cmd/certs']', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -342,7 +342,7 @@ blocks:
     dependencies:
       - Lint and Test Certs
     run:
-      when: "change_in('['certs', '/cmd/certs']', {pipeline_file: 'ignore'})"
+      when: "change_in('['certs', 'cmd/certs']', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Certs
@@ -354,7 +354,7 @@ blocks:
       - Setup
       - Check Generated Protocol Buffer Files
     run:
-      when: "change_in('['provision', '/cmd/provision'], {pipeline_file: 'ignore'}) || change_in('/provision', {pipeline_file: 'ignore'})"
+      when: "change_in('['provision', 'cmd/provision'], {pipeline_file: 'ignore'}) || change_in('/provision', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Lint Provision
@@ -374,7 +374,7 @@ blocks:
     dependencies:
       - Lint and Test Provision
     run:
-      when: "change_in('['provision', '/cmd/provision'], {pipeline_file: 'ignore'}) || change_in('/provision', {pipeline_file: 'ignore'})"
+      when: "change_in('['provision', 'cmd/provision'], {pipeline_file: 'ignore'}) || change_in('/provision', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Provision
@@ -383,7 +383,7 @@ blocks:
 
   - name: Lint and Test Twins
     run:
-      when: "change_in('['twins', '/cmd/twins'], {pipeline_file: 'ignore'}) || change_in('/twins', {pipeline_file: 'ignore'})"
+      when: "change_in('['twins', 'cmd/twins'], {pipeline_file: 'ignore'}) || change_in('/twins', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -406,7 +406,7 @@ blocks:
     dependencies:
       - Lint and Test Twins
     run:
-      when: "change_in('['twins', '/cmd/twins'], {pipeline_file: 'ignore'}) || change_in('/twins', {pipeline_file: 'ignore'})"
+      when: "change_in('['twins', 'cmd/twins'], {pipeline_file: 'ignore'}) || change_in('/twins', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Twins
@@ -415,7 +415,7 @@ blocks:
 
   - name: Lint and Test Readers
     run:
-      when: "change_in('['readers', '/cmd/cassandra-reader', '/cmd/influxdb-reader', '/cmd/mongodb-reader', '/cmd/postgres-reader', '/cmd/timescale-reader']', {pipeline_file: 'ignore'})"
+      when: "change_in('['readers', 'cmd/cassandra-reader', 'cmd/influxdb-reader', 'cmd/mongodb-reader', 'cmd/postgres-reader', 'cmd/timescale-reader']', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -438,7 +438,7 @@ blocks:
     dependencies:
       - Lint and Test Readers
     run:
-      when: "change_in('['readers', '/cmd/cassandra-reader', '/cmd/influxdb-reader', '/cmd/mongodb-reader', '/cmd/postgres-reader', '/cmd/timescale-reader']', {pipeline_file: 'ignore'})"
+      when: "change_in('['readers', 'cmd/cassandra-reader', 'cmd/influxdb-reader', 'cmd/mongodb-reader', 'cmd/postgres-reader', 'cmd/timescale-reader']', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Readers
@@ -451,7 +451,7 @@ blocks:
 
   - name: Lint and Test Consumers
     run:
-      when: "change_in('['consumers', '/cmd/cassandra-writer', '/cmd/influxdb-writer', '/cmd/mongodb-writer', '/cmd/postgres-writer', '/cmd/timescale-writer', '/cmd/smpp-notifier', '/cmd/smtp-notifier']', {pipeline_file: 'ignore'})"
+      when: "change_in('['consumers', 'cmd/cassandra-writer', 'cmd/influxdb-writer', 'cmd/mongodb-writer', 'cmd/postgres-writer', 'cmd/timescale-writer', 'cmd/smpp-notifier', 'cmd/smtp-notifier']', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -474,7 +474,7 @@ blocks:
     dependencies:
       - Lint and Test Consumers
     run:
-      when: "change_in('['consumers', '/cmd/cassandra-writer', '/cmd/influxdb-writer', '/cmd/mongodb-writer', '/cmd/postgres-writer', '/cmd/timescale-writer', '/cmd/smpp-notifier', '/cmd/smtp-notifier']', {pipeline_file: 'ignore'})"
+      when: "change_in('['consumers', 'cmd/cassandra-writer', 'cmd/influxdb-writer', 'cmd/mongodb-writer', 'cmd/postgres-writer', 'cmd/timescale-writer', 'cmd/smpp-notifier', 'cmd/smtp-notifier']', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build Consumers
@@ -489,7 +489,7 @@ blocks:
 
   - name: Lint and Test CLI
     run:
-      when: "change_in('['cli', '/cmd/cli'], {pipeline_file: 'ignore'}) || change_in('/cli', {pipeline_file: 'ignore'})"
+      when: "change_in('['cli', 'cmd/cli'], {pipeline_file: 'ignore'}) || change_in('/cli', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -512,7 +512,7 @@ blocks:
     dependencies:
       - Lint and Test CLI
     run:
-      when: "change_in('['cli', '/cmd/cli'], {pipeline_file: 'ignore'}) || change_in('/cli', {pipeline_file: 'ignore'})"
+      when: "change_in('['cli', 'cmd/cli'], {pipeline_file: 'ignore'}) || change_in('/cli', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build CLI
@@ -521,7 +521,7 @@ blocks:
 
   - name: Lint and Test LoRa
     run:
-      when: "change_in('['lora', '/cmd/lora'], {pipeline_file: 'ignore'}) || change_in('/lora', {pipeline_file: 'ignore'})"
+      when: "change_in('['lora', 'cmd/lora'], {pipeline_file: 'ignore'}) || change_in('/lora', {pipeline_file: 'ignore'})"
     dependencies:
       - Setup
       - Check Generated Protocol Buffer Files
@@ -544,7 +544,7 @@ blocks:
     dependencies:
       - Lint and Test LoRa
     run:
-      when: "change_in('['lora', '/cmd/lora'], {pipeline_file: 'ignore'}) || change_in('/lora', {pipeline_file: 'ignore'})"
+      when: "change_in('['lora', 'cmd/lora'], {pipeline_file: 'ignore'}) || change_in('/lora', {pipeline_file: 'ignore'})"
     task:
       jobs:
         - name: Build LoRa
