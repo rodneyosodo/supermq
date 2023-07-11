@@ -102,7 +102,7 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 	
 	switch err = svc.checkAdmin(ctx, userID, thingsObjectKey, listRelationKey); err {
 	// If the user is admin, fetch all things from database.
-	case err == nil:
+	case nil:
 		switch {
 		case pm.SharedBy == MyKey && pm.Owner == MyKey:
 			pm.SharedBy = ""
