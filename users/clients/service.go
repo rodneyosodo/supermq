@@ -163,10 +163,9 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 		return mfclients.ClientsPage{}, err
 	}
 
-	err = svc.authorize(ctx, id, clientsObjectKey, listRelationKey)
-	switch {
+	switch err := svc.authorize(ctx, id, clientsObjectKey, listRelationKey); err {
 	// If the user is admin, fetch all users from database.
-	case err == nil:
+	case nil:
 		switch {
 		case pm.SharedBy == MyKey && pm.Owner == MyKey:
 			pm.SharedBy = ""
@@ -178,7 +177,7 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 		}
 
 	// If the user is not admin, fetch users that they own or are shared with them.
-	case err != nil:
+	default:
 		switch {
 		case pm.SharedBy == MyKey && pm.Owner == MyKey:
 			pm.SharedBy = id
