@@ -55,6 +55,8 @@ func (es *eventStore) Publish(ctx context.Context, event Event) error {
 	if err != nil {
 		return err
 	}
+	values["occurred_at"] = time.Now().UnixNano()
+
 	record := &redis.XAddArgs{
 		Stream:       es.streamID,
 		MaxLenApprox: es.streamLen,
