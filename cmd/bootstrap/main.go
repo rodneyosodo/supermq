@@ -169,10 +169,7 @@ func main() {
 }
 
 func newService(ctx context.Context, auth policies.AuthServiceClient, db *sqlx.DB, tracer trace.Tracer, logger mflog.Logger, esClient *redis.Client, cfg config, dbConfig pgClient.Config) bootstrap.Service {
-	database, err := postgres.NewDatabase(db, dbConfig, tracer)
-	if err != nil {
-		logger.Error(fmt.Sprintf("failed to create %s database: %s", svcName, err))
-	}
+	database := postgres.NewDatabase(db, dbConfig, tracer)
 
 	repoConfig := bootstrapPg.NewConfigRepository(database, logger)
 

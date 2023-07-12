@@ -216,10 +216,7 @@ func main() {
 }
 
 func newService(ctx context.Context, db *sqlx.DB, dbConfig pgClient.Config, auth upolicies.AuthServiceClient, cacheClient *redis.Client, esClient *redis.Client, keyDuration string, tracer trace.Tracer, logger mflog.Logger) (clients.Service, groups.Service, tpolicies.Service) {
-	database, err := postgres.NewDatabase(db, dbConfig, tracer)
-	if err != nil {
-		logger.Error(err.Error())
-	}
+	database := postgres.NewDatabase(db, dbConfig, tracer)
 	cRepo := cpostgres.NewRepository(database)
 	gRepo := gpostgres.NewRepository(database)
 	pRepo := ppostgres.NewRepository(database)

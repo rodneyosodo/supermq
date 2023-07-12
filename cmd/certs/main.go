@@ -165,10 +165,7 @@ func main() {
 }
 
 func newService(auth policies.AuthServiceClient, db *sqlx.DB, tracer trace.Tracer, logger mflog.Logger, cfg config, dbConfig pgClient.Config, pkiAgent vault.Agent) certs.Service {
-	database, err := postgres.NewDatabase(db, dbConfig, tracer)
-	if err != nil {
-		logger.Error(fmt.Sprintf("failed to create %s database: %s", svcName, err))
-	}
+	database := postgres.NewDatabase(db, dbConfig, tracer)
 	certsRepo := certsPg.NewRepository(database, logger)
 	config := mfsdk.Config{
 		CertsURL:  cfg.CertsURL,

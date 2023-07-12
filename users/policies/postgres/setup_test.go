@@ -82,10 +82,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not setup test DB connection: %s", err)
 	}
 
-	database, err = postgres.NewDatabase(db, dbConfig, tracer)
-	if err != nil {
-		log.Fatalf("Could not create test database: %s", err)
-	}
+	database = postgres.NewDatabase(db, dbConfig, tracer)
 
 	code := m.Run()
 
