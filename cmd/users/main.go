@@ -34,12 +34,12 @@ import (
 	capi "github.com/mainflux/mainflux/users/clients/api"
 	"github.com/mainflux/mainflux/users/clients/emailer"
 	cpostgres "github.com/mainflux/mainflux/users/clients/postgres"
-	redisucache "github.com/mainflux/mainflux/users/clients/redis"
+	ucache "github.com/mainflux/mainflux/users/clients/redis"
 	ctracing "github.com/mainflux/mainflux/users/clients/tracing"
 	"github.com/mainflux/mainflux/users/groups"
 	gapi "github.com/mainflux/mainflux/users/groups/api"
 	gpostgres "github.com/mainflux/mainflux/users/groups/postgres"
-	redisgcache "github.com/mainflux/mainflux/users/groups/redis"
+	gcache "github.com/mainflux/mainflux/users/groups/redis"
 	gtracing "github.com/mainflux/mainflux/users/groups/tracing"
 	"github.com/mainflux/mainflux/users/hasher"
 	"github.com/mainflux/mainflux/users/jwt"
@@ -48,7 +48,7 @@ import (
 	grpcapi "github.com/mainflux/mainflux/users/policies/api/grpc"
 	httpapi "github.com/mainflux/mainflux/users/policies/api/http"
 	ppostgres "github.com/mainflux/mainflux/users/policies/postgres"
-	redispcache "github.com/mainflux/mainflux/users/policies/redis"
+	pcache "github.com/mainflux/mainflux/users/policies/redis"
 	ptracing "github.com/mainflux/mainflux/users/policies/tracing"
 	clientsPg "github.com/mainflux/mainflux/users/postgres"
 	"go.opentelemetry.io/otel/trace"
@@ -225,9 +225,9 @@ func newService(ctx context.Context, db *sqlx.DB, dbConfig pgClient.Config, esCl
 	gsvc := groups.NewService(gRepo, pRepo, tokenizer, idp)
 	psvc := policies.NewService(pRepo, tokenizer, idp)
 
-	csvc = redisucache.NewEventStoreMiddleware(csvc, esClient)
-	gsvc = redisgcache.NewEventStoreMiddleware(gsvc, esClient)
-	psvc = redispcache.NewEventStoreMiddleware(psvc, esClient)
+	csvc = ucache.NewEventStoreMiddleware(csvc, esClient)
+	gsvc = gcache.NewEventStoreMiddleware(gsvc, esClient)
+	psvc = pcache.NewEventStoreMiddleware(psvc, esClient)
 
 	csvc = ctracing.New(csvc, tracer)
 	csvc = capi.LoggingMiddleware(csvc, logger)
