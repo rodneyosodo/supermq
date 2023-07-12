@@ -667,24 +667,177 @@ blocks:
             - cache restore codecov
             - ./codecov
 
-  - name: Test all
+  - name: Users Auth Changes
+    dependencies: []
+    run:
+      when: "change_in('users/policies/auth.proto', {pipeline_file: 'ignore'})"
+    task:
+      jobs:
+        - name: Test Users
+          commands:
+            - cd users
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov
+        - name: Test Bootstrap
+          commands:
+            - cd bootstrap
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov
+        - name: Test Certs
+          commands:
+            - cd certs
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov
+        - name: Test Consumers
+          commands:
+            - cd consumers
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov
+        - name: Test Things
+          commands:
+            - cd things
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov
+        - name: Test Twins
+          commands:
+            - cd twins
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov
+        - name: Test Readers
+          commands:
+            - cd readers
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov
+
+  - name: Things Auth Changes
+    dependencies: []
+    run:
+      when: "change_in('things/policies/auth.proto', {pipeline_file: 'ignore'})"
+    task:
+      jobs:
+        - name: Test Things
+          commands:
+            - cd things
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov
+        - name: Test CoAP
+          commands:
+            - cd coap
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov
+        - name: Test HTTP
+          commands:
+            - cd http
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov
+        - name: Test MQTT
+          commands:
+            - cd mqtt
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov
+        - name: Test WS
+          commands:
+            - cd ws
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov
+        - name: Test Readers
+          commands:
+            - cd readers
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov
+
+  - name: Messaging Changes
+    dependencies: []
+    run:
+      when: "change_in('pkg/messaging/message.proto', {pipeline_file: 'ignore'})"
+    task:
+      jobs:
+        - name: Test Messaging
+          commands:
+            - cd pkg/messaging
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov
+        - name: Test CoAP
+          commands:
+            - cd coap
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov
+        - name: Test MQTT
+          commands:
+            - cd mqtt
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov
+        - name: Test WS
+          commands:
+            - cd ws
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov            
+        - name: Test OPC-UA
+          commands:
+            - cd opcua
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov            
+        - name: Test Twins
+          commands:
+            - cd twins
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov            
+        - name: Test Consumers
+          commands:
+            - cd consumers
+            - go test ./... --race -v -coverprofile=coverage.out
+            - go tool cover -html=coverage.out -o coverage.html
+            - cache restore codecov
+            - ./codecov
+
+  - name: Push Docker Images
     dependencies:
       - Setup
     run:
       when: "branch = 'master'"
     task:
       jobs:
-        - name: Test all
+        - name: Push Docker Images
           commands:
-            - make test
-        - name: Build all
-          commands:
-            - make proto
-            - make all
             - make -j$NPROC latest
-        - name: Push all
-          commands:
-            - make push
 
   - name: Compile Check For RabbitMQ
     dependencies:
