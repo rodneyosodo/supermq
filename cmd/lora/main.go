@@ -148,7 +148,7 @@ func main() {
 		return subscribeToLoRaBroker(svc, mqttConn, cfg.LoraMsgTimeout, cfg.LoraMsgTopic, logger)
 	})
 
-	go subscribeToThingsES(svc, esConn, cfg.ESConsumerName, logger)
+	go subscribeToThingsES(ctx, svc, esConn, cfg.ESConsumerName, logger)
 
 	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(instanceID), logger)
 
@@ -175,7 +175,7 @@ func connectToMQTTBroker(url, user, password string, timeout time.Duration, logg
 	opts.AddBroker(url)
 	opts.SetUsername(user)
 	opts.SetPassword(password)
-	opts.SetOnConnectHandler(func(c mqttPaho.Client) {
+	opts.SetOnConnectHandler(func(_ mqttPaho.Client) {
 		logger.Info("Connected to Lora MQTT broker")
 	})
 	opts.SetConnectionLostHandler(func(c mqttPaho.Client, err error) {
@@ -200,10 +200,10 @@ func subscribeToLoRaBroker(svc lora.Service, mc mqttPaho.Client, timeout time.Du
 	return nil
 }
 
-func subscribeToThingsES(svc lora.Service, client *r.Client, consumer string, logger mflog.Logger) {
+func subscribeToThingsES(ctx context.Context, svc lora.Service, client *r.Client, consumer string, logger mflog.Logger) {
 	eventStore := redis.NewEventStore(svc, client, consumer, logger)
 	logger.Info("Subscribed to Redis Event Store")
-	if err := eventStore.Subscribe(context.Background(), "mainflux.things"); err != nil {
+	if err := eventStore.Subscribe(ctx, "mainflux.things"); err != nil {
 		logger.Warn(fmt.Sprintf("Lora-adapter service failed to subscribe to Redis event source: %s", err))
 	}
 }
