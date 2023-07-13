@@ -113,11 +113,9 @@ func main() {
 		exitCode = 1
 		return
 	}
-	pubSub, err = tracing.NewPubSub(httpServerConfig, tracer, pubSub)
-	if err != nil {
-		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
-	}
 	defer pubSub.Close()
+
+	pubSub = tracing.NewPubSub(httpServerConfig, tracer, pubSub)
 
 	if err = consumers.Start(ctx, svcName, pubSub, repo, cfg.ConfigPath, logger); err != nil {
 		logger.Error(fmt.Sprintf("failed to create Timescale writer: %s", err))

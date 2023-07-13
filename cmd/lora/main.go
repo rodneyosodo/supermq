@@ -121,11 +121,9 @@ func main() {
 		exitCode = 1
 		return
 	}
-	pub, err = tracing.New(httpServerConfig, tracer, pub)
-	if err != nil {
-		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
-	}
 	defer pub.Close()
+
+	pub = tracing.New(httpServerConfig, tracer, pub)
 
 	svc := newService(pub, rmConn, thingsRMPrefix, channelsRMPrefix, connsRMPrefix, logger)
 

@@ -99,11 +99,9 @@ func main() {
 		exitCode = 1
 		return
 	}
-	pubSub, err = tracing.NewPubSub(httpServerConfig, tracer, pubSub)
-	if err != nil {
-		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
-	}
 	defer pubSub.Close()
+
+	pubSub = tracing.NewPubSub(httpServerConfig, tracer, pubSub)
 
 	db, err := mongoClient.Setup(envPrefixDB)
 	if err != nil {

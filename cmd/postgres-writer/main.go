@@ -107,14 +107,10 @@ func main() {
 		exitCode = 1
 		return
 	}
-
-	pubSub, err = tracing.NewPubSub(httpServerConfig, tracer, pubSub)
-	if err != nil {
-		logger.Error(err.Error())
-		exitCode = 1
-		return
-	}
+	pubSub = tracing.NewPubSub(httpServerConfig, tracer, pubSub)
 	defer pubSub.Close()
+
+	pubSub = tracing.NewPubSub(httpServerConfig, tracer, pubSub)
 
 	repo := newService(db, logger)
 	repo = consumerTracing.NewBlocking(tracer, repo, httpServerConfig)

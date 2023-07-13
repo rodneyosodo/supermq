@@ -4,7 +4,7 @@ package tracing
 
 import (
 	"context"
-	"net"
+	"fmt"
 
 	"github.com/mainflux/mainflux/internal/server"
 	"github.com/mainflux/mainflux/pkg/errors"
@@ -16,58 +16,44 @@ import (
 // Traced operations.
 const publishOP = "publish_op"
 
+var defaultAttributes = []attribute.KeyValue{
+	attribute.String("messaging.system", "nats"),
+	attribute.Bool("messaging.destination.anonymous", false),
+	attribute.String("messaging.destination.template", "channels/{channelID}/messages/*"),
+	attribute.Bool("messaging.destination.temporary", true),
+	attribute.String("network.protocol.name", "nats"),
+	attribute.String("network.protocol.version", "2.2.4"),
+	attribute.String("network.transport", "tcp"),
+	attribute.String("network.type", "ipv4"),
+}
+
 // ErrFailedToLookupIP is returned when the IP address of the database peer cannot be looked up.
 var ErrFailedToLookupIP = errors.New("failed to lookup IP address")
 
 var _ messaging.Publisher = (*publisherMiddleware)(nil)
 
-type hostConfig struct {
-	host string
-	port string
-	IPV4 string
-	IPV6 string
-}
-
 type publisherMiddleware struct {
 	publisher messaging.Publisher
 	tracer    trace.Tracer
-	host      hostConfig
+	host      server.Config
 }
 
 // New creates new messaging publisher tracing middleware.
-func New(config server.Config, tracer trace.Tracer, publisher messaging.Publisher) (messaging.Publisher, error) {
+func New(config server.Config, tracer trace.Tracer, publisher messaging.Publisher) messaging.Publisher {
 	pub := &publisherMiddleware{
 		publisher: publisher,
 		tracer:    tracer,
-		host: hostConfig{
-			host: config.Host,
-			port: config.Port,
-		},
+		host:      config,
 	}
 
-	ipAddrs, err := net.LookupIP(config.Host)
-	if err != nil {
-		return pub, errors.Wrap(ErrFailedToLookupIP, err)
-	}
-
-	for _, ipv4Addr := range ipAddrs {
-		if ipv4Addr.To4() != nil {
-			pub.host.IPV4 = ipv4Addr.String()
-		}
-	}
-	for _, ipv6Addr := range ipAddrs {
-		if ipv6Addr.To16() != nil && ipv6Addr.To4() == nil {
-			pub.host.IPV6 = ipv6Addr.String()
-		}
-	}
-
-	return pub, nil
+	return pub
 }
 
 // Publish traces NATS publish operations.
 func (pm *publisherMiddleware) Publish(ctx context.Context, topic string, msg *messaging.Message) error {
-	ctx, span := createSpan(ctx, pm.host, publishOP, topic, msg.Subtopic, msg.Publisher, pm.tracer)
+	ctx, span := createSpan(ctx, publishOP, msg.Publisher, topic, msg.Subtopic, len(msg.Payload), pm.host, trace.SpanKindClient, pm.tracer)
 	defer span.End()
+
 	return pm.publisher.Publish(ctx, topic, msg)
 }
 
@@ -76,38 +62,26 @@ func (pm *publisherMiddleware) Close() error {
 	return pm.publisher.Close()
 }
 
-func createSpan(ctx context.Context, host hostConfig, operation, topic, subTopic, thingID string, tracer trace.Tracer) (context.Context, trace.Span) {
-	var address string
-	if host.host != "" && host.port != "" {
-		address = host.host + ":" + host.port
+func createSpan(ctx context.Context, operation, clientID, topic, subTopic string, msgSize int, cfg server.Config, spanKind trace.SpanKind, tracer trace.Tracer) (context.Context, trace.Span) {
+	var subject = fmt.Sprintf("channels.%s.messages", topic)
+	if subTopic != "" {
+		subject = fmt.Sprintf("%s.%s", subject, subTopic)
 	}
-	if host.host != "" && host.port == "" {
-		address = host.host
-	}
+	spanName := fmt.Sprintf("%s %s", subject, operation)
 
 	kvOpts := []attribute.KeyValue{
-		attribute.String("peer.address", address),
-		attribute.String("peer.hostname", host.host),
-		attribute.String("peer.ipv4", host.IPV4),
-		attribute.String("peer.ipv6", host.IPV6),
-		attribute.String("peer.port", host.port),
-		attribute.String("peer.service", "message_broker"),
-	}
-	switch operation {
-	case publishOP:
-		kvOpts = append(kvOpts, attribute.String("publisher", thingID), attribute.String("span.kind", "producer"))
-	default:
-		kvOpts = append(kvOpts, attribute.String("subscriber", thingID), attribute.String("span.kind", "consumer"))
-	}
-	kvOpts = append(kvOpts, attribute.String("topic", topic))
-
-	destination := topic
-	if subTopic != "" {
-		kvOpts = append(kvOpts, attribute.String("subtopic", topic))
-		destination = topic + "." + subTopic
+		attribute.String("messaging.operation", operation),
+		attribute.String("messaging.client_id", clientID),
+		attribute.String("messaging.destination.name", subject),
+		attribute.String("server.address", cfg.Host),
+		attribute.String("server.socket.port", cfg.Port),
 	}
 
-	kvOpts = append(kvOpts, attribute.String("message_bus.destination", destination))
+	if msgSize > 0 {
+		kvOpts = append(kvOpts, attribute.Int("messaging.message.payload_size_bytes", msgSize))
+	}
 
-	return tracer.Start(ctx, operation, trace.WithAttributes(kvOpts...))
+	kvOpts = append(kvOpts, defaultAttributes...)
+
+	return tracer.Start(ctx, spanName, trace.WithAttributes(kvOpts...), trace.WithSpanKind(spanKind))
 }

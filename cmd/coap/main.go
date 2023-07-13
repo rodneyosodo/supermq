@@ -113,11 +113,9 @@ func main() {
 		exitCode = 1
 		return
 	}
-	nps, err = pstracing.NewPubSub(coapServerConfig, tracer, nps)
-	if err != nil {
-		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
-	}
 	defer nps.Close()
+
+	nps = pstracing.NewPubSub(coapServerConfig, tracer, nps)
 
 	svc := coap.New(tc, nps)
 

@@ -4,19 +4,17 @@ package tracing
 
 import (
 	"context"
-	"net"
 
 	"github.com/mainflux/mainflux/internal/server"
-	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"go.opentelemetry.io/otel/trace"
 )
 
 // Constants to define different operations to be traced.
 const (
-	subscribeOP   = "subscribe_op"
-	unsubscribeOp = "unsubscribe_op"
-	handleOp      = "handle_op"
+	subscribeOP   = "receive"
+	unsubscribeOp = "unsubscribe" // This is not specified in the open telemetry spec.
+	processOp     = "process"
 )
 
 var _ messaging.PubSub = (*pubsubMiddleware)(nil)
@@ -24,81 +22,66 @@ var _ messaging.PubSub = (*pubsubMiddleware)(nil)
 type pubsubMiddleware struct {
 	publisherMiddleware
 	pubsub messaging.PubSub
-	host   hostConfig
+	host   server.Config
 }
 
 // NewPubSub creates a new pubsub middleware that traces pubsub operations.
-func NewPubSub(config server.Config, tracer trace.Tracer, pubsub messaging.PubSub) (messaging.PubSub, error) {
+func NewPubSub(config server.Config, tracer trace.Tracer, pubsub messaging.PubSub) messaging.PubSub {
 	pb := &pubsubMiddleware{
 		publisherMiddleware: publisherMiddleware{
 			publisher: pubsub,
 			tracer:    tracer,
-			host: hostConfig{
-				host: config.Host,
-				port: config.Port,
-			},
+			host:      config,
 		},
 		pubsub: pubsub,
-		host: hostConfig{
-			host: config.Host,
-			port: config.Port,
-		},
+		host:   config,
 	}
 
-	ipAddrs, err := net.LookupIP(config.Host)
-	if err != nil {
-		return pb, errors.Wrap(ErrFailedToLookupIP, err)
-	}
-
-	for _, ipv4Addr := range ipAddrs {
-		if ipv4Addr.To4() != nil {
-			pb.host.IPV4 = ipv4Addr.String()
-			pb.publisherMiddleware.host.IPV4 = ipv4Addr.String()
-		}
-	}
-	for _, ipv6Addr := range ipAddrs {
-		if ipv6Addr.To16() != nil && ipv6Addr.To4() == nil {
-			pb.host.IPV6 = ipv6Addr.String()
-			pb.publisherMiddleware.host.IPV6 = ipv6Addr.String()
-		}
-	}
-
-	return pb, nil
+	return pb
 }
 
 // Subscribe creates a new subscription and traces the operation.
 func (pm *pubsubMiddleware) Subscribe(ctx context.Context, id string, topic string, handler messaging.MessageHandler) error {
-	ctx, span := createSpan(ctx, pm.host, subscribeOP, topic, "", id, pm.tracer)
+	// ctx, span := pm.createSpan(ctx, subscribeOP, topic, "", id)
+	// defer span.End()
+	ctx, span := createSpan(ctx, subscribeOP, id, topic, "", 0, pm.host, trace.SpanKindClient, pm.tracer)
 	defer span.End()
+
 	h := &traceHandler{
-		handler: handler,
-		tracer:  pm.tracer,
-		ctx:     ctx,
-		host:    pm.host,
+		ctx:      ctx,
+		handler:  handler,
+		tracer:   pm.tracer,
+		host:     pm.host,
+		topic:    topic,
+		clientID: id,
 	}
+
 	return pm.pubsub.Subscribe(ctx, id, topic, h)
 }
 
 // Unsubscribe removes an existing subscription and traces the operation.
 func (pm *pubsubMiddleware) Unsubscribe(ctx context.Context, id string, topic string) error {
-	ctx, span := createSpan(ctx, pm.host, unsubscribeOp, topic, "", id, pm.tracer)
+	ctx, span := createSpan(ctx, unsubscribeOp, id, topic, "", 0, pm.host, trace.SpanKindInternal, pm.tracer)
 	defer span.End()
+
 	return pm.pubsub.Unsubscribe(ctx, id, topic)
 }
 
 // TraceHandler is used to trace the message handling operation.
 type traceHandler struct {
-	handler messaging.MessageHandler
-	tracer  trace.Tracer
-	ctx     context.Context
-	topic   string
-	host    hostConfig
+	ctx      context.Context
+	handler  messaging.MessageHandler
+	tracer   trace.Tracer
+	host     server.Config
+	topic    string
+	clientID string
 }
 
 // Handle instruments the message handling operation.
 func (h *traceHandler) Handle(msg *messaging.Message) error {
-	_, span := createSpan(h.ctx, h.host, handleOp, h.topic, msg.Subtopic, msg.Publisher, h.tracer)
+	_, span := createSpan(h.ctx, processOp, h.clientID, h.topic, msg.Subtopic, len(msg.Payload), h.host, trace.SpanKindConsumer, h.tracer)
 	defer span.End()
+
 	return h.handler.Handle(msg)
 }
 

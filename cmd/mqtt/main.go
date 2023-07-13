@@ -124,10 +124,6 @@ func main() {
 		exitCode = 1
 		return
 	}
-	nps, err = tracing.NewPubSub(serverConfig, tracer, nps)
-	if err != nil {
-		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
-	}
 	defer nps.Close()
 
 	mpub, err := mqttpub.NewPublisher(fmt.Sprintf("%s:%s", cfg.MQTTTargetHost, cfg.MQTTTargetPort), cfg.MQTTForwarderTimeout)
@@ -136,10 +132,9 @@ func main() {
 		exitCode = 1
 		return
 	}
-	mpub, err = tracing.New(serverConfig, tracer, mpub)
-	if err != nil {
-		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
-	}
+	defer mpub.Close()
+
+	mpub = tracing.New(serverConfig, tracer, mpub)
 
 	fwd := mqtt.NewForwarder(brokers.SubjectAllChannels, logger)
 	fwd = mqtttracing.New(tracer, fwd, brokers.SubjectAllChannels)
@@ -155,11 +150,9 @@ func main() {
 		exitCode = 1
 		return
 	}
-	np, err = tracing.New(serverConfig, tracer, np)
-	if err != nil {
-		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
-	}
 	defer np.Close()
+
+	np = tracing.New(serverConfig, tracer, np)
 
 	ec, err := redisClient.Setup(envPrefixES)
 	if err != nil {

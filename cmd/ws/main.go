@@ -109,11 +109,9 @@ func main() {
 		exitCode = 1
 		return
 	}
-	nps, err = pstracing.NewPubSub(httpServerConfig, tracer, nps)
-	if err != nil {
-		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
-	}
 	defer nps.Close()
+
+	nps = pstracing.NewPubSub(httpServerConfig, tracer, nps)
 
 	svc := newService(tc, nps, logger, tracer)
 

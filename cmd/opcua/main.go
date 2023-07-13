@@ -130,11 +130,9 @@ func main() {
 		exitCode = 1
 		return
 	}
-	pubSub, err = tracing.NewPubSub(httpServerConfig, tracer, pubSub)
-	if err != nil {
-		logger.Error(fmt.Sprintf("failed to create tracing middleware: %s", err))
-	}
 	defer pubSub.Close()
+
+	pubSub = tracing.NewPubSub(httpServerConfig, tracer, pubSub)
 
 	sub := gopcua.NewSubscriber(ctx, pubSub, thingRM, chanRM, connRM, logger)
 	browser := gopcua.NewBrowser(ctx, logger)
