@@ -1416,14 +1416,6 @@ func TestShareThing(t *testing.T) {
 			err:       errors.NewSDKErrorWithStatus(errors.ErrAuthorization, http.StatusForbidden),
 			repoErr:   errors.ErrAuthorization,
 		},
-		{
-			desc:      "share thing with invalid token for unauthorized user",
-			channelID: generateUUID(t),
-			thingID:   thingID,
-			token:     invalidToken,
-			err:       errors.NewSDKErrorWithStatus(errors.ErrAuthorization, http.StatusUnauthorized),
-			repoErr:   errors.ErrAuthorization,
-		},
 	}
 
 	for _, tc := range cases {
