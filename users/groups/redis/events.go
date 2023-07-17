@@ -208,9 +208,6 @@ func (lce listGroupEvent) Encode() (map[string]interface{}, error) {
 
 		val["metadata"] = metadata
 	}
-	if lce.SharedBy != "" {
-		val["sharedBy"] = lce.SharedBy
-	}
 	if lce.Status.String() != "" {
 		val["status"] = lce.Status.String()
 	}
@@ -254,9 +251,6 @@ func (lcge listGroupMembershipEvent) Encode() (map[string]interface{}, error) {
 		}
 
 		val["metadata"] = metadata
-	}
-	if lcge.SharedBy != "" {
-		val["shared_by"] = lcge.SharedBy
 	}
 	if lcge.Status.String() != "" {
 		val["status"] = lcge.Status.String()
