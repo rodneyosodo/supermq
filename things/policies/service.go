@@ -171,17 +171,17 @@ func (svc service) checkSubject(ctx context.Context, userID string, external boo
 	switch external {
 	case false:
 		ar := AccessRequest{Subject: userID, Object: p.Subject, Action: sharePolicyAction}
-		if _, err := svc.policies.EvaluateThingAccess(ctx, ar); err == nil {
-			return nil
+		if _, err := svc.policies.EvaluateThingAccess(ctx, ar); err != nil {
+			return err
 		}
 
-		return errors.ErrAuthorization
+		return nil
 	case true:
-		if err := svc.usersAuthorize(ctx, userID, p.Subject, sharePolicyAction, ClientEntityType); err == nil {
-			return nil
+		if err := svc.usersAuthorize(ctx, userID, p.Subject, sharePolicyAction, ClientEntityType); err != nil {
+			return err
 		}
 
-		return errors.ErrAuthorization
+		return nil
 	default:
 		return ErrInvalidClient
 	}
