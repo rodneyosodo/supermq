@@ -5,16 +5,14 @@ package redis
 
 import (
 	"context"
-	"time"
 
 	"github.com/go-redis/redis/v8"
 	mfredis "github.com/mainflux/mainflux/internal/clients/redis"
 )
 
 const (
-	streamID                       = "mainflux.mqtt"
-	streamLen                      = 1000
-	checkUnpublishedEventsInterval = 1 * time.Minute
+	streamID  = "mainflux.mqtt"
+	streamLen = 1000
 )
 
 type EventStore interface {

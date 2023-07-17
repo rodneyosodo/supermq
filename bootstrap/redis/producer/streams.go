@@ -5,7 +5,6 @@ package producer
 
 import (
 	"context"
-	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/mainflux/mainflux/bootstrap"
@@ -14,9 +13,8 @@ import (
 )
 
 const (
-	streamID                       = "mainflux.bootstrap"
-	streamLen                      = 1000
-	checkUnpublishedEventsInterval = 1 * time.Minute
+	streamID  = "mainflux.bootstrap"
+	streamLen = 1000
 )
 
 var _ bootstrap.Service = (*eventStore)(nil)

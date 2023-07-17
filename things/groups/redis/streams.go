@@ -5,7 +5,6 @@ package redis
 
 import (
 	"context"
-	"time"
 
 	"github.com/go-redis/redis/v8"
 	mfredis "github.com/mainflux/mainflux/internal/clients/redis"
@@ -14,9 +13,8 @@ import (
 )
 
 const (
-	streamID                       = "mainflux.things"
-	streamLen                      = 1000
-	checkUnpublishedEventsInterval = 1 * time.Minute
+	streamID  = "mainflux.things"
+	streamLen = 1000
 )
 
 var _ groups.Service = (*eventStore)(nil)
