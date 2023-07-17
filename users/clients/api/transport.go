@@ -23,7 +23,7 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc clients.Service, mux *bone.Mux, logger mflog.Logger) http.Handler {
+func MakeHandler(svc clients.Service, mux *bone.Mux, logger mflog.Logger, instanceID string) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, api.EncodeError)),
 	}
@@ -140,7 +140,7 @@ func MakeHandler(svc clients.Service, mux *bone.Mux, logger mflog.Logger) http.H
 		opts...,
 	))
 
-	mux.GetFunc("/health", mainflux.Health("users"))
+	mux.GetFunc("/health", mainflux.Health("users", instanceID))
 	mux.Handle("/metrics", promhttp.Handler())
 
 	return mux
@@ -162,7 +162,7 @@ func decodeViewProfile(_ context.Context, r *http.Request) (interface{}, error) 
 }
 
 func decodeListClients(_ context.Context, r *http.Request) (interface{}, error) {
-	var sid, oid string
+	var sharedID, ownerID string
 	s, err := apiutil.ReadStringQuery(r, api.StatusKey, api.DefClientStatus)
 	if err != nil {
 		return nil, err
@@ -192,18 +192,25 @@ func decodeListClients(_ context.Context, r *http.Request) (interface{}, error) 
 	if err != nil {
 		return nil, err
 	}
-	visibility, err := apiutil.ReadStringQuery(r, api.VisibilityKey, api.MyVisibility)
+	oid, err := apiutil.ReadStringQuery(r, api.OwnerKey, "")
+	if err != nil {
+		return nil, err
+	}
+	visibility, err := apiutil.ReadStringQuery(r, api.VisibilityKey, "")
 	if err != nil {
 		return nil, err
 	}
 	switch visibility {
 	case api.MyVisibility:
-		oid = api.MyVisibility
+		ownerID = api.MyVisibility
 	case api.SharedVisibility:
-		sid = api.MyVisibility
+		sharedID = api.MyVisibility
 	case api.AllVisibility:
-		sid = api.MyVisibility
-		oid = api.MyVisibility
+		sharedID = api.MyVisibility
+		ownerID = api.MyVisibility
+	}
+	if oid != "" {
+		ownerID = oid
 	}
 	st, err := mfclients.ToStatus(s)
 	if err != nil {
@@ -218,8 +225,8 @@ func decodeListClients(_ context.Context, r *http.Request) (interface{}, error) 
 		name:     n,
 		identity: i,
 		tag:      t,
-		sharedBy: sid,
-		owner:    oid,
+		sharedBy: sharedID,
+		owner:    ownerID,
 	}
 	return req, nil
 }

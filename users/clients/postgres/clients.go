@@ -177,9 +177,9 @@ func (repo clientRepo) Members(ctx context.Context, groupID string, pm mfclients
 	}
 
 	aq := ""
-	// If not admin, the client needs to have a g_list action on the group
+	// If not admin, the client needs to have a g_list action on the group or they are the owner.
 	if pm.Subject != "" {
-		aq = `AND EXISTS (SELECT 1 FROM policies WHERE policies.subject = :subject AND :action=ANY(actions))`
+		aq = `AND EXISTS (SELECT 1 FROM policies WHERE policies.subject = :subject AND :action=ANY(actions)) OR c.owner_id = :subject`
 	}
 	q := fmt.Sprintf(`SELECT c.id, c.name, c.tags, c.metadata, c.identity, c.status,
 		c.created_at, c.updated_at FROM clients c
@@ -439,7 +439,7 @@ func pageQuery(pm mfclients.Page) (string, error) {
 
 	// For listing clients that the specified client owns and that are shared with the specified client
 	if pm.Owner != "" && pm.SharedBy != "" {
-		query = append(query, "(c.owner_id = :owner_id OR EXISTS (SELECT 1 FROM policies WHERE subject = :shared_by AND :action=ANY(actions) AND object = policies.object))")
+		query = append(query, "(c.owner_id = :owner_id OR (policies.object IN (SELECT object FROM policies WHERE subject = :shared_by AND :action=ANY(actions))))")
 	}
 	// For listing clients that the specified client is shared with
 	if pm.SharedBy != "" && pm.Owner == "" {
