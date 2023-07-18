@@ -79,8 +79,21 @@ func (svc service) AddPolicy(ctx context.Context, token string, p Policy) error 
 	}
 
 	// check if the client has `g_add` action on the object or is the owner of the object
-	pol := AccessRequest{Subject: id, Object: p.Object, Action: "g_add", Entity: "group"}
-	if _, err := svc.policies.EvaluateGroupAccess(ctx, pol); err == nil {
+	areq := AccessRequest{Subject: id, Object: p.Object, Action: "g_add", Entity: "group"}
+	if _, err := svc.policies.EvaluateGroupAccess(ctx, areq); err == nil {
+		page := Page{Subject: id, Object: p.Object, Offset: 0, Limit: 1}
+		pol, err := svc.policies.RetrieveAll(ctx, page)
+		if err != nil {
+			return err
+		}
+		// the client has `g_add` action on the object
+		if len(pol.Policies) == 1 {
+			if err := checkActions(pol.Policies[0].Actions, p.Actions); err != nil {
+				return err
+			}
+		}
+
+		// the client is the owner of the object
 		return svc.policies.Save(ctx, p)
 	}
 

@@ -113,9 +113,6 @@ func (pr prepo) evaluate(ctx context.Context, query string, aReq policies.Access
 }
 
 func (pr prepo) Update(ctx context.Context, policy policies.Policy) error {
-	if err := policy.Validate(); err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
-	}
 	q := `UPDATE policies SET actions = :actions, updated_at = :updated_at, updated_by = :updated_by
 		WHERE subject = :subject AND object = :object`
 

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/mainflux/mainflux/internal/apiutil"
+	"github.com/mainflux/mainflux/pkg/errors"
 	upolicies "github.com/mainflux/mainflux/users/policies"
 )
 
@@ -103,8 +104,8 @@ type Cache interface {
 	Remove(ctx context.Context, policy Policy) error
 }
 
-// Validate returns an error if policy representation is invalid.
-func (p Policy) Validate() error {
+// validate returns an error if policy representation is invalid.
+func (p Policy) validate() error {
 	if p.Subject == "" {
 		return apiutil.ErrMissingPolicySub
 	}
@@ -130,6 +131,25 @@ func (p Policy) Validate() error {
 func ValidateAction(act string) bool {
 	for _, v := range PolicyTypes {
 		if v == act {
+			return true
+		}
+	}
+	return false
+}
+
+// checkActions checks if the incoming actions are in the current actions.
+func checkActions(currentActions, incomingActions []string) error {
+	for _, action := range incomingActions {
+		if !contains(currentActions, action) {
+			return errors.ErrAuthorization
+		}
+	}
+	return nil
+}
+
+func contains(actions []string, action string) bool {
+	for _, a := range actions {
+		if a == action {
 			return true
 		}
 	}

@@ -129,7 +129,7 @@ func TestAddPolicy(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, tc.err)
 		repoCall1 := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, tc.err)
-		repoCall2 := pRepo.On("Update", context.Background(), tc.policy).Return(tc.err)
+		repoCall2 := pRepo.On("Retrieve", context.Background(), mock.Anything).Return(tc.page, tc.err)
 		repoCall3 := pRepo.On("Save", context.Background(), mock.Anything).Return(tc.policy, tc.err)
 		_, err := svc.AddPolicy(context.Background(), tc.token, tc.policy)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))

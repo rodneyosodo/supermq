@@ -106,7 +106,7 @@ func (svc service) AddPolicy(ctx context.Context, token string, p Policy) (Polic
 	if err != nil {
 		return Policy{}, err
 	}
-	if err := p.Validate(); err != nil {
+	if err := p.validate(); err != nil {
 		return Policy{}, err
 	}
 
@@ -127,8 +127,21 @@ func (svc service) AddPolicy(ctx context.Context, token string, p Policy) (Polic
 	}
 
 	// If the client has `g_add` action on the object or is the owner of the object, add the policy
-	ar := AccessRequest{Subject: userID, Object: p.Object, Action: "g_add"}
-	if _, err := svc.policies.EvaluateGroupAccess(ctx, ar); err == nil {
+	areq := AccessRequest{Subject: userID, Object: p.Object, Action: "g_add"}
+	if _, err := svc.policies.EvaluateGroupAccess(ctx, areq); err == nil {
+		page := Page{Subject: userID, Object: p.Object, Offset: 0, Limit: 1}
+		pol, err := svc.policies.Retrieve(ctx, page)
+		if err != nil {
+			return Policy{}, err
+		}
+		// the client has `g_add` action on the object
+		if len(pol.Policies) == 1 {
+			if err := checkActions(pol.Policies[0].Actions, p.Actions); err != nil {
+				return Policy{}, err
+			}
+		}
+
+		// the client is the owner of the object
 		return svc.policies.Save(ctx, p)
 	}
 
@@ -141,7 +154,7 @@ func (svc service) UpdatePolicy(ctx context.Context, token string, p Policy) (Po
 		return Policy{}, err
 	}
 
-	if err := p.Validate(); err != nil {
+	if err := p.validate(); err != nil {
 		return Policy{}, err
 	}
 	if err := svc.checkPolicy(ctx, userID, p); err != nil {
