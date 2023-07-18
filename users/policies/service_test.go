@@ -72,7 +72,6 @@ func TestAddPolicy(t *testing.T) {
 		},
 		{
 			desc: "add a new policy with c_update action",
-			page: policies.PolicyPage{},
 			policy: policies.Policy{
 				Subject: testsutil.GenerateUUID(t, idProvider),
 				Object:  testsutil.GenerateUUID(t, idProvider),
@@ -83,7 +82,6 @@ func TestAddPolicy(t *testing.T) {
 		},
 		{
 			desc: "add a new policy with c_update and c_list action",
-			page: policies.PolicyPage{},
 			policy: policies.Policy{
 				Subject: testsutil.GenerateUUID(t, idProvider),
 				Object:  testsutil.GenerateUUID(t, idProvider),
@@ -94,7 +92,6 @@ func TestAddPolicy(t *testing.T) {
 		},
 		{
 			desc: "add a new policy with g_update action",
-			page: policies.PolicyPage{},
 			policy: policies.Policy{
 				Subject: testsutil.GenerateUUID(t, idProvider),
 				Object:  testsutil.GenerateUUID(t, idProvider),
@@ -105,7 +102,6 @@ func TestAddPolicy(t *testing.T) {
 		},
 		{
 			desc: "add a new policy with g_update and g_list action",
-			page: policies.PolicyPage{},
 			policy: policies.Policy{
 				Subject: testsutil.GenerateUUID(t, idProvider),
 				Object:  testsutil.GenerateUUID(t, idProvider),

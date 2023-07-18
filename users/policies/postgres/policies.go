@@ -68,7 +68,7 @@ func (pr prepo) CheckAdmin(ctx context.Context, id string) error {
 func (pr prepo) EvaluateUserAccess(ctx context.Context, ar policies.AccessRequest) (policies.Policy, error) {
 	// Evaluates if two clients are connected to the same group and the subject has the specified action
 	// or subject is the owner of the object
-	query := fmt.Sprintf(`(SELECT subject FROM policies p 
+	query := fmt.Sprintf(`(SELECT subject, object, actions FROM policies p 
 	WHERE p.subject = :subject AND '%s' = ANY(p.actions) AND object IN (SELECT object FROM policies WHERE subject = :object))
 	UNION
 	(SELECT id as subject FROM clients c WHERE c.owner_id = :subject AND c.id = :object) LIMIT 1;`, ar.Action)
@@ -78,7 +78,8 @@ func (pr prepo) EvaluateUserAccess(ctx context.Context, ar policies.AccessReques
 
 func (pr prepo) EvaluateGroupAccess(ctx context.Context, ar policies.AccessRequest) (policies.Policy, error) {
 	// Evaluates if client is a member to that group and has the specified action or is the owner of the group
-	query := fmt.Sprintf(`(SELECT subject FROM policies p WHERE p.subject = :subject AND p.object = :object AND '%s' = ANY(p.actions))
+	query := fmt.Sprintf(`(SELECT subject, object, actions FROM policies p 
+	WHERE p.subject = :subject AND p.object = :object AND '%s' = ANY(p.actions))
 	UNION
 	(SELECT id as subject FROM groups g WHERE g.owner_id = :subject AND g.id = :object)`, ar.Action)
 
