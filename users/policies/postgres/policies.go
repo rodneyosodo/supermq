@@ -71,7 +71,7 @@ func (pr prepo) EvaluateUserAccess(ctx context.Context, ar policies.AccessReques
 	query := fmt.Sprintf(`(SELECT subject, object, actions FROM policies p 
 	WHERE p.subject = :subject AND '%s' = ANY(p.actions) AND object IN (SELECT object FROM policies WHERE subject = :object))
 	UNION
-	(SELECT id as subject FROM clients c WHERE c.owner_id = :subject AND c.id = :object) LIMIT 1;`, ar.Action)
+	(SELECT owner_id as subject, id as object, '{}' as actions FROM clients c WHERE c.owner_id = :subject AND c.id = :object) LIMIT 1;`, ar.Action)
 
 	return pr.evaluate(ctx, query, ar)
 }
@@ -81,7 +81,7 @@ func (pr prepo) EvaluateGroupAccess(ctx context.Context, ar policies.AccessReque
 	query := fmt.Sprintf(`(SELECT subject, object, actions FROM policies p 
 	WHERE p.subject = :subject AND p.object = :object AND '%s' = ANY(p.actions))
 	UNION
-	(SELECT id as subject FROM groups g WHERE g.owner_id = :subject AND g.id = :object)`, ar.Action)
+	(SELECT owner_id as subject, id as object, '{}' as actions FROM groups g WHERE g.owner_id = :subject AND g.id = :object)`, ar.Action)
 
 	return pr.evaluate(ctx, query, ar)
 }
