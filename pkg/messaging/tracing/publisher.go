@@ -14,7 +14,7 @@ import (
 )
 
 // Traced operations.
-const publishOP = "publish_op"
+const publishOP = "publish"
 
 var defaultAttributes = []attribute.KeyValue{
 	attribute.String("messaging.system", "nats"),
