@@ -167,12 +167,12 @@ func ValidateAction(act string) bool {
 
 }
 
-// addListAction adds list actions to the actions slice if c_ or g_ actions are present.
+// AddListAction adds list actions to the actions slice if c_ or g_ actions are present.
 //
 // 1. If c_<anything> actions are present, add c_list and g_list actions to the actions slice.
 //
 // 2. If g_<anything> actions are present, add g_list action to the actions slice.
-func addListAction(actions []string) []string {
+func AddListAction(actions []string) []string {
 	hasCAction := false
 	hasGAction := false
 

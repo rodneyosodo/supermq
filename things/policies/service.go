@@ -115,6 +115,9 @@ func (svc service) AddPolicy(ctx context.Context, token string, external bool, p
 	if err := p.validate(); err != nil {
 		return Policy{}, err
 	}
+	if external {
+		p.Actions = upolicies.AddListAction(p.Actions)
+	}
 
 	p.OwnerID = userID
 	p.CreatedAt = time.Now()
