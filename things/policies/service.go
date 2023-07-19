@@ -30,13 +30,8 @@ const (
 	thingsObjectKey = "things"
 )
 
-var (
-	// ErrInvalidEntityType indicates that the entity type is invalid.
-	ErrInvalidEntityType = errors.New("invalid entity type")
-
-	// ErrInvalidClient indicates that the client is invalid.
-	ErrInvalidClient = errors.New("invalid client")
-)
+// ErrInvalidEntityType indicates that the entity type is invalid.
+var ErrInvalidEntityType = errors.New("invalid entity type")
 
 type service struct {
 	auth        upolicies.AuthServiceClient
@@ -174,17 +169,13 @@ func (svc service) checkSubject(ctx context.Context, userID string, external boo
 		if _, err := svc.policies.EvaluateThingAccess(ctx, ar); err != nil {
 			return err
 		}
-
-		return nil
 	case true:
 		if err := svc.usersAuthorize(ctx, userID, p.Subject, sharePolicyAction, ClientEntityType); err != nil {
 			return err
 		}
-
-		return nil
-	default:
-		return ErrInvalidClient
 	}
+
+	return nil
 }
 
 func (svc service) UpdatePolicy(ctx context.Context, token string, p Policy) (Policy, error) {
