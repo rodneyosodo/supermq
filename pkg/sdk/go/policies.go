@@ -10,10 +10,9 @@ import (
 )
 
 const (
-	usersPolicyEndpoint  = "policies"
-	thingsPolicyEndpoint = "policies"
-	authorizeEndpoint    = "authorize"
-	accessEndpoint       = "access"
+	policyEndpoint    = "policies"
+	authorizeEndpoint = "authorize"
+	accessEndpoint    = "access"
 )
 
 // Policy represents an argument struct for making a policy related function calls.
@@ -54,7 +53,7 @@ func (sdk mfSDK) CreateUserPolicy(p Policy, token string) errors.SDKError {
 		return errors.NewSDKError(err)
 	}
 
-	url := fmt.Sprintf("%s/%s", sdk.usersURL, usersPolicyEndpoint)
+	url := fmt.Sprintf("%s/%s", sdk.usersURL, policyEndpoint)
 	_, _, sdkerr := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), data, http.StatusCreated)
 	if sdkerr != nil {
 		return sdkerr
@@ -69,7 +68,7 @@ func (sdk mfSDK) UpdateUserPolicy(p Policy, token string) errors.SDKError {
 		return errors.NewSDKError(err)
 	}
 
-	url := fmt.Sprintf("%s/%s", sdk.usersURL, usersPolicyEndpoint)
+	url := fmt.Sprintf("%s/%s", sdk.usersURL, policyEndpoint)
 
 	_, _, sdkerr := sdk.processRequest(http.MethodPut, url, token, string(CTJSON), data, http.StatusNoContent)
 	if sdkerr != nil {
@@ -80,7 +79,7 @@ func (sdk mfSDK) UpdateUserPolicy(p Policy, token string) errors.SDKError {
 }
 
 func (sdk mfSDK) ListUserPolicies(pm PageMetadata, token string) (PolicyPage, errors.SDKError) {
-	url, err := sdk.withQueryParams(sdk.usersURL, usersPolicyEndpoint, pm)
+	url, err := sdk.withQueryParams(sdk.usersURL, policyEndpoint, pm)
 	if err != nil {
 		return PolicyPage{}, errors.NewSDKError(err)
 	}
@@ -99,7 +98,7 @@ func (sdk mfSDK) ListUserPolicies(pm PageMetadata, token string) (PolicyPage, er
 }
 
 func (sdk mfSDK) DeleteUserPolicy(p Policy, token string) errors.SDKError {
-	url := fmt.Sprintf("%s/%s/%s/%s", sdk.usersURL, usersPolicyEndpoint, p.Subject, p.Object)
+	url := fmt.Sprintf("%s/%s/%s/%s", sdk.usersURL, policyEndpoint, p.Subject, p.Object)
 	_, _, sdkerr := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), nil, http.StatusNoContent)
 
 	return sdkerr
@@ -111,7 +110,7 @@ func (sdk mfSDK) CreateThingPolicy(p Policy, token string) errors.SDKError {
 		return errors.NewSDKError(err)
 	}
 
-	url := fmt.Sprintf("%s/%s", sdk.thingsURL, thingsPolicyEndpoint)
+	url := fmt.Sprintf("%s/%s", sdk.thingsURL, policyEndpoint)
 	_, _, sdkerr := sdk.processRequest(http.MethodPost, url, token, string(CTJSON), data, http.StatusCreated)
 	if sdkerr != nil {
 		return sdkerr
@@ -126,7 +125,7 @@ func (sdk mfSDK) UpdateThingPolicy(p Policy, token string) errors.SDKError {
 		return errors.NewSDKError(err)
 	}
 
-	url := fmt.Sprintf("%s/%s", sdk.thingsURL, thingsPolicyEndpoint)
+	url := fmt.Sprintf("%s/%s", sdk.thingsURL, policyEndpoint)
 
 	_, _, sdkerr := sdk.processRequest(http.MethodPut, url, token, string(CTJSON), data, http.StatusNoContent)
 	if sdkerr != nil {
@@ -137,7 +136,7 @@ func (sdk mfSDK) UpdateThingPolicy(p Policy, token string) errors.SDKError {
 }
 
 func (sdk mfSDK) ListThingPolicies(pm PageMetadata, token string) (PolicyPage, errors.SDKError) {
-	url, err := sdk.withQueryParams(sdk.thingsURL, thingsPolicyEndpoint, pm)
+	url, err := sdk.withQueryParams(sdk.thingsURL, policyEndpoint, pm)
 	if err != nil {
 		return PolicyPage{}, errors.NewSDKError(err)
 	}
@@ -156,7 +155,7 @@ func (sdk mfSDK) ListThingPolicies(pm PageMetadata, token string) (PolicyPage, e
 }
 
 func (sdk mfSDK) DeleteThingPolicy(p Policy, token string) errors.SDKError {
-	url := fmt.Sprintf("%s/%s/%s/%s", sdk.thingsURL, thingsPolicyEndpoint, p.Subject, p.Object)
+	url := fmt.Sprintf("%s/%s/%s/%s", sdk.thingsURL, policyEndpoint, p.Subject, p.Object)
 	_, _, sdkerr := sdk.processRequest(http.MethodDelete, url, token, string(CTJSON), nil, http.StatusNoContent)
 
 	return sdkerr

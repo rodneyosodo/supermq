@@ -93,7 +93,7 @@ func listPolicyEndpoint(svc policies.Service) endpoint.Endpoint {
 		if err != nil {
 			return listPolicyRes{}, err
 		}
-		return buildGroupsResponse(page), nil
+		return buildPoliciesResponse(page), nil
 	}
 }
 
@@ -115,18 +115,7 @@ func deletePolicyEndpoint(svc policies.Service) endpoint.Endpoint {
 	}
 }
 
-func toViewPolicyRes(group policies.Policy) viewPolicyRes {
-	return viewPolicyRes{
-		OwnerID:   group.OwnerID,
-		Subject:   group.Subject,
-		Object:    group.Object,
-		Actions:   group.Actions,
-		CreatedAt: group.CreatedAt,
-		UpdatedAt: group.UpdatedAt,
-	}
-}
-
-func buildGroupsResponse(page policies.PolicyPage) listPolicyRes {
+func buildPoliciesResponse(page policies.PolicyPage) listPolicyRes {
 	res := listPolicyRes{
 		pageRes: pageRes{
 			Limit:  page.Limit,
@@ -136,8 +125,8 @@ func buildGroupsResponse(page policies.PolicyPage) listPolicyRes {
 		Policies: []viewPolicyRes{},
 	}
 
-	for _, group := range page.Policies {
-		res.Policies = append(res.Policies, toViewPolicyRes(group))
+	for _, policy := range page.Policies {
+		res.Policies = append(res.Policies, viewPolicyRes{policy})
 	}
 
 	return res

@@ -67,7 +67,7 @@ type MembershipsPage struct {
 // of Policies that belong to the page.
 type PolicyPage struct {
 	PageMetadata
-	Policies []Policy
+	Policies []Policy `json:"policies"`
 }
 
 type revokeCertsRes struct {

@@ -82,7 +82,7 @@ func connectThingsEndpoint(svc policies.Service) endpoint.Endpoint {
 		if len(cr.Actions) == 0 {
 			cr.Actions = policies.PolicyTypes
 		}
-		var pols []policies.Policy
+		var pols policies.PolicyPage
 		for _, tid := range cr.Subjects {
 			for _, cid := range cr.Objects {
 				policy := policies.Policy{
@@ -94,16 +94,11 @@ func connectThingsEndpoint(svc policies.Service) endpoint.Endpoint {
 				if err != nil {
 					return listPolicyRes{}, err
 				}
-				pols = append(pols, p)
+				pols.Policies = append(pols.Policies, p)
 			}
 		}
 
-		return listPolicyRes{
-			Policies: pols,
-			pageRes: pageRes{
-				Total: uint64(len(pols)),
-			},
-		}, nil
+		return buildPoliciesResponse(pols), nil
 	}
 }
 
@@ -148,14 +143,7 @@ func listPoliciesEndpoint(svc policies.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return listPolicyRes{
-			Policies: policyPage.Policies,
-			pageRes: pageRes{
-				Total:  policyPage.Total,
-				Offset: policyPage.Offset,
-				Limit:  policyPage.Limit,
-			},
-		}, nil
+		return buildPoliciesResponse(policyPage), nil
 	}
 }
 
@@ -202,4 +190,21 @@ func disconnectThingsEndpoint(svc policies.Service) endpoint.Endpoint {
 
 		return deletePolicyRes{deleted: true}, nil
 	}
+}
+
+func buildPoliciesResponse(page policies.PolicyPage) listPolicyRes {
+	res := listPolicyRes{
+		pageRes: pageRes{
+			Limit:  page.Limit,
+			Offset: page.Offset,
+			Total:  page.Total,
+		},
+		Policies: []viewPolicyRes{},
+	}
+
+	for _, policy := range page.Policies {
+		res.Policies = append(res.Policies, viewPolicyRes{policy})
+	}
+
+	return res
 }

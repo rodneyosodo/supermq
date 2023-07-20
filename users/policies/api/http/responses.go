@@ -5,9 +5,9 @@ package http
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/mainflux/mainflux"
+	"github.com/mainflux/mainflux/users/policies"
 )
 
 var (
@@ -66,12 +66,7 @@ func (res addPolicyRes) Empty() bool {
 }
 
 type viewPolicyRes struct {
-	OwnerID   string    `json:"owner_id"`
-	Subject   string    `json:"subject"`
-	Object    string    `json:"object"`
-	Actions   []string  `json:"actions"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	policies.Policy `json:",inline"`
 }
 
 func (res viewPolicyRes) Code() int {

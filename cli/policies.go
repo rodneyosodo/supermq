@@ -124,7 +124,7 @@ var cmdPolicies = []cobra.Command{
 				logJSON(policies)
 				return
 			case users:
-				policies, err := sdk.ListUserPolicies(pm, args[0])
+				policies, err := sdk.ListUserPolicies(pm, args[1])
 				if err != nil {
 					logError(err)
 					return

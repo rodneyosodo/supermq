@@ -123,7 +123,7 @@ func (res updatePolicyRes) Empty() bool {
 
 type listPolicyRes struct {
 	pageRes
-	Policies []policies.Policy `json:"policies"`
+	Policies []viewPolicyRes `json:"policies"`
 }
 
 func (res listPolicyRes) Code() int {
