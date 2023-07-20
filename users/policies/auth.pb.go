@@ -141,108 +141,6 @@ func (x *AuthorizeRes) GetAuthorized() bool {
 	return false
 }
 
-type IssueReq struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Identity string `protobuf:"bytes,1,opt,name=identity,proto3" json:"identity,omitempty"`
-	Secret   string `protobuf:"bytes,2,opt,name=secret,proto3" json:"secret,omitempty"`
-}
-
-func (x *IssueReq) Reset() {
-	*x = IssueReq{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_users_policies_auth_proto_msgTypes[2]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *IssueReq) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*IssueReq) ProtoMessage() {}
-
-func (x *IssueReq) ProtoReflect() protoreflect.Message {
-	mi := &file_users_policies_auth_proto_msgTypes[2]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use IssueReq.ProtoReflect.Descriptor instead.
-func (*IssueReq) Descriptor() ([]byte, []int) {
-	return file_users_policies_auth_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *IssueReq) GetIdentity() string {
-	if x != nil {
-		return x.Identity
-	}
-	return ""
-}
-
-func (x *IssueReq) GetSecret() string {
-	if x != nil {
-		return x.Secret
-	}
-	return ""
-}
-
-type IssueRes struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-}
-
-func (x *IssueRes) Reset() {
-	*x = IssueRes{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_users_policies_auth_proto_msgTypes[3]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *IssueRes) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*IssueRes) ProtoMessage() {}
-
-func (x *IssueRes) ProtoReflect() protoreflect.Message {
-	mi := &file_users_policies_auth_proto_msgTypes[3]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use IssueRes.ProtoReflect.Descriptor instead.
-func (*IssueRes) Descriptor() ([]byte, []int) {
-	return file_users_policies_auth_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *IssueRes) GetToken() string {
-	if x != nil {
-		return x.Token
-	}
-	return ""
-}
-
 type IdentifyReq struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -254,7 +152,7 @@ type IdentifyReq struct {
 func (x *IdentifyReq) Reset() {
 	*x = IdentifyReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_users_policies_auth_proto_msgTypes[4]
+		mi := &file_users_policies_auth_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -267,7 +165,7 @@ func (x *IdentifyReq) String() string {
 func (*IdentifyReq) ProtoMessage() {}
 
 func (x *IdentifyReq) ProtoReflect() protoreflect.Message {
-	mi := &file_users_policies_auth_proto_msgTypes[4]
+	mi := &file_users_policies_auth_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -280,7 +178,7 @@ func (x *IdentifyReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IdentifyReq.ProtoReflect.Descriptor instead.
 func (*IdentifyReq) Descriptor() ([]byte, []int) {
-	return file_users_policies_auth_proto_rawDescGZIP(), []int{4}
+	return file_users_policies_auth_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *IdentifyReq) GetToken() string {
@@ -301,7 +199,7 @@ type IdentifyRes struct {
 func (x *IdentifyRes) Reset() {
 	*x = IdentifyRes{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_users_policies_auth_proto_msgTypes[5]
+		mi := &file_users_policies_auth_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -314,7 +212,7 @@ func (x *IdentifyRes) String() string {
 func (*IdentifyRes) ProtoMessage() {}
 
 func (x *IdentifyRes) ProtoReflect() protoreflect.Message {
-	mi := &file_users_policies_auth_proto_msgTypes[5]
+	mi := &file_users_policies_auth_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -327,7 +225,7 @@ func (x *IdentifyRes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IdentifyRes.ProtoReflect.Descriptor instead.
 func (*IdentifyRes) Descriptor() ([]byte, []int) {
-	return file_users_policies_auth_proto_rawDescGZIP(), []int{5}
+	return file_users_policies_auth_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *IdentifyRes) GetId() string {
@@ -335,234 +233,6 @@ func (x *IdentifyRes) GetId() string {
 		return x.Id
 	}
 	return ""
-}
-
-type AddPolicyReq struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Token   string   `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	Subject string   `protobuf:"bytes,2,opt,name=subject,proto3" json:"subject,omitempty"`
-	Object  string   `protobuf:"bytes,3,opt,name=object,proto3" json:"object,omitempty"`
-	Action  []string `protobuf:"bytes,4,rep,name=action,proto3" json:"action,omitempty"`
-}
-
-func (x *AddPolicyReq) Reset() {
-	*x = AddPolicyReq{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_users_policies_auth_proto_msgTypes[6]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *AddPolicyReq) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*AddPolicyReq) ProtoMessage() {}
-
-func (x *AddPolicyReq) ProtoReflect() protoreflect.Message {
-	mi := &file_users_policies_auth_proto_msgTypes[6]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use AddPolicyReq.ProtoReflect.Descriptor instead.
-func (*AddPolicyReq) Descriptor() ([]byte, []int) {
-	return file_users_policies_auth_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *AddPolicyReq) GetToken() string {
-	if x != nil {
-		return x.Token
-	}
-	return ""
-}
-
-func (x *AddPolicyReq) GetSubject() string {
-	if x != nil {
-		return x.Subject
-	}
-	return ""
-}
-
-func (x *AddPolicyReq) GetObject() string {
-	if x != nil {
-		return x.Object
-	}
-	return ""
-}
-
-func (x *AddPolicyReq) GetAction() []string {
-	if x != nil {
-		return x.Action
-	}
-	return nil
-}
-
-type AddPolicyRes struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Added bool `protobuf:"varint,1,opt,name=added,proto3" json:"added,omitempty"`
-}
-
-func (x *AddPolicyRes) Reset() {
-	*x = AddPolicyRes{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_users_policies_auth_proto_msgTypes[7]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *AddPolicyRes) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*AddPolicyRes) ProtoMessage() {}
-
-func (x *AddPolicyRes) ProtoReflect() protoreflect.Message {
-	mi := &file_users_policies_auth_proto_msgTypes[7]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use AddPolicyRes.ProtoReflect.Descriptor instead.
-func (*AddPolicyRes) Descriptor() ([]byte, []int) {
-	return file_users_policies_auth_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *AddPolicyRes) GetAdded() bool {
-	if x != nil {
-		return x.Added
-	}
-	return false
-}
-
-type DeletePolicyReq struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Token   string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	Subject string `protobuf:"bytes,2,opt,name=subject,proto3" json:"subject,omitempty"`
-	Object  string `protobuf:"bytes,3,opt,name=object,proto3" json:"object,omitempty"`
-}
-
-func (x *DeletePolicyReq) Reset() {
-	*x = DeletePolicyReq{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_users_policies_auth_proto_msgTypes[8]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *DeletePolicyReq) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeletePolicyReq) ProtoMessage() {}
-
-func (x *DeletePolicyReq) ProtoReflect() protoreflect.Message {
-	mi := &file_users_policies_auth_proto_msgTypes[8]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeletePolicyReq.ProtoReflect.Descriptor instead.
-func (*DeletePolicyReq) Descriptor() ([]byte, []int) {
-	return file_users_policies_auth_proto_rawDescGZIP(), []int{8}
-}
-
-func (x *DeletePolicyReq) GetToken() string {
-	if x != nil {
-		return x.Token
-	}
-	return ""
-}
-
-func (x *DeletePolicyReq) GetSubject() string {
-	if x != nil {
-		return x.Subject
-	}
-	return ""
-}
-
-func (x *DeletePolicyReq) GetObject() string {
-	if x != nil {
-		return x.Object
-	}
-	return ""
-}
-
-type DeletePolicyRes struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Deleted bool `protobuf:"varint,1,opt,name=deleted,proto3" json:"deleted,omitempty"`
-}
-
-func (x *DeletePolicyRes) Reset() {
-	*x = DeletePolicyRes{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_users_policies_auth_proto_msgTypes[9]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *DeletePolicyRes) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeletePolicyRes) ProtoMessage() {}
-
-func (x *DeletePolicyRes) ProtoReflect() protoreflect.Message {
-	mi := &file_users_policies_auth_proto_msgTypes[9]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeletePolicyRes.ProtoReflect.Descriptor instead.
-func (*DeletePolicyRes) Descriptor() ([]byte, []int) {
-	return file_users_policies_auth_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *DeletePolicyRes) GetDeleted() bool {
-	if x != nil {
-		return x.Deleted
-	}
-	return false
 }
 
 var File_users_policies_auth_proto protoreflect.FileDescriptor
@@ -581,36 +251,12 @@ var file_users_policies_auth_proto_rawDesc = []byte{
 	0x28, 0x09, 0x52, 0x0a, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x54, 0x79, 0x70, 0x65, 0x22, 0x2e,
 	0x0a, 0x0c, 0x41, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x65, 0x52, 0x65, 0x73, 0x12, 0x1e,
 	0x0a, 0x0a, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x65, 0x64, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x08, 0x52, 0x0a, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x65, 0x64, 0x22, 0x3e,
-	0x0a, 0x08, 0x49, 0x73, 0x73, 0x75, 0x65, 0x52, 0x65, 0x71, 0x12, 0x1a, 0x0a, 0x08, 0x69, 0x64,
-	0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x69, 0x64,
-	0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x12, 0x16, 0x0a, 0x06, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x22, 0x20,
-	0x0a, 0x08, 0x49, 0x73, 0x73, 0x75, 0x65, 0x52, 0x65, 0x73, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x6f,
-	0x6b, 0x65, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x6f, 0x6b, 0x65, 0x6e,
-	0x22, 0x23, 0x0a, 0x0b, 0x49, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x66, 0x79, 0x52, 0x65, 0x71, 0x12,
-	0x14, 0x0a, 0x05, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
-	0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x22, 0x1d, 0x0a, 0x0b, 0x49, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x66,
-	0x79, 0x52, 0x65, 0x73, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x02, 0x69, 0x64, 0x22, 0x6e, 0x0a, 0x0c, 0x41, 0x64, 0x64, 0x50, 0x6f, 0x6c, 0x69, 0x63,
-	0x79, 0x52, 0x65, 0x71, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75,
-	0x62, 0x6a, 0x65, 0x63, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x73, 0x75, 0x62,
-	0x6a, 0x65, 0x63, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x6f, 0x62, 0x6a, 0x65, 0x63, 0x74, 0x18, 0x03,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x6f, 0x62, 0x6a, 0x65, 0x63, 0x74, 0x12, 0x16, 0x0a, 0x06,
-	0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x06, 0x61, 0x63,
-	0x74, 0x69, 0x6f, 0x6e, 0x22, 0x24, 0x0a, 0x0c, 0x41, 0x64, 0x64, 0x50, 0x6f, 0x6c, 0x69, 0x63,
-	0x79, 0x52, 0x65, 0x73, 0x12, 0x14, 0x0a, 0x05, 0x61, 0x64, 0x64, 0x65, 0x64, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x08, 0x52, 0x05, 0x61, 0x64, 0x64, 0x65, 0x64, 0x22, 0x59, 0x0a, 0x0f, 0x44, 0x65,
-	0x6c, 0x65, 0x74, 0x65, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x52, 0x65, 0x71, 0x12, 0x14, 0x0a,
+	0x28, 0x08, 0x52, 0x0a, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x65, 0x64, 0x22, 0x23,
+	0x0a, 0x0b, 0x49, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x66, 0x79, 0x52, 0x65, 0x71, 0x12, 0x14, 0x0a,
 	0x05, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x6f,
-	0x6b, 0x65, 0x6e, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x62, 0x6a, 0x65, 0x63, 0x74, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x73, 0x75, 0x62, 0x6a, 0x65, 0x63, 0x74, 0x12, 0x16, 0x0a,
-	0x06, 0x6f, 0x62, 0x6a, 0x65, 0x63, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x6f,
-	0x62, 0x6a, 0x65, 0x63, 0x74, 0x22, 0x2b, 0x0a, 0x0f, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x50,
-	0x6f, 0x6c, 0x69, 0x63, 0x79, 0x52, 0x65, 0x73, 0x12, 0x18, 0x0a, 0x07, 0x64, 0x65, 0x6c, 0x65,
-	0x74, 0x65, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x64, 0x65, 0x6c, 0x65, 0x74,
-	0x65, 0x64, 0x32, 0xc4, 0x01, 0x0a, 0x0b, 0x41, 0x75, 0x74, 0x68, 0x53, 0x65, 0x72, 0x76, 0x69,
+	0x6b, 0x65, 0x6e, 0x22, 0x1d, 0x0a, 0x0b, 0x49, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x66, 0x79, 0x52,
+	0x65, 0x73, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02,
+	0x69, 0x64, 0x32, 0xc4, 0x01, 0x0a, 0x0b, 0x41, 0x75, 0x74, 0x68, 0x53, 0x65, 0x72, 0x76, 0x69,
 	0x63, 0x65, 0x12, 0x58, 0x0a, 0x08, 0x49, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x66, 0x79, 0x12, 0x24,
 	0x2e, 0x6d, 0x61, 0x69, 0x6e, 0x66, 0x6c, 0x75, 0x78, 0x2e, 0x75, 0x73, 0x65, 0x72, 0x73, 0x2e,
 	0x70, 0x6f, 0x6c, 0x69, 0x63, 0x69, 0x65, 0x73, 0x2e, 0x49, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x66,
@@ -638,23 +284,17 @@ func file_users_policies_auth_proto_rawDescGZIP() []byte {
 	return file_users_policies_auth_proto_rawDescData
 }
 
-var file_users_policies_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_users_policies_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_users_policies_auth_proto_goTypes = []interface{}{
-	(*AuthorizeReq)(nil),    // 0: mainflux.users.policies.AuthorizeReq
-	(*AuthorizeRes)(nil),    // 1: mainflux.users.policies.AuthorizeRes
-	(*IssueReq)(nil),        // 2: mainflux.users.policies.IssueReq
-	(*IssueRes)(nil),        // 3: mainflux.users.policies.IssueRes
-	(*IdentifyReq)(nil),     // 4: mainflux.users.policies.IdentifyReq
-	(*IdentifyRes)(nil),     // 5: mainflux.users.policies.IdentifyRes
-	(*AddPolicyReq)(nil),    // 6: mainflux.users.policies.AddPolicyReq
-	(*AddPolicyRes)(nil),    // 7: mainflux.users.policies.AddPolicyRes
-	(*DeletePolicyReq)(nil), // 8: mainflux.users.policies.DeletePolicyReq
-	(*DeletePolicyRes)(nil), // 9: mainflux.users.policies.DeletePolicyRes
+	(*AuthorizeReq)(nil), // 0: mainflux.users.policies.AuthorizeReq
+	(*AuthorizeRes)(nil), // 1: mainflux.users.policies.AuthorizeRes
+	(*IdentifyReq)(nil),  // 2: mainflux.users.policies.IdentifyReq
+	(*IdentifyRes)(nil),  // 3: mainflux.users.policies.IdentifyRes
 }
 var file_users_policies_auth_proto_depIdxs = []int32{
-	4, // 0: mainflux.users.policies.AuthService.Identify:input_type -> mainflux.users.policies.IdentifyReq
+	2, // 0: mainflux.users.policies.AuthService.Identify:input_type -> mainflux.users.policies.IdentifyReq
 	0, // 1: mainflux.users.policies.AuthService.Authorize:input_type -> mainflux.users.policies.AuthorizeReq
-	5, // 2: mainflux.users.policies.AuthService.Identify:output_type -> mainflux.users.policies.IdentifyRes
+	3, // 2: mainflux.users.policies.AuthService.Identify:output_type -> mainflux.users.policies.IdentifyRes
 	1, // 3: mainflux.users.policies.AuthService.Authorize:output_type -> mainflux.users.policies.AuthorizeRes
 	2, // [2:4] is the sub-list for method output_type
 	0, // [0:2] is the sub-list for method input_type
@@ -694,30 +334,6 @@ func file_users_policies_auth_proto_init() {
 			}
 		}
 		file_users_policies_auth_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*IssueReq); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_users_policies_auth_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*IssueRes); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_users_policies_auth_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*IdentifyReq); i {
 			case 0:
 				return &v.state
@@ -729,56 +345,8 @@ func file_users_policies_auth_proto_init() {
 				return nil
 			}
 		}
-		file_users_policies_auth_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_users_policies_auth_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*IdentifyRes); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_users_policies_auth_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AddPolicyReq); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_users_policies_auth_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AddPolicyRes); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_users_policies_auth_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DeletePolicyReq); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_users_policies_auth_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DeletePolicyRes); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -796,7 +364,7 @@ func file_users_policies_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_users_policies_auth_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

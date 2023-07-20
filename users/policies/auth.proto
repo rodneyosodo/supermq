@@ -27,40 +27,10 @@ message AuthorizeRes {
     bool authorized = 1;
 }
 
-message IssueReq {
-    string identity = 1;
-    string secret   = 2;
-}
-
-message IssueRes {
-    string token = 1;
-}
-
 message IdentifyReq {
     string token = 1;
 }
 
 message IdentifyRes {
     string id = 1;
-}
-
-message AddPolicyReq {
-    string token           = 1;
-    string subject         = 2;
-    string object          = 3;
-    repeated string action = 4;
-}
-
-message AddPolicyRes {
-    bool added = 1;
-}
-
-message DeletePolicyReq {
-    string token   = 1;
-    string subject = 2;
-    string object  = 3;
-}
-
-message DeletePolicyRes {
-    bool deleted = 1;
 }
