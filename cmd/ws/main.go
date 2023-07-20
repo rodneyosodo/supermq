@@ -34,7 +34,6 @@ import (
 
 const (
 	svcName        = "ws-adapter"
-	envPrefix      = "MF_WS_ADAPTER_"
 	envPrefixHttp  = "MF_WS_ADAPTER_HTTP_"
 	defSvcHttpPort = "8190"
 )
@@ -69,7 +68,7 @@ func main() {
 		}
 	}
 
-	tc, tcHandler, err := thingsClient.Setup(envPrefix)
+	tc, tcHandler, err := thingsClient.Setup()
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -103,7 +102,7 @@ func main() {
 	svc := newService(tc, nps, logger, tracer)
 
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

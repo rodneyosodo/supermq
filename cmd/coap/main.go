@@ -67,7 +67,7 @@ func main() {
 		}
 	}
 
-	tc, tcHandler, err := thingsClient.Setup(envPrefix)
+	tc, tcHandler, err := thingsClient.Setup()
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -106,7 +106,7 @@ func main() {
 	svc = api.MetricsMiddleware(svc, counter, latency)
 
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return
@@ -114,7 +114,7 @@ func main() {
 	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(instanceID), logger)
 
 	coapServerConfig := server.Config{Port: defSvcCoapPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixCoap, AltPrefix: envPrefix}); err != nil {
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefix}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s CoAP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

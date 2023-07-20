@@ -33,7 +33,6 @@ import (
 
 const (
 	svcName        = "cassandra-writer"
-	envPrefix      = "MF_CASSANDRA_WRITER_"
 	envPrefixDB    = "MF_CASSANDRA_"
 	envPrefixHttp  = "MF_CASSANDRA_WRITER_HTTP_"
 	defSvcHttpPort = "9004"

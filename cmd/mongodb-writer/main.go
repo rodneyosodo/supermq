@@ -32,7 +32,6 @@ import (
 
 const (
 	svcName        = "mongodb-writer"
-	envPrefix      = "MF_MONGO_WRITER_"
 	envPrefixDB    = "MF_MONGO_"
 	envPrefixHttp  = "MF_MONGO_WRITER_HTTP_"
 	defSvcHttpPort = "9008"

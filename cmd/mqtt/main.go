@@ -38,7 +38,6 @@ import (
 
 const (
 	svcName     = "mqtt"
-	envPrefix   = "MF_MQTT_ADAPTER_"
 	envPrefixES = "MF_MQTT_ADAPTER_ES_"
 )
 
@@ -150,7 +149,7 @@ func main() {
 
 	es := mqttredis.NewEventStore(ec, cfg.Instance)
 
-	tc, tcHandler, err := thingsClient.Setup(envPrefix)
+	tc, tcHandler, err := thingsClient.Setup()
 	if err != nil {
 		logger.Error(err.Error())
 		exitCode = 1

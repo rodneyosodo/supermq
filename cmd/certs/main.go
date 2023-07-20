@@ -36,7 +36,6 @@ import (
 
 const (
 	svcName        = "certs"
-	envPrefix      = "MF_CERTS_"
 	envPrefixDB    = "MF_CERTS_DB_"
 	envPrefixHttp  = "MF_CERTS_HTTP_"
 	defDB          = "certs"
@@ -102,7 +101,7 @@ func main() {
 	defer mflog.ExitWithError(&exitCode)
 	defer db.Close()
 
-	auth, authHandler, err := authClient.Setup(envPrefix, svcName)
+	auth, authHandler, err := authClient.Setup(svcName)
 	if err != nil {
 		logger.Error(err.Error())
 		exitCode = 1
@@ -125,7 +124,7 @@ func main() {
 	svc := newService(auth, db, tracer, logger, cfg, pkiClient)
 
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
 		logger.Fatal(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 	}
 	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(svc, logger, instanceID), logger)

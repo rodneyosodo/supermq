@@ -31,7 +31,6 @@ import (
 
 const (
 	svcName        = "influxdb-reader"
-	envPrefix      = "MF_INFLUX_READER_"
 	envPrefixHttp  = "MF_INFLUX_READER_HTTP_"
 	envPrefixDB    = "MF_INFLUXDB_"
 	defSvcHttpPort = "9005"
@@ -65,7 +64,7 @@ func main() {
 		}
 	}
 
-	tc, tcHandler, err := thingsClient.Setup(envPrefix)
+	tc, tcHandler, err := thingsClient.Setup()
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -74,7 +73,7 @@ func main() {
 	defer tcHandler.Close()
 	logger.Info("Successfully connected to things grpc server " + tcHandler.Secure())
 
-	auth, authHandler, err := authClient.Setup(envPrefix, svcName)
+	auth, authHandler, err := authClient.Setup(svcName)
 	if err != nil {
 		logger.Error(err.Error())
 		exitCode = 1
@@ -107,7 +106,7 @@ func main() {
 	repo := newService(client, repocfg, logger)
 
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

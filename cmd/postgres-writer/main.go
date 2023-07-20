@@ -32,7 +32,6 @@ import (
 
 const (
 	svcName        = "postgres-writer"
-	envPrefix      = "MF_POSTGRES_WRITER_"
 	envPrefixDB    = "MF_POSTGRES_"
 	envPrefixHttp  = "MF_POSTGRES_WRITER_HTTP_"
 	defDB          = "messages"

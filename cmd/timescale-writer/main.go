@@ -33,7 +33,6 @@ import (
 
 const (
 	svcName        = "timescaledb-writer"
-	envPrefix      = "MF_TIMESCALE_WRITER_"
 	envPrefixDB    = "MF_TIMESCALE_"
 	envPrefixHttp  = "MF_TIMESCALE_WRITER_HTTP_"
 	defDB          = "messages"

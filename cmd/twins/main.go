@@ -42,7 +42,6 @@ import (
 const (
 	svcName        = "twins"
 	queue          = "twins"
-	envPrefix      = "MF_TWINS_"
 	envPrefixDB    = "MF_TWINS_DB_"
 	envPrefixHttp  = "MF_TWINS_HTTP_"
 	envPrefixCache = "MF_TWINS_CACHE_"
@@ -123,7 +122,7 @@ func main() {
 	case true:
 		auth = localusers.NewAuthService(cfg.StandaloneID, cfg.StandaloneToken)
 	default:
-		authServiceClient, authHandler, err := authClient.Setup(envPrefix, svcName)
+		authServiceClient, authHandler, err := authClient.Setup(svcName)
 		if err != nil {
 			logger.Error(err.Error())
 			exitCode = 1
@@ -146,7 +145,7 @@ func main() {
 	svc := newService(ctx, svcName, pubSub, cfg.ChannelID, auth, tracer, db, cacheClient, esClient, logger)
 
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

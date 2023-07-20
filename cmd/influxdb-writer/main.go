@@ -30,7 +30,6 @@ import (
 
 const (
 	svcName        = "influxdb-writer"
-	envPrefix      = "MF_INFLUX_WRITER_"
 	envPrefixHttp  = "MF_INFLUX_WRITER_HTTP_"
 	envPrefixDB    = "MF_INFLUXDB_"
 	defSvcHttpPort = "9006"

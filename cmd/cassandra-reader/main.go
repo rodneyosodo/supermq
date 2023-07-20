@@ -30,7 +30,6 @@ import (
 
 const (
 	svcName        = "cassandra-reader"
-	envPrefix      = "MF_CASSANDRA_READER_"
 	envPrefixDB    = "MF_CASSANDRA_"
 	envPrefixHttp  = "MF_CASSANDRA_READER_HTTP_"
 	defSvcHttpPort = "9003"
@@ -67,7 +66,7 @@ func main() {
 	}
 
 	// Create new thing grpc client
-	tc, tcHandler, err := thingsClient.Setup(envPrefix)
+	tc, tcHandler, err := thingsClient.Setup()
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -77,7 +76,7 @@ func main() {
 	logger.Info("Successfully connected to things grpc server " + tcHandler.Secure())
 
 	// Create new auth grpc client
-	auth, authHandler, err := authClient.Setup(envPrefix, svcName)
+	auth, authHandler, err := authClient.Setup(svcName)
 	if err != nil {
 		logger.Error(err.Error())
 		exitCode = 1
@@ -100,7 +99,7 @@ func main() {
 
 	// Create new http server
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

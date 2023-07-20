@@ -30,7 +30,6 @@ import (
 
 const (
 	svcName        = "mongodb-reader"
-	envPrefix      = "MF_MONGO_READER_"
 	envPrefixDB    = "MF_MONGO_"
 	envPrefixHttp  = "MF_MONGO_READER_HTTP_"
 	defSvcHttpPort = "9007"
@@ -71,7 +70,7 @@ func main() {
 
 	repo := newService(db, logger)
 
-	tc, tcHandler, err := thingsClient.Setup(envPrefix)
+	tc, tcHandler, err := thingsClient.Setup()
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -80,7 +79,7 @@ func main() {
 	defer tcHandler.Close()
 	logger.Info("Successfully connected to things grpc server " + tcHandler.Secure())
 
-	auth, authHandler, err := authClient.Setup(envPrefix, svcName)
+	auth, authHandler, err := authClient.Setup(svcName)
 	if err != nil {
 		logger.Fatal(err.Error())
 		exitCode = 1
@@ -90,7 +89,7 @@ func main() {
 	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

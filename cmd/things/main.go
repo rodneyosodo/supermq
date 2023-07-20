@@ -56,7 +56,6 @@ import (
 
 const (
 	svcName            = "things"
-	envPrefix          = "MF_THINGS_"
 	envPrefixDB        = "MF_THINGS_DB_"
 	envPrefixCache     = "MF_THINGS_CACHE_"
 	envPrefixES        = "MF_THINGS_ES_"
@@ -145,7 +144,7 @@ func main() {
 		auth = localusers.NewAuthService(cfg.StandaloneID, cfg.StandaloneToken)
 		logger.Info("Using standalone auth service")
 	default:
-		authServiceClient, authHandler, err := authClient.Setup(envPrefix, svcName)
+		authServiceClient, authHandler, err := authClient.Setup(svcName)
 		if err != nil {
 			logger.Error(err.Error())
 			exitCode = 1
@@ -159,7 +158,7 @@ func main() {
 	csvc, gsvc, psvc := newService(db, auth, cacheClient, esClient, cfg.CacheKeyDuration, tracer, logger)
 
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s gRPC server configuration : %s", svcName, err))
 		exitCode = 1
 		return
@@ -174,7 +173,7 @@ func main() {
 		tpolicies.RegisterAuthServiceServer(srv, grpcapi.NewServer(csvc, psvc))
 	}
 	grpcServerConfig := server.Config{Port: defSvcAuthGrpcPort}
-	if err := env.Parse(&grpcServerConfig, env.Options{Prefix: envPrefixAuthGrpc, AltPrefix: envPrefix}); err != nil {
+	if err := env.Parse(&grpcServerConfig, env.Options{Prefix: envPrefixGRPC}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s gRPC server configuration : %s", svcName, err))
 		exitCode = 1
 		return

@@ -21,55 +21,40 @@ type Options struct {
 
 	// Prefix define a prefix for each key
 	Prefix string
-
-	// AltPrefix define a alternate prefix for each key
-	AltPrefix string
 }
 
 func Parse(v interface{}, opts ...Options) error {
-	actOpt := []env.Options{}
-	altPrefix := ""
+	altOpts := []env.Options{}
 
 	for _, opt := range opts {
-		actOpt = append(actOpt, env.Options{
+		altOpts = append(altOpts, env.Options{
 			Environment:     opt.Environment,
 			TagName:         opt.TagName,
 			RequiredIfNoDef: opt.RequiredIfNoDef,
 			OnSet:           opt.OnSet,
 			Prefix:          opt.Prefix,
 		})
-		if opt.AltPrefix != "" {
-			altPrefix = opt.AltPrefix
-		}
-	}
-
-	if altPrefix == "" {
-		return env.Parse(v, actOpt...)
 	}
 
 	switch cfg := v.(type) {
 	case *grpc.Config:
-		return parseGrpcConfig(cfg, altPrefix, actOpt...)
+		return parseGrpcConfig(cfg, altOpts...)
 	case *server.Config:
-		return parseServerConfig(cfg, altPrefix, actOpt...)
+		return parseServerConfig(cfg, altOpts...)
 	default:
-		return env.Parse(v, actOpt...)
+		return env.Parse(v, altOpts...)
 	}
 }
 
-func parseGrpcConfig(cfg *grpc.Config, altPrefix string, opts ...env.Options) error {
+func parseGrpcConfig(cfg *grpc.Config, opts ...env.Options) error {
 	if err := env.Parse(cfg, opts...); err != nil {
 		return err
 	}
 
 	if !cfg.ClientTLS || cfg.CACerts == "" {
 		altOpts := []env.Options{}
-		for _, opt := range opts {
-			if opt.Prefix != "" {
-				opt.Prefix = altPrefix
-			}
-			altOpts = append(altOpts, opt)
-		}
+		altOpts = append(altOpts, opts...)
+
 		altCfg := grpc.Config{}
 		if err := env.Parse(&altCfg, altOpts...); err != nil {
 			return err
@@ -85,7 +70,7 @@ func parseGrpcConfig(cfg *grpc.Config, altPrefix string, opts ...env.Options) er
 	return nil
 }
 
-func parseServerConfig(cfg *server.Config, altPrefix string, opts ...env.Options) error {
+func parseServerConfig(cfg *server.Config, opts ...env.Options) error {
 	copyConfig := cfg
 	if err := env.Parse(cfg, opts...); err != nil {
 		return err
@@ -93,12 +78,8 @@ func parseServerConfig(cfg *server.Config, altPrefix string, opts ...env.Options
 
 	if cfg.CertFile == "" || cfg.KeyFile == "" || cfg.Port == "" || cfg.Port == copyConfig.Port {
 		altOpts := []env.Options{}
-		for _, opt := range opts {
-			if opt.Prefix != "" {
-				opt.Prefix = altPrefix
-			}
-			altOpts = append(altOpts, opt)
-		}
+		altOpts = append(altOpts, opts...)
+
 		altCfg := server.Config{}
 		if err := env.Parse(&altCfg, altOpts...); err != nil {
 			return err

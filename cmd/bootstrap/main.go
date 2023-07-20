@@ -41,7 +41,6 @@ import (
 
 const (
 	svcName        = "bootstrap"
-	envPrefix      = "MF_BOOTSTRAP_"
 	envPrefixDB    = "MF_BOOTSTRAP_DB_"
 	envPrefixES    = "MF_BOOTSTRAP_ES_"
 	envPrefixHttp  = "MF_BOOTSTRAP_HTTP_"
@@ -101,7 +100,7 @@ func main() {
 	defer esClient.Close()
 
 	// Create new auth grpc client api
-	auth, authHandler, err := authClient.Setup(envPrefix, svcName)
+	auth, authHandler, err := authClient.Setup(svcName)
 	if err != nil {
 		logger.Error(err.Error())
 		exitCode = 1
@@ -126,7 +125,7 @@ func main() {
 
 	// Create an new HTTP server
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

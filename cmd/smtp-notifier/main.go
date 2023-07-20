@@ -40,7 +40,6 @@ import (
 
 const (
 	svcName        = "smtp-notifier"
-	envPrefix      = "MF_SMTP_NOTIFIER_"
 	envPrefixDB    = "MF_SMTP_NOTIFIER_DB_"
 	envPrefixHttp  = "MF_SMTP_NOTIFIER_HTTP_"
 	defDB          = "subscriptions"
@@ -117,7 +116,7 @@ func main() {
 	pubSub = pstracing.NewPubSub(tracer, pubSub)
 	defer pubSub.Close()
 
-	auth, authHandler, err := authClient.Setup(envPrefix, svcName)
+	auth, authHandler, err := authClient.Setup(svcName)
 	if err != nil {
 		logger.Error(err.Error())
 		exitCode = 1
@@ -140,7 +139,7 @@ func main() {
 	}
 
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

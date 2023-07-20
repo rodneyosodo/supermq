@@ -54,7 +54,6 @@ import (
 
 const (
 	svcName        = "users"
-	envPrefix      = "MF_USERS_"
 	envPrefixDB    = "MF_USERS_DB_"
 	envPrefixHttp  = "MF_USERS_HTTP_"
 	envPrefixGrpc  = "MF_USERS_GRPC_"
@@ -135,7 +134,7 @@ func main() {
 	csvc, gsvc, psvc := newService(ctx, db, tracer, cfg, ec, logger)
 
 	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err.Error()))
 		exitCode = 1
 		return
@@ -151,7 +150,7 @@ func main() {
 
 	}
 	grpcServerConfig := server.Config{Port: defSvcGrpcPort}
-	if err := env.Parse(&grpcServerConfig, env.Options{Prefix: envPrefixGrpc, AltPrefix: envPrefix}); err != nil {
+	if err := env.Parse(&grpcServerConfig, env.Options{Prefix: envPrefixGrpc}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s gRPC server configuration : %s", svcName, err.Error()))
 		exitCode = 1
 		return
