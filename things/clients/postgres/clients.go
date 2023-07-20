@@ -112,7 +112,7 @@ func (repo clientRepo) RetrieveAll(ctx context.Context, pm mfclients.Page) (mfcl
 		return mfclients.ClientsPage{}, errors.Wrap(errors.ErrViewEntity, err)
 	}
 
-	q := fmt.Sprintf(`SELECT c.id, c.name, c.tags, c.identity, c.secret, c.metadata, COALESCE(c.owner_id, '') AS owner_id, c.status, c.created_at
+	q := fmt.Sprintf(`SELECT DISTINCT c.id, c.name, c.tags, c.identity, c.secret, c.metadata, COALESCE(c.owner_id, '') AS owner_id, c.status, c.created_at
 						FROM clients c %s ORDER BY c.created_at LIMIT :limit OFFSET :offset;`, query)
 
 	dbPage, err := toDBClientsPage(pm)

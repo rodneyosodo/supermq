@@ -97,8 +97,7 @@ func (svc service) ListGroups(ctx context.Context, token string, gm groups.Group
 	}
 
 	gm.Subject = userID
-	gm.OwnerID = userID
-	gm.Action = "g_list"
+	gm.Action = listRelationKey
 	return svc.groups.RetrieveAll(ctx, gm)
 }
 

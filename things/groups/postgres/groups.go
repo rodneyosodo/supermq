@@ -289,7 +289,7 @@ func buildQuery(gm mfgroups.GroupsPage) (string, error) {
 		queries = append(queries, ":tag = ANY(c.tags)")
 	}
 	if gm.Subject != "" {
-		queries = append(queries, "(g.owner_id = :owner_id OR id IN (SELECT object as id FROM policies WHERE subject = :subject AND :action=ANY(actions)))")
+		queries = append(queries, "(g.owner_id = :subject OR id IN (SELECT object as id FROM policies WHERE subject = :subject AND :action=ANY(actions)))")
 	}
 	if len(gm.Metadata) > 0 {
 		queries = append(queries, "'g.metadata @> :metadata'")
