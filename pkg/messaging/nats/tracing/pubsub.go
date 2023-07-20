@@ -7,6 +7,7 @@ import (
 
 	"github.com/mainflux/mainflux/internal/server"
 	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/mainflux/mainflux/pkg/messaging/tracing"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -42,10 +43,10 @@ func NewPubSub(config server.Config, tracer trace.Tracer, pubsub messaging.PubSu
 
 // Subscribe creates a new subscription and traces the operation.
 func (pm *pubsubMiddleware) Subscribe(ctx context.Context, id string, topic string, handler messaging.MessageHandler) error {
-	// ctx, span := pm.createSpan(ctx, subscribeOP, topic, "", id)
-	// defer span.End()
-	ctx, span := createSpan(ctx, subscribeOP, id, topic, "", 0, pm.host, trace.SpanKindClient, pm.tracer)
+	ctx, span := tracing.CreateSpan(ctx, subscribeOP, id, topic, "", 0, pm.host, trace.SpanKindClient, pm.tracer)
 	defer span.End()
+
+	span.SetAttributes(defaultAttributes...)
 
 	h := &traceHandler{
 		ctx:      ctx,
@@ -61,8 +62,10 @@ func (pm *pubsubMiddleware) Subscribe(ctx context.Context, id string, topic stri
 
 // Unsubscribe removes an existing subscription and traces the operation.
 func (pm *pubsubMiddleware) Unsubscribe(ctx context.Context, id string, topic string) error {
-	ctx, span := createSpan(ctx, unsubscribeOp, id, topic, "", 0, pm.host, trace.SpanKindInternal, pm.tracer)
+	ctx, span := tracing.CreateSpan(ctx, unsubscribeOp, id, topic, "", 0, pm.host, trace.SpanKindInternal, pm.tracer)
 	defer span.End()
+
+	span.SetAttributes(defaultAttributes...)
 
 	return pm.pubsub.Unsubscribe(ctx, id, topic)
 }
@@ -79,8 +82,10 @@ type traceHandler struct {
 
 // Handle instruments the message handling operation.
 func (h *traceHandler) Handle(msg *messaging.Message) error {
-	_, span := createSpan(h.ctx, processOp, h.clientID, h.topic, msg.Subtopic, len(msg.Payload), h.host, trace.SpanKindConsumer, h.tracer)
+	_, span := tracing.CreateSpan(h.ctx, processOp, h.clientID, h.topic, msg.Subtopic, len(msg.Payload), h.host, trace.SpanKindConsumer, h.tracer)
 	defer span.End()
+
+	span.SetAttributes(defaultAttributes...)
 
 	return h.handler.Handle(msg)
 }

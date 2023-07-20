@@ -24,7 +24,6 @@ import (
 	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
-	pstracing "github.com/mainflux/mainflux/pkg/messaging/tracing"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	"github.com/mainflux/mainflux/things/policies"
 	adapter "github.com/mainflux/mainflux/ws"
@@ -103,15 +102,13 @@ func main() {
 	}()
 	tracer := tp.Tracer(svcName)
 
-	nps, err := brokers.NewPubSub(cfg.BrokerURL, "", logger)
+	nps, err := brokers.NewPubSub(httpServerConfig, tracer, cfg.BrokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		exitCode = 1
 		return
 	}
 	defer nps.Close()
-
-	nps = pstracing.NewPubSub(httpServerConfig, tracer, nps)
 
 	svc := newService(tc, nps, logger, tracer)
 
