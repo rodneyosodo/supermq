@@ -10,6 +10,7 @@ import (
 	"github.com/mainflux/mainflux/internal/apiutil"
 	"github.com/mainflux/mainflux/pkg/errors"
 	upolicies "github.com/mainflux/mainflux/users/policies"
+	"golang.org/x/exp/slices"
 )
 
 // PolicyTypes contains a list of the available policy types currently supported.
@@ -140,18 +141,9 @@ func ValidateAction(act string) bool {
 // checkActions checks if the incoming actions are in the current actions.
 func checkActions(currentActions, incomingActions []string) error {
 	for _, action := range incomingActions {
-		if !contains(currentActions, action) {
+		if !slices.Contains(currentActions, action) {
 			return errors.ErrAuthorization
 		}
 	}
 	return nil
-}
-
-func contains(actions []string, action string) bool {
-	for _, a := range actions {
-		if a == action {
-			return true
-		}
-	}
-	return false
 }
