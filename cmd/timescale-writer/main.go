@@ -34,9 +34,9 @@ import (
 const (
 	svcName        = "timescaledb-writer"
 	envPrefixDB    = "MF_TIMESCALE_"
-	envPrefixHttp  = "MF_TIMESCALE_WRITER_HTTP_"
+	envPrefixHTTP  = "MF_TIMESCALE_WRITER_HTTP_"
 	defDB          = "messages"
-	defSvcHttpPort = "9012"
+	defSvcHTTPPort = "9012"
 )
 
 type config struct {
@@ -90,8 +90,8 @@ func main() {
 	}()
 	tracer := tp.Tracer(svcName)
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

@@ -31,8 +31,8 @@ import (
 const (
 	svcName        = "cassandra-reader"
 	envPrefixDB    = "MF_CASSANDRA_"
-	envPrefixHttp  = "MF_CASSANDRA_READER_HTTP_"
-	defSvcHttpPort = "9003"
+	envPrefixHTTP  = "MF_CASSANDRA_READER_HTTP_"
+	defSvcHTTPPort = "9003"
 )
 
 type config struct {
@@ -98,8 +98,8 @@ func main() {
 	repo := newService(csdSession, logger)
 
 	// Create new http server
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

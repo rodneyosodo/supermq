@@ -31,8 +31,8 @@ import (
 const (
 	svcName        = "mongodb-reader"
 	envPrefixDB    = "MF_MONGO_"
-	envPrefixHttp  = "MF_MONGO_READER_HTTP_"
-	defSvcHttpPort = "9007"
+	envPrefixHTTP  = "MF_MONGO_READER_HTTP_"
+	defSvcHTTPPort = "9007"
 )
 
 type config struct {
@@ -88,8 +88,8 @@ func main() {
 	defer authHandler.Close()
 	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

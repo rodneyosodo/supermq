@@ -33,8 +33,8 @@ import (
 const (
 	svcName        = "mongodb-writer"
 	envPrefixDB    = "MF_MONGO_"
-	envPrefixHttp  = "MF_MONGO_WRITER_HTTP_"
-	defSvcHttpPort = "9008"
+	envPrefixHTTP  = "MF_MONGO_WRITER_HTTP_"
+	defSvcHTTPPort = "9008"
 )
 
 type config struct {
@@ -97,8 +97,8 @@ func main() {
 		return
 	}
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

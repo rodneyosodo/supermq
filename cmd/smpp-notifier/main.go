@@ -40,9 +40,9 @@ import (
 const (
 	svcName        = "smpp-notifier"
 	envPrefixDB    = "MF_SMPP_NOTIFIER_DB_"
-	envPrefixHttp  = "MF_SMPP_NOTIFIER_HTTP_"
+	envPrefixHTTP  = "MF_SMPP_NOTIFIER_HTTP_"
 	defDB          = "subscriptions"
-	defSvcHttpPort = "9014"
+	defSvcHTTPPort = "9014"
 )
 
 type config struct {
@@ -129,8 +129,8 @@ func main() {
 		return
 	}
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

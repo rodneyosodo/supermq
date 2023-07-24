@@ -35,7 +35,7 @@ import (
 const (
 	svcName        = "http_adapter"
 	envPrefix      = "MF_HTTP_ADAPTER_"
-	defSvcHttpPort = "80"
+	defSvcHTTPPort = "80"
 )
 
 type config struct {
@@ -99,8 +99,8 @@ func main() {
 
 	svc := newService(pub, tc, logger, tracer)
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefix}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

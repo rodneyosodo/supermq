@@ -32,9 +32,9 @@ import (
 const (
 	svcName        = "coap_adapter"
 	envPrefix      = "MF_COAP_ADAPTER_"
-	envPrefixHttp  = "MF_COAP_ADAPTER_HTTP_"
-	defSvcHttpPort = "5683"
-	defSvcCoapPort = "5683"
+	envPrefixHTTP  = "MF_COAP_ADAPTER_HTTP_"
+	defSvcHTTPPort = "5683"
+	defSvcCoAPPort = "5683"
 )
 
 type config struct {
@@ -105,15 +105,15 @@ func main() {
 	counter, latency := internal.MakeMetrics(svcName, "api")
 	svc = api.MetricsMiddleware(svc, counter, latency)
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return
 	}
 	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(instanceID), logger)
 
-	coapServerConfig := server.Config{Port: defSvcCoapPort}
+	coapServerConfig := server.Config{Port: defSvcCoAPPort}
 	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefix}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s CoAP server configuration : %s", svcName, err))
 		exitCode = 1

@@ -34,9 +34,9 @@ import (
 const (
 	svcName           = "opc-ua-adapter"
 	envPrefixES       = "MF_OPCUA_ADAPTER_ES_"
-	envPrefixHttp     = "MF_OPCUA_ADAPTER_HTTP_"
+	envPrefixHTTP     = "MF_OPCUA_ADAPTER_HTTP_"
 	envPrefixRouteMap = "MF_OPCUA_ADAPTER_ROUTE_MAP_"
-	defSvcHttpPort    = "8180"
+	defSvcHTTPPort    = "8180"
 
 	thingsRMPrefix     = "thing"
 	channelsRMPrefix   = "channel"
@@ -125,8 +125,8 @@ func main() {
 	go subscribeToStoredSubs(ctx, sub, opcConfig, logger)
 	go subscribeToThingsES(ctx, svc, esConn, cfg.ESConsumerName, logger)
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

@@ -33,9 +33,9 @@ import (
 const (
 	svcName        = "postgres-writer"
 	envPrefixDB    = "MF_POSTGRES_"
-	envPrefixHttp  = "MF_POSTGRES_WRITER_HTTP_"
+	envPrefixHTTP  = "MF_POSTGRES_WRITER_HTTP_"
 	defDB          = "messages"
-	defSvcHttpPort = "9010"
+	defSvcHTTPPort = "9010"
 )
 
 type config struct {
@@ -100,8 +100,8 @@ func main() {
 	}
 	defer db.Close()
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

@@ -59,11 +59,11 @@ const (
 	envPrefixDB        = "MF_THINGS_DB_"
 	envPrefixCache     = "MF_THINGS_CACHE_"
 	envPrefixES        = "MF_THINGS_ES_"
-	envPrefixHttp      = "MF_THINGS_HTTP_"
+	envPrefixHTTP      = "MF_THINGS_HTTP_"
 	envPrefixGRPC      = "MF_THINGS_GRPC_"
 	defDB              = "things"
-	defSvcHttpPort     = "9000"
-	defSvcAuthGrpcPort = "7000"
+	defSvcHTTPPort     = "9000"
+	defSvcAuthGRPCPort = "7000"
 )
 
 type config struct {
@@ -157,8 +157,8 @@ func main() {
 
 	csvc, gsvc, psvc := newService(db, auth, cacheClient, esClient, cfg.CacheKeyDuration, tracer, logger)
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s gRPC server configuration : %s", svcName, err))
 		exitCode = 1
 		return
@@ -172,7 +172,7 @@ func main() {
 		reflection.Register(srv)
 		tpolicies.RegisterAuthServiceServer(srv, grpcapi.NewServer(csvc, psvc))
 	}
-	grpcServerConfig := server.Config{Port: defSvcAuthGrpcPort}
+	grpcServerConfig := server.Config{Port: defSvcAuthGRPCPort}
 	if err := env.Parse(&grpcServerConfig, env.Options{Prefix: envPrefixGRPC}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s gRPC server configuration : %s", svcName, err))
 		exitCode = 1

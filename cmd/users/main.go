@@ -55,11 +55,11 @@ import (
 const (
 	svcName        = "users"
 	envPrefixDB    = "MF_USERS_DB_"
-	envPrefixHttp  = "MF_USERS_HTTP_"
+	envPrefixHTTP  = "MF_USERS_HTTP_"
 	envPrefixGrpc  = "MF_USERS_GRPC_"
 	defDB          = "users"
-	defSvcHttpPort = "9002"
-	defSvcGrpcPort = "9192"
+	defSvcHTTPPort = "9002"
+	defSvcGRPCPort = "9192"
 )
 
 type config struct {
@@ -133,8 +133,8 @@ func main() {
 
 	csvc, gsvc, psvc := newService(ctx, db, tracer, cfg, ec, logger)
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err.Error()))
 		exitCode = 1
 		return
@@ -149,7 +149,7 @@ func main() {
 		policies.RegisterAuthServiceServer(srv, grpcapi.NewServer(csvc, psvc))
 
 	}
-	grpcServerConfig := server.Config{Port: defSvcGrpcPort}
+	grpcServerConfig := server.Config{Port: defSvcGRPCPort}
 	if err := env.Parse(&grpcServerConfig, env.Options{Prefix: envPrefixGrpc}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s gRPC server configuration : %s", svcName, err.Error()))
 		exitCode = 1

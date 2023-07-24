@@ -34,8 +34,8 @@ import (
 
 const (
 	svcName        = "ws-adapter"
-	envPrefixHttp  = "MF_WS_ADAPTER_HTTP_"
-	defSvcHttpPort = "8190"
+	envPrefixHTTP  = "MF_WS_ADAPTER_HTTP_"
+	defSvcHTTPPort = "8190"
 )
 
 type config struct {
@@ -101,8 +101,8 @@ func main() {
 
 	svc := newService(tc, nps, logger, tracer)
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

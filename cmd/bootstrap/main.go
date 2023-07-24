@@ -43,9 +43,9 @@ const (
 	svcName        = "bootstrap"
 	envPrefixDB    = "MF_BOOTSTRAP_DB_"
 	envPrefixES    = "MF_BOOTSTRAP_ES_"
-	envPrefixHttp  = "MF_BOOTSTRAP_HTTP_"
+	envPrefixHTTP  = "MF_BOOTSTRAP_HTTP_"
 	defDB          = "bootstrap"
-	defSvcHttpPort = "9013"
+	defSvcHTTPPort = "9013"
 )
 
 type config struct {
@@ -124,8 +124,8 @@ func main() {
 	svc := newService(auth, db, tracer, logger, esClient, cfg)
 
 	// Create an new HTTP server
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

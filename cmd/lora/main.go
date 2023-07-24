@@ -36,10 +36,10 @@ import (
 
 const (
 	svcName           = "lora-adapter"
-	envPrefixHttp     = "MF_LORA_ADAPTER_HTTP_"
+	envPrefixHTTP     = "MF_LORA_ADAPTER_HTTP_"
 	envPrefixRouteMap = "MF_LORA_ADAPTER_ROUTE_MAP_"
 	envPrefixThingsES = "MF_THINGS_ES_"
-	defSvcHttpPort    = "9017"
+	defSvcHTTPPort    = "9017"
 
 	thingsRMPrefix   = "thing"
 	channelsRMPrefix = "channel"
@@ -132,8 +132,8 @@ func main() {
 	})
 	go subscribeToThingsES(svc, esConn, cfg.ESConsumerName, logger)
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

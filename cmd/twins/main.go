@@ -43,10 +43,10 @@ const (
 	svcName        = "twins"
 	queue          = "twins"
 	envPrefixDB    = "MF_TWINS_DB_"
-	envPrefixHttp  = "MF_TWINS_HTTP_"
+	envPrefixHTTP  = "MF_TWINS_HTTP_"
 	envPrefixCache = "MF_TWINS_CACHE_"
 	envPrefixES    = "MF_TWINS_ES_"
-	defSvcHttpPort = "9018"
+	defSvcHTTPPort = "9018"
 )
 
 type config struct {
@@ -144,8 +144,8 @@ func main() {
 
 	svc := newService(ctx, svcName, pubSub, cfg.ChannelID, auth, tracer, db, cacheClient, esClient, logger)
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return

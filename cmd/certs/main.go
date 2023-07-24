@@ -37,9 +37,9 @@ import (
 const (
 	svcName        = "certs"
 	envPrefixDB    = "MF_CERTS_DB_"
-	envPrefixHttp  = "MF_CERTS_HTTP_"
+	envPrefixHTTP  = "MF_CERTS_HTTP_"
 	defDB          = "certs"
-	defSvcHttpPort = "9019"
+	defSvcHTTPPort = "9019"
 )
 
 type config struct {
@@ -123,8 +123,8 @@ func main() {
 
 	svc := newService(auth, db, tracer, logger, cfg, pkiClient)
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp}); err != nil {
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
 		logger.Fatal(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 	}
 	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(svc, logger, instanceID), logger)

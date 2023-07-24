@@ -34,8 +34,8 @@ import (
 const (
 	svcName        = "cassandra-writer"
 	envPrefixDB    = "MF_CASSANDRA_"
-	envPrefixHttp  = "MF_CASSANDRA_WRITER_HTTP_"
-	defSvcHttpPort = "9004"
+	envPrefixHTTP  = "MF_CASSANDRA_WRITER_HTTP_"
+	defSvcHTTPPort = "9004"
 )
 
 type config struct {
@@ -90,8 +90,8 @@ func main() {
 	}()
 	tracer := tp.Tracer(svcName)
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefix, AltPrefix: envPrefixHttp}); err != nil {
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
 		exitCode = 1
 		return
