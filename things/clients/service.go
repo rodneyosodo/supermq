@@ -99,7 +99,6 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 		return mfclients.ClientsPage{}, err
 	}
 
-	
 	switch err = svc.checkAdmin(ctx, userID, thingsObjectKey, listRelationKey); err {
 	// If the user is admin, fetch all things from database.
 	case nil:
@@ -110,6 +109,7 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 		case pm.SharedBy == MyKey && pm.Owner != MyKey:
 			pm.SharedBy = userID
 		case pm.Owner == MyKey && pm.SharedBy != MyKey:
+			pm.SharedBy = ""
 			pm.Owner = userID
 		}
 
@@ -120,10 +120,12 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 		switch {
 		case pm.SharedBy == MyKey && pm.Owner == MyKey:
 			pm.SharedBy = userID
+			pm.Owner = userID
 		case pm.SharedBy == MyKey && pm.Owner != MyKey:
 			pm.SharedBy = userID
 			pm.Owner = ""
 		case pm.Owner == MyKey && pm.SharedBy != MyKey:
+			pm.SharedBy = ""
 			pm.Owner = userID
 		default:
 			pm.Owner = userID

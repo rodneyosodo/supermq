@@ -173,6 +173,7 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 		case pm.SharedBy == MyKey && pm.Owner != MyKey:
 			pm.SharedBy = id
 		case pm.Owner == MyKey && pm.SharedBy != MyKey:
+			pm.SharedBy = ""
 			pm.Owner = id
 		}
 
@@ -181,10 +182,12 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 		switch {
 		case pm.SharedBy == MyKey && pm.Owner == MyKey:
 			pm.SharedBy = id
+			pm.Owner = id
 		case pm.SharedBy == MyKey && pm.Owner != MyKey:
 			pm.SharedBy = id
 			pm.Owner = ""
 		case pm.Owner == MyKey && pm.SharedBy != MyKey:
+			pm.SharedBy = ""
 			pm.Owner = id
 		default:
 			pm.Owner = id
