@@ -170,14 +170,54 @@ var cmdPolicies = []cobra.Command{
 			}
 		},
 	},
+	{
+		Use:   "authorize [ users | things ] <subject_id> <object_id> <action> <entity_type> <user_auth_token>",
+		Short: "Authorize access request",
+		Long: "Authorize subject over object with provided actions\n" +
+			"Usage:\n" +
+			"\tmainflux-cli policies authorize users <user_id> <group_id> \"c_list\" <entity_type> $USERTOKEN\n" +
+			"\tmainflux-cli policies authorize things <thing_id> <channel_id> \"m_read\" <entity_type> $USERTOKEN\n",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 6 {
+				logUsage(cmd.Use)
+				return
+			}
+
+			var areq = mfxsdk.AccessRequest{
+				Subject:    args[1],
+				Object:     args[2],
+				Action:     args[3],
+				EntityType: args[4],
+			}
+
+			switch args[0] {
+			case users:
+				ok, err := sdk.AuthorizeUser(areq, args[5])
+				if err != nil {
+					logError(err)
+					return
+				}
+				logJSON(ok)
+			case things:
+				ok, _, err := sdk.AuthorizeThing(areq, args[5])
+				if err != nil {
+					logError(err)
+					return
+				}
+				logJSON(ok)
+			default:
+				logUsage(cmd.Use)
+			}
+		},
+	},
 }
 
 // NewPolicyCmd returns policies command.
 func NewPolicyCmd() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "policies [create | update | list | remove ]",
+		Use:   "policies [create | update | list | remove | authorize ]",
 		Short: "Policies management",
-		Long:  `Policies management: create or update or list or delete policies`,
+		Long:  `Policies management: create or update or list or delete or check policies`,
 	}
 
 	for i := range cmdPolicies {
