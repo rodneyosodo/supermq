@@ -174,7 +174,7 @@ func TestCreatePolicyUser(t *testing.T) {
 	}
 }
 
-func TestAuthorize(t *testing.T) {
+func TestAuthorizeUser(t *testing.T) {
 	cRepo := new(umocks.Repository)
 	pRepo := new(upmocks.Repository)
 	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
@@ -268,7 +268,7 @@ func TestAuthorize(t *testing.T) {
 
 	for _, tc := range cases {
 		repoCall := pRepo.On("CheckAdmin", mock.Anything, mock.Anything).Return(nil)
-		ok, err := mfsdk.Authorize(tc.policy, tc.token)
+		ok, err := mfsdk.AuthorizeUser(tc.policy, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		if tc.err == nil {
 			assert.True(t, ok, fmt.Sprintf("%s: expected true, got false", tc.desc))

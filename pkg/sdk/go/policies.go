@@ -32,7 +32,7 @@ type AccessRequest struct {
 	EntityType string `json:"entity_type,omitempty"`
 }
 
-func (sdk mfSDK) Authorize(accessReq AccessRequest, token string) (bool, errors.SDKError) {
+func (sdk mfSDK) AuthorizeUser(accessReq AccessRequest, token string) (bool, errors.SDKError) {
 	data, err := json.Marshal(accessReq)
 	if err != nil {
 		return false, errors.NewSDKError(err)
@@ -222,7 +222,7 @@ func (sdk mfSDK) DisconnectThing(thingID, channelID, token string) errors.SDKErr
 	return sdk.DeleteThingPolicy(policy, token)
 }
 
-func (sdk mfSDK) ThingCanAccess(accessReq AccessRequest, token string) (bool, string, errors.SDKError) {
+func (sdk mfSDK) AuthorizeThing(accessReq AccessRequest, token string) (bool, string, errors.SDKError) {
 	data, err := json.Marshal(accessReq)
 	if err != nil {
 		return false, "", errors.NewSDKError(err)

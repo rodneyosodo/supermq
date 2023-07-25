@@ -681,7 +681,7 @@ type SDK interface {
 	//  fmt.Println(err)
 	DeleteThingPolicy(policy Policy, token string) errors.SDKError
 
-	// Authorize returns true if the given policy structure allows the action.
+	// AuthorizeUser returns true if the given policy structure allows the action.
 	//
 	// The subject in this case is the `userID` and the object is the `groupID`.
 	//
@@ -692,9 +692,9 @@ type SDK interface {
 	//    Actions:    "g_add",
 	//    EntityType: "clients",
 	//  }
-	//  ok, _ := sdk.Authorize(aReq, "token")
+	//  ok, _ := sdk.AuthorizeUser(aReq, "token")
 	//  fmt.Println(ok)
-	Authorize(accessReq AccessRequest, token string) (bool, errors.SDKError)
+	AuthorizeUser(accessReq AccessRequest, token string) (bool, errors.SDKError)
 
 	// Assign assigns users to a group with the given actions.
 	//
@@ -755,7 +755,7 @@ type SDK interface {
 	//  fmt.Println(err)
 	DisconnectThing(thingID, chanID, token string) errors.SDKError
 
-	// ThingCanAccess returns true if the given policy structure allows the action.
+	// AuthorizeThing returns true if the given policy structure allows the action.
 	//
 	// example:
 	//  aReq := sdk.AccessRequest{
@@ -764,9 +764,9 @@ type SDK interface {
 	//    Actions:    "m_read",
 	//    EntityType: "things",
 	//  }
-	//  ok, _ := sdk.ThingCanAccess(aReq "token")
+	//  ok, _ := sdk.AuthorizeThing(aReq "token")
 	//  fmt.Println(ok)
-	ThingCanAccess(accessReq AccessRequest, token string) (bool, string, errors.SDKError)
+	AuthorizeThing(accessReq AccessRequest, token string) (bool, string, errors.SDKError)
 
 	// SendMessage send message to specified channel.
 	//
