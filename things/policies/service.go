@@ -13,16 +13,16 @@ import (
 )
 
 const (
-	// messaging policy actions.
+	// Messaging policy actions.
 	ReadAction  = "m_read"
 	WriteAction = "m_write"
 
-	// add policy actions to check if the client is admin.
+	// Add policy actions to check if the client is admin.
 	addPolicyAction = "g_add"
 
 	sharePolicyAction = "c_share"
 
-	// entity types.
+	// Entity types.
 	ClientEntityType = "client"
 	GroupEntityType  = "group"
 	ThingEntityType  = "thing"
@@ -51,7 +51,7 @@ func NewService(auth upolicies.AuthServiceClient, p Repository, ccache Cache, id
 }
 
 func (svc service) Authorize(ctx context.Context, ar AccessRequest) (Policy, error) {
-	// fetch from cache first
+	// Fetch from cache first.
 	policy := Policy{
 		Subject: ar.Subject,
 		Object:  ar.Object,
@@ -69,7 +69,7 @@ func (svc service) Authorize(ctx context.Context, ar AccessRequest) (Policy, err
 		return Policy{}, err
 	}
 
-	// fetch from repo as a fallback if not found in cache
+	// Fetch from repo as a fallback if not found in cache.
 	switch ar.Entity {
 	case GroupEntityType:
 		policy, err = svc.policies.EvaluateGroupAccess(ctx, ar)
@@ -122,7 +122,7 @@ func (svc service) AddPolicy(ctx context.Context, token string, external bool, p
 	p.OwnerID = userID
 	p.CreatedAt = time.Now()
 
-	// incase the policy exists, use these for update.
+	// Incase the policy exists, use these for update.
 	p.UpdatedAt = time.Now()
 	p.UpdatedBy = userID
 
@@ -211,12 +211,12 @@ func (svc service) ListPolicies(ctx context.Context, token string, pm Page) (Pol
 	if err := pm.Validate(); err != nil {
 		return PolicyPage{}, err
 	}
-	// If the user is admin, return all policies
+	// If the user is admin, return all policies.
 	if err := svc.checkAdmin(ctx, userID); err == nil {
 		return svc.policies.Retrieve(ctx, pm)
 	}
 
-	// If the user is not admin, return only the policies that they created
+	// If the user is not admin, return only the policies that they created.
 	pm.OwnerID = userID
 
 	return svc.policies.Retrieve(ctx, pm)
@@ -268,7 +268,7 @@ func (svc service) identify(ctx context.Context, token string) (string, error) {
 }
 
 func (svc service) checkAdmin(ctx context.Context, id string) error {
-	// for checking admin rights policy object, action and entity type are not important
+	// For checking admin rights policy object, action and entity type are not important.
 	return svc.usersAuthorize(ctx, id, thingsObjectKey, addPolicyAction, GroupEntityType)
 }
 
