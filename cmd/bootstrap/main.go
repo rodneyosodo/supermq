@@ -83,13 +83,6 @@ func main() {
 		}
 	}
 
-	httpServerConfig := server.Config{Port: defSvcHTTPPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
-		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
-		exitCode = 1
-		return
-	}
-
 	// Create new postgres client
 	dbConfig := pgClient.Config{Name: defDB}
 	if err := dbConfig.LoadEnv(envPrefixDB); err != nil {
@@ -138,7 +131,12 @@ func main() {
 	// Create new service
 	svc := newService(ctx, auth, db, tracer, logger, esClient, cfg, dbConfig)
 
-	// Create an new HTTP server
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
+	}
 	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(svc, bootstrap.NewConfigReader([]byte(cfg.EncKey)), logger, instanceID), logger)
 
 	if cfg.SendTelemetry {

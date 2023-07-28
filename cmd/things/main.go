@@ -117,20 +117,6 @@ func main() {
 	}
 	defer db.Close()
 
-	httpServerConfig := server.Config{Port: defSvcHTTPPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
-		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
-		exitCode = 1
-		return
-	}
-
-	grpcServerConfig := server.Config{Port: defSvcAuthGRPCPort}
-	if err := env.Parse(&grpcServerConfig, env.Options{Prefix: envPrefixGRPC}); err != nil {
-		logger.Error(fmt.Sprintf("failed to load %s gRPC server configuration : %s", svcName, err))
-		exitCode = 1
-		return
-	}
-
 	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, instanceID)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
@@ -181,11 +167,23 @@ func main() {
 
 	csvc, gsvc, psvc := newService(ctx, db, dbConfig, auth, cacheClient, esClient, cfg.CacheKeyDuration, tracer, logger)
 
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
+	}
 	mux := bone.New()
 	hsp := httpserver.New(ctx, cancel, "things-policies", httpServerConfig, httpapi.MakeHandler(csvc, psvc, mux, logger), logger)
 	hsc := httpserver.New(ctx, cancel, "things-clients", httpServerConfig, capi.MakeHandler(csvc, mux, logger, instanceID), logger)
 	hsg := httpserver.New(ctx, cancel, "things-groups", httpServerConfig, gapi.MakeHandler(gsvc, mux, logger), logger)
 
+	grpcServerConfig := server.Config{Port: defSvcAuthGRPCPort}
+	if err := env.Parse(&grpcServerConfig, env.Options{Prefix: envPrefixGRPC}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s gRPC server configuration : %s", svcName, err))
+		exitCode = 1
+		return
+	}
 	registerThingsServiceServer := func(srv *grpc.Server) {
 		reflection.Register(srv)
 		tpolicies.RegisterAuthServiceServer(srv, grpcapi.NewServer(csvc, psvc))

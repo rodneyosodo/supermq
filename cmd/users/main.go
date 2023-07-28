@@ -154,16 +154,15 @@ func main() {
 	hsg := httpserver.New(ctx, cancel, svcName, httpServerConfig, gapi.MakeHandler(gsvc, mux, logger), logger)
 	hsp := httpserver.New(ctx, cancel, svcName, httpServerConfig, httpapi.MakeHandler(psvc, mux, logger), logger)
 
-	registerAuthServiceServer := func(srv *grpc.Server) {
-		reflection.Register(srv)
-		policies.RegisterAuthServiceServer(srv, grpcapi.NewServer(csvc, psvc))
-
-	}
 	grpcServerConfig := server.Config{Port: defSvcGRPCPort}
 	if err := env.Parse(&grpcServerConfig, env.Options{Prefix: envPrefixGrpc}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s gRPC server configuration : %s", svcName, err.Error()))
 		exitCode = 1
 		return
+	}
+	registerAuthServiceServer := func(srv *grpc.Server) {
+		reflection.Register(srv)
+		policies.RegisterAuthServiceServer(srv, grpcapi.NewServer(csvc, psvc))
 	}
 	gs := grpcserver.New(ctx, cancel, svcName, grpcServerConfig, registerAuthServiceServer, logger)
 
