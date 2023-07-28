@@ -106,7 +106,6 @@ func main() {
 		exitCode = 1
 		return
 	}
-	pubSub = tracing.NewPubSub(httpServerConfig, tracer, pubSub)
 	defer pubSub.Close()
 
 	repo := newService(db, logger)
