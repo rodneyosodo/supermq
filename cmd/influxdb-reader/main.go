@@ -83,7 +83,7 @@ func main() {
 	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 
 	influxDBConfig := influxDBClient.Config{}
-	if err := env.Parse(&influxDBConfig, env.Options{Prefix: envPrefixInfluxdb}); err != nil {
+	if err := env.Parse(&influxDBConfig, env.Options{Prefix: envPrefixDB}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load InfluxDB client configuration from environment variable : %s", err))
 		exitCode = 1
 		return

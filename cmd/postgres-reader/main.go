@@ -84,7 +84,7 @@ func main() {
 	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 
 	dbConfig := pgClient.Config{Name: defDB}
-	if err := dbConfig.LoadEnv(envPrefix); err != nil {
+	if err := dbConfig.LoadEnv(envPrefixDB); err != nil {
 		logger.Error(err.Error())
 		exitCode = 1
 		return
