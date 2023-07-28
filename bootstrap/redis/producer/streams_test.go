@@ -42,16 +42,26 @@ const (
 	channelsNum   = 3
 	defaultTimout = 5
 
-	configPrefix = "config."
-	configCreate = configPrefix + "create"
-	configUpdate = configPrefix + "update"
-	configRemove = configPrefix + "remove"
+	configPrefix        = "config."
+	configCreate        = configPrefix + "create"
+	configUpdate        = configPrefix + "update"
+	configRemove        = configPrefix + "remove"
+	configList          = configPrefix + "list"
+	configHandlerRemove = configPrefix + "remove_handler"
 
 	thingPrefix            = "thing."
-	thingStateChange       = thingPrefix + "state_change"
 	thingBootstrap         = thingPrefix + "bootstrap"
+	thingStateChange       = thingPrefix + "change_state"
 	thingUpdateConnections = thingPrefix + "update_connections"
-	instanceID             = "5de9b29a-feb9-11ed-be56-0242ac120002"
+	thingDisconnect        = thingPrefix + "disconnect"
+
+	channelPrefix        = "channel."
+	channelHandlerRemove = channelPrefix + "remove_handler"
+	channelUpdateHandler = channelPrefix + "update_handler"
+
+	certUpdate = "cert.update"
+
+	instanceID = "5de9b29a-feb9-11ed-be56-0242ac120002"
 )
 
 var (
@@ -346,6 +356,157 @@ func TestUpdateConnections(t *testing.T) {
 		test(t, tc.event, event, tc.desc)
 	}
 }
+
+func TestUpdateCert(t *testing.T) {
+	err := redisClient.FlushAll(context.Background()).Err()
+	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	users := mocks.NewAuthClient(map[string]string{validToken: email})
+	server := newThingsServer(newThingsService(users))
+	svc := newService(users, server.URL)
+	svc = producer.NewEventStoreMiddleware(context.Background(), svc, redisClient)
+
+	saved, err := svc.Add(context.Background(), validToken, config)
+	require.Nil(t, err, fmt.Sprintf("Saving config expected to succeed: %s.\n", err))
+	err = redisClient.FlushAll(context.Background()).Err()
+	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	cases := []struct {
+		desc       string
+		id         string
+		token      string
+		clientCert string
+		clientKey  string
+		caCert     string
+		err        error
+		event      map[string]interface{}
+	}{
+		{
+			desc:       "update cert successfully",
+			id:         saved.MFThing,
+			token:      validToken,
+			clientCert: "clientCert",
+			clientKey:  "clientKey",
+			caCert:     "caCert",
+			err:        nil,
+			event: map[string]interface{}{
+				"thing_key":   saved.MFKey,
+				"client_cert": "clientCert",
+				"client_key":  "clientKey",
+				"ca_cert":     "caCert",
+				"operation":   certUpdate,
+			},
+		},
+		{
+			desc:       "invalid token",
+			id:         saved.MFThing,
+			token:      "invalidToken",
+			clientCert: "clientCert",
+			clientKey:  "clientKey",
+			caCert:     "caCert",
+			err:        errors.ErrAuthentication,
+			event:      nil,
+		},
+		{
+			desc:       "invalid thing ID",
+			id:         "invalidThingID",
+			token:      validToken,
+			clientCert: "clientCert",
+			clientKey:  "clientKey",
+			caCert:     "caCert",
+			err:        errors.ErrNotFound,
+			event:      nil,
+		},
+		{
+			desc:       "empty client certificate",
+			id:         saved.MFThing,
+			token:      validToken,
+			clientCert: "",
+			clientKey:  "clientKey",
+			caCert:     "caCert",
+			err:        nil,
+			event:      nil,
+		},
+		{
+			desc:       "empty client key",
+			id:         saved.MFThing,
+			token:      validToken,
+			clientCert: "clientCert",
+			clientKey:  "",
+			caCert:     "caCert",
+			err:        nil,
+			event:      nil,
+		},
+		{
+			desc:       "empty CA certificate",
+			id:         saved.MFThing,
+			token:      validToken,
+			clientCert: "clientCert",
+			clientKey:  "clientKey",
+			caCert:     "",
+			err:        nil,
+			event:      nil,
+		},
+		{
+			desc:       "update cert with invalid token",
+			id:         saved.MFThing,
+			token:      "invalidToken",
+			clientCert: "clientCert",
+			clientKey:  "clientKey",
+			caCert:     "caCert",
+			err:        errors.ErrAuthentication,
+			event:      nil,
+		},
+		{
+			desc:       "update cert with invalid thing ID",
+			id:         "invalidThingID",
+			token:      validToken,
+			clientCert: "clientCert",
+			clientKey:  "clientKey",
+			caCert:     "caCert",
+			err:        errors.ErrNotFound,
+			event:      nil,
+		},
+		{
+			desc:       "successful update without CA certificate",
+			id:         saved.MFThing,
+			token:      validToken,
+			clientCert: "clientCert",
+			clientKey:  "clientKey",
+			caCert:     "",
+			err:        nil,
+			event: map[string]interface{}{
+				"thing_key":   saved.MFKey,
+				"client_cert": "clientCert",
+				"client_key":  "clientKey",
+				"ca_cert":     "caCert",
+				"operation":   certUpdate,
+				"timestamp":   time.Now().Unix(),
+			},
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		err := svc.UpdateCert(context.Background(), tc.token, tc.id, tc.clientCert, tc.clientKey, tc.caCert)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+
+		streams := redisClient.XRead(context.Background(), &redis.XReadArgs{
+			Streams: []string{streamID, lastID},
+			Count:   1,
+			Block:   time.Second,
+		}).Val()
+
+		var event map[string]interface{}
+		if len(streams) > 0 && len(streams[0].Messages) > 0 {
+			event := streams[0].Messages
+			lastID = event[0].ID
+		}
+
+		test(t, tc.event, event, tc.desc)
+	}
+}
+
 func TestList(t *testing.T) {
 	users := mocks.NewAuthClient(map[string]string{validToken: email})
 	server := newThingsServer(newThingsService(users))
@@ -565,6 +726,306 @@ func TestChangeState(t *testing.T) {
 	}
 }
 
+func TestUpdateChannelHandler(t *testing.T) {
+	err := redisClient.FlushAll(context.Background()).Err()
+	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	users := mocks.NewAuthClient(map[string]string{validToken: email})
+	server := newThingsServer(newThingsService(users))
+	svc := newService(users, server.URL)
+	svc = producer.NewEventStoreMiddleware(context.Background(), svc, redisClient)
+
+	err = redisClient.FlushAll(context.Background()).Err()
+	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	cases := []struct {
+		desc    string
+		channel bootstrap.Channel
+		err     error
+		event   map[string]interface{}
+	}{
+		{
+			desc:    "update channel handler successfully",
+			channel: channel,
+			err:     nil,
+			event: map[string]interface{}{
+				"channel_id":  channel.ID,
+				"metadata":    "{\"name\":\"value\"}",
+				"name":        channel.Name,
+				"operation":   channelUpdateHandler,
+				"timestamp":   time.Now().UnixNano(),
+				"occurred_at": time.Now().UnixNano(),
+			},
+		},
+		{
+			desc:    "update non-existing channel handler",
+			channel: bootstrap.Channel{ID: "unknown", Name: "NonExistingChannel"},
+			err:     nil,
+			event:   nil,
+		},
+		{
+			desc:    "update channel handler with empty ID",
+			channel: bootstrap.Channel{Name: "ChannelWithEmptyID"},
+			err:     nil,
+			event:   nil,
+		},
+		{
+			desc:    "update channel handler with empty name",
+			channel: bootstrap.Channel{ID: "3"},
+			err:     nil,
+			event:   nil,
+		},
+		{
+			desc:    "update channel handler successfully with modified fields",
+			channel: channel,
+			err:     nil,
+			event: map[string]interface{}{
+				"channel_id":  channel.ID,
+				"metadata":    "{\"name\":\"value\"}",
+				"name":        channel.Name,
+				"operation":   channelUpdateHandler,
+				"timestamp":   time.Now().UnixNano(),
+				"occurred_at": time.Now().UnixNano(),
+			},
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		err := svc.UpdateChannelHandler(context.Background(), tc.channel)
+		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+
+		streams := redisClient.XRead(context.Background(), &redis.XReadArgs{
+			Streams: []string{streamID, lastID},
+			Count:   1,
+			Block:   time.Second,
+		}).Val()
+
+		var event map[string]interface{}
+		if len(streams) > 0 && len(streams[0].Messages) > 0 {
+			msg := streams[0].Messages[0]
+			event = msg.Values
+			event["timestamp"] = msg.ID
+			lastID = msg.ID
+		}
+		test(t, tc.event, event, tc.desc)
+	}
+}
+
+func TestRemoveChannelHandler(t *testing.T) {
+	err := redisClient.FlushAll(context.Background()).Err()
+	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	users := mocks.NewAuthClient(map[string]string{validToken: email})
+	server := newThingsServer(newThingsService(users))
+	svc := newService(users, server.URL)
+	svc = producer.NewEventStoreMiddleware(context.Background(), svc, redisClient)
+
+	err = redisClient.FlushAll(context.Background()).Err()
+	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	cases := []struct {
+		desc      string
+		channelID string
+		err       error
+		event     map[string]interface{}
+	}{
+		{
+			desc:      "remove channel handler successfully",
+			channelID: channel.ID,
+			err:       nil,
+			event: map[string]interface{}{
+				"config_id":   channel.ID,
+				"operation":   channelHandlerRemove,
+				"timestamp":   time.Now().UnixNano(),
+				"occurred_at": time.Now().UnixNano(),
+			},
+		},
+		{
+			desc:      "remove non-existing channel handler",
+			channelID: "unknown",
+			err:       nil,
+			event:     nil,
+		},
+		{
+			desc:      "remove channel handler with empty ID",
+			channelID: "",
+			err:       nil,
+			event:     nil,
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		err := svc.RemoveChannelHandler(context.Background(), tc.channelID)
+		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+
+		streams := redisClient.XRead(context.Background(), &redis.XReadArgs{
+			Streams: []string{streamID, lastID},
+			Count:   1,
+			Block:   time.Second,
+		}).Val()
+
+		var event map[string]interface{}
+		if len(streams) > 0 && len(streams[0].Messages) > 0 {
+			msg := streams[0].Messages[0]
+			event = msg.Values
+			event["timestamp"] = msg.ID
+			lastID = msg.ID
+		}
+
+		test(t, tc.event, event, tc.desc)
+	}
+}
+
+func TestRemoveConfigHandler(t *testing.T) {
+	err := redisClient.FlushAll(context.Background()).Err()
+	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	users := mocks.NewAuthClient(map[string]string{validToken: email})
+	server := newThingsServer(newThingsService(users))
+	svc := newService(users, server.URL)
+	svc = producer.NewEventStoreMiddleware(context.Background(), svc, redisClient)
+
+	err = redisClient.FlushAll(context.Background()).Err()
+	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	cases := []struct {
+		desc     string
+		configID string
+		err      error
+		event    map[string]interface{}
+	}{
+		{
+			desc:     "remove config handler successfully",
+			configID: "1",
+			err:      nil,
+			event: map[string]interface{}{
+				"config_id":   channel.ID,
+				"operation":   configHandlerRemove,
+				"timestamp":   time.Now().UnixNano(),
+				"occurred_at": time.Now().UnixNano(),
+			},
+		},
+		{
+			desc:     "remove non-existing config handler",
+			configID: "unknown",
+			err:      nil,
+			event:    nil,
+		},
+		{
+			desc:     "remove config handler with empty ID",
+			configID: "",
+			err:      nil,
+			event:    nil,
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		err := svc.RemoveConfigHandler(context.Background(), tc.configID)
+		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+
+		streams := redisClient.XRead(context.Background(), &redis.XReadArgs{
+			Streams: []string{streamID, lastID},
+			Count:   1,
+			Block:   time.Second,
+		}).Val()
+
+		var event map[string]interface{}
+		if len(streams) > 0 && len(streams[0].Messages) > 0 {
+			msg := streams[0].Messages[0]
+			event = msg.Values
+			event["timestamp"] = msg.ID
+			lastID = msg.ID
+		}
+
+		test(t, tc.event, event, tc.desc)
+	}
+}
+
+func TestDisconnectThingHandler(t *testing.T) {
+	err := redisClient.FlushAll(context.Background()).Err()
+	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	users := mocks.NewAuthClient(map[string]string{validToken: email})
+	server := newThingsServer(newThingsService(users))
+	svc := newService(users, server.URL)
+	svc = producer.NewEventStoreMiddleware(context.Background(), svc, redisClient)
+
+	err = redisClient.FlushAll(context.Background()).Err()
+	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	cases := []struct {
+		desc      string
+		channelID string
+		thingID   string
+		err       error
+		event     map[string]interface{}
+	}{
+		{
+			desc:      "disconnect thing handler successfully",
+			channelID: channel.ID,
+			thingID:   "1",
+			err:       nil,
+			event: map[string]interface{}{
+				"channel_id":  channel.ID,
+				"thing_id":    "1",
+				"operation":   thingDisconnect,
+				"timestamp":   time.Now().UnixNano(),
+				"occurred_at": time.Now().UnixNano(),
+			},
+		},
+		{
+			desc:      "remove non-existing channel handler",
+			channelID: "unknown",
+			err:       nil,
+			event:     nil,
+		},
+		{
+			desc:      "remove channel handler with empty ID",
+			channelID: "",
+			err:       nil,
+			event:     nil,
+		},
+		{
+			desc:      "remove channel handler successfully",
+			channelID: channel.ID,
+			thingID:   "1",
+			err:       nil,
+			event: map[string]interface{}{
+				"channel_id":  channel.ID,
+				"thing_id":    "1",
+				"operation":   thingDisconnect,
+				"timestamp":   time.Now().UnixNano(),
+				"occurred_at": time.Now().UnixNano(),
+			},
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		err := svc.DisconnectThingHandler(context.Background(), tc.channelID, tc.thingID)
+		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+
+		streams := redisClient.XRead(context.Background(), &redis.XReadArgs{
+			Streams: []string{streamID, lastID},
+			Count:   1,
+			Block:   time.Second,
+		}).Val()
+
+		var event map[string]interface{}
+		if len(streams) > 0 && len(streams[0].Messages) > 0 {
+			msg := streams[0].Messages[0]
+			event = msg.Values
+			event["timestamp"] = msg.ID
+			lastID = msg.ID
+		}
+
+		test(t, tc.event, event, tc.desc)
+	}
+}
+
 func test(t *testing.T, expected, actual map[string]interface{}, description string) {
 	if expected != nil && actual != nil {
 		ts1 := expected["timestamp"].(int64)
@@ -589,20 +1050,22 @@ func test(t *testing.T, expected, actual map[string]interface{}, description str
 			delete(actual, "occurred_at")
 		}
 
-		ech := expected["channels"]
-		ach := actual["channels"]
+		if expected["channels"] != nil || actual["channels"] != nil {
+			ech := expected["channels"]
+			ach := actual["channels"]
 
-		che := []int{}
-		err = json.Unmarshal([]byte(ech.(string)), &che)
-		require.Nil(t, err, fmt.Sprintf("%s: expected to get a valid channels, got %s", description, err))
+			che := []int{}
+			err = json.Unmarshal([]byte(ech.(string)), &che)
+			require.Nil(t, err, fmt.Sprintf("%s: expected to get a valid channels, got %s", description, err))
 
-		cha := []int{}
-		err = json.Unmarshal([]byte(ach.(string)), &cha)
-		require.Nil(t, err, fmt.Sprintf("%s: expected to get a valid channels, got %s", description, err))
+			cha := []int{}
+			err = json.Unmarshal([]byte(ach.(string)), &cha)
+			require.Nil(t, err, fmt.Sprintf("%s: expected to get a valid channels, got %s", description, err))
 
-		if assert.ElementsMatchf(t, che, cha, "%s: got incorrect channels\n", description) {
-			delete(expected, "channels")
-			delete(actual, "channels")
+			if assert.ElementsMatchf(t, che, cha, "%s: got incorrect channels\n", description) {
+				delete(expected, "channels")
+				delete(actual, "channels")
+			}
 		}
 
 		assert.Equal(t, expected, actual, fmt.Sprintf("%s: got incorrect event\n", description))

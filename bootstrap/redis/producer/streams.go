@@ -222,8 +222,8 @@ func (es *eventStore) DisconnectThingHandler(ctx context.Context, channelID, thi
 	}
 
 	ev := disconnectThingEvent{
-		channelID,
 		thingID,
+		channelID,
 	}
 
 	return es.Publish(ctx, ev)
