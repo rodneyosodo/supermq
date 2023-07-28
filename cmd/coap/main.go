@@ -66,7 +66,7 @@ func main() {
 	if instanceID == "" {
 		instanceID, err = uuid.New().ID()
 		if err != nil {
-			logger.Error(fmt.Sprint("Failed to generate instanceID: %s", err))
+			logger.Error(fmt.Sprintf("Failed to generate instanceID: %s", err))
 		}
 	}
 

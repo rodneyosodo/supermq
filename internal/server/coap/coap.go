@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/mainflux/mainflux/internal/server"
@@ -82,11 +81,4 @@ func (s *Server) Stop() error {
 	}
 	s.Logger.Info(fmt.Sprintf("%s service shutdown of http at %s", s.Name, s.Address))
 	return nil
-}
-
-func loadCertFile(certFile string) ([]byte, error) {
-	if certFile != "" {
-		return os.ReadFile(certFile)
-	}
-	return []byte{}, nil
 }
