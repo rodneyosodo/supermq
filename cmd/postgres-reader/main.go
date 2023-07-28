@@ -56,22 +56,27 @@ func main() {
 		log.Fatalf("failed to init logger: %s", err)
 	}
 
-	tc, tcHandler, err := thingsClient.Setup()
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
 
 	instanceID := cfg.InstanceID
 	if instanceID == "" {
 		instanceID, err = uuid.New().ID()
 		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+			logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
+			exitCode = 1
+			return
 		}
 	}
 
-	var exitCode int
-	defer mflog.ExitWithError(&exitCode)
+	tc, tcHandler, err := thingsClient.Setup()
+	if err != nil {
+		logger.Error(err.Error())
+		exitCode = 1
+		return
+	}
 	defer tcHandler.Close()
+
 	logger.Info("Successfully connected to things grpc server " + tcHandler.Secure())
 
 	auth, authHandler, err := authClient.Setup(svcName)
@@ -81,6 +86,7 @@ func main() {
 		return
 	}
 	defer authHandler.Close()
+
 	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 
 	dbConfig := pgClient.Config{Name: defDB}

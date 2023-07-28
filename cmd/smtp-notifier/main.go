@@ -70,11 +70,16 @@ func main() {
 		log.Fatalf("failed to init logger: %s", err)
 	}
 
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
+
 	instanceID := cfg.InstanceID
 	if instanceID == "" {
 		instanceID, err = uuid.New().ID()
 		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+			logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
+			exitCode = 1
+			return
 		}
 	}
 
@@ -82,9 +87,9 @@ func main() {
 	db, err := pgClient.SetupWithConfig(envPrefixDB, *notifierPg.Migration(), dbConfig)
 	if err != nil {
 		logger.Fatal(err.Error())
+		exitCode = 1
+		return
 	}
-	var exitCode int
-	defer mflog.ExitWithError(&exitCode)
 	defer db.Close()
 
 	ec := email.Config{}
@@ -123,6 +128,7 @@ func main() {
 		return
 	}
 	defer authHandler.Close()
+
 	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 
 	svc, err := newService(db, tracer, auth, cfg, ec, logger)

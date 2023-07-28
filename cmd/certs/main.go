@@ -75,30 +75,39 @@ func main() {
 		log.Fatalf("failed to init logger: %s", err)
 	}
 
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
+
 	instanceID := cfg.InstanceID
 	if instanceID == "" {
 		instanceID, err = uuid.New().ID()
 		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+			logger.Error(fmt.Sprintf("Failed to generate instanceID: %s", err))
+			exitCode = 1
+			return
 		}
 	}
 
 	if cfg.PkiHost == "" {
-		logger.Fatal("No host specified for PKI engine")
+		logger.Error("No host specified for PKI engine")
+		exitCode = 1
+		return
 	}
 
 	pkiClient, err := vault.NewVaultClient(cfg.PkiToken, cfg.PkiHost, cfg.PkiPath, cfg.PkiRole)
 	if err != nil {
-		logger.Fatal("failed to configure client for PKI engine")
+		logger.Error("failed to configure client for PKI engine")
+		exitCode = 1
+		return
 	}
 
 	dbConfig := pgClient.Config{Name: defDB}
 	db, err := pgClient.SetupWithConfig(envPrefixDB, *certsPg.Migration(), dbConfig)
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Error(err.Error())
+		exitCode = 1
+		return
 	}
-	var exitCode int
-	defer mflog.ExitWithError(&exitCode)
 	defer db.Close()
 
 	auth, authHandler, err := authClient.Setup(svcName)
@@ -108,11 +117,14 @@ func main() {
 		return
 	}
 	defer authHandler.Close()
+
 	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 
 	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, instanceID)
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("failed to init Jaeger: %s", err))
+		logger.Error(fmt.Sprintf("failed to init Jaeger: %s", err))
+		exitCode = 1
+		return
 	}
 	defer func() {
 		if err := tp.Shutdown(ctx); err != nil {
@@ -125,7 +137,9 @@ func main() {
 
 	httpServerConfig := server.Config{Port: defSvcHTTPPort}
 	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
-		logger.Fatal(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
 	}
 	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(svc, logger, instanceID), logger)
 

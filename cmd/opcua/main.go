@@ -71,17 +71,24 @@ func main() {
 		log.Fatalf("failed to init logger: %s", err)
 	}
 
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
+
 	instanceID := cfg.InstanceID
 	if instanceID == "" {
 		instanceID, err = uuid.New().ID()
 		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+			logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
+			exitCode = 1
+			return
 		}
 	}
 
 	rmConn, err := redisClient.Setup(envPrefixRouteMap)
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("failed to setup %s bootstrap event store redis client : %s", svcName, err))
+		logger.Error(fmt.Sprintf("failed to setup %s bootstrap event store redis client : %s", svcName, err))
+		exitCode = 1
+		return
 	}
 	defer rmConn.Close()
 
@@ -91,15 +98,17 @@ func main() {
 
 	esConn, err := redisClient.Setup(envPrefixES)
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("failed to setup %s bootstrap event store redis client : %s", svcName, err))
+		logger.Error(fmt.Sprintf("failed to setup %s bootstrap event store redis client : %s", svcName, err))
+		exitCode = 1
+		return
 	}
-	var exitCode int
-	defer mflog.ExitWithError(&exitCode)
 	defer esConn.Close()
 
 	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, instanceID)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
+		exitCode = 1
+		return
 	}
 	defer func() {
 		if err := tp.Shutdown(ctx); err != nil {

@@ -56,21 +56,27 @@ func main() {
 		log.Fatalf("failed to init logger: %s", err)
 	}
 
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
+
 	instanceID := cfg.InstanceID
 	if instanceID == "" {
 		instanceID, err = uuid.New().ID()
 		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+			logger.Error(fmt.Sprintf("Failed to generate instanceID: %s", err))
+			exitCode = 1
+			return
 		}
 	}
 
 	tc, tcHandler, err := thingsClient.Setup()
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Error(err.Error())
+		exitCode = 1
+		return
 	}
-	var exitCode int
-	defer mflog.ExitWithError(&exitCode)
 	defer tcHandler.Close()
+
 	logger.Info("Successfully connected to things grpc server " + tcHandler.Secure())
 
 	auth, authHandler, err := authClient.Setup(svcName)
@@ -80,6 +86,7 @@ func main() {
 		return
 	}
 	defer authHandler.Close()
+
 	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 
 	influxDBConfig := influxDBClient.Config{}

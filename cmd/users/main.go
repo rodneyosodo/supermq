@@ -96,26 +96,33 @@ func main() {
 		logger.Fatal(fmt.Sprintf("failed to init logger: %s", err.Error()))
 	}
 
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
+
 	instanceID := cfg.InstanceID
 	if instanceID == "" {
 		instanceID, err = uuid.New().ID()
 		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+			logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
+			exitCode = 1
+			return
 		}
 	}
 
 	ec := email.Config{}
 	if err := env.Parse(&ec); err != nil {
-		logger.Fatal(fmt.Sprintf("failed to load email configuration : %s", err.Error()))
+		logger.Error(fmt.Sprintf("failed to load email configuration : %s", err.Error()))
+		exitCode = 1
+		return
 	}
 
 	dbConfig := pgClient.Config{Name: defDB}
 	db, err := pgClient.SetupWithConfig(envPrefixDB, *clientsPg.Migration(), dbConfig)
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Error(err.Error())
+		exitCode = 1
+		return
 	}
-	var exitCode int
-	defer mflog.ExitWithError(&exitCode)
 	defer db.Close()
 
 	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, instanceID)

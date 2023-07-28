@@ -62,26 +62,33 @@ func main() {
 		log.Fatalf("failed to init logger: %s", err)
 	}
 
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
+
 	instanceID := cfg.InstanceID
 	if instanceID == "" {
 		instanceID, err = uuid.New().ID()
 		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+			logger.Error(fmt.Sprintf("Failed to generate instanceID: %s", err))
+			exitCode = 1
+			return
 		}
 	}
 
 	// Create new to cassandra client
 	csdSession, err := cassandraClient.SetupDB(envPrefixDB, cassandra.Table)
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Error(err.Error())
+		exitCode = 1
+		return
 	}
-	var exitCode int
-	defer mflog.ExitWithError(&exitCode)
 	defer csdSession.Close()
 
 	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, instanceID)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
+		exitCode = 1
+		return
 	}
 	defer func() {
 		if err := tp.Shutdown(ctx); err != nil {
@@ -114,6 +121,8 @@ func main() {
 	// Start new consumer
 	if err := consumers.Start(ctx, svcName, pubSub, repo, cfg.ConfigPath, logger); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Cassandra writer: %s", err))
+		exitCode = 1
+		return
 	}
 
 	// Create new http server

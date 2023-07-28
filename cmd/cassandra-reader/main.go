@@ -47,7 +47,6 @@ func main() {
 
 	// Create cassandra reader service configurations
 	cfg := config{}
-
 	if err := env.Parse(&cfg); err != nil {
 		log.Fatalf("failed to load %s service configuration : %s", svcName, err)
 	}
@@ -57,22 +56,28 @@ func main() {
 		log.Fatalf("failed to init logger: %s", err)
 	}
 
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
+
 	instanceID := cfg.InstanceID
 	if instanceID == "" {
 		instanceID, err = uuid.New().ID()
 		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+			logger.Error(fmt.Sprintf("Failed to generate instanceID: %s", err))
+			exitCode = 1
+			return
 		}
 	}
 
 	// Create new thing grpc client
 	tc, tcHandler, err := thingsClient.Setup()
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Error(err.Error())
+		exitCode = 1
+		return
 	}
-	var exitCode int
-	defer mflog.ExitWithError(&exitCode)
 	defer tcHandler.Close()
+
 	logger.Info("Successfully connected to things grpc server " + tcHandler.Secure())
 
 	// Create new auth grpc client
@@ -83,6 +88,7 @@ func main() {
 		return
 	}
 	defer authHandler.Close()
+
 	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 
 	// Create new cassandra client
@@ -104,7 +110,6 @@ func main() {
 		exitCode = 1
 		return
 	}
-
 	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(repo, tc, auth, svcName, instanceID), logger)
 
 	if cfg.SendTelemetry {

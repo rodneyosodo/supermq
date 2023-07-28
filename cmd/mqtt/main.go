@@ -73,11 +73,16 @@ func main() {
 		log.Fatalf("failed to init logger: %s", err)
 	}
 
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
+
 	instanceID := cfg.InstanceID
 	if instanceID == "" {
 		instanceID, err = uuid.New().ID()
 		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+			logger.Error(fmt.Sprintf("Failed to generate instanceID: %s", err))
+			exitCode = 1
+			return
 		}
 	}
 
@@ -88,16 +93,18 @@ func main() {
 
 		err := backoff.RetryNotify(healthcheck(cfg), backoff.NewExponentialBackOff(), notify)
 		if err != nil {
-			logger.Fatal(fmt.Sprintf("MQTT healthcheck limit exceeded, exiting. %s ", err))
+			logger.Error(fmt.Sprintf("MQTT healthcheck limit exceeded, exiting. %s ", err))
+			exitCode = 1
+			return
 		}
 	}
 
 	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, instanceID)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
+		exitCode = 1
+		return
 	}
-	var exitCode int
-	defer mflog.ExitWithError(&exitCode)
 	defer func() {
 		if err := tp.Shutdown(ctx); err != nil {
 			logger.Error(fmt.Sprintf("Error shutting down tracer provider: %v", err))
@@ -156,6 +163,7 @@ func main() {
 		return
 	}
 	defer tcHandler.Close()
+
 	logger.Info("Successfully connected to things grpc server " + tcHandler.Secure())
 
 	h := mqtt.NewHandler([]messaging.Publisher{np}, es, logger, tc)

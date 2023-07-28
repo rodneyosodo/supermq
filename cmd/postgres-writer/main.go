@@ -61,20 +61,25 @@ func main() {
 		log.Fatalf("failed to init logger: %s", err)
 	}
 
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
+
 	instanceID := cfg.InstanceID
 	if instanceID == "" {
 		instanceID, err = uuid.New().ID()
 		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+			logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
+			exitCode = 1
+			return
 		}
 	}
 
 	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, instanceID)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
+		exitCode = 1
+		return
 	}
-	var exitCode int
-	defer mflog.ExitWithError(&exitCode)
 	defer func() {
 		if err := tp.Shutdown(ctx); err != nil {
 			logger.Error(fmt.Sprintf("Error shutting down tracer provider: %v", err))
