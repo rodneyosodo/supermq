@@ -40,21 +40,21 @@ func MakeHandler(svc certs.Service, logger logger.Logger, instanceID string) htt
 		decodeCerts,
 		encodeResponse,
 		opts...,
-	), "issue_cert"))
+	), "issue"))
 
 	r.Get("/certs/:certID", otelhttp.NewHandler(kithttp.NewServer(
 		viewCert(svc),
 		decodeViewCert,
 		encodeResponse,
 		opts...,
-	), "view_cert"))
+	), "view"))
 
 	r.Delete("/certs/:certID", otelhttp.NewHandler(kithttp.NewServer(
 		revokeCert(svc),
 		decodeRevokeCerts,
 		encodeResponse,
 		opts...,
-	), "revoke_cert"))
+	), "revoke"))
 
 	r.Get("/serials/:thingID", otelhttp.NewHandler(kithttp.NewServer(
 		listSerials(svc),

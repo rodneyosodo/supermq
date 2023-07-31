@@ -45,19 +45,19 @@ func MakeHandler(svc bootstrap.Service, reader bootstrap.ConfigReader, logger mf
 		addEndpoint(svc),
 		decodeAddRequest,
 		encodeResponse,
-		opts...), "add_config"))
+		opts...), "add"))
 
 	r.Get("/things/configs/:configID", otelhttp.NewHandler(kithttp.NewServer(
 		viewEndpoint(svc),
 		decodeEntityRequest,
 		encodeResponse,
-		opts...), "view_config"))
+		opts...), "view"))
 
 	r.Put("/things/configs/:configID", otelhttp.NewHandler(kithttp.NewServer(
 		updateEndpoint(svc),
 		decodeUpdateRequest,
 		encodeResponse,
-		opts...), "update_config"))
+		opts...), "update"))
 
 	r.Patch("/things/configs/certs/:certID", otelhttp.NewHandler(kithttp.NewServer(
 		updateCertEndpoint(svc),
@@ -69,13 +69,13 @@ func MakeHandler(svc bootstrap.Service, reader bootstrap.ConfigReader, logger mf
 		updateConnEndpoint(svc),
 		decodeUpdateConnRequest,
 		encodeResponse,
-		opts...), "update_conn"))
+		opts...), "update_connections"))
 
 	r.Get("/things/configs", otelhttp.NewHandler(kithttp.NewServer(
 		listEndpoint(svc),
 		decodeListRequest,
 		encodeResponse,
-		opts...), "list_configs"))
+		opts...), "list"))
 
 	r.Get("/things/bootstrap/:externalID", otelhttp.NewHandler(kithttp.NewServer(
 		bootstrapEndpoint(svc, reader, false),
@@ -99,7 +99,7 @@ func MakeHandler(svc bootstrap.Service, reader bootstrap.ConfigReader, logger mf
 		removeEndpoint(svc),
 		decodeEntityRequest,
 		encodeResponse,
-		opts...), "remove_config"))
+		opts...), "remove"))
 
 	r.GetFunc("/health", mainflux.Health("bootstrap", instanceID))
 	r.Handle("/metrics", promhttp.Handler())

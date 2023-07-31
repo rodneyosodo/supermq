@@ -43,28 +43,28 @@ func MakeHandler(svc notifiers.Service, logger logger.Logger, instanceID string)
 		decodeCreate,
 		encodeResponse,
 		opts...,
-	), "create_subscription"))
+	), "create"))
 
 	mux.Get("/subscriptions/:subID", otelhttp.NewHandler(kithttp.NewServer(
 		viewSubscriptionEndpint(svc),
 		decodeSubscription,
 		encodeResponse,
 		opts...,
-	), "view_subscription"))
+	), "view"))
 
 	mux.Get("/subscriptions", otelhttp.NewHandler(kithttp.NewServer(
 		listSubscriptionsEndpoint(svc),
 		decodeList,
 		encodeResponse,
 		opts...,
-	), "list_subscriptions"))
+	), "list"))
 
 	mux.Delete("/subscriptions/:subID", otelhttp.NewHandler(kithttp.NewServer(
 		deleteSubscriptionEndpint(svc),
 		decodeSubscription,
 		encodeResponse,
 		opts...,
-	), "delete_subscription"))
+	), "delete"))
 
 	mux.GetFunc("/health", mainflux.Health("notifier", instanceID))
 	mux.Handle("/metrics", promhttp.Handler())
