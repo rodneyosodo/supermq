@@ -67,7 +67,13 @@ func (es *eventStore) Publish(ctx context.Context, event Event) error {
 		es.mu.Lock()
 		defer es.mu.Unlock()
 
-		es.unpublishedEvents <- record
+		select {
+		case es.unpublishedEvents <- record:
+		default:
+			// If the channel is full (rarely happens), drop the events.
+			return nil
+		}
+
 		return nil
 	}
 
@@ -75,6 +81,8 @@ func (es *eventStore) Publish(ctx context.Context, event Event) error {
 }
 
 func (es *eventStore) StartPublishingRoutine(ctx context.Context) {
+	defer close(es.unpublishedEvents)
+
 	ticker := time.NewTicker(unpublishedEventsCheckInterval)
 	defer ticker.Stop()
 
