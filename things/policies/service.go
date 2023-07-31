@@ -128,15 +128,10 @@ func (svc service) AddPolicy(ctx context.Context, token string, p Policy) (Polic
 
 	// If the client has `g_add` action on the object or is the owner of the object, add the policy
 	areq := AccessRequest{Subject: userID, Object: p.Object, Action: "g_add"}
-	if _, err := svc.policies.EvaluateGroupAccess(ctx, areq); err == nil {
-		page := Page{Subject: userID, Object: p.Object, Offset: 0, Limit: 1}
-		pol, err := svc.policies.Retrieve(ctx, page)
-		if err != nil {
-			return Policy{}, err
-		}
+	if pol, err := svc.policies.EvaluateGroupAccess(ctx, areq); err == nil {
 		// the client has `g_add` action on the object
-		if len(pol.Policies) == 1 {
-			if err := checkActions(pol.Policies[0].Actions, p.Actions); err != nil {
+		if len(pol.Actions) > 0 {
+			if err := checkActions(pol.Actions, p.Actions); err != nil {
 				return Policy{}, err
 			}
 		}
