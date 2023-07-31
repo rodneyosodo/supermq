@@ -165,7 +165,7 @@ func (es *eventStore) Bootstrap(ctx context.Context, externalKey, externalID str
 		return cfg, err
 	}
 
-	return cfg, nil
+	return cfg, err
 }
 
 func (es *eventStore) ChangeState(ctx context.Context, token, id string, state bootstrap.State) error {

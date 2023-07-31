@@ -626,9 +626,9 @@ func TestBootstrap(t *testing.T) {
 		},
 		{
 			desc:        "bootstrap with an error",
-			externalID:  saved.ExternalID,
-			externalKey: "external_id1",
-			err:         bootstrap.ErrExternalKey,
+			externalID:  "external_id1",
+			externalKey: "external_id",
+			err:         bootstrap.ErrBootstrap,
 			event: map[string]interface{}{
 				"external_id": "external_id",
 				"success":     "0",
