@@ -10,9 +10,6 @@ import (
 	"log"
 	"os"
 
-	"go.opentelemetry.io/otel/trace"
-	"golang.org/x/sync/errgroup"
-
 	chclient "github.com/mainflux/callhome/pkg/client"
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/internal"
@@ -24,11 +21,14 @@ import (
 	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
+	brokerstracing "github.com/mainflux/mainflux/pkg/messaging/brokers/tracing"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	"github.com/mainflux/mainflux/things/policies"
 	adapter "github.com/mainflux/mainflux/ws"
 	"github.com/mainflux/mainflux/ws/api"
 	"github.com/mainflux/mainflux/ws/tracing"
+	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -102,13 +102,14 @@ func main() {
 	}()
 	tracer := tp.Tracer(svcName)
 
-	nps, err := brokers.NewPubSub(httpServerConfig, tracer, cfg.BrokerURL, "", logger)
+	nps, err := brokers.NewPubSub(cfg.BrokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		exitCode = 1
 		return
 	}
 	defer nps.Close()
+	nps = brokerstracing.NewPubSub(httpServerConfig, tracer, nps)
 
 	svc := newService(tc, nps, logger, tracer)
 

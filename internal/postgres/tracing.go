@@ -11,13 +11,9 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mainflux/mainflux/internal/clients/postgres"
-	"github.com/mainflux/mainflux/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
-
-// ErrFailedToLookupIP is returned when the IP address of the database peer cannot be looked up.
-var ErrFailedToLookupIP = errors.New("failed to lookup IP address")
 
 var _ Database = (*database)(nil)
 
@@ -35,19 +31,19 @@ type Database interface {
 	// NamedExecContext executes a named query against the database and returns
 	NamedExecContext(context.Context, string, interface{}) (sql.Result, error)
 
-	// QueryRowxContext queries the database and returns an *sqlx.Row
+	// QueryRowxContext queries the database and returns an *sqlx.Row.
 	QueryRowxContext(context.Context, string, ...interface{}) *sqlx.Row
 
-	// QueryxContext queries the database and returns an *sqlx.Rows
+	// QueryxContext queries the database and returns an *sqlx.Rows and an error.
 	QueryxContext(context.Context, string, ...interface{}) (*sqlx.Rows, error)
 
-	// QueryContext executes a query that returns rows, typically a SELECT.
+	// QueryContext queries the database and returns an *sql.Rows and an error.
 	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
 
-	// ExecContext executes a query without returning any rows
+	// ExecContext executes a query without returning any rows.
 	ExecContext(context.Context, string, ...interface{}) (sql.Result, error)
 
-	// BeginTxx begins a transaction and returns an *sqlx.Tx
+	// BeginTxx begins a transaction and returns an *sqlx.Tx.
 	BeginTxx(ctx context.Context, opts *sql.TxOptions) (*sqlx.Tx, error)
 }
 

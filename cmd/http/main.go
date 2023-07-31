@@ -24,10 +24,10 @@ import (
 	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
+	brokerstracing "github.com/mainflux/mainflux/pkg/messaging/brokers/tracing"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	"github.com/mainflux/mainflux/things/policies"
 	"go.opentelemetry.io/otel/trace"
-
 	"golang.org/x/sync/errgroup"
 )
 
@@ -102,13 +102,14 @@ func main() {
 	}()
 	tracer := tp.Tracer(svcName)
 
-	pub, err := brokers.NewPublisher(httpServerConfig, tracer, cfg.BrokerURL)
+	pub, err := brokers.NewPublisher(cfg.BrokerURL)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to connect to message broker: %s", err))
 		exitCode = 1
 		return
 	}
 	defer pub.Close()
+	pub = brokerstracing.NewPublisher(httpServerConfig, tracer, pub)
 
 	svc := newService(pub, tc, logger, tracer)
 

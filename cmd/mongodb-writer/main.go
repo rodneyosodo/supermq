@@ -24,6 +24,7 @@ import (
 	httpserver "github.com/mainflux/mainflux/internal/server/http"
 	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
+	brokerstracing "github.com/mainflux/mainflux/pkg/messaging/brokers/tracing"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/sync/errgroup"
@@ -92,13 +93,14 @@ func main() {
 	}()
 	tracer := tp.Tracer(svcName)
 
-	pubSub, err := brokers.NewPubSub(httpServerConfig, tracer, cfg.BrokerURL, "", logger)
+	pubSub, err := brokers.NewPubSub(cfg.BrokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to connect to message broker: %s", err))
 		exitCode = 1
 		return
 	}
 	defer pubSub.Close()
+	pubSub = brokerstracing.NewPubSub(httpServerConfig, tracer, pubSub)
 
 	db, err := mongoClient.Setup(envPrefixDB)
 	if err != nil {

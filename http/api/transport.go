@@ -52,14 +52,14 @@ func MakeHandler(svc adapter.Service, instanceID string) http.Handler {
 		decodeRequest,
 		encodeResponse,
 		opts...,
-	), "publish_message"))
+	), "publish"))
 
 	r.Post("/channels/:chanID/messages/*", otelhttp.NewHandler(kithttp.NewServer(
 		sendMessageEndpoint(svc),
 		decodeRequest,
 		encodeResponse,
 		opts...,
-	), "publish_message"))
+	), "publish"))
 
 	r.GetFunc("/health", mainflux.Health("http", instanceID))
 	r.Handle("/metrics", promhttp.Handler())

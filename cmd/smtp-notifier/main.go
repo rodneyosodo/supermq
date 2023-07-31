@@ -23,13 +23,13 @@ import (
 	authClient "github.com/mainflux/mainflux/internal/clients/grpc/auth"
 	jaegerClient "github.com/mainflux/mainflux/internal/clients/jaeger"
 	pgClient "github.com/mainflux/mainflux/internal/clients/postgres"
-
 	"github.com/mainflux/mainflux/internal/email"
 	"github.com/mainflux/mainflux/internal/env"
 	"github.com/mainflux/mainflux/internal/server"
 	httpserver "github.com/mainflux/mainflux/internal/server/http"
 	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
+	brokerstracing "github.com/mainflux/mainflux/pkg/messaging/brokers/tracing"
 	"github.com/mainflux/mainflux/pkg/ulid"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	"github.com/mainflux/mainflux/users/policies"
@@ -118,13 +118,14 @@ func main() {
 	}()
 	tracer := tp.Tracer(svcName)
 
-	pubSub, err := brokers.NewPubSub(httpServerConfig, tracer, cfg.BrokerURL, "", logger)
+	pubSub, err := brokers.NewPubSub(cfg.BrokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to connect to message broker: %s", err))
 		exitCode = 1
 		return
 	}
 	defer pubSub.Close()
+	pubSub = brokerstracing.NewPubSub(httpServerConfig, tracer, pubSub)
 
 	auth, authHandler, err := authClient.Setup(svcName)
 	if err != nil {

@@ -28,6 +28,7 @@ import (
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
+	brokerstracing "github.com/mainflux/mainflux/pkg/messaging/brokers/tracing"
 	mqttpub "github.com/mainflux/mainflux/pkg/messaging/mqtt"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	mp "github.com/mainflux/mproxy/pkg/mqtt"
@@ -117,13 +118,14 @@ func main() {
 	}()
 	tracer := tp.Tracer(svcName)
 
-	nps, err := brokers.NewPubSub(serverConfig, tracer, cfg.BrokerURL, "mqtt", logger)
+	nps, err := brokers.NewPubSub(cfg.BrokerURL, "mqtt", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to connect to message broker: %s", err))
 		exitCode = 1
 		return
 	}
 	defer nps.Close()
+	nps = brokerstracing.NewPubSub(serverConfig, tracer, nps)
 
 	mpub, err := mqttpub.NewPublisher(fmt.Sprintf("%s:%s", cfg.MQTTTargetHost, cfg.MQTTTargetPort), cfg.MQTTForwarderTimeout)
 	if err != nil {
@@ -141,13 +143,14 @@ func main() {
 		return
 	}
 
-	np, err := brokers.NewPublisher(serverConfig, tracer, cfg.BrokerURL)
+	np, err := brokers.NewPublisher(cfg.BrokerURL)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to connect to message broker: %s", err))
 		exitCode = 1
 		return
 	}
 	defer np.Close()
+	np = brokerstracing.NewPublisher(serverConfig, tracer, np)
 
 	ec, err := redisClient.Setup(envPrefixES)
 	if err != nil {

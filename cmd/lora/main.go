@@ -16,6 +16,8 @@ import (
 	chclient "github.com/mainflux/callhome/pkg/client"
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/internal"
+	jaegerClient "github.com/mainflux/mainflux/internal/clients/jaeger"
+	redisClient "github.com/mainflux/mainflux/internal/clients/redis"
 	"github.com/mainflux/mainflux/internal/env"
 	"github.com/mainflux/mainflux/internal/server"
 	httpserver "github.com/mainflux/mainflux/internal/server/http"
@@ -23,14 +25,12 @@ import (
 	"github.com/mainflux/mainflux/lora"
 	"github.com/mainflux/mainflux/lora/api"
 	"github.com/mainflux/mainflux/lora/mqtt"
+	"github.com/mainflux/mainflux/lora/redis"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
+	brokerstracing "github.com/mainflux/mainflux/pkg/messaging/brokers/tracing"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	"golang.org/x/sync/errgroup"
-
-	jaegerClient "github.com/mainflux/mainflux/internal/clients/jaeger"
-	redisClient "github.com/mainflux/mainflux/internal/clients/redis"
-	"github.com/mainflux/mainflux/lora/redis"
 )
 
 const (
@@ -114,13 +114,14 @@ func main() {
 	}()
 	tracer := tp.Tracer(svcName)
 
-	pub, err := brokers.NewPublisher(httpServerConfig, tracer, cfg.BrokerURL)
+	pub, err := brokers.NewPublisher(cfg.BrokerURL)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to connect to message broker: %s", err))
 		exitCode = 1
 		return
 	}
 	defer pub.Close()
+	pub = brokerstracing.NewPublisher(httpServerConfig, tracer, pub)
 
 	svc := newService(pub, rmConn, thingsRMPrefix, channelsRMPrefix, connsRMPrefix, logger)
 

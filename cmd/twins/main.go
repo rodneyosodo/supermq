@@ -24,6 +24,7 @@ import (
 	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
+	brokerstracing "github.com/mainflux/mainflux/pkg/messaging/brokers/tracing"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	localusers "github.com/mainflux/mainflux/things/clients/standalone"
 	"github.com/mainflux/mainflux/twins"
@@ -146,13 +147,14 @@ func main() {
 		logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 	}
 
-	pubSub, err := brokers.NewPubSub(httpServerConfig, tracer, cfg.BrokerURL, queue, logger)
+	pubSub, err := brokers.NewPubSub(cfg.BrokerURL, queue, logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to connect to message broker: %s", err))
 		exitCode = 1
 		return
 	}
 	defer pubSub.Close()
+	pubSub = brokerstracing.NewPubSub(httpServerConfig, tracer, pubSub)
 
 	svc := newService(ctx, svcName, pubSub, cfg.ChannelID, auth, tracer, db, cacheClient, esClient, logger)
 

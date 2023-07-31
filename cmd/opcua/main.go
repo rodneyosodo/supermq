@@ -26,6 +26,7 @@ import (
 	"github.com/mainflux/mainflux/opcua/gopcua"
 	"github.com/mainflux/mainflux/opcua/redis"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
+	brokerstracing "github.com/mainflux/mainflux/pkg/messaging/brokers/tracing"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	"golang.org/x/sync/errgroup"
 )
@@ -123,13 +124,14 @@ func main() {
 	}()
 	tracer := tp.Tracer(svcName)
 
-	pubSub, err := brokers.NewPubSub(httpServerConfig, tracer, cfg.BrokerURL, "", logger)
+	pubSub, err := brokers.NewPubSub(cfg.BrokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to connect to message broker: %s", err))
 		exitCode = 1
 		return
 	}
 	defer pubSub.Close()
+	pubSub = brokerstracing.NewPubSub(httpServerConfig, tracer, pubSub)
 
 	sub := gopcua.NewSubscriber(ctx, pubSub, thingRM, chanRM, connRM, logger)
 	browser := gopcua.NewBrowser(ctx, logger)

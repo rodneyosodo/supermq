@@ -10,10 +10,9 @@ import (
 	"log"
 	"os"
 
+	"github.com/jmoiron/sqlx"
 	chclient "github.com/mainflux/callhome/pkg/client"
 	"github.com/mainflux/mainflux"
-
-	"github.com/jmoiron/sqlx"
 	"github.com/mainflux/mainflux/consumers"
 	consumerTracing "github.com/mainflux/mainflux/consumers/tracing"
 	"github.com/mainflux/mainflux/consumers/writers/api"
@@ -26,6 +25,7 @@ import (
 	httpserver "github.com/mainflux/mainflux/internal/server/http"
 	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
+	brokerstracing "github.com/mainflux/mainflux/pkg/messaging/brokers/tracing"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	"golang.org/x/sync/errgroup"
 )
@@ -106,13 +106,14 @@ func main() {
 	repo := newService(db, logger)
 	repo = consumerTracing.NewBlocking(tracer, repo, httpServerConfig)
 
-	pubSub, err := brokers.NewPubSub(httpServerConfig, tracer, cfg.BrokerURL, "", logger)
+	pubSub, err := brokers.NewPubSub(cfg.BrokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to connect to message broker: %s", err))
 		exitCode = 1
 		return
 	}
 	defer pubSub.Close()
+	pubSub = brokerstracing.NewPubSub(httpServerConfig, tracer, pubSub)
 
 	if err = consumers.Start(ctx, svcName, pubSub, repo, cfg.ConfigPath, logger); err != nil {
 		logger.Error(fmt.Sprintf("failed to create Timescale writer: %s", err))
