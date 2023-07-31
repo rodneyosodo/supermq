@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/go-redis/redis/v8"
+	mfredis "github.com/mainflux/mainflux/internal/clients/redis"
 	"github.com/mainflux/mainflux/users/policies"
 )
 
@@ -18,17 +19,23 @@ const (
 var _ policies.Service = (*eventStore)(nil)
 
 type eventStore struct {
+	mfredis.Publisher
 	svc    policies.Service
 	client *redis.Client
 }
 
 // NewEventStoreMiddleware returns wrapper around policy service that sends
 // events to event store.
-func NewEventStoreMiddleware(svc policies.Service, client *redis.Client) policies.Service {
-	return eventStore{
-		svc:    svc,
-		client: client,
+func NewEventStoreMiddleware(ctx context.Context, svc policies.Service, client *redis.Client) policies.Service {
+	es := eventStore{
+		svc:       svc,
+		client:    client,
+		Publisher: mfredis.NewEventStore(client, streamID, streamLen),
 	}
+
+	go es.StartPublishingRoutine(ctx)
+
+	return es
 }
 
 func (es eventStore) Authorize(ctx context.Context, ar policies.AccessRequest) error {
@@ -39,20 +46,8 @@ func (es eventStore) Authorize(ctx context.Context, ar policies.AccessRequest) e
 	event := authorizeEvent{
 		ar,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
-		return err
-	}
 
-	return nil
+	return es.Publish(ctx, event)
 }
 
 func (es eventStore) AddPolicy(ctx context.Context, token string, policy policies.Policy) error {
@@ -63,20 +58,8 @@ func (es eventStore) AddPolicy(ctx context.Context, token string, policy policie
 	event := policyEvent{
 		policy, policyAdd,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
-		return err
-	}
 
-	return nil
+	return es.Publish(ctx, event)
 }
 
 func (es eventStore) UpdatePolicy(ctx context.Context, token string, policy policies.Policy) error {
@@ -87,20 +70,8 @@ func (es eventStore) UpdatePolicy(ctx context.Context, token string, policy poli
 	event := policyEvent{
 		policy, policyUpdate,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
-		return err
-	}
 
-	return nil
+	return es.Publish(ctx, event)
 }
 
 func (es eventStore) ListPolicies(ctx context.Context, token string, page policies.Page) (policies.PolicyPage, error) {
@@ -112,16 +83,8 @@ func (es eventStore) ListPolicies(ctx context.Context, token string, page polici
 	event := listPoliciesEvent{
 		page,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return pp, err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+
+	if err := es.Publish(ctx, event); err != nil {
 		return pp, err
 	}
 
@@ -136,18 +99,6 @@ func (es eventStore) DeletePolicy(ctx context.Context, token string, policy poli
 	event := policyEvent{
 		policy, policyDelete,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
-		return err
-	}
 
-	return nil
+	return es.Publish(ctx, event)
 }

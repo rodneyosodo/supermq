@@ -225,9 +225,9 @@ func newService(ctx context.Context, db *sqlx.DB, dbConfig pgClient.Config, esCl
 	gsvc := groups.NewService(gRepo, pRepo, tokenizer, idp)
 	psvc := policies.NewService(pRepo, tokenizer, idp)
 
-	csvc = ucache.NewEventStoreMiddleware(csvc, esClient)
-	gsvc = gcache.NewEventStoreMiddleware(gsvc, esClient)
-	psvc = pcache.NewEventStoreMiddleware(psvc, esClient)
+	csvc = ucache.NewEventStoreMiddleware(ctx, csvc, esClient)
+	gsvc = gcache.NewEventStoreMiddleware(ctx, gsvc, esClient)
+	psvc = pcache.NewEventStoreMiddleware(ctx, psvc, esClient)
 
 	csvc = ctracing.New(csvc, tracer)
 	csvc = capi.LoggingMiddleware(csvc, logger)

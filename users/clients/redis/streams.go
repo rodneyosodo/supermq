@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/go-redis/redis/v8"
+	mfredis "github.com/mainflux/mainflux/internal/clients/redis"
 	mfclients "github.com/mainflux/mainflux/pkg/clients"
 	"github.com/mainflux/mainflux/users/clients"
 	"github.com/mainflux/mainflux/users/jwt"
@@ -20,17 +21,23 @@ const (
 var _ clients.Service = (*eventStore)(nil)
 
 type eventStore struct {
+	mfredis.Publisher
 	svc    clients.Service
 	client *redis.Client
 }
 
 // NewEventStoreMiddleware returns wrapper around users service that sends
 // events to event store.
-func NewEventStoreMiddleware(svc clients.Service, client *redis.Client) clients.Service {
-	return eventStore{
-		svc:    svc,
-		client: client,
+func NewEventStoreMiddleware(ctx context.Context, svc clients.Service, client *redis.Client) clients.Service {
+	es := eventStore{
+		svc:       svc,
+		client:    client,
+		Publisher: mfredis.NewEventStore(client, streamID, streamLen),
 	}
+
+	go es.StartPublishingRoutine(ctx)
+
+	return es
 }
 
 func (es eventStore) RegisterClient(ctx context.Context, token string, user mfclients.Client) (mfclients.Client, error) {
@@ -42,16 +49,8 @@ func (es eventStore) RegisterClient(ctx context.Context, token string, user mfcl
 	event := createClientEvent{
 		user,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return user, err
-	}
-	record := &redis.XAddArgs{
-		Stream: streamID,
-		MaxLen: streamLen,
-		Values: values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+
+	if err := es.Publish(ctx, event); err != nil {
 		return user, err
 	}
 
@@ -107,16 +106,8 @@ func (es eventStore) update(ctx context.Context, operation string, user mfclient
 	event := updateClientEvent{
 		user, operation,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return user, err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+
+	if err := es.Publish(ctx, event); err != nil {
 		return user, err
 	}
 
@@ -128,19 +119,12 @@ func (es eventStore) ViewClient(ctx context.Context, token, id string) (mfclient
 	if err != nil {
 		return user, err
 	}
+
 	event := viewClientEvent{
 		user,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return user, err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+
+	if err := es.Publish(ctx, event); err != nil {
 		return user, err
 	}
 
@@ -152,19 +136,12 @@ func (es eventStore) ViewProfile(ctx context.Context, token string) (mfclients.C
 	if err != nil {
 		return user, err
 	}
+
 	event := viewProfileEvent{
 		user,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return user, err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+
+	if err := es.Publish(ctx, event); err != nil {
 		return user, err
 	}
 
@@ -179,16 +156,8 @@ func (es eventStore) ListClients(ctx context.Context, token string, pm mfclients
 	event := listClientEvent{
 		pm,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return cp, err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+
+	if err := es.Publish(ctx, event); err != nil {
 		return cp, err
 	}
 
@@ -203,16 +172,8 @@ func (es eventStore) ListMembers(ctx context.Context, token, groupID string, pm 
 	event := listClientByGroupEvent{
 		pm, groupID,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return mp, err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+
+	if err := es.Publish(ctx, event); err != nil {
 		return mp, err
 	}
 
@@ -244,16 +205,8 @@ func (es eventStore) delete(ctx context.Context, user mfclients.Client) (mfclien
 		updatedBy: user.UpdatedBy,
 		status:    user.Status.String(),
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return user, err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+
+	if err := es.Publish(ctx, event); err != nil {
 		return user, err
 	}
 
@@ -268,16 +221,8 @@ func (es eventStore) Identify(ctx context.Context, token string) (string, error)
 	event := identifyClientEvent{
 		userID: userID,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return userID, err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+
+	if err := es.Publish(ctx, event); err != nil {
 		return userID, err
 	}
 
@@ -292,20 +237,8 @@ func (es eventStore) GenerateResetToken(ctx context.Context, email, host string)
 		email: email,
 		host:  host,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
-		return err
-	}
 
-	return nil
+	return es.Publish(ctx, event)
 }
 
 func (es eventStore) IssueToken(ctx context.Context, identity, secret string) (jwt.Token, error) {
@@ -316,16 +249,8 @@ func (es eventStore) IssueToken(ctx context.Context, identity, secret string) (j
 	event := issueTokenEvent{
 		identity: identity,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return token, err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+
+	if err := es.Publish(ctx, event); err != nil {
 		return token, err
 	}
 
@@ -338,16 +263,8 @@ func (es eventStore) RefreshToken(ctx context.Context, refreshToken string) (jwt
 		return token, err
 	}
 	event := refreshTokenEvent{}
-	values, err := event.Encode()
-	if err != nil {
-		return token, err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+
+	if err := es.Publish(ctx, event); err != nil {
 		return token, err
 	}
 
@@ -359,20 +276,8 @@ func (es eventStore) ResetSecret(ctx context.Context, resetToken, secret string)
 		return err
 	}
 	event := resetSecretEvent{}
-	values, err := event.Encode()
-	if err != nil {
-		return err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
-		return err
-	}
 
-	return nil
+	return es.Publish(ctx, event)
 }
 
 func (es eventStore) SendPasswordReset(ctx context.Context, host, email, user, token string) error {
@@ -384,18 +289,6 @@ func (es eventStore) SendPasswordReset(ctx context.Context, host, email, user, t
 		email: email,
 		user:  user,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
-		return err
-	}
 
-	return nil
+	return es.Publish(ctx, event)
 }

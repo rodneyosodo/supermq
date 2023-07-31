@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	mfredis "github.com/mainflux/mainflux/internal/clients/redis"
 	mfclients "github.com/mainflux/mainflux/pkg/clients"
 )
 
@@ -29,24 +30,20 @@ const (
 	sendPasswordReset  = clientPrefix + "send_password_reset"
 )
 
-type event interface {
-	Encode() (map[string]interface{}, error)
-}
-
 var (
-	_ event = (*createClientEvent)(nil)
-	_ event = (*updateClientEvent)(nil)
-	_ event = (*removeClientEvent)(nil)
-	_ event = (*viewClientEvent)(nil)
-	_ event = (*viewProfileEvent)(nil)
-	_ event = (*listClientEvent)(nil)
-	_ event = (*listClientByGroupEvent)(nil)
-	_ event = (*identifyClientEvent)(nil)
-	_ event = (*generateResetTokenEvent)(nil)
-	_ event = (*issueTokenEvent)(nil)
-	_ event = (*refreshTokenEvent)(nil)
-	_ event = (*resetSecretEvent)(nil)
-	_ event = (*sendPasswordResetEvent)(nil)
+	_ mfredis.Event = (*createClientEvent)(nil)
+	_ mfredis.Event = (*updateClientEvent)(nil)
+	_ mfredis.Event = (*removeClientEvent)(nil)
+	_ mfredis.Event = (*viewClientEvent)(nil)
+	_ mfredis.Event = (*viewProfileEvent)(nil)
+	_ mfredis.Event = (*listClientEvent)(nil)
+	_ mfredis.Event = (*listClientByGroupEvent)(nil)
+	_ mfredis.Event = (*identifyClientEvent)(nil)
+	_ mfredis.Event = (*generateResetTokenEvent)(nil)
+	_ mfredis.Event = (*issueTokenEvent)(nil)
+	_ mfredis.Event = (*refreshTokenEvent)(nil)
+	_ mfredis.Event = (*resetSecretEvent)(nil)
+	_ mfredis.Event = (*sendPasswordResetEvent)(nil)
 )
 
 type createClientEvent struct {

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	mfredis "github.com/mainflux/mainflux/internal/clients/redis"
 	"github.com/mainflux/mainflux/users/policies"
 )
 
@@ -19,14 +20,10 @@ const (
 	policyDelete = policyPrefix + "delete"
 )
 
-type event interface {
-	Encode() (map[string]interface{}, error)
-}
-
 var (
-	_ event = (*policyEvent)(nil)
-	_ event = (*authorizeEvent)(nil)
-	_ event = (*listPoliciesEvent)(nil)
+	_ mfredis.Event = (*policyEvent)(nil)
+	_ mfredis.Event = (*authorizeEvent)(nil)
+	_ mfredis.Event = (*listPoliciesEvent)(nil)
 )
 
 type policyEvent struct {

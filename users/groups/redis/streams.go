@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/go-redis/redis/v8"
+	mfredis "github.com/mainflux/mainflux/internal/clients/redis"
 	mfgroups "github.com/mainflux/mainflux/pkg/groups"
 	"github.com/mainflux/mainflux/users/groups"
 )
@@ -19,17 +20,23 @@ const (
 var _ groups.Service = (*eventStore)(nil)
 
 type eventStore struct {
+	mfredis.Publisher
 	svc    groups.Service
 	client *redis.Client
 }
 
 // NewEventStoreMiddleware returns wrapper around things service that sends
 // events to event store.
-func NewEventStoreMiddleware(svc groups.Service, client *redis.Client) groups.Service {
-	return eventStore{
-		svc:    svc,
-		client: client,
+func NewEventStoreMiddleware(ctx context.Context, svc groups.Service, client *redis.Client) groups.Service {
+	es := eventStore{
+		svc:       svc,
+		client:    client,
+		Publisher: mfredis.NewEventStore(client, streamID, streamLen),
 	}
+
+	go es.StartPublishingRoutine(ctx)
+
+	return es
 }
 
 func (es eventStore) CreateGroup(ctx context.Context, token string, group mfgroups.Group) (mfgroups.Group, error) {
@@ -41,16 +48,8 @@ func (es eventStore) CreateGroup(ctx context.Context, token string, group mfgrou
 	event := createGroupEvent{
 		group,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return group, err
-	}
-	record := &redis.XAddArgs{
-		Stream: streamID,
-		MaxLen: streamLen,
-		Values: values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+
+	if err := es.Publish(ctx, event); err != nil {
 		return group, err
 	}
 
@@ -66,16 +65,8 @@ func (es eventStore) UpdateGroup(ctx context.Context, token string, group mfgrou
 	event := updateGroupEvent{
 		group,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return group, err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+
+	if err := es.Publish(ctx, event); err != nil {
 		return group, err
 	}
 
@@ -90,16 +81,8 @@ func (es eventStore) ViewGroup(ctx context.Context, token, id string) (mfgroups.
 	event := viewGroupEvent{
 		group,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return group, err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+
+	if err := es.Publish(ctx, event); err != nil {
 		return group, err
 	}
 
@@ -114,16 +97,8 @@ func (es eventStore) ListGroups(ctx context.Context, token string, pm mfgroups.G
 	event := listGroupEvent{
 		pm,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return gp, err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+
+	if err := es.Publish(ctx, event); err != nil {
 		return gp, err
 	}
 
@@ -138,16 +113,8 @@ func (es eventStore) ListMemberships(ctx context.Context, token, clientID string
 	event := listGroupMembershipEvent{
 		pm, clientID,
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return mp, err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+
+	if err := es.Publish(ctx, event); err != nil {
 		return mp, err
 	}
 
@@ -179,16 +146,8 @@ func (es eventStore) delete(ctx context.Context, group mfgroups.Group) (mfgroups
 		updatedBy: group.UpdatedBy,
 		status:    group.Status.String(),
 	}
-	values, err := event.Encode()
-	if err != nil {
-		return group, err
-	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       values,
-	}
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+
+	if err := es.Publish(ctx, event); err != nil {
 		return group, err
 	}
 
