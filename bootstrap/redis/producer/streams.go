@@ -9,7 +9,6 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/mainflux/mainflux/bootstrap"
 	mfredis "github.com/mainflux/mainflux/internal/clients/redis"
-	"github.com/mainflux/mainflux/pkg/errors"
 )
 
 const (
@@ -49,8 +48,8 @@ func (es *eventStore) Add(ctx context.Context, token string, cfg bootstrap.Confi
 		saved, configCreate,
 	}
 
-	if err1 := es.Publish(ctx, ev); err1 != nil {
-		return saved, errors.Wrap(err, err1)
+	if err := es.Publish(ctx, ev); err != nil {
+		return saved, err
 	}
 
 	return saved, err
@@ -65,8 +64,8 @@ func (es *eventStore) View(ctx context.Context, token, id string) (bootstrap.Con
 		cfg, configList,
 	}
 
-	if err1 := es.Publish(ctx, ev); err1 != nil {
-		return cfg, errors.Wrap(err, err1)
+	if err := es.Publish(ctx, ev); err != nil {
+		return cfg, err
 	}
 
 	return cfg, err
@@ -97,7 +96,11 @@ func (es eventStore) UpdateCert(ctx context.Context, token, thingKey, clientCert
 		caCert:     caCert,
 	}
 
-	return es.Publish(ctx, ev)
+	if err := es.Publish(ctx, ev); err != nil {
+		return cfg, err
+	}
+
+	return cfg, nil
 }
 
 func (es *eventStore) UpdateConnections(ctx context.Context, token, id string, connections []string) error {
@@ -126,8 +129,8 @@ func (es *eventStore) List(ctx context.Context, token string, filter bootstrap.F
 		partialMatch: filter.PartialMatch,
 	}
 
-	if err1 := es.Publish(ctx, ev); err1 != nil {
-		return bp, errors.Wrap(err, err1)
+	if err := es.Publish(ctx, ev); err != nil {
+		return bp, err
 	}
 
 	return bp, nil
@@ -158,11 +161,11 @@ func (es *eventStore) Bootstrap(ctx context.Context, externalKey, externalID str
 		ev.success = false
 	}
 
-	if err1 := es.Publish(ctx, ev); err1 != nil {
-		return cfg, err1
+	if err := es.Publish(ctx, ev); err != nil {
+		return cfg, err
 	}
 
-	return cfg, err
+	return cfg, nil
 }
 
 func (es *eventStore) ChangeState(ctx context.Context, token, id string, state bootstrap.State) error {

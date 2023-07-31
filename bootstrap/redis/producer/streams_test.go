@@ -201,7 +201,7 @@ func TestView(t *testing.T) {
 	svcConfig, svcErr := svc.View(context.Background(), validToken, saved.ThingID)
 
 	svc = producer.NewEventStoreMiddleware(context.Background(), svc, redisClient)
-	esConfig, esErr := svc.View(context.Background(), validToken, saved.MFThing)
+	esConfig, esErr := svc.View(context.Background(), validToken, saved.ThingID)
 
 	assert.Equal(t, svcConfig, esConfig, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", svcConfig, esConfig))
 	assert.Equal(t, svcErr, esErr, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", svcErr, esErr))
@@ -254,9 +254,9 @@ func TestUpdate(t *testing.T) {
 				"channels":    "[1, 2]",
 				"external_id": "external_id",
 				"thing_id":    "1",
-				"owner":          email,
-				"state":          "0",
-				"occurred_at":    time.Now().UnixNano(),
+				"owner":       email,
+				"state":       "0",
+				"occurred_at": time.Now().UnixNano(),
 			},
 		},
 		{
@@ -383,14 +383,14 @@ func TestUpdateCert(t *testing.T) {
 	}{
 		{
 			desc:       "update cert successfully",
-			id:         saved.MFThing,
+			id:         saved.ThingID,
 			token:      validToken,
 			clientCert: "clientCert",
 			clientKey:  "clientKey",
 			caCert:     "caCert",
 			err:        nil,
 			event: map[string]interface{}{
-				"thing_key":   saved.MFKey,
+				"thing_key":   saved.ThingKey,
 				"client_cert": "clientCert",
 				"client_key":  "clientKey",
 				"ca_cert":     "caCert",
@@ -399,7 +399,7 @@ func TestUpdateCert(t *testing.T) {
 		},
 		{
 			desc:       "invalid token",
-			id:         saved.MFThing,
+			id:         saved.ThingID,
 			token:      "invalidToken",
 			clientCert: "clientCert",
 			clientKey:  "clientKey",
@@ -419,7 +419,7 @@ func TestUpdateCert(t *testing.T) {
 		},
 		{
 			desc:       "empty client certificate",
-			id:         saved.MFThing,
+			id:         saved.ThingID,
 			token:      validToken,
 			clientCert: "",
 			clientKey:  "clientKey",
@@ -429,7 +429,7 @@ func TestUpdateCert(t *testing.T) {
 		},
 		{
 			desc:       "empty client key",
-			id:         saved.MFThing,
+			id:         saved.ThingID,
 			token:      validToken,
 			clientCert: "clientCert",
 			clientKey:  "",
@@ -439,7 +439,7 @@ func TestUpdateCert(t *testing.T) {
 		},
 		{
 			desc:       "empty CA certificate",
-			id:         saved.MFThing,
+			id:         saved.ThingID,
 			token:      validToken,
 			clientCert: "clientCert",
 			clientKey:  "clientKey",
@@ -449,7 +449,7 @@ func TestUpdateCert(t *testing.T) {
 		},
 		{
 			desc:       "update cert with invalid token",
-			id:         saved.MFThing,
+			id:         saved.ThingID,
 			token:      "invalidToken",
 			clientCert: "clientCert",
 			clientKey:  "clientKey",
@@ -469,14 +469,14 @@ func TestUpdateCert(t *testing.T) {
 		},
 		{
 			desc:       "successful update without CA certificate",
-			id:         saved.MFThing,
+			id:         saved.ThingID,
 			token:      validToken,
 			clientCert: "clientCert",
 			clientKey:  "clientKey",
 			caCert:     "",
 			err:        nil,
 			event: map[string]interface{}{
-				"thing_key":   saved.MFKey,
+				"thing_key":   saved.ThingKey,
 				"client_cert": "clientCert",
 				"client_key":  "clientKey",
 				"ca_cert":     "caCert",
@@ -488,7 +488,7 @@ func TestUpdateCert(t *testing.T) {
 
 	lastID := "0"
 	for _, tc := range cases {
-		err := svc.UpdateCert(context.Background(), tc.token, tc.id, tc.clientCert, tc.clientKey, tc.caCert)
+		_, err := svc.UpdateCert(context.Background(), tc.token, tc.id, tc.clientCert, tc.clientKey, tc.caCert)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &redis.XReadArgs{
