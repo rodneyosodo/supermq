@@ -24,7 +24,7 @@ services:
     container_name: mainflux-mongodb
     restart: on-failure
     environment:
-      MONGO_INITDB_DATABASE: ${MF_MONGO_DB}
+      MONGO_INITDB_DATABASE: ${MF_MONGO_NAME}
     ports:
       - ${MF_MONGO_PORT}:${MF_MONGO_PORT}
     networks:
@@ -48,7 +48,7 @@ services:
       MF_MONGO_WRITER_HTTP_SERVER_KEY: ${MF_MONGO_WRITER_HTTP_SERVER_KEY}
       MF_MONGO_HOST: ${MF_MONGO_HOST}
       MF_MONGO_PORT: ${MF_MONGO_PORT}
-      MF_MONGO_DB: ${MF_MONGO_DB}
+      MF_MONGO_NAME: ${MF_MONGO_NAME}
       MF_BROKER_URL: ${MF_BROKER_URL}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_SEND_TELEMETRY: ${MF_SEND_TELEMETRY}

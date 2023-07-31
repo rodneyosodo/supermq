@@ -62,7 +62,7 @@ services:
     environment:
       POSTGRES_USER: ${MF_THINGS_DB_USER}
       POSTGRES_PASSWORD: ${MF_THINGS_DB_PASS}
-      POSTGRES_DB: ${MF_THINGS_DB}
+      POSTGRES_DB: ${MF_THINGS_DB_NAME}
     networks:
       - mainflux-base-net
     volumes:
@@ -107,7 +107,7 @@ services:
       MF_THINGS_DB_PORT: ${MF_THINGS_DB_PORT}
       MF_THINGS_DB_USER: ${MF_THINGS_DB_USER}
       MF_THINGS_DB_PASS: ${MF_THINGS_DB_PASS}
-      MF_THINGS_DB: ${MF_THINGS_DB}
+      MF_THINGS_DB_NAME: ${MF_THINGS_DB_NAME}
       MF_THINGS_DB_SSL_MODE: ${MF_THINGS_DB_SSL_MODE}
       MF_THINGS_DB_SSL_CERT: ${MF_THINGS_DB_SSL_CERT}
       MF_THINGS_DB_SSL_KEY: ${MF_THINGS_DB_SSL_KEY}
@@ -131,7 +131,7 @@ services:
     environment:
       POSTGRES_USER: ${MF_USERS_DB_USER}
       POSTGRES_PASSWORD: ${MF_USERS_DB_PASS}
-      POSTGRES_DB: ${MF_USERS_DB}
+      POSTGRES_DB: ${MF_USERS_DB_NAME}
     networks:
       - mainflux-base-net
     volumes:
@@ -164,7 +164,7 @@ services:
       MF_USERS_DB_PORT: ${MF_USERS_DB_PORT}
       MF_USERS_DB_USER: ${MF_USERS_DB_USER}
       MF_USERS_DB_PASS: ${MF_USERS_DB_PASS}
-      MF_USERS_DB: ${MF_USERS_DB}
+      MF_USERS_DB_NAME: ${MF_USERS_DB_NAME}
       MF_USERS_DB_SSL_MODE: ${MF_USERS_DB_SSL_MODE}
       MF_USERS_DB_SSL_CERT: ${MF_USERS_DB_SSL_CERT}
       MF_USERS_DB_SSL_KEY: ${MF_USERS_DB_SSL_KEY}

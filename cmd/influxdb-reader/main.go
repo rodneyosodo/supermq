@@ -102,7 +102,7 @@ func main() {
 		Org:    influxDBConfig.Org,
 	}
 
-	client, err := influxDBClient.Connect(influxDBConfig, ctx)
+	client, err := influxDBClient.Connect(ctx, influxDBConfig)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to connect to InfluxDB : %s", err))
 		exitCode = 1

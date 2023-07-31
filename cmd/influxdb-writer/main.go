@@ -39,7 +39,7 @@ type config struct {
 	LogLevel      string `env:"MF_INFLUX_WRITER_LOG_LEVEL"     envDefault:"info"`
 	ConfigPath    string `env:"MF_INFLUX_WRITER_CONFIG_PATH"   envDefault:"/config.toml"`
 	BrokerURL     string `env:"MF_BROKER_URL"                  envDefault:"nats://localhost:4222"`
-	JaegerURL     string `env:"MF_JAEGER_URL"                  envDefault:"localhost:6831"`
+	JaegerURL     string `env:"MF_JAEGER_URL"                  envDefault:"http://jaeger:14268/api/traces"`
 	SendTelemetry bool   `env:"MF_SEND_TELEMETRY"              envDefault:"true"`
 	InstanceID    string `env:"MF_INFLUX_WRITER_INSTANCE_ID"   envDefault:""`
 }
@@ -107,7 +107,7 @@ func main() {
 		Org:    influxDBConfig.Org,
 	}
 
-	client, err := influxDBClient.Connect(influxDBConfig, ctx)
+	client, err := influxDBClient.Connect(ctx, influxDBConfig)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to connect to InfluxDB : %s", err))
 		exitCode = 1

@@ -12,9 +12,9 @@ networks:
   docker_mainflux-base-net:
     external: true
 
-
 volumes:
   mainflux-certs-db-volume:
+
 
 services:
   certs-db:
@@ -24,7 +24,7 @@ services:
     environment:
       POSTGRES_USER: ${MF_CERTS_DB_USER}
       POSTGRES_PASSWORD: ${MF_CERTS_DB_PASS}
-      POSTGRES_DB: ${MF_CERTS_DB_DB}
+      POSTGRES_DB: ${MF_CERTS_DB_NAME}
     networks:
       - docker_mainflux-base-net
     volumes:
@@ -49,7 +49,7 @@ services:
       MF_VAULT_PKI_INT_PATH: ${MF_VAULT_PKI_INT_PATH}
       MF_VAULT_CA_ROLE_NAME: ${MF_VAULT_CA_ROLE_NAME}
       MF_VAULT_PKI_PATH: ${MF_VAULT_PKI_PATH}
-      MF_VAULT_TOKEN: ${MF_VAULT_TOKEN}       
+      MF_VAULT_TOKEN: ${MF_VAULT_TOKEN}
       MF_CERTS_HTTP_HOST: ${MF_CERTS_HTTP_HOST}
       MF_CERTS_HTTP_PORT: ${MF_CERTS_HTTP_PORT}
       MF_CERTS_HTTP_SERVER_CERT: ${MF_CERTS_HTTP_SERVER_CERT}
@@ -58,7 +58,7 @@ services:
       MF_CERTS_DB_PORT: ${MF_CERTS_DB_PORT}
       MF_CERTS_DB_PASS: ${MF_CERTS_DB_PASS}
       MF_CERTS_DB_USER: ${MF_CERTS_DB_USER}
-      MF_CERTS_DB_DB: ${MF_CERTS_DB_DB}
+      MF_CERTS_DB_NAME: ${MF_CERTS_DB_NAME}
       MF_CERTS_DB_SSL_MODE: ${MF_CERTS_DB_SSL_MODE}
       MF_CERTS_DB_SSL_CERT: ${MF_CERTS_DB_SSL_CERT}
       MF_CERTS_DB_SSL_KEY: ${MF_CERTS_DB_SSL_KEY}
