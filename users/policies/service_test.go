@@ -163,8 +163,7 @@ func TestAddPolicy(t *testing.T) {
 		repoCall := pRepo.On("CheckAdmin", context.Background(), mock.Anything).Return(errors.ErrAuthorization)
 		repoCall1 := pRepo.On("EvaluateGroupAccess", context.Background(), mock.Anything).Return(policies.Policy{}, tc.err)
 		repoCall2 := pRepo.On("EvaluateUserAccess", context.Background(), mock.Anything).Return(policies.Policy{}, tc.err)
-		repoCall3 := pRepo.On("RetrieveAll", context.Background(), mock.Anything).Return(policies.PolicyPage{Policies: []policies.Policy{tc.policy}}, tc.err)
-		repoCall4 := pRepo.On("Save", context.Background(), mock.Anything).Return(tc.err)
+		repoCall3 := pRepo.On("Save", context.Background(), mock.Anything).Return(tc.err)
 		err := svc.AddPolicy(context.Background(), tc.token, tc.policy)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if err == nil {
@@ -174,14 +173,13 @@ func TestAddPolicy(t *testing.T) {
 			require.Nil(t, err, fmt.Sprintf("checking shared %v policy expected to be succeed: %#v", tc.policy, err))
 			ok := repoCall.Parent.AssertCalled(t, "CheckAdmin", context.Background(), mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("CheckAdmin was not called on %s", tc.desc))
-			ok = repoCall4.Parent.AssertCalled(t, "Save", context.Background(), mock.Anything)
+			ok = repoCall3.Parent.AssertCalled(t, "Save", context.Background(), mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("Save was not called on %s", tc.desc))
 		}
 		repoCall.Unset()
 		repoCall1.Unset()
 		repoCall2.Unset()
 		repoCall3.Unset()
-		repoCall4.Unset()
 	}
 
 }
