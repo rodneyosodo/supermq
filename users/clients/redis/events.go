@@ -197,44 +197,44 @@ type viewProfileEvent struct {
 	mfclients.Client
 }
 
-func (vce viewProfileEvent) Encode() (map[string]interface{}, error) {
+func (vpe viewProfileEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation": profileView,
-		"id":        vce.ID,
+		"id":        vpe.ID,
 	}
 
-	if vce.Name != "" {
-		val["name"] = vce.Name
+	if vpe.Name != "" {
+		val["name"] = vpe.Name
 	}
-	if len(vce.Tags) > 0 {
-		tags := fmt.Sprintf("[%s]", strings.Join(vce.Tags, ","))
+	if len(vpe.Tags) > 0 {
+		tags := fmt.Sprintf("[%s]", strings.Join(vpe.Tags, ","))
 		val["tags"] = tags
 	}
-	if vce.Owner != "" {
-		val["owner"] = vce.Owner
+	if vpe.Owner != "" {
+		val["owner"] = vpe.Owner
 	}
-	if vce.Credentials.Identity != "" {
-		val["identity"] = vce.Credentials.Identity
+	if vpe.Credentials.Identity != "" {
+		val["identity"] = vpe.Credentials.Identity
 	}
-	if vce.Metadata != nil {
-		metadata, err := json.Marshal(vce.Metadata)
+	if vpe.Metadata != nil {
+		metadata, err := json.Marshal(vpe.Metadata)
 		if err != nil {
 			return map[string]interface{}{}, err
 		}
 
 		val["metadata"] = metadata
 	}
-	if !vce.CreatedAt.IsZero() {
-		val["created_at"] = vce.CreatedAt
+	if !vpe.CreatedAt.IsZero() {
+		val["created_at"] = vpe.CreatedAt
 	}
-	if !vce.UpdatedAt.IsZero() {
-		val["updated_at"] = vce.UpdatedAt
+	if !vpe.UpdatedAt.IsZero() {
+		val["updated_at"] = vpe.UpdatedAt
 	}
-	if vce.UpdatedBy != "" {
-		val["updated_by"] = vce.UpdatedBy
+	if vpe.UpdatedBy != "" {
+		val["updated_by"] = vpe.UpdatedBy
 	}
-	if vce.Status.String() != "" {
-		val["status"] = vce.Status.String()
+	if vpe.Status.String() != "" {
+		val["status"] = vpe.Status.String()
 	}
 
 	return val, nil

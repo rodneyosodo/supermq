@@ -34,36 +34,36 @@ type createGroupEvent struct {
 	mfgroups.Group
 }
 
-func (cce createGroupEvent) Encode() (map[string]interface{}, error) {
+func (cge createGroupEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation":  groupCreate,
-		"id":         cce.ID,
-		"status":     cce.Status.String(),
-		"created_at": cce.CreatedAt,
+		"id":         cge.ID,
+		"status":     cge.Status.String(),
+		"created_at": cge.CreatedAt,
 	}
 
-	if cce.Owner != "" {
-		val["owner"] = cce.Owner
+	if cge.Owner != "" {
+		val["owner"] = cge.Owner
 	}
-	if cce.Parent != "" {
-		val["parent"] = cce.Parent
+	if cge.Parent != "" {
+		val["parent"] = cge.Parent
 	}
-	if cce.Name != "" {
-		val["name"] = cce.Name
+	if cge.Name != "" {
+		val["name"] = cge.Name
 	}
-	if cce.Description != "" {
-		val["description"] = cce.Description
+	if cge.Description != "" {
+		val["description"] = cge.Description
 	}
-	if cce.Metadata != nil {
-		metadata, err := json.Marshal(cce.Metadata)
+	if cge.Metadata != nil {
+		metadata, err := json.Marshal(cge.Metadata)
 		if err != nil {
 			return map[string]interface{}{}, err
 		}
 
 		val["metadata"] = metadata
 	}
-	if cce.Status.String() != "" {
-		val["status"] = cce.Status.String()
+	if cge.Status.String() != "" {
+		val["status"] = cge.Status.String()
 	}
 
 	return val, nil
@@ -73,41 +73,41 @@ type updateGroupEvent struct {
 	mfgroups.Group
 }
 
-func (uce updateGroupEvent) Encode() (map[string]interface{}, error) {
+func (uge updateGroupEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation":  groupUpdate,
-		"updated_at": uce.UpdatedAt,
-		"updated_by": uce.UpdatedBy,
+		"updated_at": uge.UpdatedAt,
+		"updated_by": uge.UpdatedBy,
 	}
 
-	if uce.ID != "" {
-		val["id"] = uce.ID
+	if uge.ID != "" {
+		val["id"] = uge.ID
 	}
-	if uce.Owner != "" {
-		val["owner"] = uce.Owner
+	if uge.Owner != "" {
+		val["owner"] = uge.Owner
 	}
-	if uce.Parent != "" {
-		val["parent"] = uce.Parent
+	if uge.Parent != "" {
+		val["parent"] = uge.Parent
 	}
-	if uce.Name != "" {
-		val["name"] = uce.Name
+	if uge.Name != "" {
+		val["name"] = uge.Name
 	}
-	if uce.Description != "" {
-		val["description"] = uce.Description
+	if uge.Description != "" {
+		val["description"] = uge.Description
 	}
-	if uce.Metadata != nil {
-		metadata, err := json.Marshal(uce.Metadata)
+	if uge.Metadata != nil {
+		metadata, err := json.Marshal(uge.Metadata)
 		if err != nil {
 			return map[string]interface{}{}, err
 		}
 
 		val["metadata"] = metadata
 	}
-	if !uce.CreatedAt.IsZero() {
-		val["created_at"] = uce.CreatedAt
+	if !uge.CreatedAt.IsZero() {
+		val["created_at"] = uge.CreatedAt
 	}
-	if uce.Status.String() != "" {
-		val["status"] = uce.Status.String()
+	if uge.Status.String() != "" {
+		val["status"] = uge.Status.String()
 	}
 
 	return val, nil
@@ -120,13 +120,13 @@ type removeGroupEvent struct {
 	updatedBy string
 }
 
-func (rce removeGroupEvent) Encode() (map[string]interface{}, error) {
+func (rge removeGroupEvent) Encode() (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"operation":  groupRemove,
-		"id":         rce.id,
-		"status":     rce.status,
-		"updated_at": rce.updatedAt,
-		"updated_by": rce.updatedBy,
+		"id":         rge.id,
+		"status":     rge.status,
+		"updated_at": rge.updatedAt,
+		"updated_by": rge.updatedBy,
 	}, nil
 }
 
@@ -134,43 +134,43 @@ type viewGroupEvent struct {
 	mfgroups.Group
 }
 
-func (vce viewGroupEvent) Encode() (map[string]interface{}, error) {
+func (vge viewGroupEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation": groupView,
-		"id":        vce.ID,
+		"id":        vge.ID,
 	}
 
-	if vce.Owner != "" {
-		val["owner"] = vce.Owner
+	if vge.Owner != "" {
+		val["owner"] = vge.Owner
 	}
-	if vce.Parent != "" {
-		val["parent"] = vce.Parent
+	if vge.Parent != "" {
+		val["parent"] = vge.Parent
 	}
-	if vce.Name != "" {
-		val["name"] = vce.Name
+	if vge.Name != "" {
+		val["name"] = vge.Name
 	}
-	if vce.Description != "" {
-		val["description"] = vce.Description
+	if vge.Description != "" {
+		val["description"] = vge.Description
 	}
-	if vce.Metadata != nil {
-		metadata, err := json.Marshal(vce.Metadata)
+	if vge.Metadata != nil {
+		metadata, err := json.Marshal(vge.Metadata)
 		if err != nil {
 			return map[string]interface{}{}, err
 		}
 
 		val["metadata"] = metadata
 	}
-	if !vce.CreatedAt.IsZero() {
-		val["created_at"] = vce.CreatedAt
+	if !vge.CreatedAt.IsZero() {
+		val["created_at"] = vge.CreatedAt
 	}
-	if !vce.UpdatedAt.IsZero() {
-		val["updated_at"] = vce.UpdatedAt
+	if !vge.UpdatedAt.IsZero() {
+		val["updated_at"] = vge.UpdatedAt
 	}
-	if vce.UpdatedBy != "" {
-		val["updated_by"] = vce.UpdatedBy
+	if vge.UpdatedBy != "" {
+		val["updated_by"] = vge.UpdatedBy
 	}
-	if vce.Status.String() != "" {
-		val["status"] = vce.Status.String()
+	if vge.Status.String() != "" {
+		val["status"] = vge.Status.String()
 	}
 
 	return val, nil
@@ -180,39 +180,39 @@ type listGroupEvent struct {
 	mfgroups.GroupsPage
 }
 
-func (lce listGroupEvent) Encode() (map[string]interface{}, error) {
+func (lge listGroupEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation": groupList,
-		"total":     lce.Total,
-		"offset":    lce.Offset,
-		"limit":     lce.Limit,
+		"total":     lge.Total,
+		"offset":    lge.Offset,
+		"limit":     lge.Limit,
 	}
 
-	if lce.Name != "" {
-		val["name"] = lce.Name
+	if lge.Name != "" {
+		val["name"] = lge.Name
 	}
-	if lce.OwnerID != "" {
-		val["owner_id"] = lce.OwnerID
+	if lge.OwnerID != "" {
+		val["owner_id"] = lge.OwnerID
 	}
-	if lce.Tag != "" {
-		val["tag"] = lce.Tag
+	if lge.Tag != "" {
+		val["tag"] = lge.Tag
 	}
-	if lce.Metadata != nil {
-		metadata, err := json.Marshal(lce.Metadata)
+	if lge.Metadata != nil {
+		metadata, err := json.Marshal(lge.Metadata)
 		if err != nil {
 			return map[string]interface{}{}, err
 		}
 
 		val["metadata"] = metadata
 	}
-	if lce.Status.String() != "" {
-		val["status"] = lce.Status.String()
+	if lge.Status.String() != "" {
+		val["status"] = lge.Status.String()
 	}
-	if lce.Action != "" {
-		val["action"] = lce.Action
+	if lge.Action != "" {
+		val["action"] = lge.Action
 	}
-	if lce.Subject != "" {
-		val["subject"] = lce.Subject
+	if lge.Subject != "" {
+		val["subject"] = lge.Subject
 	}
 
 	return val, nil
@@ -223,40 +223,40 @@ type listGroupMembershipEvent struct {
 	channelID string
 }
 
-func (lcge listGroupMembershipEvent) Encode() (map[string]interface{}, error) {
+func (lgme listGroupMembershipEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation":  groupListMemberships,
-		"total":      lcge.Total,
-		"offset":     lcge.Offset,
-		"limit":      lcge.Limit,
-		"channel_id": lcge.channelID,
+		"total":      lgme.Total,
+		"offset":     lgme.Offset,
+		"limit":      lgme.Limit,
+		"channel_id": lgme.channelID,
 	}
 
-	if lcge.Name != "" {
-		val["name"] = lcge.Name
+	if lgme.Name != "" {
+		val["name"] = lgme.Name
 	}
-	if lcge.OwnerID != "" {
-		val["owner_id"] = lcge.OwnerID
+	if lgme.OwnerID != "" {
+		val["owner_id"] = lgme.OwnerID
 	}
-	if lcge.Tag != "" {
-		val["tag"] = lcge.Tag
+	if lgme.Tag != "" {
+		val["tag"] = lgme.Tag
 	}
-	if lcge.Metadata != nil {
-		metadata, err := json.Marshal(lcge.Metadata)
+	if lgme.Metadata != nil {
+		metadata, err := json.Marshal(lgme.Metadata)
 		if err != nil {
 			return map[string]interface{}{}, err
 		}
 
 		val["metadata"] = metadata
 	}
-	if lcge.Status.String() != "" {
-		val["status"] = lcge.Status.String()
+	if lgme.Status.String() != "" {
+		val["status"] = lgme.Status.String()
 	}
-	if lcge.Action != "" {
-		val["action"] = lcge.Action
+	if lgme.Action != "" {
+		val["action"] = lgme.Action
 	}
-	if lcge.Subject != "" {
-		val["subject"] = lcge.Subject
+	if lgme.Subject != "" {
+		val["subject"] = lgme.Subject
 	}
 
 	return val, nil

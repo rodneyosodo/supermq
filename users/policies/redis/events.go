@@ -84,24 +84,24 @@ type listPoliciesEvent struct {
 	policies.Page
 }
 
-func (ae listPoliciesEvent) Encode() (map[string]interface{}, error) {
+func (lpe listPoliciesEvent) Encode() (map[string]interface{}, error) {
 	val := map[string]interface{}{
 		"operation": policyList,
-		"total":     ae.Total,
-		"limit":     ae.Limit,
-		"offset":    ae.Offset,
+		"total":     lpe.Total,
+		"limit":     lpe.Limit,
+		"offset":    lpe.Offset,
 	}
-	if ae.OwnerID != "" {
-		val["owner_id"] = ae.OwnerID
+	if lpe.OwnerID != "" {
+		val["owner_id"] = lpe.OwnerID
 	}
-	if ae.Subject != "" {
-		val["subject"] = ae.Subject
+	if lpe.Subject != "" {
+		val["subject"] = lpe.Subject
 	}
-	if ae.Object != "" {
-		val["object"] = ae.Object
+	if lpe.Object != "" {
+		val["object"] = lpe.Object
 	}
-	if ae.Action != "" {
-		val["action"] = ae.Action
+	if lpe.Action != "" {
+		val["action"] = lpe.Action
 	}
 	return val, nil
 }
