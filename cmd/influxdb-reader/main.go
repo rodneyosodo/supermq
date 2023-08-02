@@ -30,11 +30,10 @@ import (
 )
 
 const (
-	svcName           = "influxdb-reader"
-	envPrefix         = "MF_INFLUX_READER_"
-	envPrefixHttp     = "MF_INFLUX_READER_HTTP_"
-	envPrefixInfluxdb = "MF_INFLUXDB_"
-	defSvcHttpPort    = "9005"
+	svcName        = "influxdb-reader"
+	envPrefixHTTP  = "MF_INFLUX_READER_HTTP_"
+	envPrefixDB    = "MF_INFLUXDB_"
+	defSvcHTTPPort = "9005"
 )
 
 type config struct {
@@ -57,31 +56,42 @@ func main() {
 		log.Fatalf("failed to init logger: %s", err)
 	}
 
-	instanceID := cfg.InstanceID
-	if instanceID == "" {
-		instanceID, err = uuid.New().ID()
-		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
+
+	if cfg.InstanceID == "" {
+		if cfg.InstanceID, err = uuid.New().ID(); err != nil {
+			logger.Error(fmt.Sprintf("failed to generate instanceID: %s", err))
+			exitCode = 1
+			return
 		}
 	}
 
-	tc, tcHandler, err := thingsClient.Setup(envPrefix)
+	tc, tcHandler, err := thingsClient.Setup()
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Error(err.Error())
+		exitCode = 1
+		return
 	}
 	defer tcHandler.Close()
+
 	logger.Info("Successfully connected to things grpc server " + tcHandler.Secure())
 
-	auth, authHandler, err := authClient.Setup(envPrefix, svcName)
+	auth, authHandler, err := authClient.Setup(svcName)
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Error(err.Error())
+		exitCode = 1
+		return
 	}
 	defer authHandler.Close()
+
 	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 
 	influxDBConfig := influxDBClient.Config{}
-	if err := env.Parse(&influxDBConfig, env.Options{Prefix: envPrefixInfluxdb}); err != nil {
-		logger.Fatal(fmt.Sprintf("failed to load InfluxDB client configuration from environment variable : %s", err))
+	if err := env.Parse(&influxDBConfig, env.Options{Prefix: envPrefixDB}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load InfluxDB client configuration from environment variable : %s", err))
+		exitCode = 1
+		return
 	}
 	influxDBConfig.DBUrl = fmt.Sprintf("%s://%s:%s", influxDBConfig.Protocol, influxDBConfig.Host, influxDBConfig.Port)
 
@@ -90,19 +100,23 @@ func main() {
 		Org:    influxDBConfig.Org,
 	}
 
-	client, err := influxDBClient.Connect(influxDBConfig, ctx)
+	client, err := influxDBClient.Connect(ctx, influxDBConfig)
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("failed to connect to InfluxDB : %s", err))
+		logger.Error(fmt.Sprintf("failed to connect to InfluxDB : %s", err))
+		exitCode = 1
+		return
 	}
 	defer client.Close()
 
 	repo := newService(client, repocfg, logger)
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
-		logger.Fatal(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
 	}
-	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(repo, tc, auth, svcName, instanceID), logger)
+	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(repo, tc, auth, svcName, cfg.InstanceID), logger)
 
 	if cfg.SendTelemetry {
 		chc := chclient.New(svcName, mainflux.Version, logger, cancel)

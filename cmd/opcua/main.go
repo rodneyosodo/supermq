@@ -26,18 +26,17 @@ import (
 	"github.com/mainflux/mainflux/opcua/gopcua"
 	"github.com/mainflux/mainflux/opcua/redis"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
-	"github.com/mainflux/mainflux/pkg/messaging/tracing"
+	brokerstracing "github.com/mainflux/mainflux/pkg/messaging/brokers/tracing"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	"golang.org/x/sync/errgroup"
 )
 
 const (
 	svcName           = "opc-ua-adapter"
-	envPrefix         = "MF_OPCUA_ADAPTER_"
 	envPrefixES       = "MF_OPCUA_ADAPTER_ES_"
-	envPrefixHttp     = "MF_OPCUA_ADAPTER_HTTP_"
+	envPrefixHTTP     = "MF_OPCUA_ADAPTER_HTTP_"
 	envPrefixRouteMap = "MF_OPCUA_ADAPTER_ROUTE_MAP_"
-	defSvcHttpPort    = "8180"
+	defSvcHTTPPort    = "8180"
 
 	thingsRMPrefix     = "thing"
 	channelsRMPrefix   = "channel"
@@ -48,7 +47,7 @@ type config struct {
 	LogLevel       string `env:"MF_OPCUA_ADAPTER_LOG_LEVEL"          envDefault:"info"`
 	ESConsumerName string `env:"MF_OPCUA_ADAPTER_EVENT_CONSUMER"     envDefault:""`
 	BrokerURL      string `env:"MF_BROKER_URL"                       envDefault:"nats://localhost:4222"`
-	JaegerURL      string `env:"MF_JAEGER_URL"                       envDefault:"localhost:6831"`
+	JaegerURL      string `env:"MF_JAEGER_URL"                       envDefault:"http://jaeger:14268/api/traces"`
 	SendTelemetry  bool   `env:"MF_SEND_TELEMETRY"                   envDefault:"true"`
 	InstanceID     string `env:"MF_OPCUA_ADAPTER_INSTANCE_ID"        envDefault:""`
 }
@@ -72,17 +71,29 @@ func main() {
 		log.Fatalf("failed to init logger: %s", err)
 	}
 
-	instanceID := cfg.InstanceID
-	if instanceID == "" {
-		instanceID, err = uuid.New().ID()
-		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
+
+	if cfg.InstanceID == "" {
+		if cfg.InstanceID, err = uuid.New().ID(); err != nil {
+			logger.Error(fmt.Sprintf("failed to generate instanceID: %s", err))
+			exitCode = 1
+			return
 		}
+	}
+
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
 	}
 
 	rmConn, err := redisClient.Setup(envPrefixRouteMap)
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("failed to setup %s bootstrap event store redis client : %s", svcName, err))
+		logger.Error(fmt.Sprintf("failed to setup %s bootstrap event store redis client : %s", svcName, err))
+		exitCode = 1
+		return
 	}
 	defer rmConn.Close()
 
@@ -92,13 +103,17 @@ func main() {
 
 	esConn, err := redisClient.Setup(envPrefixES)
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("failed to setup %s bootstrap event store redis client : %s", svcName, err))
+		logger.Error(fmt.Sprintf("failed to setup %s bootstrap event store redis client : %s", svcName, err))
+		exitCode = 1
+		return
 	}
 	defer esConn.Close()
 
-	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, instanceID)
+	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, cfg.InstanceID)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
+		exitCode = 1
+		return
 	}
 	defer func() {
 		if err := tp.Shutdown(ctx); err != nil {
@@ -109,10 +124,12 @@ func main() {
 
 	pubSub, err := brokers.NewPubSub(cfg.BrokerURL, "", logger)
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("failed to connect to message broker: %s", err))
+		logger.Error(fmt.Sprintf("failed to connect to message broker: %s", err))
+		exitCode = 1
+		return
 	}
-	pubSub = tracing.NewPubSub(tracer, pubSub)
 	defer pubSub.Close()
+	pubSub = brokerstracing.NewPubSub(httpServerConfig, tracer, pubSub)
 
 	sub := gopcua.NewSubscriber(ctx, pubSub, thingRM, chanRM, connRM, logger)
 	browser := gopcua.NewBrowser(ctx, logger)
@@ -122,11 +139,7 @@ func main() {
 	go subscribeToStoredSubs(ctx, sub, opcConfig, logger)
 	go subscribeToThingsES(ctx, svc, esConn, cfg.ESConsumerName, logger)
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
-		logger.Fatal(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
-	}
-	hs := httpserver.New(ctx, httpCancel, svcName, httpServerConfig, api.MakeHandler(svc, logger, instanceID), logger)
+	hs := httpserver.New(ctx, httpCancel, svcName, httpServerConfig, api.MakeHandler(svc, logger, cfg.InstanceID), logger)
 
 	if cfg.SendTelemetry {
 		chc := chclient.New(svcName, mainflux.Version, logger, httpCancel)

@@ -24,7 +24,7 @@ import (
 	httpserver "github.com/mainflux/mainflux/internal/server/http"
 	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
-	pstracing "github.com/mainflux/mainflux/pkg/messaging/tracing"
+	brokerstracing "github.com/mainflux/mainflux/pkg/messaging/brokers/tracing"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	"golang.org/x/sync/errgroup"
 )
@@ -32,14 +32,13 @@ import (
 const (
 	svcName        = "coap_adapter"
 	envPrefix      = "MF_COAP_ADAPTER_"
-	envPrefixHttp  = "MF_COAP_ADAPTER_HTTP_"
-	envPrefixCoap  = "MF_COAP_ADAPTER_COAP_"
-	defSvcHttpPort = "5683"
-	defSvcCoapPort = "5683"
+	envPrefixHTTP  = "MF_COAP_ADAPTER_HTTP_"
+	defSvcHTTPPort = "5683"
+	defSvcCoAPPort = "5683"
 )
 
 type config struct {
-	LogLevel      string `env:"MF_INFLUX_READER_LOG_LEVEL"  envDefault:"info"`
+	LogLevel      string `env:"MF_COAP_ADAPTER_LOG_LEVEL"   envDefault:"info"`
 	BrokerURL     string `env:"MF_BROKER_URL"               envDefault:"nats://localhost:4222"`
 	JaegerURL     string `env:"MF_JAEGER_URL"               envDefault:"http://jaeger:14268/api/traces"`
 	SendTelemetry bool   `env:"MF_SEND_TELEMETRY"           envDefault:"true"`
@@ -60,24 +59,46 @@ func main() {
 		log.Fatalf("failed to init logger: %s", err)
 	}
 
-	instanceID := cfg.InstanceID
-	if instanceID == "" {
-		instanceID, err = uuid.New().ID()
-		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
+
+	if cfg.InstanceID == "" {
+		if cfg.InstanceID, err = uuid.New().ID(); err != nil {
+			logger.Error(fmt.Sprintf("failed to generate instanceID: %s", err))
+			exitCode = 1
+			return
 		}
 	}
 
-	tc, tcHandler, err := thingsClient.Setup(envPrefix)
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
+	}
+
+	coapServerConfig := server.Config{Port: defSvcCoAPPort}
+	if err := env.Parse(&coapServerConfig, env.Options{Prefix: envPrefix}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s CoAP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
+	}
+
+	tc, tcHandler, err := thingsClient.Setup()
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Error(err.Error())
+		exitCode = 1
+		return
 	}
 	defer tcHandler.Close()
+
 	logger.Info("Successfully connected to things grpc server " + tcHandler.Secure())
 
-	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, instanceID)
+	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, cfg.InstanceID)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
+		exitCode = 1
+		return
 	}
 	defer func() {
 		if err := tp.Shutdown(ctx); err != nil {
@@ -88,10 +109,12 @@ func main() {
 
 	nps, err := brokers.NewPubSub(cfg.BrokerURL, "", logger)
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("failed to connect to message broker: %s", err))
+		logger.Error(fmt.Sprintf("failed to connect to message broker: %s", err))
+		exitCode = 1
+		return
 	}
-	nps = pstracing.NewPubSub(tracer, nps)
 	defer nps.Close()
+	nps = brokerstracing.NewPubSub(coapServerConfig, tracer, nps)
 
 	svc := coap.New(tc, nps)
 
@@ -102,16 +125,8 @@ func main() {
 	counter, latency := internal.MakeMetrics(svcName, "api")
 	svc = api.MetricsMiddleware(svc, counter, latency)
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
-		logger.Fatal(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
-	}
-	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(instanceID), logger)
+	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(cfg.InstanceID), logger)
 
-	coapServerConfig := server.Config{Port: defSvcCoapPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixCoap, AltPrefix: envPrefix}); err != nil {
-		logger.Fatal(fmt.Sprintf("failed to load %s CoAP server configuration : %s", svcName, err))
-	}
 	cs := coapserver.New(ctx, cancel, svcName, coapServerConfig, api.MakeCoAPHandler(svc, logger), logger)
 
 	if cfg.SendTelemetry {

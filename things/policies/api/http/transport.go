@@ -17,7 +17,7 @@ import (
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/things/clients"
 	"github.com/mainflux/mainflux/things/policies"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/go-kit/kit/otelkit"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -25,75 +25,74 @@ func MakeHandler(csvc clients.Service, psvc policies.Service, mux *bone.Mux, log
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, api.EncodeError)),
 	}
-	mux.Post("/connect", kithttp.NewServer(
-		otelkit.EndpointMiddleware(otelkit.WithOperation("connect"))(connectThingsEndpoint(psvc)),
-		decodeConnectList,
-		api.EncodeResponse,
-		opts...,
-	))
-
-	mux.Post("/disconnect", kithttp.NewServer(
-		otelkit.EndpointMiddleware(otelkit.WithOperation("disconnect"))(disconnectThingsEndpoint(psvc)),
-		decodeConnectList,
-		api.EncodeResponse,
-		opts...,
-	))
-
-	mux.Post("/channels/:chanID/things/:thingID", kithttp.NewServer(
-		otelkit.EndpointMiddleware(otelkit.WithOperation("connect_thing"))(connectEndpoint(psvc)),
-		decodeConnectThing,
-		api.EncodeResponse,
-		opts...,
-	))
-
-	mux.Delete("/channels/:chanID/things/:thingID", kithttp.NewServer(
-		otelkit.EndpointMiddleware(otelkit.WithOperation("disconnect_thing"))(disconnectEndpoint(psvc)),
-		decodeDisconnectThing,
-		api.EncodeResponse,
-		opts...,
-	))
-
-	mux.Post("/identify", kithttp.NewServer(
-		otelkit.EndpointMiddleware(otelkit.WithOperation("identify"))(identifyEndpoint(csvc)),
-		decodeIdentify,
-		api.EncodeResponse,
-		opts...,
-	))
-
-	mux.Put("/things/policies", kithttp.NewServer(
-		otelkit.EndpointMiddleware(otelkit.WithOperation("update_policy"))(updatePolicyEndpoint(psvc)),
-		decodeUpdatePolicy,
-		api.EncodeResponse,
-		opts...,
-	))
-
-	mux.Get("/things/policies", kithttp.NewServer(
-		otelkit.EndpointMiddleware(otelkit.WithOperation("list_policies"))(listPoliciesEndpoint(psvc)),
-		decodeListPolicies,
-		api.EncodeResponse,
-		opts...,
-	))
-
-	mux.Post("/channels/:chanID/access", kithttp.NewServer(
-		otelkit.EndpointMiddleware(otelkit.WithOperation("authorize"))(authorizeEndpoint(psvc)),
+	mux.Post("/channels/:chanID/access", otelhttp.NewHandler(kithttp.NewServer(
+		authorizeEndpoint(psvc),
 		decodeCanAccess,
 		api.EncodeResponse,
 		opts...,
-	))
+	), "authorize"))
+
+	mux.Post("/identify", otelhttp.NewHandler(kithttp.NewServer(
+		identifyEndpoint(csvc),
+		decodeIdentify,
+		api.EncodeResponse,
+		opts...,
+	), "identify"))
+
+	mux.Post("/policies", otelhttp.NewHandler(kithttp.NewServer(
+		connectEndpoint(psvc),
+		decodeConnectThing,
+		api.EncodeResponse,
+		opts...,
+	), "connect"))
+
+	mux.Put("/policies", otelhttp.NewHandler(kithttp.NewServer(
+		updatePolicyEndpoint(psvc),
+		decodeUpdatePolicy,
+		api.EncodeResponse,
+		opts...,
+	), "update_policy"))
+
+	mux.Get("/policies", otelhttp.NewHandler(kithttp.NewServer(
+		listPoliciesEndpoint(psvc),
+		decodeListPolicies,
+		api.EncodeResponse,
+		opts...,
+	), "list_policies"))
+
+	mux.Delete("/policies/:subject/:object", otelhttp.NewHandler(kithttp.NewServer(
+		disconnectEndpoint(psvc),
+		decodeDisconnectThing,
+		api.EncodeResponse,
+		opts...,
+	), "disconnect"))
+
+	mux.Post("/connect", otelhttp.NewHandler(kithttp.NewServer(
+		connectThingsEndpoint(psvc),
+		decodeConnectList,
+		api.EncodeResponse,
+		opts...,
+	), "bulk_connect"))
+
+	mux.Post("/disconnect", otelhttp.NewHandler(kithttp.NewServer(
+		disconnectThingsEndpoint(psvc),
+		decodeConnectList,
+		api.EncodeResponse,
+		opts...,
+	), "bulk_disconnect"))
+
 	return mux
 
 }
 
 func decodeConnectThing(_ context.Context, r *http.Request) (interface{}, error) {
-	req := createPolicyReq{
-		token:    apiutil.ExtractBearerToken(r),
-		GroupID:  bone.GetValue(r, "chanID"),
-		ClientID: bone.GetValue(r, "thingID"),
+	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
+		return nil, errors.ErrUnsupportedContentType
 	}
-	if r.Body != http.NoBody {
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-		}
+
+	req := createPolicyReq{token: apiutil.ExtractBearerToken(r)}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -101,14 +100,9 @@ func decodeConnectThing(_ context.Context, r *http.Request) (interface{}, error)
 
 func decodeDisconnectThing(_ context.Context, r *http.Request) (interface{}, error) {
 	req := createPolicyReq{
-		token:    apiutil.ExtractBearerToken(r),
-		GroupID:  bone.GetValue(r, "chanID"),
-		ClientID: bone.GetValue(r, "thingID"),
-	}
-	if r.Body != http.NoBody {
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-		}
+		token:   apiutil.ExtractBearerToken(r),
+		Subject: bone.GetValue(r, api.SubjectKey),
+		Object:  bone.GetValue(r, api.ObjectKey),
 	}
 
 	return req, nil
@@ -131,7 +125,7 @@ func decodeIdentify(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, errors.ErrUnsupportedContentType
 	}
 
-	req := identifyReq{Secret: apiutil.ExtractThingKey(r)}
+	req := identifyReq{secret: apiutil.ExtractThingKey(r)}
 
 	return req, nil
 }
@@ -141,9 +135,7 @@ func decodeCanAccess(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, errors.ErrUnsupportedContentType
 	}
 
-	req := authorizeReq{
-		Object: bone.GetValue(r, "chanID"),
-	}
+	req := authorizeReq{Object: bone.GetValue(r, "chanID")}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}

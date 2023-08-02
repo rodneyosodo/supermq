@@ -36,10 +36,10 @@ import (
 
 const (
 	svcName        = "certs"
-	envPrefix      = "MF_CERTS_"
-	envPrefixHttp  = "MF_CERTS_HTTP_"
+	envPrefixDB    = "MF_CERTS_DB_"
+	envPrefixHTTP  = "MF_CERTS_HTTP_"
 	defDB          = "certs"
-	defSvcHttpPort = "9019"
+	defSvcHTTPPort = "9019"
 )
 
 type config struct {
@@ -53,9 +53,6 @@ type config struct {
 	// Sign and issue certificates without 3rd party PKI
 	SignCAPath    string `env:"MF_CERTS_SIGN_CA_PATH"        envDefault:"ca.crt"`
 	SignCAKeyPath string `env:"MF_CERTS_SIGN_CA_KEY_PATH"    envDefault:"ca.key"`
-	// used in pki mock , need to clean up certs in separate PR
-	SignRSABits    int    `env:"MF_CERTS_SIGN_RSA_BITS,"     envDefault:""`
-	SignHoursValid string `env:"MF_CERTS_SIGN_HOURS_VALID"   envDefault:"2048h"`
 
 	// 3rd party PKI API access settings
 	PkiHost  string `env:"MF_CERTS_VAULT_HOST"    envDefault:""`
@@ -78,40 +75,57 @@ func main() {
 		log.Fatalf("failed to init logger: %s", err)
 	}
 
-	instanceID := cfg.InstanceID
-	if instanceID == "" {
-		instanceID, err = uuid.New().ID()
-		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
+
+	if cfg.InstanceID == "" {
+		if cfg.InstanceID, err = uuid.New().ID(); err != nil {
+			logger.Error(fmt.Sprintf("failed to generate instanceID: %s", err))
+			exitCode = 1
+			return
 		}
 	}
 
 	if cfg.PkiHost == "" {
-		logger.Fatal("No host specified for PKI engine")
+		logger.Error("No host specified for PKI engine")
+		exitCode = 1
+		return
 	}
 
 	pkiClient, err := vault.NewVaultClient(cfg.PkiToken, cfg.PkiHost, cfg.PkiPath, cfg.PkiRole)
 	if err != nil {
-		logger.Fatal("failed to configure client for PKI engine")
+		logger.Error("failed to configure client for PKI engine")
+		exitCode = 1
+		return
 	}
 
 	dbConfig := pgClient.Config{Name: defDB}
-	db, err := pgClient.SetupWithConfig(envPrefix, *certsPg.Migration(), dbConfig)
+	if err := dbConfig.LoadEnv(envPrefixDB); err != nil {
+		logger.Fatal(fmt.Sprintf("failed to load %s database configuration : %s", svcName, err))
+	}
+	db, err := pgClient.SetupWithConfig(envPrefixDB, *certsPg.Migration(), dbConfig)
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Error(err.Error())
+		exitCode = 1
+		return
 	}
 	defer db.Close()
 
-	auth, authHandler, err := authClient.Setup(envPrefix, svcName)
+	auth, authHandler, err := authClient.Setup(svcName)
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Error(err.Error())
+		exitCode = 1
+		return
 	}
 	defer authHandler.Close()
+
 	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 
-	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, instanceID)
+	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, cfg.InstanceID)
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("failed to init Jaeger: %s", err))
+		logger.Error(fmt.Sprintf("failed to init Jaeger: %s", err))
+		exitCode = 1
+		return
 	}
 	defer func() {
 		if err := tp.Shutdown(ctx); err != nil {
@@ -120,13 +134,15 @@ func main() {
 	}()
 	tracer := tp.Tracer(svcName)
 
-	svc := newService(auth, db, tracer, logger, cfg, pkiClient)
+	svc := newService(auth, db, tracer, logger, cfg, dbConfig, pkiClient)
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
-		logger.Fatal(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
 	}
-	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(svc, logger, instanceID), logger)
+	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(svc, logger, cfg.InstanceID), logger)
 
 	if cfg.SendTelemetry {
 		chc := chclient.New(svcName, mainflux.Version, logger, cancel)
@@ -146,8 +162,8 @@ func main() {
 	}
 }
 
-func newService(auth policies.AuthServiceClient, db *sqlx.DB, tracer trace.Tracer, logger mflog.Logger, cfg config, pkiAgent vault.Agent) certs.Service {
-	database := postgres.NewDatabase(db, tracer)
+func newService(auth policies.AuthServiceClient, db *sqlx.DB, tracer trace.Tracer, logger mflog.Logger, cfg config, dbConfig pgClient.Config, pkiAgent vault.Agent) certs.Service {
+	database := postgres.NewDatabase(db, dbConfig, tracer)
 	certsRepo := certsPg.NewRepository(database, logger)
 	config := mfsdk.Config{
 		CertsURL:  cfg.CertsURL,

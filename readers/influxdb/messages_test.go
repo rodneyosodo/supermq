@@ -4,6 +4,7 @@
 package influxdb_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -36,7 +37,7 @@ const (
 
 var (
 	v   float64 = 5
-	vs  string  = "a"
+	vs  string  = "stringValue"
 	vb  bool    = true
 	vd  string  = "dataValue"
 	sum float64 = 42
@@ -114,7 +115,7 @@ func TestReadSenml(t *testing.T) {
 	}
 
 	errs := asyncWriter.Errors()
-	asyncWriter.ConsumeAsync(messages)
+	asyncWriter.ConsumeAsync(context.TODO(), messages)
 	err = <-errs
 	assert.Nil(t, err, fmt.Sprintf("Save operation expected to succeed: %s.\n", err))
 
@@ -349,6 +350,76 @@ func TestReadSenml(t *testing.T) {
 			},
 		},
 		{
+			desc:   "read message with string value and equal comparator",
+			chanID: chanID,
+			pageMeta: readers.PageMetadata{
+				Offset:      0,
+				Limit:       limit,
+				StringValue: vs,
+				Comparator:  readers.EqualKey,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(stringMsgs)),
+				Messages: fromSenml(stringMsgs[0:limit]),
+			},
+		},
+		{
+			desc:   "read message with string value and lower-than comparator",
+			chanID: chanID,
+			pageMeta: readers.PageMetadata{
+				Offset:      0,
+				Limit:       limit,
+				StringValue: "a stringValues b",
+				Comparator:  readers.LowerThanKey,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(stringMsgs)),
+				Messages: fromSenml(stringMsgs[0:limit]),
+			},
+		},
+		{
+			desc:   "read message with string value and lower-than-or-equal comparator",
+			chanID: chanID,
+			pageMeta: readers.PageMetadata{
+				Offset:      0,
+				Limit:       limit,
+				StringValue: vs,
+				Comparator:  readers.LowerThanEqualKey,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(stringMsgs)),
+				Messages: fromSenml(stringMsgs[0:limit]),
+			},
+		},
+		{
+			desc:   "read message with string value and greater-than comparator",
+			chanID: chanID,
+			pageMeta: readers.PageMetadata{
+				Offset:      0,
+				Limit:       limit,
+				StringValue: "alu",
+				Comparator:  readers.GreaterThanKey,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(stringMsgs)),
+				Messages: fromSenml(stringMsgs[0:limit]),
+			},
+		},
+		{
+			desc:   "read message with string value and greater-than-or-equal comparator",
+			chanID: chanID,
+			pageMeta: readers.PageMetadata{
+				Offset:      0,
+				Limit:       limit,
+				StringValue: vs,
+				Comparator:  readers.GreaterThanEqualKey,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(stringMsgs)),
+				Messages: fromSenml(stringMsgs[0:limit]),
+			},
+		},
+		{
 			desc:   "read message with data value",
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
@@ -359,6 +430,88 @@ func TestReadSenml(t *testing.T) {
 			page: readers.MessagesPage{
 				Total:    uint64(len(dataMsgs)),
 				Messages: fromSenml(dataMsgs[0:limit]),
+			},
+		},
+		{
+			desc:   "read message with data value and lower-than comparator",
+			chanID: chanID,
+			pageMeta: readers.PageMetadata{
+				Offset:     0,
+				Limit:      limit,
+				DataValue:  vd + string(rune(1)),
+				Comparator: readers.LowerThanKey,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(dataMsgs)),
+				Messages: fromSenml(dataMsgs[0:limit]),
+			},
+		},
+		{
+			desc:   "read message with data value and lower-than-or-equal comparator",
+			chanID: chanID,
+			pageMeta: readers.PageMetadata{
+				Offset:     0,
+				Limit:      limit,
+				DataValue:  vd + string(rune(1)),
+				Comparator: readers.LowerThanEqualKey,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(dataMsgs)),
+				Messages: fromSenml(dataMsgs[0:limit]),
+			},
+		},
+		{
+			desc:   "read message with data value and greater-than comparator",
+			chanID: chanID,
+			pageMeta: readers.PageMetadata{
+				Offset:     0,
+				Limit:      limit,
+				DataValue:  vd[:len(vd)-1] + string(rune(1)),
+				Comparator: readers.GreaterThanKey,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(dataMsgs)),
+				Messages: fromSenml(dataMsgs[0:limit]),
+			},
+		},
+		{
+			desc:   "read message with data value and greater-than-or-equal comparator",
+			chanID: chanID,
+			pageMeta: readers.PageMetadata{
+				Offset:     0,
+				Limit:      limit,
+				DataValue:  vd[:len(vd)-1] + string(rune(1)),
+				Comparator: readers.GreaterThanEqualKey,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(dataMsgs)),
+				Messages: fromSenml(dataMsgs[0:limit]),
+			},
+		},
+		{
+			desc:   "read message with from",
+			chanID: chanID,
+			pageMeta: readers.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(len(messages[0:21])),
+				From:   messages[20].Time,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(messages[0:21])),
+				Messages: fromSenml(messages[0:21]),
+			},
+		},
+		{
+			desc:   "read message with to",
+			chanID: chanID,
+			pageMeta: readers.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(len(messages[21:])),
+				To:     messages[20].Time,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(messages[21:])),
+				Messages: fromSenml(messages[21:]),
 			},
 		},
 		{
@@ -405,9 +558,9 @@ func TestReadSenml(t *testing.T) {
 
 	for _, tc := range cases {
 		result, err := reader.ReadAll(tc.chanID, tc.pageMeta)
-		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", tc.desc, err))
-		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: got incorrect list of senml Messages from ReadAll()", tc.desc))
-		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %d got %d", tc.desc, tc.page.Total, result.Total))
+		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
+		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected: %v, got: %v\n", tc.desc, tc.page.Messages, result.Messages))
+		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %d got %d\n", tc.desc, tc.page.Total, result.Total))
 	}
 }
 
@@ -439,7 +592,7 @@ func TestReadJSON(t *testing.T) {
 	}
 
 	errs := asyncWriter.Errors()
-	asyncWriter.ConsumeAsync(messages1)
+	asyncWriter.ConsumeAsync(context.TODO(), messages1)
 	err = <-errs
 	require.Nil(t, err, fmt.Sprintf("Save operation expected to succeed: %s.\n", err))
 
@@ -470,7 +623,7 @@ func TestReadJSON(t *testing.T) {
 	}
 
 	// Test async
-	asyncWriter.ConsumeAsync(messages2)
+	asyncWriter.ConsumeAsync(context.TODO(), messages2)
 	err = <-errs
 	assert.Nil(t, err, fmt.Sprintf("Save operation expected to succeed: %s.\n", err))
 

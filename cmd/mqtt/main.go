@@ -20,6 +20,7 @@ import (
 	jaegerClient "github.com/mainflux/mainflux/internal/clients/jaeger"
 	redisClient "github.com/mainflux/mainflux/internal/clients/redis"
 	"github.com/mainflux/mainflux/internal/env"
+	"github.com/mainflux/mainflux/internal/server"
 	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/mqtt"
 	mqttredis "github.com/mainflux/mainflux/mqtt/redis"
@@ -27,8 +28,8 @@ import (
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
+	brokerstracing "github.com/mainflux/mainflux/pkg/messaging/brokers/tracing"
 	mqttpub "github.com/mainflux/mainflux/pkg/messaging/mqtt"
-	"github.com/mainflux/mainflux/pkg/messaging/tracing"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	mp "github.com/mainflux/mproxy/pkg/mqtt"
 	"github.com/mainflux/mproxy/pkg/session"
@@ -37,23 +38,21 @@ import (
 )
 
 const (
-	svcName            = "mqtt"
-	envPrefix          = "MF_MQTT_ADAPTER_"
-	envPrefixES        = "MF_MQTT_ADAPTER_ES_"
-	envPrefixAuthCache = "MF_AUTH_CACHE_"
+	svcName     = "mqtt"
+	envPrefixES = "MF_MQTT_ADAPTER_ES_"
 )
 
 type config struct {
 	LogLevel              string        `env:"MF_MQTT_ADAPTER_LOG_LEVEL"                    envDefault:"info"`
-	MqttPort              string        `env:"MF_MQTT_ADAPTER_MQTT_PORT"                    envDefault:"1883"`
-	MqttTargetHost        string        `env:"MF_MQTT_ADAPTER_MQTT_TARGET_HOST"             envDefault:"localhost"`
-	MqttTargetPort        string        `env:"MF_MQTT_ADAPTER_MQTT_TARGET_PORT"             envDefault:"1883"`
-	MqttForwarderTimeout  time.Duration `env:"MF_MQTT_ADAPTER_FORWARDER_TIMEOUT"            envDefault:"30s"`
-	MqttTargetHealthCheck string        `env:"MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK"     envDefault:""`
-	HttpPort              string        `env:"MF_MQTT_ADAPTER_WS_PORT"                      envDefault:"8080"`
-	HttpTargetHost        string        `env:"MF_MQTT_ADAPTER_WS_TARGET_HOST"               envDefault:"localhost"`
-	HttpTargetPort        string        `env:"MF_MQTT_ADAPTER_WS_TARGET_PORT"               envDefault:"8080"`
-	HttpTargetPath        string        `env:"MF_MQTT_ADAPTER_WS_TARGET_PATH"               envDefault:"/mqtt"`
+	MQTTPort              string        `env:"MF_MQTT_ADAPTER_MQTT_PORT"                    envDefault:"1883"`
+	MQTTTargetHost        string        `env:"MF_MQTT_ADAPTER_MQTT_TARGET_HOST"             envDefault:"localhost"`
+	MQTTTargetPort        string        `env:"MF_MQTT_ADAPTER_MQTT_TARGET_PORT"             envDefault:"1883"`
+	MQTTForwarderTimeout  time.Duration `env:"MF_MQTT_ADAPTER_FORWARDER_TIMEOUT"            envDefault:"30s"`
+	MQTTTargetHealthCheck string        `env:"MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK"     envDefault:""`
+	HTTPPort              string        `env:"MF_MQTT_ADAPTER_WS_PORT"                      envDefault:"8080"`
+	HTTPTargetHost        string        `env:"MF_MQTT_ADAPTER_WS_TARGET_HOST"               envDefault:"localhost"`
+	HTTPTargetPort        string        `env:"MF_MQTT_ADAPTER_WS_TARGET_PORT"               envDefault:"8080"`
+	HTTPTargetPath        string        `env:"MF_MQTT_ADAPTER_WS_TARGET_PATH"               envDefault:"/mqtt"`
 	Instance              string        `env:"MF_MQTT_ADAPTER_INSTANCE"                     envDefault:""`
 	JaegerURL             string        `env:"MF_JAEGER_URL"                                envDefault:"http://jaeger:14268/api/traces"`
 	BrokerURL             string        `env:"MF_BROKER_URL"                                envDefault:"nats://localhost:4222"`
@@ -75,28 +74,40 @@ func main() {
 		log.Fatalf("failed to init logger: %s", err)
 	}
 
-	instanceID := cfg.InstanceID
-	if instanceID == "" {
-		instanceID, err = uuid.New().ID()
-		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
+
+	if cfg.InstanceID == "" {
+		if cfg.InstanceID, err = uuid.New().ID(); err != nil {
+			logger.Error(fmt.Sprintf("failed to generate instanceID: %s", err))
+			exitCode = 1
+			return
 		}
 	}
 
-	if cfg.MqttTargetHealthCheck != "" {
+	if cfg.MQTTTargetHealthCheck != "" {
 		notify := func(e error, next time.Duration) {
 			logger.Info(fmt.Sprintf("Broker not ready: %s, next try in %s", e.Error(), next))
 		}
 
 		err := backoff.RetryNotify(healthcheck(cfg), backoff.NewExponentialBackOff(), notify)
 		if err != nil {
-			logger.Fatal(fmt.Sprintf("MQTT healthcheck limit exceeded, exiting. %s ", err))
+			logger.Error(fmt.Sprintf("MQTT healthcheck limit exceeded, exiting. %s ", err))
+			exitCode = 1
+			return
 		}
 	}
 
-	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, instanceID)
+	serverConfig := server.Config{
+		Host: cfg.HTTPTargetHost,
+		Port: cfg.HTTPTargetPort,
+	}
+
+	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, cfg.InstanceID)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
+		exitCode = 1
+		return
 	}
 	defer func() {
 		if err := tp.Shutdown(ctx); err != nil {
@@ -107,49 +118,56 @@ func main() {
 
 	nps, err := brokers.NewPubSub(cfg.BrokerURL, "mqtt", logger)
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("failed to connect to message broker: %s", err))
+		logger.Error(fmt.Sprintf("failed to connect to message broker: %s", err))
+		exitCode = 1
+		return
 	}
-	nps = tracing.NewPubSub(tracer, nps)
 	defer nps.Close()
+	nps = brokerstracing.NewPubSub(serverConfig, tracer, nps)
 
-	mpub, err := mqttpub.NewPublisher(fmt.Sprintf("%s:%s", cfg.MqttTargetHost, cfg.MqttTargetPort), cfg.MqttForwarderTimeout)
+	mpub, err := mqttpub.NewPublisher(fmt.Sprintf("%s:%s", cfg.MQTTTargetHost, cfg.MQTTTargetPort), cfg.MQTTForwarderTimeout)
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("failed to create MQTT publisher: %s", err))
+		logger.Error(fmt.Sprintf("failed to create MQTT publisher: %s", err))
+		exitCode = 1
+		return
 	}
-	mpub = tracing.New(tracer, mpub)
+	defer mpub.Close()
 
 	fwd := mqtt.NewForwarder(brokers.SubjectAllChannels, logger)
-	fwd = mqtttracing.New(tracer, fwd, brokers.SubjectAllChannels)
+	fwd = mqtttracing.New(serverConfig, tracer, fwd, brokers.SubjectAllChannels)
 	if err := fwd.Forward(ctx, svcName, nps, mpub); err != nil {
-		logger.Fatal(fmt.Sprintf("failed to forward message broker messages: %s", err))
+		logger.Error(fmt.Sprintf("failed to forward message broker messages: %s", err))
+		exitCode = 1
+		return
 	}
 
 	np, err := brokers.NewPublisher(cfg.BrokerURL)
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("failed to connect to message broker: %s", err))
+		logger.Error(fmt.Sprintf("failed to connect to message broker: %s", err))
+		exitCode = 1
+		return
 	}
-	np = tracing.New(tracer, np)
 	defer np.Close()
+	np = brokerstracing.NewPublisher(serverConfig, tracer, np)
 
 	ec, err := redisClient.Setup(envPrefixES)
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("failed to setup %s event store redis client : %s", svcName, err))
+		logger.Error(fmt.Sprintf("failed to setup %s event store redis client : %s", svcName, err))
+		exitCode = 1
+		return
 	}
 	defer ec.Close()
 
-	es := mqttredis.NewEventStore(ec, cfg.Instance)
+	es := mqttredis.NewEventStore(ctx, ec, cfg.Instance)
 
-	ac, err := redisClient.Setup(envPrefixAuthCache)
+	tc, tcHandler, err := thingsClient.Setup()
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("failed to setup %s event store redis client : %s", svcName, err))
-	}
-	defer ac.Close()
-
-	tc, tcHandler, err := thingsClient.Setup(envPrefix)
-	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Error(err.Error())
+		exitCode = 1
+		return
 	}
 	defer tcHandler.Close()
+
 	logger.Info("Successfully connected to things grpc server " + tcHandler.Secure())
 
 	h := mqtt.NewHandler([]messaging.Publisher{np}, es, logger, tc)
@@ -160,12 +178,12 @@ func main() {
 		go chc.CallHome(ctx)
 	}
 
-	logger.Info(fmt.Sprintf("Starting MQTT proxy on port %s", cfg.MqttPort))
+	logger.Info(fmt.Sprintf("Starting MQTT proxy on port %s", cfg.MQTTPort))
 	g.Go(func() error {
 		return proxyMQTT(ctx, cfg, logger, h)
 	})
 
-	logger.Info(fmt.Sprintf("Starting MQTT over WS  proxy on port %s", cfg.HttpPort))
+	logger.Info(fmt.Sprintf("Starting MQTT over WS  proxy on port %s", cfg.HTTPPort))
 	g.Go(func() error {
 		return proxyWS(ctx, cfg, logger, h)
 	})
@@ -184,8 +202,8 @@ func main() {
 }
 
 func proxyMQTT(ctx context.Context, cfg config, logger mflog.Logger, handler session.Handler) error {
-	address := fmt.Sprintf(":%s", cfg.MqttPort)
-	target := fmt.Sprintf("%s:%s", cfg.MqttTargetHost, cfg.MqttTargetPort)
+	address := fmt.Sprintf(":%s", cfg.MQTTPort)
+	target := fmt.Sprintf("%s:%s", cfg.MQTTTargetHost, cfg.MQTTTargetPort)
 	mp := mp.New(address, target, handler, logger)
 
 	errCh := make(chan error)
@@ -203,14 +221,14 @@ func proxyMQTT(ctx context.Context, cfg config, logger mflog.Logger, handler ses
 }
 
 func proxyWS(ctx context.Context, cfg config, logger mflog.Logger, handler session.Handler) error {
-	target := fmt.Sprintf("%s:%s", cfg.HttpTargetHost, cfg.HttpTargetPort)
-	wp := ws.New(target, cfg.HttpTargetPath, "ws", handler, logger)
+	target := fmt.Sprintf("%s:%s", cfg.HTTPTargetHost, cfg.HTTPTargetPort)
+	wp := ws.New(target, cfg.HTTPTargetPath, "ws", handler, logger)
 	http.Handle("/mqtt", wp.Handler())
 
 	errCh := make(chan error)
 
 	go func() {
-		errCh <- wp.Listen(cfg.HttpPort)
+		errCh <- wp.Listen(cfg.HTTPPort)
 	}()
 
 	select {
@@ -224,7 +242,7 @@ func proxyWS(ctx context.Context, cfg config, logger mflog.Logger, handler sessi
 
 func healthcheck(cfg config) func() error {
 	return func() error {
-		res, err := http.Get(cfg.MqttTargetHealthCheck)
+		res, err := http.Get(cfg.MQTTTargetHealthCheck)
 		if err != nil {
 			return err
 		}

@@ -18,11 +18,9 @@ import (
 const (
 	MyKey             = "mine"
 	thingsObjectKey   = "things"
-	addRelationKey    = "g_add"
 	updateRelationKey = "c_update"
 	listRelationKey   = "c_list"
 	deleteRelationKey = "c_delete"
-	groupEntityType   = "group"
 	clientEntityType  = "client"
 )
 
@@ -99,7 +97,6 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 		return mfclients.ClientsPage{}, err
 	}
 
-	
 	switch err = svc.checkAdmin(ctx, userID, thingsObjectKey, listRelationKey); err {
 	// If the user is admin, fetch all things from database.
 	case nil:
@@ -294,7 +291,7 @@ func (svc service) Identify(ctx context.Context, key string) (string, error) {
 }
 
 func (svc service) identify(ctx context.Context, token string) (string, error) {
-	req := &upolicies.Token{Value: token}
+	req := &upolicies.IdentifyReq{Token: token}
 	res, err := svc.uauth.Identify(ctx, req)
 	if err != nil {
 		return "", errors.Wrap(errors.ErrAuthorization, err)
@@ -317,9 +314,9 @@ func (svc service) authorize(ctx context.Context, subject, object, action string
 // TODO : Only accept token as parameter since object and action are irrelevant.
 func (svc service) checkAdmin(ctx context.Context, subject, object, action string) error {
 	req := &upolicies.AuthorizeReq{
-		Sub:        subject,
-		Obj:        object,
-		Act:        action,
+		Subject:    subject,
+		Object:     object,
+		Action:     action,
 		EntityType: clientEntityType,
 	}
 	res, err := svc.uauth.Authorize(ctx, req)

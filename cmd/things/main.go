@@ -56,14 +56,14 @@ import (
 
 const (
 	svcName            = "things"
-	envPrefix          = "MF_THINGS_"
+	envPrefixDB        = "MF_THINGS_DB_"
 	envPrefixCache     = "MF_THINGS_CACHE_"
 	envPrefixES        = "MF_THINGS_ES_"
-	envPrefixHttp      = "MF_THINGS_HTTP_"
-	envPrefixAuthGrpc  = "MF_THINGS_AUTH_GRPC_"
+	envPrefixHTTP      = "MF_THINGS_HTTP_"
+	envPrefixGRPC      = "MF_THINGS_GRPC_"
 	defDB              = "things"
-	defSvcHttpPort     = "9000"
-	defSvcAuthGrpcPort = "7000"
+	defSvcHTTPPort     = "9000"
+	defSvcAuthGRPCPort = "7000"
 )
 
 type config struct {
@@ -91,25 +91,35 @@ func main() {
 		log.Fatalf("failed to init logger: %s", err)
 	}
 
-	instanceID := cfg.InstanceID
-	if instanceID == "" {
-		instanceID, err = uuid.New().ID()
-		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
+
+	if cfg.InstanceID == "" {
+		if cfg.InstanceID, err = uuid.New().ID(); err != nil {
+			logger.Error(fmt.Sprintf("failed to generate instanceID: %s", err))
+			exitCode = 1
+			return
 		}
 	}
 
 	// Create new database for things
 	dbConfig := pgClient.Config{Name: defDB}
-	db, err := pgClient.SetupWithConfig(envPrefix, *thingsPg.Migration(), dbConfig)
-	if err != nil {
+	if err := dbConfig.LoadEnv(envPrefixDB); err != nil {
 		logger.Fatal(err.Error())
+	}
+	db, err := pgClient.SetupWithConfig(envPrefixDB, *thingsPg.Migration(), dbConfig)
+	if err != nil {
+		logger.Error(err.Error())
+		exitCode = 1
+		return
 	}
 	defer db.Close()
 
-	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, instanceID)
+	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, cfg.InstanceID)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
+		exitCode = 1
+		return
 	}
 	defer func() {
 		if err := tp.Shutdown(ctx); err != nil {
@@ -121,14 +131,18 @@ func main() {
 	// Setup new redis cache client
 	cacheClient, err := redisClient.Setup(envPrefixCache)
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Error(err.Error())
+		exitCode = 1
+		return
 	}
 	defer cacheClient.Close()
 
 	// Setup new redis event store client
 	esClient, err := redisClient.Setup(envPrefixES)
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Error(err.Error())
+		exitCode = 1
+		return
 	}
 	defer esClient.Close()
 
@@ -138,33 +152,39 @@ func main() {
 		auth = localusers.NewAuthService(cfg.StandaloneID, cfg.StandaloneToken)
 		logger.Info("Using standalone auth service")
 	default:
-		authServiceClient, authHandler, err := authClient.Setup(envPrefix, svcName)
+		authServiceClient, authHandler, err := authClient.Setup(svcName)
 		if err != nil {
-			logger.Fatal(err.Error())
+			logger.Error(err.Error())
+			exitCode = 1
+			return
 		}
 		defer authHandler.Close()
 		auth = authServiceClient
 		logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
 	}
 
-	csvc, gsvc, psvc := newService(db, auth, cacheClient, esClient, cfg.CacheKeyDuration, tracer, logger)
+	csvc, gsvc, psvc := newService(ctx, db, dbConfig, auth, cacheClient, esClient, cfg.CacheKeyDuration, tracer, logger)
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
-		logger.Fatal(fmt.Sprintf("failed to load %s gRPC server configuration : %s", svcName, err))
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
 	}
 	mux := bone.New()
 	hsp := httpserver.New(ctx, cancel, "things-policies", httpServerConfig, httpapi.MakeHandler(csvc, psvc, mux, logger), logger)
-	hsc := httpserver.New(ctx, cancel, "things-clients", httpServerConfig, capi.MakeHandler(csvc, mux, logger, instanceID), logger)
+	hsc := httpserver.New(ctx, cancel, "things-clients", httpServerConfig, capi.MakeHandler(csvc, mux, logger, cfg.InstanceID), logger)
 	hsg := httpserver.New(ctx, cancel, "things-groups", httpServerConfig, gapi.MakeHandler(gsvc, mux, logger), logger)
 
+	grpcServerConfig := server.Config{Port: defSvcAuthGRPCPort}
+	if err := env.Parse(&grpcServerConfig, env.Options{Prefix: envPrefixGRPC}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s gRPC server configuration : %s", svcName, err))
+		exitCode = 1
+		return
+	}
 	registerThingsServiceServer := func(srv *grpc.Server) {
 		reflection.Register(srv)
-		tpolicies.RegisterThingsServiceServer(srv, grpcapi.NewServer(csvc, psvc))
-	}
-	grpcServerConfig := server.Config{Port: defSvcAuthGrpcPort}
-	if err := env.Parse(&grpcServerConfig, env.Options{Prefix: envPrefixAuthGrpc, AltPrefix: envPrefix}); err != nil {
-		logger.Fatal(fmt.Sprintf("failed to load %s gRPC server configuration : %s", svcName, err))
+		tpolicies.RegisterAuthServiceServer(srv, grpcapi.NewServer(csvc, psvc))
 	}
 	gs := grpcserver.New(ctx, cancel, svcName, grpcServerConfig, registerThingsServiceServer, logger)
 
@@ -177,6 +197,7 @@ func main() {
 	g.Go(func() error {
 		return hsp.Start()
 	})
+
 	g.Go(func() error {
 		return gs.Start()
 	})
@@ -190,8 +211,8 @@ func main() {
 	}
 }
 
-func newService(db *sqlx.DB, auth upolicies.AuthServiceClient, cacheClient *redis.Client, esClient *redis.Client, keyDuration string, tracer trace.Tracer, logger mflog.Logger) (clients.Service, groups.Service, tpolicies.Service) {
-	database := postgres.NewDatabase(db, tracer)
+func newService(ctx context.Context, db *sqlx.DB, dbConfig pgClient.Config, auth upolicies.AuthServiceClient, cacheClient *redis.Client, esClient *redis.Client, keyDuration string, tracer trace.Tracer, logger mflog.Logger) (clients.Service, groups.Service, tpolicies.Service) {
+	database := postgres.NewDatabase(db, dbConfig, tracer)
 	cRepo := cpostgres.NewRepository(database)
 	gRepo := gpostgres.NewRepository(database)
 	pRepo := ppostgres.NewRepository(database)
@@ -210,9 +231,9 @@ func newService(db *sqlx.DB, auth upolicies.AuthServiceClient, cacheClient *redi
 	csvc := clients.NewService(auth, psvc, cRepo, gRepo, thingCache, idp)
 	gsvc := groups.NewService(auth, psvc, gRepo, idp)
 
-	csvc = redisthcache.NewEventStoreMiddleware(csvc, esClient)
-	gsvc = redischcache.NewEventStoreMiddleware(gsvc, esClient)
-	psvc = redispcache.NewEventStoreMiddleware(psvc, esClient)
+	csvc = redisthcache.NewEventStoreMiddleware(ctx, csvc, esClient)
+	gsvc = redischcache.NewEventStoreMiddleware(ctx, gsvc, esClient)
+	psvc = redispcache.NewEventStoreMiddleware(ctx, psvc, esClient)
 
 	csvc = ctracing.New(csvc, tracer)
 	csvc = capi.LoggingMiddleware(csvc, logger)

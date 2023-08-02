@@ -13,26 +13,35 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const defURL string = "http://localhost"
+const (
+	defURL          string = "http://localhost"
+	defUsersURL     string = defURL + ":9002"
+	defThingsURL    string = defURL + ":9000"
+	defBootstrapURL string = defURL + ":9013"
+	defCertsURL     string = defURL + ":9019"
+)
 
 func main() {
 	msgContentType := string(sdk.CTJSONSenML)
 	sdkConf := sdk.Config{
-		ThingsURL:       defURL,
-		UsersURL:        defURL,
+		ThingsURL:       defThingsURL,
+		UsersURL:        defUsersURL,
 		ReaderURL:       defURL,
 		HTTPAdapterURL:  fmt.Sprintf("%s/http", defURL),
-		BootstrapURL:    defURL,
-		CertsURL:        defURL,
+		BootstrapURL:    defBootstrapURL,
+		CertsURL:        defCertsURL,
 		MsgContentType:  sdk.ContentType(msgContentType),
 		TLSVerification: false,
+		HostURL:         defURL,
 	}
 
 	// Root
 	var rootCmd = &cobra.Command{
 		Use: "mainflux-cli",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			cli.ParseConfig()
+			if err := cli.ParseConfig(); err != nil {
+				log.Fatal(err)
+			}
 
 			sdkConf.MsgContentType = sdk.ContentType(msgContentType)
 			s := sdk.NewSDK(sdkConf)
@@ -113,6 +122,14 @@ func main() {
 		"R",
 		sdkConf.ReaderURL,
 		"Reader URL",
+	)
+
+	rootCmd.PersistentFlags().StringVarP(
+		&sdkConf.HostURL,
+		"host-url",
+		"H",
+		sdkConf.HostURL,
+		"Host URL",
 	)
 
 	rootCmd.PersistentFlags().StringVarP(

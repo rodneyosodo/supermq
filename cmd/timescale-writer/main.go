@@ -10,11 +10,11 @@ import (
 	"log"
 	"os"
 
+	"github.com/jmoiron/sqlx"
 	chclient "github.com/mainflux/callhome/pkg/client"
 	"github.com/mainflux/mainflux"
-
-	"github.com/jmoiron/sqlx"
 	"github.com/mainflux/mainflux/consumers"
+	consumerTracing "github.com/mainflux/mainflux/consumers/tracing"
 	"github.com/mainflux/mainflux/consumers/writers/api"
 	"github.com/mainflux/mainflux/consumers/writers/timescale"
 	"github.com/mainflux/mainflux/internal"
@@ -25,24 +25,24 @@ import (
 	httpserver "github.com/mainflux/mainflux/internal/server/http"
 	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging/brokers"
-	"github.com/mainflux/mainflux/pkg/messaging/tracing"
+	brokerstracing "github.com/mainflux/mainflux/pkg/messaging/brokers/tracing"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	"golang.org/x/sync/errgroup"
 )
 
 const (
 	svcName        = "timescaledb-writer"
-	envPrefix      = "MF_TIMESCALE_WRITER_"
-	envPrefixHttp  = "MF_TIMESCALE_WRITER_HTTP_"
+	envPrefixDB    = "MF_TIMESCALE_"
+	envPrefixHTTP  = "MF_TIMESCALE_WRITER_HTTP_"
 	defDB          = "messages"
-	defSvcHttpPort = "9012"
+	defSvcHTTPPort = "9012"
 )
 
 type config struct {
 	LogLevel      string `env:"MF_TIMESCALE_WRITER_LOG_LEVEL"    envDefault:"info"`
 	ConfigPath    string `env:"MF_TIMESCALE_WRITER_CONFIG_PATH"  envDefault:"/config.toml"`
 	BrokerURL     string `env:"MF_BROKER_URL"                    envDefault:"nats://localhost:4222"`
-	JaegerURL     string `env:"MF_JAEGER_URL"                    envDefault:"localhost:6831"`
+	JaegerURL     string `env:"MF_JAEGER_URL"                    envDefault:"http://jaeger:14268/api/traces"`
 	SendTelemetry bool   `env:"MF_SEND_TELEMETRY"                envDefault:"true"`
 	InstanceID    string `env:"MF_TIMESCALE_WRITER_INSTANCE_ID"  envDefault:""`
 }
@@ -61,24 +61,38 @@ func main() {
 		log.Fatal(err)
 	}
 
-	instanceID := cfg.InstanceID
-	if instanceID == "" {
-		instanceID, err = uuid.New().ID()
-		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
+
+	if cfg.InstanceID == "" {
+		if cfg.InstanceID, err = uuid.New().ID(); err != nil {
+			logger.Error(fmt.Sprintf("failed to generate instanceID: %s", err))
+			exitCode = 1
+			return
 		}
 	}
 
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
+	}
+
 	dbConfig := pgClient.Config{Name: defDB}
-	db, err := pgClient.SetupWithConfig(envPrefix, *timescale.Migration(), dbConfig)
+	db, err := pgClient.SetupWithConfig(envPrefixDB, *timescale.Migration(), dbConfig)
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Error(err.Error())
+		exitCode = 1
+		return
 	}
 	defer db.Close()
 
-	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, instanceID)
+	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, cfg.InstanceID)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
+		exitCode = 1
+		return
 	}
 	defer func() {
 		if err := tp.Shutdown(ctx); err != nil {
@@ -88,23 +102,24 @@ func main() {
 	tracer := tp.Tracer(svcName)
 
 	repo := newService(db, logger)
+	repo = consumerTracing.NewBlocking(tracer, repo, httpServerConfig)
 
 	pubSub, err := brokers.NewPubSub(cfg.BrokerURL, "", logger)
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("failed to connect to message broker: %s", err))
+		logger.Error(fmt.Sprintf("failed to connect to message broker: %s", err))
+		exitCode = 1
+		return
 	}
-	pubSub = tracing.NewPubSub(tracer, pubSub)
 	defer pubSub.Close()
+	pubSub = brokerstracing.NewPubSub(httpServerConfig, tracer, pubSub)
 
 	if err = consumers.Start(ctx, svcName, pubSub, repo, cfg.ConfigPath, logger); err != nil {
-		logger.Fatal(fmt.Sprintf("failed to create Timescale writer: %s", err))
+		logger.Error(fmt.Sprintf("failed to create Timescale writer: %s", err))
+		exitCode = 1
+		return
 	}
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
-		logger.Fatal(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
-	}
-	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(svcName, instanceID), logger)
+	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(svcName, cfg.InstanceID), logger)
 
 	if cfg.SendTelemetry {
 		chc := chclient.New(svcName, mainflux.Version, logger, cancel)

@@ -30,10 +30,10 @@ import (
 
 const (
 	svcName        = "postgres-reader"
-	envPrefix      = "MF_POSTGRES_READER_"
-	envPrefixHttp  = "MF_POSTGRES_READER_HTTP_"
+	envPrefixDB    = "MF_POSTGRES_"
+	envPrefixHTTP  = "MF_POSTGRES_READER_HTTP_"
 	defDB          = "messages"
-	defSvcHttpPort = "9009"
+	defSvcHTTPPort = "9009"
 )
 
 type config struct {
@@ -56,46 +56,60 @@ func main() {
 		log.Fatalf("failed to init logger: %s", err)
 	}
 
-	tc, tcHandler, err := thingsClient.Setup(envPrefix)
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
+	var exitCode int
+	defer mflog.ExitWithError(&exitCode)
 
-	instanceID := cfg.InstanceID
-	if instanceID == "" {
-		instanceID, err = uuid.New().ID()
-		if err != nil {
-			log.Fatalf("Failed to generate instanceID: %s", err)
+	if cfg.InstanceID == "" {
+		if cfg.InstanceID, err = uuid.New().ID(); err != nil {
+			logger.Error(fmt.Sprintf("failed to generate instanceID: %s", err))
+			exitCode = 1
+			return
 		}
 	}
 
-	defer tcHandler.Close()
-	logger.Info("Successfully connected to things grpc server " + tcHandler.Secure())
-
-	auth, authHandler, err := authClient.Setup(envPrefix, svcName)
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-	defer authHandler.Close()
-	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
-
 	dbConfig := pgClient.Config{Name: defDB}
-	if err := dbConfig.LoadEnv(envPrefix); err != nil {
-		logger.Fatal(err.Error())
+	if err := dbConfig.LoadEnv(envPrefixDB); err != nil {
+		logger.Error(err.Error())
+		exitCode = 1
+		return
 	}
 	db, err := pgClient.Connect(dbConfig)
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("failed to setup postgres database : %s", err))
+		logger.Error(fmt.Sprintf("failed to setup postgres database : %s", err))
+		exitCode = 1
+		return
 	}
 	defer db.Close()
 
+	tc, tcHandler, err := thingsClient.Setup()
+	if err != nil {
+		logger.Error(err.Error())
+		exitCode = 1
+		return
+	}
+	defer tcHandler.Close()
+
+	logger.Info("Successfully connected to things grpc server " + tcHandler.Secure())
+
+	auth, authHandler, err := authClient.Setup(svcName)
+	if err != nil {
+		logger.Error(err.Error())
+		exitCode = 1
+		return
+	}
+	defer authHandler.Close()
+
+	logger.Info("Successfully connected to auth grpc server " + authHandler.Secure())
+
 	repo := newService(db, logger)
 
-	httpServerConfig := server.Config{Port: defSvcHttpPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHttp, AltPrefix: envPrefix}); err != nil {
-		logger.Fatal(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
 	}
-	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(repo, tc, auth, svcName, instanceID), logger)
+	hs := httpserver.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(repo, tc, auth, svcName, cfg.InstanceID), logger)
 
 	if cfg.SendTelemetry {
 		chc := chclient.New(svcName, mainflux.Version, logger, cancel)
