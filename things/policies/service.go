@@ -166,16 +166,13 @@ func (svc service) AddPolicy(ctx context.Context, token string, external bool, p
 //   - The user is the owner of the user
 //   - The user has `c_share` action on the user
 func (svc service) checkSubject(ctx context.Context, userID string, external bool, p Policy) error {
-	switch external {
-	case false:
-		ar := AccessRequest{Subject: userID, Object: p.Subject, Action: sharePolicyAction}
-		if _, err := svc.policies.EvaluateThingAccess(ctx, ar); err != nil {
-			return err
-		}
-	case true:
-		if err := svc.usersAuthorize(ctx, userID, p.Subject, sharePolicyAction, ClientEntityType); err != nil {
-			return err
-		}
+	if external {
+		return svc.usersAuthorize(ctx, userID, p.Subject, sharePolicyAction, ClientEntityType)
+	}
+
+	ar := AccessRequest{Subject: userID, Object: p.Subject, Action: sharePolicyAction}
+	if _, err := svc.policies.EvaluateThingAccess(ctx, ar); err != nil {
+		return err
 	}
 
 	return nil
