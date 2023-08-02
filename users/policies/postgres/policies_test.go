@@ -328,7 +328,7 @@ func TestPoliciesUpdate(t *testing.T) {
 				OwnerID: policy.OwnerID,
 				Subject: client.ID,
 				Object:  group.ID,
-				Actions: []string{"c_update"},
+				Actions: []string{""},
 			},
 			err: nil,
 		},
