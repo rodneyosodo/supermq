@@ -27,12 +27,13 @@ import (
 )
 
 var (
-	adminToken   = "token"
-	userToken    = "userToken"
-	adminID      = generateUUID(&testing.T{})
-	userID       = generateUUID(&testing.T{})
-	users        = map[string]string{adminToken: adminID, userToken: userID}
-	uadminPolicy = cmocks.SubjectSet{Subject: adminID, Relation: clients.AdminRelationKey}
+	adminToken        = "token"
+	userToken         = "userToken"
+	adminID           = generateUUID(&testing.T{})
+	userID            = generateUUID(&testing.T{})
+	users             = map[string]string{adminToken: adminID, userToken: userID}
+	adminRelationKeys = []string{"c_update", "c_list", "c_delete", "c_share"}
+	uadminPolicy      = cmocks.SubjectSet{Subject: adminID, Relation: adminRelationKeys}
 )
 
 func newThingsServer(svc clients.Service, psvc policies.Service) *httptest.Server {
