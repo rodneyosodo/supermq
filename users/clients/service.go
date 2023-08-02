@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	MyKey = "mine"
+	myKey = "mine"
 
 	clientsObjectKey = "clients"
 
@@ -170,24 +170,24 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 	// If the user is admin, fetch all users from database.
 	case nil:
 		switch {
-		case pm.SharedBy == MyKey && pm.Owner == MyKey:
+		case pm.SharedBy == myKey && pm.Owner == myKey:
 			pm.SharedBy = ""
 			pm.Owner = ""
-		case pm.SharedBy == MyKey && pm.Owner != MyKey:
+		case pm.SharedBy == myKey && pm.Owner != myKey:
 			pm.SharedBy = id
-		case pm.Owner == MyKey && pm.SharedBy != MyKey:
+		case pm.Owner == myKey && pm.SharedBy != myKey:
 			pm.Owner = id
 		}
 
 	// If the user is not admin, fetch users that they own or are shared with them.
 	default:
 		switch {
-		case pm.SharedBy == MyKey && pm.Owner == MyKey:
+		case pm.SharedBy == myKey && pm.Owner == myKey:
 			pm.SharedBy = id
-		case pm.SharedBy == MyKey && pm.Owner != MyKey:
+		case pm.SharedBy == myKey && pm.Owner != myKey:
 			pm.SharedBy = id
 			pm.Owner = ""
-		case pm.Owner == MyKey && pm.SharedBy != MyKey:
+		case pm.Owner == myKey && pm.SharedBy != myKey:
 			pm.Owner = id
 		default:
 			pm.Owner = id
