@@ -37,14 +37,16 @@ var (
 		Metadata:    validCMetadata,
 		Status:      mfclients.EnabledStatus,
 	}
-	inValidToken   = "invalidToken"
-	withinDuration = 5 * time.Second
-	adminEmail     = "admin@example.com"
-	token          = "token"
+	inValidToken      = "invalidToken"
+	withinDuration    = 5 * time.Second
+	adminEmail        = "admin@example.com"
+	token             = "token"
+	myKey             = "mine"
+	adminRelationKeys = []string{"c_update", "c_list", "c_delete", "c_share"}
 )
 
 func newService(tokens map[string]string) (clients.Service, *mocks.Repository, *pmocks.Repository) {
-	adminPolicy := mocks.MockSubjectSet{Object: ID, Relation: clients.AdminRelationKey}
+	adminPolicy := mocks.MockSubjectSet{Object: ID, Relation: adminRelationKeys}
 	auth := mocks.NewAuthService(tokens, map[string][]mocks.MockSubjectSet{adminEmail: {adminPolicy}})
 	thingCache := mocks.NewCache()
 	policiesCache := pmocks.NewCache()
@@ -284,7 +286,7 @@ func TestViewClient(t *testing.T) {
 			response: mfclients.Client{},
 			token:    inValidToken,
 			clientID: "",
-			err:      errors.ErrAuthorization,
+			err:      errors.ErrAuthentication,
 		},
 		{
 			desc:     "view client with valid token and invalid client id",
@@ -298,7 +300,7 @@ func TestViewClient(t *testing.T) {
 			response: mfclients.Client{},
 			token:    inValidToken,
 			clientID: mocks.WrongID,
-			err:      errors.ErrAuthorization,
+			err:      errors.ErrAuthentication,
 		},
 	}
 
@@ -385,7 +387,7 @@ func TestListClients(t *testing.T) {
 			page: mfclients.Page{
 				Offset:   6,
 				Limit:    nClients,
-				SharedBy: clients.MyKey,
+				SharedBy: myKey,
 				Status:   mfclients.EnabledStatus,
 			},
 			response: mfclients.ClientsPage{
@@ -404,7 +406,7 @@ func TestListClients(t *testing.T) {
 			page: mfclients.Page{
 				Offset:   6,
 				Limit:    nClients,
-				SharedBy: clients.MyKey,
+				SharedBy: myKey,
 				Name:     "TestListClients3",
 				Status:   mfclients.EnabledStatus,
 			},
@@ -424,7 +426,7 @@ func TestListClients(t *testing.T) {
 			page: mfclients.Page{
 				Offset:   6,
 				Limit:    nClients,
-				SharedBy: clients.MyKey,
+				SharedBy: myKey,
 				Name:     "notpresentclient",
 				Status:   mfclients.EnabledStatus,
 			},
@@ -444,7 +446,7 @@ func TestListClients(t *testing.T) {
 			page: mfclients.Page{
 				Offset: 6,
 				Limit:  nClients,
-				Owner:  clients.MyKey,
+				Owner:  myKey,
 				Status: mfclients.EnabledStatus,
 			},
 			response: mfclients.ClientsPage{
@@ -463,7 +465,7 @@ func TestListClients(t *testing.T) {
 			page: mfclients.Page{
 				Offset: 6,
 				Limit:  nClients,
-				Owner:  clients.MyKey,
+				Owner:  myKey,
 				Name:   "TestListClients3",
 				Status: mfclients.AllStatus,
 			},
@@ -483,7 +485,7 @@ func TestListClients(t *testing.T) {
 			page: mfclients.Page{
 				Offset: 6,
 				Limit:  nClients,
-				Owner:  clients.MyKey,
+				Owner:  myKey,
 				Name:   "notpresentclient",
 				Status: mfclients.AllStatus,
 			},
@@ -503,8 +505,8 @@ func TestListClients(t *testing.T) {
 			page: mfclients.Page{
 				Offset:   6,
 				Limit:    nClients,
-				Owner:    clients.MyKey,
-				SharedBy: clients.MyKey,
+				Owner:    myKey,
+				SharedBy: myKey,
 				Status:   mfclients.AllStatus,
 			},
 			response: mfclients.ClientsPage{
@@ -523,8 +525,8 @@ func TestListClients(t *testing.T) {
 			page: mfclients.Page{
 				Offset:   6,
 				Limit:    nClients,
-				SharedBy: clients.MyKey,
-				Owner:    clients.MyKey,
+				SharedBy: myKey,
+				Owner:    myKey,
 				Name:     "TestListClients3",
 				Status:   mfclients.AllStatus,
 			},
@@ -544,8 +546,8 @@ func TestListClients(t *testing.T) {
 			page: mfclients.Page{
 				Offset:   6,
 				Limit:    nClients,
-				SharedBy: clients.MyKey,
-				Owner:    clients.MyKey,
+				SharedBy: myKey,
+				Owner:    myKey,
 				Name:     "notpresentclient",
 				Status:   mfclients.AllStatus,
 			},
@@ -616,7 +618,7 @@ func TestUpdateClient(t *testing.T) {
 			client:   client1,
 			response: mfclients.Client{},
 			token:    "non-existent",
-			err:      errors.ErrAuthorization,
+			err:      errors.ErrAuthentication,
 		},
 		{
 			desc: "update client name with invalid ID",
@@ -625,8 +627,8 @@ func TestUpdateClient(t *testing.T) {
 				Name: "Updated Client",
 			},
 			response: mfclients.Client{},
-			token:    "non-existent",
-			err:      errors.ErrAuthorization,
+			token:    token,
+			err:      errors.ErrNotFound,
 		},
 		{
 			desc:     "update client metadata with valid token",
@@ -640,7 +642,7 @@ func TestUpdateClient(t *testing.T) {
 			client:   client2,
 			response: mfclients.Client{},
 			token:    "non-existent",
-			err:      errors.ErrAuthorization,
+			err:      errors.ErrAuthentication,
 		},
 	}
 
@@ -681,7 +683,7 @@ func TestUpdateClientTags(t *testing.T) {
 			client:   client,
 			token:    "non-existent",
 			response: mfclients.Client{},
-			err:      errors.ErrAuthorization,
+			err:      errors.ErrAuthentication,
 		},
 		{
 			desc: "update client name with invalid ID",
@@ -690,8 +692,8 @@ func TestUpdateClientTags(t *testing.T) {
 				Name: "Updated name",
 			},
 			response: mfclients.Client{},
-			token:    "non-existent",
-			err:      errors.ErrAuthorization,
+			token:    token,
+			err:      errors.ErrNotFound,
 		},
 	}
 
@@ -732,7 +734,7 @@ func TestUpdateClientOwner(t *testing.T) {
 			client:   client,
 			token:    "non-existent",
 			response: mfclients.Client{},
-			err:      errors.ErrAuthorization,
+			err:      errors.ErrAuthentication,
 		},
 		{
 			desc: "update client owner with invalid ID",
@@ -741,8 +743,8 @@ func TestUpdateClientOwner(t *testing.T) {
 				Owner: "updatedowner@mail.com",
 			},
 			response: mfclients.Client{},
-			token:    "non-existent",
-			err:      errors.ErrAuthorization,
+			token:    token,
+			err:      errors.ErrNotFound,
 		},
 	}
 
@@ -784,7 +786,7 @@ func TestUpdateClientSecret(t *testing.T) {
 			newSecret: "newPassword",
 			token:     "non-existent",
 			response:  mfclients.Client{},
-			err:       errors.ErrAuthorization,
+			err:       errors.ErrAuthentication,
 		},
 	}
 

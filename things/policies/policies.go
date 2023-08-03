@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/mainflux/mainflux/internal/apiutil"
+	"github.com/mainflux/mainflux/pkg/errors"
 	upolicies "github.com/mainflux/mainflux/users/policies"
+	"golang.org/x/exp/slices"
 )
 
 // PolicyTypes contains a list of the available policy types currently supported.
@@ -79,7 +81,9 @@ type Service interface {
 	// AddPolicy creates a policy for the given subject, so that, after
 	// AddPolicy, `subject` has a `relation` on `object`. Returns a non-nil
 	// error in case of failures.
-	AddPolicy(ctx context.Context, token string, p Policy) (Policy, error)
+	// External is used to check if the policy subject is from external source i.e
+	// if it is true then the subject is `userID` else it is `thingID`.
+	AddPolicy(ctx context.Context, token string, external bool, p Policy) (Policy, error)
 
 	// DeletePolicy removes a policy.
 	DeletePolicy(ctx context.Context, token string, p Policy) error
@@ -103,8 +107,8 @@ type Cache interface {
 	Remove(ctx context.Context, policy Policy) error
 }
 
-// Validate returns an error if policy representation is invalid.
-func (p Policy) Validate() error {
+// validate returns an error if policy representation is invalid.
+func (p Policy) validate() error {
 	if p.Subject == "" {
 		return apiutil.ErrMissingPolicySub
 	}
@@ -134,4 +138,14 @@ func ValidateAction(act string) bool {
 		}
 	}
 	return false
+}
+
+// checkActions checks if the incoming actions are in the current actions.
+func checkActions(currentActions, incomingActions []string) error {
+	for _, action := range incomingActions {
+		if !slices.Contains(currentActions, action) {
+			return errors.ErrAuthorization
+		}
+	}
+	return nil
 }

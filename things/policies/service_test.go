@@ -12,7 +12,6 @@ import (
 	"github.com/mainflux/mainflux/internal/testsutil"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/uuid"
-	"github.com/mainflux/mainflux/things/clients"
 	"github.com/mainflux/mainflux/things/clients/mocks"
 	"github.com/mainflux/mainflux/things/policies"
 	pmocks "github.com/mainflux/mainflux/things/policies/mocks"
@@ -23,15 +22,16 @@ import (
 )
 
 var (
-	idProvider    = uuid.New()
-	inValidToken  = "invalidToken"
-	memberActions = []string{"g_list"}
-	adminEmail    = "admin@example.com"
-	token         = "token"
+	idProvider        = uuid.New()
+	inValidToken      = "invalidToken"
+	memberActions     = []string{"g_list"}
+	adminEmail        = "admin@example.com"
+	token             = "token"
+	adminRelationKeys = []string{"c_update", "c_list", "c_delete", "c_share"}
 )
 
 func newService(tokens map[string]string) (policies.Service, *pmocks.Repository, *umocks.Repository) {
-	adminPolicy := mocks.MockSubjectSet{Object: "things", Relation: clients.AdminRelationKey}
+	adminPolicy := mocks.MockSubjectSet{Object: "things", Relation: adminRelationKeys}
 	auth := mocks.NewAuthService(tokens, map[string][]mocks.MockSubjectSet{adminEmail: {adminPolicy}})
 	idProvider := uuid.NewMock()
 	policiesCache := pmocks.NewCache()
@@ -49,20 +49,17 @@ func TestAddPolicy(t *testing.T) {
 	cases := []struct {
 		desc   string
 		policy policies.Policy
-		page   policies.PolicyPage
 		token  string
 		err    error
 	}{
 		{
 			desc:   "add new policy",
 			policy: policy,
-			page:   policies.PolicyPage{},
 			token:  token,
 			err:    nil,
 		},
 		{
 			desc: "add a new policy with owner",
-			page: policies.PolicyPage{},
 			policy: policies.Policy{
 				OwnerID: testsutil.GenerateUUID(t, idProvider),
 				Object:  "objwithowner",
@@ -74,7 +71,6 @@ func TestAddPolicy(t *testing.T) {
 		},
 		{
 			desc: "add a new policy with more actions",
-			page: policies.PolicyPage{},
 			policy: policies.Policy{
 				Object:  "obj2",
 				Actions: []string{"c_delete", "c_update", "c_list"},
@@ -85,7 +81,6 @@ func TestAddPolicy(t *testing.T) {
 		},
 		{
 			desc: "add a new policy with wrong action",
-			page: policies.PolicyPage{},
 			policy: policies.Policy{
 				Object:  "obj3",
 				Actions: []string{"wrong"},
@@ -96,7 +91,6 @@ func TestAddPolicy(t *testing.T) {
 		},
 		{
 			desc: "add a new policy with empty object",
-			page: policies.PolicyPage{},
 			policy: policies.Policy{
 				Actions: []string{"c_delete"},
 				Subject: "sub4",
@@ -106,7 +100,6 @@ func TestAddPolicy(t *testing.T) {
 		},
 		{
 			desc: "add a new policy with empty subject",
-			page: policies.PolicyPage{},
 			policy: policies.Policy{
 				Actions: []string{"c_delete"},
 				Object:  "obj4",
@@ -116,7 +109,6 @@ func TestAddPolicy(t *testing.T) {
 		},
 		{
 			desc: "add a new policy with empty action",
-			page: policies.PolicyPage{},
 			policy: policies.Policy{
 				Subject: "sub5",
 				Object:  "obj5",
@@ -129,9 +121,8 @@ func TestAddPolicy(t *testing.T) {
 	for _, tc := range cases {
 		repoCall := pRepo.On("EvaluateGroupAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, tc.err)
 		repoCall1 := pRepo.On("EvaluateThingAccess", mock.Anything, mock.Anything).Return(policies.Policy{}, tc.err)
-		repoCall2 := pRepo.On("Update", context.Background(), tc.policy).Return(tc.err)
-		repoCall3 := pRepo.On("Save", context.Background(), mock.Anything).Return(tc.policy, tc.err)
-		_, err := svc.AddPolicy(context.Background(), tc.token, tc.policy)
+		repoCall2 := pRepo.On("Save", context.Background(), mock.Anything).Return(tc.policy, tc.err)
+		_, err := svc.AddPolicy(context.Background(), tc.token, false, tc.policy)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if err == nil {
 			tc.policy.Subject = tc.token
@@ -141,9 +132,8 @@ func TestAddPolicy(t *testing.T) {
 		}
 		repoCall.Unset()
 		repoCall1.Unset()
+		repoCall2.Parent.AssertCalled(t, "Save", context.Background(), mock.Anything)
 		repoCall2.Unset()
-		repoCall3.Parent.AssertCalled(t, "Save", context.Background(), mock.Anything)
-		repoCall3.Unset()
 	}
 
 }
