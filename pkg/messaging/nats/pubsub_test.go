@@ -62,15 +62,8 @@ func TestPublisher(t *testing.T) {
 			message:  message,
 			error:    nil,
 		},
-		// {
-		// 	desc:     "publish message with topic and empty subtopic",
-		// 	topic:    channel,
-		// 	subtopic: "",
-		// 	message:  message,
-		// 	error:    nil,
-		// },
 		{
-			desc:     "publish message with subtopic and emtpy topic",
+			desc:     "publish message with subtopic and empty topic",
 			topic:    "",
 			subtopic: subtopic,
 			message:  message,
@@ -300,6 +293,7 @@ type handler struct {
 
 func (h handler) Handle(msg *messaging.Message) error {
 	msgChan <- msg
+
 	return nil
 }
 
@@ -307,5 +301,6 @@ func (h handler) Cancel() error {
 	if h.fail {
 		return errFailed
 	}
+
 	return nil
 }

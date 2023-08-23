@@ -25,8 +25,10 @@ var (
 	ErrEmptyID       = errors.New("empty id")
 
 	jsStreamConfig = jetstream.StreamConfig{
-		Name:     "channels",
-		Subjects: []string{"channels.>"},
+		Name:              "channels",
+		Description:       "Mainflux stream for sending and receiving messages in between Mainflux channels",
+		Subjects:          []string{"channels.>"},
+		MaxMsgsPerSubject: 1e6,
 	}
 )
 
@@ -74,6 +76,7 @@ func NewPubSub(ctx context.Context, url string, logger mflog.Logger) (messaging.
 		logger:        logger,
 		subscriptions: make(map[string]map[string]subscription),
 	}
+
 	return ret, nil
 }
 
@@ -134,7 +137,7 @@ func (ps *pubsub) Subscribe(ctx context.Context, id, topic string, handler messa
 	return nil
 }
 
-func (ps *pubsub) Unsubscribe(ctx context.Context, id, topic string) error {
+func (ps *pubsub) Unsubscribe(_ context.Context, id, topic string) error {
 	if id == "" {
 		return ErrEmptyID
 	}
@@ -164,6 +167,7 @@ func (ps *pubsub) Unsubscribe(ctx context.Context, id, topic string) error {
 	if len(s) == 0 {
 		delete(ps.subscriptions, topic)
 	}
+
 	return nil
 }
 
@@ -172,6 +176,7 @@ func (ps *pubsub) natsHandler(h messaging.MessageHandler) func(m jetstream.Msg) 
 		var msg messaging.Message
 		if err := proto.Unmarshal(m.Data(), &msg); err != nil {
 			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
+
 			return
 		}
 

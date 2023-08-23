@@ -44,6 +44,7 @@ func NewPublisher(ctx context.Context, url string) (messaging.Publisher, error) 
 	ret := &publisher{
 		js: js,
 	}
+
 	return ret, nil
 }
 
@@ -63,10 +64,10 @@ func (pub *publisher) Publish(ctx context.Context, topic string, msg *messaging.
 	}
 
 	_, err = pub.js.Publish(ctx, subject, data)
+
 	return err
 }
 
 func (pub *publisher) Close() error {
-
 	return nil
 }
