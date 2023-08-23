@@ -115,6 +115,7 @@ func (ps *pubsub) Subscribe(ctx context.Context, id, topic string, handler messa
 
 	consumerConfig := jetstream.ConsumerConfig{
 		Name:          id,
+		Description:   fmt.Sprintf("Mainflux consumer of id %s for topic %s", id, topic),
 		DeliverPolicy: jetstream.DeliverNewPolicy,
 		FilterSubject: topic,
 	}
