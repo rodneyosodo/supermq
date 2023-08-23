@@ -9,6 +9,7 @@ import (
 
 	"github.com/mainflux/mainflux/pkg/messaging"
 	broker "github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -20,20 +21,28 @@ const maxReconnects = -1
 var _ messaging.Publisher = (*publisher)(nil)
 
 type publisher struct {
-	conn *broker.Conn
+	js jetstream.JetStream
 }
 
 // Publisher wraps messaging Publisher exposing
 // Close() method for NATS connection.
 
 // NewPublisher returns NATS message Publisher.
-func NewPublisher(url string) (messaging.Publisher, error) {
+func NewPublisher(ctx context.Context, url string) (messaging.Publisher, error) {
 	conn, err := broker.Connect(url, broker.MaxReconnects(maxReconnects))
 	if err != nil {
 		return nil, err
 	}
+	js, err := jetstream.New(conn)
+	if err != nil {
+		return nil, err
+	}
+	_, err = js.CreateStream(ctx, jsStreamConfig)
+	if err != nil {
+		return nil, err
+	}
 	ret := &publisher{
-		conn: conn,
+		js: js,
 	}
 	return ret, nil
 }
@@ -53,10 +62,11 @@ func (pub *publisher) Publish(ctx context.Context, topic string, msg *messaging.
 		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 	}
 
-	return pub.conn.Publish(subject, data)
+	_, err = pub.js.Publish(ctx, subject, data)
+	return err
 }
 
 func (pub *publisher) Close() error {
-	pub.conn.Close()
+
 	return nil
 }

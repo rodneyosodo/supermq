@@ -5,9 +5,9 @@ package nats_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/nats"
@@ -23,67 +23,83 @@ const (
 )
 
 var (
+	errFailed = fmt.Errorf("failed")
 	msgChan   = make(chan *messaging.Message)
-	data      = []byte("payload")
-	errFailed = errors.New("failed")
+	message   = &messaging.Message{
+		Channel:   channel,
+		Subtopic:  subtopic,
+		Publisher: "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b",
+		Protocol:  "mqtt",
+		Payload:   []byte("payload"),
+		Created:   time.Now().UnixNano(),
+	}
 )
 
 func TestPublisher(t *testing.T) {
-	err := pubsub.Subscribe(context.TODO(), clientID, fmt.Sprintf("%s.%s", chansPrefix, topic), handler{})
+	err := pubsub.Subscribe(context.TODO(), clientID, fmt.Sprintf("%s.%s", chansPrefix, channel), handler{})
 	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	err = pubsub.Subscribe(context.TODO(), clientID, fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic), handler{})
+	err = pubsub.Subscribe(context.TODO(), clientID, fmt.Sprintf("%s.%s.%s", chansPrefix, channel, subtopic), handler{})
 	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
 		desc     string
-		channel  string
+		topic    string
 		subtopic string
-		payload  []byte
+		message  *messaging.Message
+		error    error
 	}{
 		{
-			desc:    "publish message with nil payload",
-			payload: nil,
-		},
-		{
-			desc:    "publish message with string payload",
-			payload: data,
-		},
-		{
-			desc:    "publish message with channel",
-			payload: data,
-			channel: channel,
-		},
-		{
-			desc:     "publish message with subtopic",
-			payload:  data,
+			desc:     "publish message with empty message",
+			topic:    channel,
 			subtopic: subtopic,
+			message:  &messaging.Message{},
+			error:    nil,
 		},
 		{
-			desc:     "publish message with channel and subtopic",
-			payload:  data,
-			channel:  channel,
+			desc:     "publish message with message",
+			topic:    channel,
 			subtopic: subtopic,
+			message:  message,
+			error:    nil,
+		},
+		// {
+		// 	desc:     "publish message with topic and empty subtopic",
+		// 	topic:    channel,
+		// 	subtopic: "",
+		// 	message:  message,
+		// 	error:    nil,
+		// },
+		{
+			desc:     "publish message with subtopic and emtpy topic",
+			topic:    "",
+			subtopic: subtopic,
+			message:  message,
+			error:    nats.ErrEmptyTopic,
+		},
+		{
+			desc:     "publish message with topic and subtopic",
+			topic:    channel,
+			subtopic: subtopic,
+			message:  message,
+			error:    nil,
 		},
 	}
 
 	for _, tc := range cases {
-		expectedMsg := messaging.Message{
-			Channel:  tc.channel,
-			Subtopic: tc.subtopic,
-			Payload:  tc.payload,
+		tc.message.Subtopic = tc.subtopic
+		err := pubsub.Publish(context.TODO(), tc.topic, tc.message)
+		assert.Equal(t, tc.error, err, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, tc.error, err))
+
+		if err == nil {
+			receivedMsg := <-msgChan
+			assert.Equal(t, tc.message.Payload, receivedMsg.Payload, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, tc.message.Payload, receivedMsg))
+			assert.Equal(t, tc.message.Channel, receivedMsg.Channel, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &tc.message, receivedMsg))
+			assert.Equal(t, tc.message.Created, receivedMsg.Created, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &tc.message, receivedMsg))
+			assert.Equal(t, tc.message.Protocol, receivedMsg.Protocol, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &tc.message, receivedMsg))
+			assert.Equal(t, tc.message.Publisher, receivedMsg.Publisher, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &tc.message, receivedMsg))
+			assert.Equal(t, tc.message.Subtopic, receivedMsg.Subtopic, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &tc.message, receivedMsg))
+			assert.Equal(t, tc.message.Payload, receivedMsg.Payload, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &tc.message, receivedMsg))
 		}
-		assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-		err = pubsub.Publish(context.TODO(), topic, &expectedMsg)
-		assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-		receivedMsg := <-msgChan
-		assert.Equal(t, expectedMsg.Channel, receivedMsg.Channel, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &expectedMsg, receivedMsg))
-		assert.Equal(t, expectedMsg.Created, receivedMsg.Created, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &expectedMsg, receivedMsg))
-		assert.Equal(t, expectedMsg.Protocol, receivedMsg.Protocol, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &expectedMsg, receivedMsg))
-		assert.Equal(t, expectedMsg.Publisher, receivedMsg.Publisher, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &expectedMsg, receivedMsg))
-		assert.Equal(t, expectedMsg.Subtopic, receivedMsg.Subtopic, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &expectedMsg, receivedMsg))
-		assert.Equal(t, expectedMsg.Payload, receivedMsg.Payload, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, &expectedMsg, receivedMsg))
 	}
 }
 
