@@ -36,11 +36,8 @@ var (
 )
 
 func TestPublisher(t *testing.T) {
-	err := pubsub.Subscribe(context.TODO(), clientID, fmt.Sprintf("%s.%s", chansPrefix, channel), handler{})
+	err := pubsub.Subscribe(context.TODO(), clientID, fmt.Sprintf("%s.>", chansPrefix), handler{})
 	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	err = pubsub.Subscribe(context.TODO(), clientID, fmt.Sprintf("%s.%s.%s", chansPrefix, channel, subtopic), handler{})
-	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
 	cases := []struct {
 		desc     string
 		topic    string
@@ -59,6 +56,13 @@ func TestPublisher(t *testing.T) {
 			desc:     "publish message with message",
 			topic:    channel,
 			subtopic: subtopic,
+			message:  message,
+			error:    nil,
+		},
+		{
+			desc:     "publish message with topic and empty subtopic",
+			topic:    channel,
+			subtopic: "",
 			message:  message,
 			error:    nil,
 		},
