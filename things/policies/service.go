@@ -5,6 +5,7 @@ package policies
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/mainflux/mainflux"
@@ -28,6 +29,8 @@ const (
 	ThingEntityType  = "thing"
 
 	thingsObjectKey = "things"
+
+	kvSeparator = ":"
 )
 
 // ErrInvalidEntityType indicates that the entity type is invalid.
@@ -56,20 +59,26 @@ func (svc service) Authorize(ctx context.Context, ar AccessRequest) (Policy, err
 		Subject: ar.Subject,
 		Object:  ar.Object,
 	}
-	policy, err := svc.policyCache.Get(ctx, policy)
+	key, _ := kv(policy, "")
+
+	val, err := svc.policyCache.Get(ctx, key)
 	if err == nil {
-		for _, action := range policy.Actions {
+		for _, action := range separateActions(val) {
 			if action == ar.Action {
+				policy.Subject = extractThingID(val)
+
 				return policy, nil
 			}
 		}
+
 		return Policy{}, errors.ErrAuthorization
 	}
+
 	if !errors.Contains(err, errors.ErrNotFound) {
 		return Policy{}, err
 	}
 
-	// Fetch from repo as a fallback if not found in cache.
+	// Fetch from database as a fallback if not found in cache.
 	switch ar.Entity {
 	case GroupEntityType:
 		policy, err = svc.policies.EvaluateGroupAccess(ctx, ar)
@@ -88,10 +97,9 @@ func (svc service) Authorize(ctx context.Context, ar AccessRequest) (Policy, err
 		if err != nil {
 			return Policy{}, err
 		}
-		// Replace Subject since AccessRequest Subject is Thing Key,
-		// and Policy subject is Thing ID.
-		policy.Subject = ar.Subject
-		if err := svc.policyCache.Put(ctx, policy); err != nil {
+
+		key, value := kv(policy, policy.Subject)
+		if err := svc.policyCache.Put(ctx, key, value); err != nil {
 			return policy, err
 		}
 
@@ -126,7 +134,8 @@ func (svc service) AddPolicy(ctx context.Context, token string, external bool, p
 	p.UpdatedAt = time.Now()
 	p.UpdatedBy = userID
 
-	if err := svc.policyCache.Remove(ctx, p); err != nil {
+	key, _ := kv(p, "")
+	if err := svc.policyCache.Remove(ctx, key); err != nil {
 		return Policy{}, err
 	}
 
@@ -193,7 +202,8 @@ func (svc service) UpdatePolicy(ctx context.Context, token string, p Policy) (Po
 	p.UpdatedAt = time.Now()
 	p.UpdatedBy = userID
 
-	if err := svc.policyCache.Remove(ctx, p); err != nil {
+	key, _ := kv(p, "")
+	if err := svc.policyCache.Remove(ctx, key); err != nil {
 		return Policy{}, err
 	}
 
@@ -228,9 +238,11 @@ func (svc service) DeletePolicy(ctx context.Context, token string, p Policy) err
 		return err
 	}
 
-	if err := svc.policyCache.Remove(ctx, p); err != nil {
+	key, _ := kv(p, "")
+	if err := svc.policyCache.Remove(ctx, key); err != nil {
 		return err
 	}
+
 	return svc.policies.Delete(ctx, p)
 }
 
@@ -284,4 +296,32 @@ func (svc service) usersAuthorize(ctx context.Context, subject, object, action, 
 		return errors.ErrAuthorization
 	}
 	return nil
+}
+
+// kv is used to create a key-value pair for caching.
+// If thingID is not empty, it will be appended to the value.
+func kv(p Policy, thingID string) (string, string) {
+	if thingID != "" {
+		return p.Subject + kvSeparator + p.Object, strings.Join(p.Actions, kvSeparator) + kvSeparator + thingID
+	}
+
+	return p.Subject + kvSeparator + p.Object, strings.Join(p.Actions, kvSeparator)
+}
+
+// separateActions is used to separate the actions from the cache values.
+func separateActions(actions string) []string {
+	return strings.Split(actions, kvSeparator)
+}
+
+// extractThingID is used to extract the thingID from the cache values.
+func extractThingID(actions string) string {
+	var lastIdx = strings.LastIndex(actions, kvSeparator)
+
+	thingID := actions[lastIdx+1:]
+	// check if the thingID is a valid UUID
+	if len(thingID) != 36 {
+		return ""
+	}
+
+	return thingID
 }

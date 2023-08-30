@@ -5,8 +5,6 @@ package mocks
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/mainflux/mainflux/pkg/errors"
@@ -25,34 +23,30 @@ func NewCache() policies.Cache {
 	}
 }
 
-func (ccm *cacheMock) Put(_ context.Context, policy policies.Policy) error {
+func (ccm *cacheMock) Put(_ context.Context, key, value string) error {
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 
-	ccm.policies[fmt.Sprintf("%s:%s", policy.Subject, policy.Object)] = strings.Join(policy.Actions, ":")
+	ccm.policies[key] = value
 	return nil
 }
 
-func (ccm *cacheMock) Get(_ context.Context, policy policies.Policy) (policies.Policy, error) {
+func (ccm *cacheMock) Get(_ context.Context, key string) (string, error) {
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
-	actions := ccm.policies[fmt.Sprintf("%s:%s", policy.Subject, policy.Object)]
+	actions := ccm.policies[key]
 
 	if actions != "" {
-		return policies.Policy{
-			Subject: policy.Subject,
-			Object:  policy.Object,
-			Actions: strings.Split(actions, ":"),
-		}, nil
+		return actions, nil
 	}
 
-	return policies.Policy{}, errors.ErrNotFound
+	return "", errors.ErrNotFound
 }
 
-func (ccm *cacheMock) Remove(_ context.Context, policy policies.Policy) error {
+func (ccm *cacheMock) Remove(_ context.Context, key string) error {
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 
-	delete(ccm.policies, fmt.Sprintf("%s:%s", policy.Subject, policy.Object))
+	delete(ccm.policies, key)
 	return nil
 }

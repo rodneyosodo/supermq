@@ -98,13 +98,13 @@ type Service interface {
 // Cache contains channel-thing connection caching interface.
 type Cache interface {
 	// Put adds policy to cahce.
-	Put(ctx context.Context, policy Policy) error
+	Put(ctx context.Context, key, value string) error
 
 	// Get retrieves policy from cache.
-	Get(ctx context.Context, policy Policy) (Policy, error)
+	Get(ctx context.Context, key string) (string, error)
 
 	// Remove deletes a policy from cache.
-	Remove(ctx context.Context, policy Policy) error
+	Remove(ctx context.Context, key string) error
 }
 
 // validate returns an error if policy representation is invalid.
