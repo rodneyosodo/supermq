@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging"
@@ -28,7 +29,12 @@ var (
 		Name:              "channels",
 		Description:       "Mainflux stream for sending and receiving messages in between Mainflux channels",
 		Subjects:          []string{"channels.>"},
+		Retention:         jetstream.LimitsPolicy,
 		MaxMsgsPerSubject: 1e6,
+		MaxAge:            time.Hour * 24,
+		MaxMsgSize:        1024 * 1024,
+		Discard:           jetstream.DiscardOld,
+		Storage:           jetstream.FileStorage,
 	}
 )
 
