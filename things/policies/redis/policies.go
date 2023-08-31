@@ -5,12 +5,15 @@ package redis
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/things/policies"
 )
+
+const separator = ":"
 
 var _ policies.Cache = (*pcache)(nil)
 
@@ -27,7 +30,9 @@ func NewCache(client *redis.Client, duration time.Duration) policies.Cache {
 	}
 }
 
-func (pc pcache) Put(ctx context.Context, key, value string) error {
+func (pc pcache) Put(ctx context.Context, policy policies.Policy, thingID string) error {
+	key, value := kv(policy, thingID)
+
 	if err := pc.client.Set(ctx, key, value, pc.keyDuration).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
@@ -35,23 +40,67 @@ func (pc pcache) Put(ctx context.Context, key, value string) error {
 	return nil
 }
 
-func (pc pcache) Get(ctx context.Context, key string) (string, error) {
+func (pc pcache) Get(ctx context.Context, policy policies.Policy) (policies.Policy, string, error) {
+	key, _ := kv(policy, "")
 	res := pc.client.Get(ctx, key)
 	// Nil response indicates non-existent key in Redis client.
 	if res == nil || res.Err() == redis.Nil {
-		return "", errors.ErrNotFound
-	}
-	if err := res.Err(); err != nil {
-		return "", err
+		return policies.Policy{}, "", errors.ErrNotFound
 	}
 
-	return res.Result()
+	if err := res.Err(); err != nil {
+		return policies.Policy{}, "", err
+	}
+
+	val, err := res.Result()
+	if err != nil {
+		return policies.Policy{}, "", err
+	}
+
+	thingID := extractThingID(val)
+	if thingID == "" {
+		return policies.Policy{}, "", errors.ErrNotFound
+	}
+
+	policy.Actions = separateActions(val)
+
+	return policy, thingID, nil
+
 }
 
-func (pc pcache) Remove(ctx context.Context, key string) error {
+func (pc pcache) Remove(ctx context.Context, policy policies.Policy) error {
+	key, _ := kv(policy, "")
 	if err := pc.client.Del(ctx, key).Err(); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 
 	return nil
+}
+
+// kv is used to create a key-value pair for caching.
+// If thingID is not empty, it will be appended to the value.
+func kv(p policies.Policy, thingID string) (string, string) {
+	if thingID != "" {
+		return p.Subject + separator + p.Object, strings.Join(p.Actions, separator) + separator + thingID
+	}
+
+	return p.Subject + separator + p.Object, strings.Join(p.Actions, separator)
+}
+
+// separateActions is used to separate the actions from the cache values.
+func separateActions(actions string) []string {
+	return strings.Split(actions, separator)
+}
+
+// extractThingID is used to extract the thingID from the cache values.
+func extractThingID(actions string) string {
+	var lastIdx = strings.LastIndex(actions, separator)
+
+	thingID := actions[lastIdx+1:]
+	// check if the thingID is a valid UUID
+	if len(thingID) != 36 {
+		return ""
+	}
+
+	return thingID
 }

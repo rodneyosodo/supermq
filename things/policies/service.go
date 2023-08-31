@@ -5,7 +5,6 @@ package policies
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/mainflux/mainflux"
@@ -29,8 +28,6 @@ const (
 	ThingEntityType  = "thing"
 
 	thingsObjectKey = "things"
-
-	kvSeparator = ":"
 )
 
 // ErrInvalidEntityType indicates that the entity type is invalid.
@@ -59,13 +56,12 @@ func (svc service) Authorize(ctx context.Context, ar AccessRequest) (Policy, err
 		Subject: ar.Subject,
 		Object:  ar.Object,
 	}
-	key, _ := kv(policy, "")
 
-	val, err := svc.policyCache.Get(ctx, key)
+	policy, thingID, err := svc.policyCache.Get(ctx, policy)
 	if err == nil {
-		for _, action := range separateActions(val) {
+		for _, action := range policy.Actions {
 			if action == ar.Action {
-				policy.Subject = extractThingID(val)
+				policy.Subject = thingID
 
 				return policy, nil
 			}
@@ -93,13 +89,15 @@ func (svc service) Authorize(ctx context.Context, ar AccessRequest) (Policy, err
 		}
 
 	case ThingEntityType:
-		policy, err := svc.policies.EvaluateMessagingAccess(ctx, ar)
+		policy, err = svc.policies.EvaluateMessagingAccess(ctx, ar)
 		if err != nil {
 			return Policy{}, err
 		}
 
-		key, value := kv(policy, policy.Subject)
-		if err := svc.policyCache.Put(ctx, key, value); err != nil {
+		// Replace Subject since AccessRequest Subject is Thing Key,
+		// and Policy subject is Thing ID.
+		policy.Subject = ar.Subject
+		if err := svc.policyCache.Put(ctx, policy, policy.Subject); err != nil {
 			return policy, err
 		}
 
@@ -134,8 +132,7 @@ func (svc service) AddPolicy(ctx context.Context, token string, external bool, p
 	p.UpdatedAt = time.Now()
 	p.UpdatedBy = userID
 
-	key, _ := kv(p, "")
-	if err := svc.policyCache.Remove(ctx, key); err != nil {
+	if err := svc.policyCache.Remove(ctx, p); err != nil {
 		return Policy{}, err
 	}
 
@@ -202,8 +199,7 @@ func (svc service) UpdatePolicy(ctx context.Context, token string, p Policy) (Po
 	p.UpdatedAt = time.Now()
 	p.UpdatedBy = userID
 
-	key, _ := kv(p, "")
-	if err := svc.policyCache.Remove(ctx, key); err != nil {
+	if err := svc.policyCache.Remove(ctx, p); err != nil {
 		return Policy{}, err
 	}
 
@@ -238,8 +234,7 @@ func (svc service) DeletePolicy(ctx context.Context, token string, p Policy) err
 		return err
 	}
 
-	key, _ := kv(p, "")
-	if err := svc.policyCache.Remove(ctx, key); err != nil {
+	if err := svc.policyCache.Remove(ctx, p); err != nil {
 		return err
 	}
 
@@ -296,32 +291,4 @@ func (svc service) usersAuthorize(ctx context.Context, subject, object, action, 
 		return errors.ErrAuthorization
 	}
 	return nil
-}
-
-// kv is used to create a key-value pair for caching.
-// If thingID is not empty, it will be appended to the value.
-func kv(p Policy, thingID string) (string, string) {
-	if thingID != "" {
-		return p.Subject + kvSeparator + p.Object, strings.Join(p.Actions, kvSeparator) + kvSeparator + thingID
-	}
-
-	return p.Subject + kvSeparator + p.Object, strings.Join(p.Actions, kvSeparator)
-}
-
-// separateActions is used to separate the actions from the cache values.
-func separateActions(actions string) []string {
-	return strings.Split(actions, kvSeparator)
-}
-
-// extractThingID is used to extract the thingID from the cache values.
-func extractThingID(actions string) string {
-	var lastIdx = strings.LastIndex(actions, kvSeparator)
-
-	thingID := actions[lastIdx+1:]
-	// check if the thingID is a valid UUID
-	if len(thingID) != 36 {
-		return ""
-	}
-
-	return thingID
 }
