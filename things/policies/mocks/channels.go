@@ -44,7 +44,7 @@ func (ccm *cacheMock) Get(_ context.Context, policy policies.Policy) (policies.P
 
 	val := ccm.policies[key]
 	if val == "" {
-		return policies.Policy{}, "", nil
+		return policies.Policy{}, "", errors.ErrNotFound
 	}
 
 	thingID := extractThingID(val)
@@ -54,7 +54,7 @@ func (ccm *cacheMock) Get(_ context.Context, policy policies.Policy) (policies.P
 
 	policy.Actions = separateActions(val)
 
-	return policy, thingID, errors.ErrNotFound
+	return policy, thingID, nil
 }
 
 func (ccm *cacheMock) Remove(_ context.Context, policy policies.Policy) error {
