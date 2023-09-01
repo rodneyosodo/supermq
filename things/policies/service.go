@@ -52,18 +52,20 @@ func NewService(auth upolicies.AuthServiceClient, p Repository, ccache Cache, id
 
 func (svc service) Authorize(ctx context.Context, ar AccessRequest) (Policy, error) {
 	// Fetch from cache first.
-	policy := Policy{
-		Subject: ar.Subject,
-		Object:  ar.Object,
+	cpolicy := CachedPolicy{
+		Policy: Policy{
+			Subject: ar.Subject,
+			Object:  ar.Object,
+		},
 	}
 
-	policy, thingID, err := svc.policyCache.Get(ctx, policy)
+	cpolicy, err := svc.policyCache.Get(ctx, cpolicy)
 	if err == nil {
-		for _, action := range policy.Actions {
+		for _, action := range cpolicy.Policy.Actions {
 			if action == ar.Action {
-				policy.Subject = thingID
+				cpolicy.Policy.Subject = cpolicy.ThingID
 
-				return policy, nil
+				return cpolicy.Policy, nil
 			}
 		}
 
@@ -75,6 +77,7 @@ func (svc service) Authorize(ctx context.Context, ar AccessRequest) (Policy, err
 	}
 
 	// Fetch from database as a fallback if not found in cache.
+	var policy Policy
 	switch ar.Entity {
 	case GroupEntityType:
 		policy, err = svc.policies.EvaluateGroupAccess(ctx, ar)
@@ -94,10 +97,8 @@ func (svc service) Authorize(ctx context.Context, ar AccessRequest) (Policy, err
 			return Policy{}, err
 		}
 
-		// Replace Subject since AccessRequest Subject is Thing Key,
-		// and Policy subject is Thing ID.
-		policy.Subject = ar.Subject
-		if err := svc.policyCache.Put(ctx, policy, policy.Subject); err != nil {
+		cpolicy.ThingID = ar.Subject
+		if err := svc.policyCache.Put(ctx, cpolicy); err != nil {
 			return policy, err
 		}
 
@@ -132,7 +133,10 @@ func (svc service) AddPolicy(ctx context.Context, token string, external bool, p
 	p.UpdatedAt = time.Now()
 	p.UpdatedBy = userID
 
-	if err := svc.policyCache.Remove(ctx, p); err != nil {
+	var cpolicy = CachedPolicy{
+		Policy: p,
+	}
+	if err := svc.policyCache.Remove(ctx, cpolicy); err != nil {
 		return Policy{}, err
 	}
 
@@ -199,7 +203,10 @@ func (svc service) UpdatePolicy(ctx context.Context, token string, p Policy) (Po
 	p.UpdatedAt = time.Now()
 	p.UpdatedBy = userID
 
-	if err := svc.policyCache.Remove(ctx, p); err != nil {
+	var cpolicy = CachedPolicy{
+		Policy: p,
+	}
+	if err := svc.policyCache.Remove(ctx, cpolicy); err != nil {
 		return Policy{}, err
 	}
 
@@ -234,7 +241,10 @@ func (svc service) DeletePolicy(ctx context.Context, token string, p Policy) err
 		return err
 	}
 
-	if err := svc.policyCache.Remove(ctx, p); err != nil {
+	var cpolicy = CachedPolicy{
+		Policy: p,
+	}
+	if err := svc.policyCache.Remove(ctx, cpolicy); err != nil {
 		return err
 	}
 

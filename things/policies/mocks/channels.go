@@ -26,42 +26,43 @@ func NewCache() policies.Cache {
 	}
 }
 
-func (ccm *cacheMock) Put(_ context.Context, policy policies.Policy, thingID string) error {
+func (ccm *cacheMock) Put(_ context.Context, policy policies.CachedPolicy) error {
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 
-	key, value := kv(policy, thingID)
+	key, value := kv(policy)
 	ccm.policies[key] = value
 
 	return nil
 }
 
-func (ccm *cacheMock) Get(_ context.Context, policy policies.Policy) (policies.Policy, string, error) {
+func (ccm *cacheMock) Get(_ context.Context, policy policies.CachedPolicy) (policies.CachedPolicy, error) {
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 
-	key, _ := kv(policy, "")
+	key, _ := kv(policy)
 
 	val := ccm.policies[key]
 	if val == "" {
-		return policies.Policy{}, "", errors.ErrNotFound
+		return policies.CachedPolicy{}, errors.ErrNotFound
 	}
 
 	thingID := extractThingID(val)
 	if thingID == "" {
-		return policies.Policy{}, "", errors.ErrNotFound
+		return policies.CachedPolicy{}, errors.ErrNotFound
 	}
 
-	policy.Actions = separateActions(val)
+	policy.Policy.Actions = separateActions(val)
+	policy.ThingID = thingID
 
-	return policy, thingID, nil
+	return policy, nil
 }
 
-func (ccm *cacheMock) Remove(_ context.Context, policy policies.Policy) error {
+func (ccm *cacheMock) Remove(_ context.Context, policy policies.CachedPolicy) error {
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 
-	key, _ := kv(policy, "")
+	key, _ := kv(policy)
 
 	delete(ccm.policies, key)
 
@@ -70,12 +71,12 @@ func (ccm *cacheMock) Remove(_ context.Context, policy policies.Policy) error {
 
 // kv is used to create a key-value pair for caching.
 // If thingID is not empty, it will be appended to the value.
-func kv(p policies.Policy, thingID string) (string, string) {
-	if thingID != "" {
-		return p.Subject + separator + p.Object, strings.Join(p.Actions, separator) + separator + thingID
+func kv(p policies.CachedPolicy) (string, string) {
+	if p.ThingID != "" {
+		return p.Policy.Subject + separator + p.Policy.Object, strings.Join(p.Policy.Actions, separator) + separator + p.ThingID
 	}
 
-	return p.Subject + separator + p.Object, strings.Join(p.Actions, separator)
+	return p.Policy.Subject + separator + p.Policy.Object, strings.Join(p.Policy.Actions, separator)
 }
 
 // separateActions is used to separate the actions from the cache values.

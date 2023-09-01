@@ -30,8 +30,8 @@ func NewCache(client *redis.Client, duration time.Duration) policies.Cache {
 	}
 }
 
-func (pc pcache) Put(ctx context.Context, policy policies.Policy, thingID string) error {
-	key, value := kv(policy, thingID)
+func (pc pcache) Put(ctx context.Context, policy policies.CachedPolicy) error {
+	key, value := kv(policy)
 
 	if err := pc.client.Set(ctx, key, value, pc.keyDuration).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
@@ -40,36 +40,36 @@ func (pc pcache) Put(ctx context.Context, policy policies.Policy, thingID string
 	return nil
 }
 
-func (pc pcache) Get(ctx context.Context, policy policies.Policy) (policies.Policy, string, error) {
-	key, _ := kv(policy, "")
+func (pc pcache) Get(ctx context.Context, policy policies.CachedPolicy) (policies.CachedPolicy, error) {
+	key, _ := kv(policy)
 	res := pc.client.Get(ctx, key)
 	// Nil response indicates non-existent key in Redis client.
 	if res == nil || res.Err() == redis.Nil {
-		return policies.Policy{}, "", errors.ErrNotFound
+		return policies.CachedPolicy{}, errors.ErrNotFound
 	}
 
 	if err := res.Err(); err != nil {
-		return policies.Policy{}, "", err
+		return policies.CachedPolicy{}, err
 	}
 
 	val, err := res.Result()
 	if err != nil {
-		return policies.Policy{}, "", err
+		return policies.CachedPolicy{}, err
 	}
 
 	thingID := extractThingID(val)
 	if thingID == "" {
-		return policies.Policy{}, "", errors.ErrNotFound
+		return policies.CachedPolicy{}, errors.ErrNotFound
 	}
 
-	policy.Actions = separateActions(val)
+	policy.ThingID = thingID
+	policy.Policy.Actions = separateActions(val)
 
-	return policy, thingID, nil
-
+	return policy, nil
 }
 
-func (pc pcache) Remove(ctx context.Context, policy policies.Policy) error {
-	key, _ := kv(policy, "")
+func (pc pcache) Remove(ctx context.Context, policy policies.CachedPolicy) error {
+	key, _ := kv(policy)
 	if err := pc.client.Del(ctx, key).Err(); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
@@ -79,12 +79,12 @@ func (pc pcache) Remove(ctx context.Context, policy policies.Policy) error {
 
 // kv is used to create a key-value pair for caching.
 // If thingID is not empty, it will be appended to the value.
-func kv(p policies.Policy, thingID string) (string, string) {
-	if thingID != "" {
-		return p.Subject + separator + p.Object, strings.Join(p.Actions, separator) + separator + thingID
+func kv(p policies.CachedPolicy) (string, string) {
+	if p.ThingID != "" {
+		return p.Policy.Subject + separator + p.Policy.Object, strings.Join(p.Policy.Actions, separator) + separator + p.ThingID
 	}
 
-	return p.Subject + separator + p.Object, strings.Join(p.Actions, separator)
+	return p.Policy.Subject + separator + p.Policy.Object, strings.Join(p.Policy.Actions, separator)
 }
 
 // separateActions is used to separate the actions from the cache values.
