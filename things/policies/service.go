@@ -53,19 +53,19 @@ func NewService(auth upolicies.AuthServiceClient, p Repository, ccache Cache, id
 func (svc service) Authorize(ctx context.Context, ar AccessRequest) (Policy, error) {
 	// Fetch from cache first.
 	cpolicy := CachedPolicy{
-		Policy: Policy{
-			Subject: ar.Subject,
-			Object:  ar.Object,
-		},
+		ThingKey:  ar.Subject,
+		ChannelID: ar.Object,
 	}
 
 	cpolicy, err := svc.policyCache.Get(ctx, cpolicy)
 	if err == nil {
-		for _, action := range cpolicy.Policy.Actions {
+		for _, action := range cpolicy.Actions {
 			if action == ar.Action {
-				cpolicy.Policy.Subject = cpolicy.ThingID
+				var policy = Policy{
+					Subject: cpolicy.ThingID,
+				}
 
-				return cpolicy.Policy, nil
+				return policy, nil
 			}
 		}
 
@@ -134,7 +134,8 @@ func (svc service) AddPolicy(ctx context.Context, token string, external bool, p
 	p.UpdatedBy = userID
 
 	var cpolicy = CachedPolicy{
-		Policy: p,
+		ThingKey:  p.Subject,
+		ChannelID: p.Object,
 	}
 	if err := svc.policyCache.Remove(ctx, cpolicy); err != nil {
 		return Policy{}, err
@@ -204,7 +205,8 @@ func (svc service) UpdatePolicy(ctx context.Context, token string, p Policy) (Po
 	p.UpdatedBy = userID
 
 	var cpolicy = CachedPolicy{
-		Policy: p,
+		ThingKey:  p.Subject,
+		ChannelID: p.Object,
 	}
 	if err := svc.policyCache.Remove(ctx, cpolicy); err != nil {
 		return Policy{}, err
@@ -242,7 +244,8 @@ func (svc service) DeletePolicy(ctx context.Context, token string, p Policy) err
 	}
 
 	var cpolicy = CachedPolicy{
-		Policy: p,
+		ThingKey:  p.Subject,
+		ChannelID: p.Object,
 	}
 	if err := svc.policyCache.Remove(ctx, cpolicy); err != nil {
 		return err

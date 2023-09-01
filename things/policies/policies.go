@@ -96,8 +96,10 @@ type Service interface {
 }
 
 type CachedPolicy struct {
-	Policy  Policy
-	ThingID string
+	ThingID   string
+	ThingKey  string
+	ChannelID string
+	Actions   []string
 }
 
 // Cache contains channel-thing connection caching interface.

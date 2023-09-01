@@ -52,7 +52,7 @@ func (ccm *cacheMock) Get(_ context.Context, policy policies.CachedPolicy) (poli
 		return policies.CachedPolicy{}, errors.ErrNotFound
 	}
 
-	policy.Policy.Actions = separateActions(val)
+	policy.Actions = separateActions(val)
 	policy.ThingID = thingID
 
 	return policy, nil
@@ -70,13 +70,15 @@ func (ccm *cacheMock) Remove(_ context.Context, policy policies.CachedPolicy) er
 }
 
 // kv is used to create a key-value pair for caching.
-// If thingID is not empty, it will be appended to the value.
 func kv(p policies.CachedPolicy) (string, string) {
+	key := p.ThingKey + separator + p.ChannelID
+	val := strings.Join(p.Actions, separator)
+
 	if p.ThingID != "" {
-		return p.Policy.Subject + separator + p.Policy.Object, strings.Join(p.Policy.Actions, separator) + separator + p.ThingID
+		val += separator + p.ThingID
 	}
 
-	return p.Policy.Subject + separator + p.Policy.Object, strings.Join(p.Policy.Actions, separator)
+	return key, val
 }
 
 // separateActions is used to separate the actions from the cache values.
