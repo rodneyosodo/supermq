@@ -97,7 +97,12 @@ func (svc service) Authorize(ctx context.Context, ar AccessRequest) (Policy, err
 			return Policy{}, err
 		}
 
-		cpolicy.ThingID = ar.Subject
+		cpolicy = CachedPolicy{
+			ThingID:   policy.Subject,
+			ThingKey:  ar.Subject,
+			ChannelID: ar.Object,
+			Actions:   policy.Actions,
+		}
 		if err := svc.policyCache.Put(ctx, cpolicy); err != nil {
 			return policy, err
 		}

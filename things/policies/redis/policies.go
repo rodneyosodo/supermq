@@ -24,13 +24,13 @@ type pcache struct {
 
 // NewCache returns redis policy cache implementation.
 func NewCache(client *redis.Client, duration time.Duration) policies.Cache {
-	return pcache{
+	return &pcache{
 		client:      client,
 		keyDuration: duration,
 	}
 }
 
-func (pc pcache) Put(ctx context.Context, policy policies.CachedPolicy) error {
+func (pc *pcache) Put(ctx context.Context, policy policies.CachedPolicy) error {
 	key, value := kv(policy)
 
 	if err := pc.client.Set(ctx, key, value, pc.keyDuration).Err(); err != nil {
@@ -40,7 +40,7 @@ func (pc pcache) Put(ctx context.Context, policy policies.CachedPolicy) error {
 	return nil
 }
 
-func (pc pcache) Get(ctx context.Context, policy policies.CachedPolicy) (policies.CachedPolicy, error) {
+func (pc *pcache) Get(ctx context.Context, policy policies.CachedPolicy) (policies.CachedPolicy, error) {
 	key, _ := kv(policy)
 	res := pc.client.Get(ctx, key)
 	// Nil response indicates non-existent key in Redis client.
@@ -68,7 +68,7 @@ func (pc pcache) Get(ctx context.Context, policy policies.CachedPolicy) (policie
 	return policy, nil
 }
 
-func (pc pcache) Remove(ctx context.Context, policy policies.CachedPolicy) error {
+func (pc *pcache) Remove(ctx context.Context, policy policies.CachedPolicy) error {
 	key, _ := kv(policy)
 	if err := pc.client.Del(ctx, key).Err(); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
