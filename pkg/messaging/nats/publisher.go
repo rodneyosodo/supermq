@@ -37,8 +37,7 @@ func NewPublisher(ctx context.Context, url string) (messaging.Publisher, error) 
 	if err != nil {
 		return nil, err
 	}
-	_, err = js.CreateStream(ctx, jsStreamConfig)
-	if err != nil {
+	if _, err := js.CreateStream(ctx, jsStreamConfig); err != nil {
 		return nil, err
 	}
 	ret := &publisher{
