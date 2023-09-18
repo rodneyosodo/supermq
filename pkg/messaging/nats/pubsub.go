@@ -76,7 +76,8 @@ func NewPubSub(ctx context.Context, url string, logger mflog.Logger) (messaging.
 
 	ret := &pubsub{
 		publisher: publisher{
-			js: js,
+			js:   js,
+			conn: conn,
 		},
 		stream:        stream,
 		logger:        logger,
@@ -144,7 +145,7 @@ func (ps *pubsub) Subscribe(ctx context.Context, id, topic string, handler messa
 	return nil
 }
 
-func (ps *pubsub) Unsubscribe(_ context.Context, id, topic string) error {
+func (ps *pubsub) Unsubscribe(ctx context.Context, id, topic string) error {
 	if id == "" {
 		return ErrEmptyID
 	}
@@ -168,7 +169,12 @@ func (ps *pubsub) Unsubscribe(_ context.Context, id, topic string) error {
 			return err
 		}
 	}
+
 	current.Stop()
+
+	if err := ps.stream.DeleteConsumer(ctx, id); err != nil {
+		return err
+	}
 
 	delete(s, id)
 	if len(s) == 0 {
