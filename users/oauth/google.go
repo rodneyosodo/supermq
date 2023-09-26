@@ -40,7 +40,7 @@ func NewConfig(clientId, clientSecret, redirectURL string) Config {
 	return Config{Config: oauthCon}
 }
 
-func (conf *Config) GetProfile(ctx context.Context, code string) (User, *oauth2.Token, error) {
+func (conf *Config) Profile(ctx context.Context, code string) (User, *oauth2.Token, error) {
 	token, err := conf.Config.Exchange(ctx, code)
 	if err != nil {
 		return User{}, &oauth2.Token{}, err
