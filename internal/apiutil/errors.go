@@ -143,4 +143,7 @@ var (
 
 	// ErrUnsupportedContentType indicates unacceptable or lack of Content-Type.
 	ErrUnsupportedContentType = errors.New("unsupported content type")
+
+	// ErrMissingState indicates missing state.
+	ErrMissingState = errors.New("missing state")
 )

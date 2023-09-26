@@ -65,6 +65,13 @@ func Migration() *migrate.MemoryMigrationSource {
 					`DROP TABLE IF EXISTS policies`,
 				},
 			},
+			{
+				Id: "clients_02",
+				Up: []string{
+					`ALTER TABLE clients ALTER COLUMN secret DROP NOT NULL`,
+				},
+				Down: []string{},
+			},
 		},
 	}
 }

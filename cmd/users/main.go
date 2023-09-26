@@ -41,6 +41,7 @@ import (
 	gtracing "github.com/mainflux/mainflux/users/groups/tracing"
 	"github.com/mainflux/mainflux/users/hasher"
 	"github.com/mainflux/mainflux/users/jwt"
+	"github.com/mainflux/mainflux/users/oauth"
 	"github.com/mainflux/mainflux/users/policies"
 	papi "github.com/mainflux/mainflux/users/policies/api"
 	grpcapi "github.com/mainflux/mainflux/users/policies/api/grpc"
@@ -66,19 +67,24 @@ const (
 )
 
 type config struct {
-	LogLevel        string `env:"MF_USERS_LOG_LEVEL"              envDefault:"info"`
-	SecretKey       string `env:"MF_USERS_SECRET_KEY"             envDefault:"secret"`
-	AdminEmail      string `env:"MF_USERS_ADMIN_EMAIL"            envDefault:""`
-	AdminPassword   string `env:"MF_USERS_ADMIN_PASSWORD"         envDefault:""`
-	PassRegexText   string `env:"MF_USERS_PASS_REGEX"             envDefault:"^.{8,}$"`
-	AccessDuration  string `env:"MF_USERS_ACCESS_TOKEN_DURATION"  envDefault:"15m"`
-	RefreshDuration string `env:"MF_USERS_REFRESH_TOKEN_DURATION" envDefault:"24h"`
-	ResetURL        string `env:"MF_TOKEN_RESET_ENDPOINT"         envDefault:"/reset-request"`
-	JaegerURL       string `env:"MF_JAEGER_URL"                   envDefault:"http://jaeger:14268/api/traces"`
-	SendTelemetry   bool   `env:"MF_SEND_TELEMETRY"               envDefault:"true"`
-	InstanceID      string `env:"MF_USERS_INSTANCE_ID"            envDefault:""`
-	ESURL           string `env:"MF_USERS_ES_URL"                 envDefault:"redis://localhost:6379/0"`
-	PassRegex       *regexp.Regexp
+	LogLevel           string `env:"MF_USERS_LOG_LEVEL"              envDefault:"info"`
+	SecretKey          string `env:"MF_USERS_SECRET_KEY"             envDefault:"secret"`
+	AdminEmail         string `env:"MF_USERS_ADMIN_EMAIL"            envDefault:""`
+	AdminPassword      string `env:"MF_USERS_ADMIN_PASSWORD"         envDefault:""`
+	PassRegexText      string `env:"MF_USERS_PASS_REGEX"             envDefault:"^.{8,}$"`
+	AccessDuration     string `env:"MF_USERS_ACCESS_TOKEN_DURATION"  envDefault:"15m"`
+	RefreshDuration    string `env:"MF_USERS_REFRESH_TOKEN_DURATION" envDefault:"24h"`
+	ResetURL           string `env:"MF_TOKEN_RESET_ENDPOINT"         envDefault:"/reset-request"`
+	JaegerURL          string `env:"MF_JAEGER_URL"                   envDefault:"http://jaeger:14268/api/traces"`
+	SendTelemetry      bool   `env:"MF_SEND_TELEMETRY"               envDefault:"true"`
+	InstanceID         string `env:"MF_USERS_INSTANCE_ID"            envDefault:""`
+	ESURL              string `env:"MF_USERS_ES_URL"                 envDefault:"redis://localhost:6379/0"`
+	GoogleClientID     string `env:"MF_USERS_GOOGLE_CLIENT_ID"       envDefault:""`
+	GoogleClientSecret string `env:"MF_USERS_GOOGLE_CLIENT_SECRET"   envDefault:""`
+	GoogleRedirectURL  string `env:"MF_UI_GOOGLE_REDIRECT_URL"       envDefault:"http://localhost/google-callback"`
+	State              string `env:"MF_USERS_GOOGLE_STATE"           envDefault:""`
+	RedirectURL        string `env:"MF_USERS_UI_REDIRECT_URL"        envDefault:"http://localhost:9090"`
+	PassRegex          *regexp.Regexp
 }
 
 func main() {
@@ -95,10 +101,15 @@ func main() {
 	}
 	cfg.PassRegex = passRegex
 
+	gconf := oauth.NewConfig(cfg.GoogleClientID, cfg.GoogleClientSecret, cfg.GoogleRedirectURL)
+	gconf.State = cfg.State
+
 	logger, err := mflog.New(os.Stdout, cfg.LogLevel)
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("failed to init logger: %s", err.Error()))
 	}
+
+	logger.Info(fmt.Sprintf("google client id: %s google client secret: %s", cfg.GoogleClientID, cfg.GoogleClientSecret))
 
 	var exitCode int
 	defer mflog.ExitWithError(&exitCode)
@@ -157,7 +168,7 @@ func main() {
 		return
 	}
 	mux := bone.New()
-	hsc := httpserver.New(ctx, cancel, svcName, httpServerConfig, capi.MakeHandler(csvc, mux, logger, cfg.InstanceID), logger)
+	hsc := httpserver.New(ctx, cancel, svcName, httpServerConfig, capi.MakeHandler(csvc, mux, logger, cfg.InstanceID, cfg.RedirectURL, &gconf), logger)
 	hsg := httpserver.New(ctx, cancel, svcName, httpServerConfig, gapi.MakeHandler(gsvc, mux, logger), logger)
 	hsp := httpserver.New(ctx, cancel, svcName, httpServerConfig, httpapi.MakeHandler(psvc, mux, logger), logger)
 
@@ -211,7 +222,7 @@ func newService(ctx context.Context, db *sqlx.DB, dbConfig pgclient.Config, trac
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to parse refresh token duration: %s", err.Error()))
 	}
-	tokenizer := jwt.NewRepository([]byte(c.SecretKey), aDuration, rDuration)
+	tokenizer := jwt.NewRepository([]byte(c.SecretKey), aDuration, rDuration, c.GoogleClientID)
 
 	emailer, err := emailer.New(c.ResetURL, &ec)
 	if err != nil {

@@ -24,7 +24,6 @@ type Token struct {
 // Claims are the Client's internal JWT Claims.
 type Claims struct {
 	ClientID string // ClientID is the client unique identifier.
-	Email    string // Email is the client identity
 	Type     string // Type denotes the type of claim. Either AccessToken or RefreshToken.
 }
 

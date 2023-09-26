@@ -12,20 +12,25 @@ import (
 	"github.com/mainflux/mainflux/pkg/errors"
 )
 
-const issuerName = "clients.auth"
+const (
+	mainfluxIssuer = "mainflux.users"
+	googleIssuer   = "https://accounts.google.com"
+)
 
 var _ Repository = (*tokenRepo)(nil)
 
 type tokenRepo struct {
 	secret          []byte
+	googleClientID  string
 	accessDuration  time.Duration
 	refreshDuration time.Duration
 }
 
 // NewRepository instantiates an implementation of Token repository.
-func NewRepository(secret []byte, aduration, rduration time.Duration) Repository {
+func NewRepository(secret []byte, aduration, rduration time.Duration, gClientID string) Repository {
 	return &tokenRepo{
 		secret:          secret,
+		googleClientID:  gClientID,
 		accessDuration:  aduration,
 		refreshDuration: rduration,
 	}
@@ -34,10 +39,9 @@ func NewRepository(secret []byte, aduration, rduration time.Duration) Repository
 func (repo tokenRepo) Issue(ctx context.Context, claim Claims) (Token, error) {
 	aexpiry := time.Now().Add(repo.accessDuration)
 	accessToken, err := jwt.NewBuilder().
-		Issuer(issuerName).
+		Issuer(mainfluxIssuer).
 		IssuedAt(time.Now()).
 		Subject(claim.ClientID).
-		Claim("identity", claim.Email).
 		Claim("type", AccessToken).
 		Expiration(aexpiry).
 		Build()
@@ -49,10 +53,9 @@ func (repo tokenRepo) Issue(ctx context.Context, claim Claims) (Token, error) {
 		return Token{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 	refreshToken, err := jwt.NewBuilder().
-		Issuer(issuerName).
+		Issuer(mainfluxIssuer).
 		IssuedAt(time.Now()).
 		Subject(claim.ClientID).
-		Claim("identity", claim.Email).
 		Claim("type", RefreshToken).
 		Expiration(time.Now().Add(repo.refreshDuration)).
 		Build()
@@ -75,23 +78,34 @@ func (repo tokenRepo) Parse(ctx context.Context, accessToken string) (Claims, er
 	token, err := jwt.Parse(
 		[]byte(accessToken),
 		jwt.WithValidate(true),
-		jwt.WithKey(jwa.HS512, repo.secret),
+		jwt.WithVerify(false),
 	)
 	if err != nil {
 		return Claims{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
-	tType, ok := token.Get("type")
-	if !ok {
-		return Claims{}, errors.Wrap(errors.ErrAuthentication, err)
+	switch token.Issuer() {
+	case mainfluxIssuer:
+		tType, ok := token.Get("type")
+		if !ok {
+			return Claims{}, errors.Wrap(errors.ErrAuthentication, err)
+		}
+		claim := Claims{
+			ClientID: token.Subject(),
+			Type:     tType.(string),
+		}
+		return claim, nil
+	case googleIssuer:
+		for _, aud := range token.Audience() {
+			if aud == repo.googleClientID {
+				claim := Claims{
+					ClientID: token.Subject(),
+					Type:     AccessToken,
+				}
+
+				return claim, nil
+			}
+		}
 	}
-	identity, ok := token.Get("identity")
-	if !ok {
-		return Claims{}, errors.Wrap(errors.ErrAuthentication, err)
-	}
-	claim := Claims{
-		ClientID: token.Subject(),
-		Email:    identity.(string),
-		Type:     tType.(string),
-	}
-	return claim, nil
+
+	return Claims{}, nil
 }

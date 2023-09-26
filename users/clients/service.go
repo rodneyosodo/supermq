@@ -81,24 +81,26 @@ func (svc service) RegisterClient(ctx context.Context, token string, cli mfclien
 	if err != nil {
 		return mfclients.Client{}, err
 	}
+	if cli.ID == "" {
+		cli.ID = clientID
+	}
 	if cli.Owner == "" && ownerID != "" {
 		cli.Owner = ownerID
 	}
-	if cli.Credentials.Secret == "" {
-		return mfclients.Client{}, apiutil.ErrMissingSecret
+	if cli.Credentials.Secret != "" {
+		hash, err := svc.hasher.Hash(cli.Credentials.Secret)
+		if err != nil {
+			return mfclients.Client{}, errors.Wrap(errors.ErrMalformedEntity, err)
+		}
+		cli.Credentials.Secret = hash
 	}
-	hash, err := svc.hasher.Hash(cli.Credentials.Secret)
-	if err != nil {
-		return mfclients.Client{}, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
-	cli.Credentials.Secret = hash
+
 	if cli.Status != mfclients.DisabledStatus && cli.Status != mfclients.EnabledStatus {
 		return mfclients.Client{}, apiutil.ErrInvalidStatus
 	}
 	if cli.Role != mfclients.UserRole && cli.Role != mfclients.AdminRole {
 		return mfclients.Client{}, apiutil.ErrInvalidRole
 	}
-	cli.ID = clientID
 	cli.CreatedAt = time.Now()
 
 	client, err := svc.clients.Save(ctx, cli)
@@ -120,7 +122,6 @@ func (svc service) IssueToken(ctx context.Context, identity, secret string) (jwt
 
 	claims := jwt.Claims{
 		ClientID: dbUser.ID,
-		Email:    dbUser.Credentials.Identity,
 	}
 
 	return svc.tokens.Issue(ctx, claims)
@@ -291,7 +292,6 @@ func (svc service) GenerateResetToken(ctx context.Context, email, host string) e
 	}
 	claims := jwt.Claims{
 		ClientID: client.ID,
-		Email:    client.Credentials.Identity,
 	}
 	t, err := svc.tokens.Issue(ctx, claims)
 	if err != nil {
