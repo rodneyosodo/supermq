@@ -109,8 +109,6 @@ func main() {
 		logger.Fatal(fmt.Sprintf("failed to init logger: %s", err.Error()))
 	}
 
-	logger.Info(fmt.Sprintf("google client id: %s google client secret: %s", cfg.GoogleClientID, cfg.GoogleClientSecret))
-
 	var exitCode int
 	defer mflog.ExitWithError(&exitCode)
 

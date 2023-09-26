@@ -159,7 +159,7 @@ func googleCallbackHandler(conf *oauth.Config, svc clients.Service, redirectURL 
 		if code := r.FormValue("code"); code != "" {
 			user, token, err := conf.GetProfile(r.Context(), code)
 			if err != nil {
-				http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+				http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 				return
 			}
 
