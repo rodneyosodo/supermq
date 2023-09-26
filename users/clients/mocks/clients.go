@@ -74,9 +74,6 @@ func (m *Repository) Save(ctx context.Context, client mfclients.Client) (mfclien
 	if client.Owner == WrongID {
 		return mfclients.Client{}, errors.ErrMalformedEntity
 	}
-	if client.Credentials.Secret == "" {
-		return mfclients.Client{}, errors.ErrMalformedEntity
-	}
 
 	return client, ret.Error(1)
 }

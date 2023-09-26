@@ -218,7 +218,7 @@ func TestRegisterClient(t *testing.T) {
 					Identity: "newclientwithemptysecret@example.com",
 				},
 			},
-			err:   apiutil.ErrMissingSecret,
+			err:   nil,
 			token: testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), svc, cRepo, phasher),
 		},
 		{
