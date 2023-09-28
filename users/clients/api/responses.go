@@ -202,3 +202,19 @@ func (res passwChangeRes) Headers() map[string]string {
 func (res passwChangeRes) Empty() bool {
 	return false
 }
+
+type invitationRes struct {
+	Msg string `json:"msg"`
+}
+
+func (res invitationRes) Code() int {
+	return http.StatusCreated
+}
+
+func (res invitationRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res invitationRes) Empty() bool {
+	return false
+}

@@ -194,6 +194,30 @@ func passwordResetRequestEndpoint(svc clients.Service) endpoint.Endpoint {
 	}
 }
 
+// invitationRequestEndpoint sends invitation email to the user.
+// When successful invitation request link is generated.
+// Link is generated using MF_USERS_INVITATION_ENDPOINT env.
+// and value from Referer header for host.
+// {Referer}+{MF_USERS_INVITATION_ENDPOINT}+{token=TOKEN}
+// http://mainflux.com/invitation?token=xxxxxxxxxxx.
+// Email with a link is being sent to the user.
+// When user clicks on a link it should get the ui with form to sign up,
+// when form is submitted token is used to create new user.
+// must be sent as POST request to '/invitation-request' passwordResetEndpoint.
+func invitationRequestEndpoint(svc clients.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(invitationReq)
+		if err := req.validate(); err != nil {
+			return nil, errors.Wrap(apiutil.ErrValidation, err)
+		}
+		if err := svc.SendInvitation(ctx, req.Host, req.Email, req.token); err != nil {
+			return nil, err
+		}
+
+		return invitationRes{Msg: MailSent}, nil
+	}
+}
+
 // This is endpoint that actually sets new password in password reset flow.
 // When user clicks on a link in email finally ends on this endpoint as explained in
 // the comment above.

@@ -7,10 +7,11 @@ import (
 	"context"
 )
 
-// Possible token types are access and refresh tokens.
 const (
-	RefreshToken = "refresh"
-	AccessToken  = "access"
+	AccessToken  string = "access"
+	RefreshToken string = "refresh"
+	RestPassword string = "reset"
+	Invitation   string = "invitation"
 )
 
 // Token is used for authentication purposes.
@@ -18,14 +19,13 @@ const (
 type Token struct {
 	AccessToken  string // AccessToken contains the security credentials for a login session and identifies the client.
 	RefreshToken string // RefreshToken is a credential artifact that OAuth can use to get a new access token without client interaction.
-	AccessType   string // AccessType is the specific type of access token issued. It can be Bearer, Client or Basic.
+	AccessType   string // AccessType is the specific type of access token issued.
 }
 
 // Claims are the Client's internal JWT Claims.
 type Claims struct {
 	ClientID string // ClientID is the client unique identifier.
-	Email    string // Email is the client identity
-	Type     string // Type denotes the type of claim. Either AccessToken or RefreshToken.
+	Type     string // Type denotes the type of claim.
 }
 
 // Service specifies an API that must be fulfilled by the domain service

@@ -28,6 +28,7 @@ const (
 	refreshToken       = clientPrefix + "refresh_token"
 	resetSecret        = clientPrefix + "reset_secret"
 	sendPasswordReset  = clientPrefix + "send_password_reset"
+	sendInvitation     = clientPrefix + "send_invitation"
 )
 
 var (
@@ -44,6 +45,7 @@ var (
 	_ events.Event = (*refreshTokenEvent)(nil)
 	_ events.Event = (*resetSecretEvent)(nil)
 	_ events.Event = (*sendPasswordResetEvent)(nil)
+	_ events.Event = (*sendInvitationEvent)(nil)
 )
 
 type createClientEvent struct {
@@ -413,5 +415,18 @@ func (spre sendPasswordResetEvent) Encode() (map[string]interface{}, error) {
 		"host":      spre.host,
 		"email":     spre.email,
 		"user":      spre.user,
+	}, nil
+}
+
+type sendInvitationEvent struct {
+	host  string
+	email string
+}
+
+func (sie sendInvitationEvent) Encode() (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"operation": sendInvitation,
+		"host":      sie.host,
+		"email":     sie.email,
 	}, nil
 }

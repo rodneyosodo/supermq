@@ -235,6 +235,28 @@ func (req passwResetReq) validate() error {
 	return nil
 }
 
+type invitationReq struct {
+	token string
+	Email string `json:"email"`
+	Host  string `json:"host"`
+}
+
+func (req invitationReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.Email == "" {
+		return apiutil.ErrMissingEmail
+	}
+
+	if req.Host == "" {
+		return apiutil.ErrMissingHost
+	}
+
+	return nil
+}
+
 type resetTokenReq struct {
 	Token    string `json:"token"`
 	Password string `json:"password"`

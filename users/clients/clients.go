@@ -62,4 +62,7 @@ type ClientService interface {
 
 	// Identify returns the client id from the given token.
 	Identify(ctx context.Context, tkn string) (string, error)
+
+	// SendInvitation sends invitation link to email.
+	SendInvitation(ctx context.Context, host, email, token string) error
 }

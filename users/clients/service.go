@@ -37,6 +37,9 @@ var (
 	// ErrRecoveryToken indicates error in generating password recovery token.
 	ErrRecoveryToken = errors.New("failed to generate password recovery token")
 
+	// ErrInvitationToken indicates error in generating invitation token.
+	ErrInvitationToken = errors.New("failed to generate invitation token")
+
 	// ErrGetToken indicates error in getting signed token.
 	ErrGetToken = errors.New("failed to fetch signed token")
 
@@ -75,7 +78,11 @@ func NewService(c postgres.Repository, p policies.Repository, t jwt.Repository, 
 
 func (svc service) RegisterClient(ctx context.Context, token string, cli mfclients.Client) (mfclients.Client, error) {
 	// We don't check the error currently since we can register client with empty token
-	ownerID, _ := svc.Identify(ctx, token)
+	claims, err := svc.tokens.Parse(ctx, token)
+	var ownerID string
+	if claims.Type == jwt.AccessToken || claims.Type == jwt.Invitation && err == nil {
+		ownerID = claims.ClientID
+	}
 
 	clientID, err := svc.idProvider.ID()
 	if err != nil {
@@ -120,7 +127,7 @@ func (svc service) IssueToken(ctx context.Context, identity, secret string) (jwt
 
 	claims := jwt.Claims{
 		ClientID: dbUser.ID,
-		Email:    dbUser.Credentials.Identity,
+		Type:     jwt.AccessToken,
 	}
 
 	return svc.tokens.Issue(ctx, claims)
@@ -291,21 +298,31 @@ func (svc service) GenerateResetToken(ctx context.Context, email, host string) e
 	}
 	claims := jwt.Claims{
 		ClientID: client.ID,
-		Email:    client.Credentials.Identity,
+		Type:     jwt.RestPassword,
 	}
 	t, err := svc.tokens.Issue(ctx, claims)
 	if err != nil {
 		return errors.Wrap(ErrRecoveryToken, err)
 	}
-	return svc.SendPasswordReset(ctx, host, email, client.Name, t.AccessToken)
+
+	return svc.email.SendPasswordReset(email, host, client.Name, t.AccessToken)
+}
+
+func (svc service) SendPasswordReset(_ context.Context, host, email, user, token string) error {
+
+	return svc.email.SendPasswordReset(email, host, user, token)
 }
 
 func (svc service) ResetSecret(ctx context.Context, resetToken, secret string) error {
-	id, err := svc.Identify(ctx, resetToken)
+	claims, err := svc.tokens.Parse(ctx, resetToken)
 	if err != nil {
-		return errors.Wrap(errors.ErrAuthentication, err)
+		return err
 	}
-	c, err := svc.clients.RetrieveByID(ctx, id)
+	if claims.Type != jwt.RestPassword {
+		return errors.ErrAuthentication
+	}
+
+	c, err := svc.clients.RetrieveByID(ctx, claims.ClientID)
 	if err != nil {
 		return err
 	}
@@ -319,17 +336,14 @@ func (svc service) ResetSecret(ctx context.Context, resetToken, secret string) e
 	if err != nil {
 		return err
 	}
-	c = mfclients.Client{
-		Credentials: mfclients.Credentials{
-			Identity: c.Credentials.Identity,
-			Secret:   secret,
-		},
-		UpdatedAt: time.Now(),
-		UpdatedBy: id,
-	}
+	c.Credentials.Secret = secret
+	c.UpdatedAt = time.Now()
+	c.UpdatedBy = claims.ClientID
+
 	if _, err := svc.clients.UpdateSecret(ctx, c); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -357,11 +371,6 @@ func (svc service) UpdateClientSecret(ctx context.Context, token, oldSecret, new
 	dbClient.UpdatedBy = id
 
 	return svc.clients.UpdateSecret(ctx, dbClient)
-}
-
-func (svc service) SendPasswordReset(_ context.Context, host, email, user, token string) error {
-	to := []string{email}
-	return svc.email.SendPasswordReset(to, host, user, token)
 }
 
 func (svc service) UpdateClientOwner(ctx context.Context, token string, cli mfclients.Client) (mfclients.Client, error) {
@@ -443,6 +452,27 @@ func (svc service) ListMembers(ctx context.Context, token, groupID string, pm mf
 	pm.Action = "g_list"
 
 	return svc.clients.Members(ctx, groupID, pm)
+}
+
+func (svc service) SendInvitation(ctx context.Context, host, email, token string) error {
+	if _, err := svc.Identify(ctx, token); err != nil {
+		return err
+	}
+
+	client, err := svc.clients.RetrieveByIdentity(ctx, email)
+	if err == nil && client.Credentials.Identity != "" {
+		return errors.ErrConflict
+	}
+
+	claims := jwt.Claims{
+		Type: jwt.Invitation,
+	}
+	t, err := svc.tokens.Issue(ctx, claims)
+	if err != nil {
+		return errors.Wrap(ErrInvitationToken, err)
+	}
+
+	return svc.email.SendInvitation(email, host, t.AccessToken)
 }
 
 func (svc service) authorize(ctx context.Context, subject, object, action string) error {

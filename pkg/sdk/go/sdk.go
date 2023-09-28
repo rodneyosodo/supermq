@@ -209,6 +209,13 @@ type SDK interface {
 	//  fmt.Println(err)
 	ResetPasswordRequest(email string) errors.SDKError
 
+	// SendInvitation sends an invitation email to a user.
+	//
+	// example:
+	//  err := sdk.SendInvitation("token", "email")
+	//  fmt.Println(err)
+	SendInvitation(email, token string) errors.SDKError
+
 	// ResetPassword changes a user's password to the one passed in the argument.
 	//
 	// example:

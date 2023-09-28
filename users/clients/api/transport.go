@@ -98,6 +98,13 @@ func MakeHandler(svc clients.Service, mux *bone.Mux, logger mflog.Logger, instan
 		opts...,
 	), "password_reset_req"))
 
+	mux.Post("/invite-user", otelhttp.NewHandler(kithttp.NewServer(
+		invitationRequestEndpoint(svc),
+		decodeInvitationRequest,
+		api.EncodeResponse,
+		opts...,
+	), "password_reset_req"))
+
 	mux.Put("/password/reset", otelhttp.NewHandler(kithttp.NewServer(
 		passwordResetEndpoint(svc),
 		decodePasswordReset,
@@ -302,6 +309,22 @@ func decodePasswordResetRequest(_ context.Context, r *http.Request) (interface{}
 	}
 
 	req.Host = r.Header.Get("Referer")
+	return req, nil
+}
+
+func decodeInvitationRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), api.ContentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	var req invitationReq
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrValidation, errors.Wrap(err, errors.ErrMalformedEntity))
+	}
+
+	req.Host = r.Header.Get("Referer")
+	req.token = apiutil.ExtractBearerToken(r)
 	return req, nil
 }
 

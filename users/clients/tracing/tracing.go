@@ -186,3 +186,14 @@ func (tm *tracingMiddleware) Identify(ctx context.Context, token string) (string
 
 	return tm.svc.Identify(ctx, token)
 }
+
+// SendInvitation traces the "SendInvitation" operation of the wrapped clients.Service.
+func (tm *tracingMiddleware) SendInvitation(ctx context.Context, host, email, token string) error {
+	ctx, span := tm.tracer.Start(ctx, "svc_send_invitation", trace.WithAttributes(
+		attribute.String("email", email),
+		attribute.String("host", host),
+	))
+	defer span.End()
+
+	return tm.svc.SendInvitation(ctx, host, email, token)
+}

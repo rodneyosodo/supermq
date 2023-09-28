@@ -32,27 +32,23 @@ func NewRepository(secret []byte, aduration, rduration time.Duration) Repository
 }
 
 func (repo tokenRepo) Issue(ctx context.Context, claim Claims) (Token, error) {
-	aexpiry := time.Now().Add(repo.accessDuration)
-	accessToken, err := jwt.NewBuilder().
-		Issuer(issuerName).
-		IssuedAt(time.Now()).
-		Subject(claim.ClientID).
-		Claim("identity", claim.Email).
-		Claim("type", AccessToken).
-		Expiration(aexpiry).
-		Build()
+	signedAccessToken, err := repo.generateAccessToken(claim)
 	if err != nil {
 		return Token{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
-	signedAccessToken, err := jwt.Sign(accessToken, jwt.WithKey(jwa.HS512, repo.secret))
-	if err != nil {
-		return Token{}, errors.Wrap(errors.ErrAuthentication, err)
+
+	// Generate only access token for reset password and invitation.
+	if claim.Type == RestPassword || claim.Type == Invitation {
+		return Token{
+			AccessToken: signedAccessToken,
+			AccessType:  "Bearer",
+		}, nil
 	}
+
 	refreshToken, err := jwt.NewBuilder().
 		Issuer(issuerName).
 		IssuedAt(time.Now()).
 		Subject(claim.ClientID).
-		Claim("identity", claim.Email).
 		Claim("type", RefreshToken).
 		Expiration(time.Now().Add(repo.refreshDuration)).
 		Build()
@@ -65,7 +61,7 @@ func (repo tokenRepo) Issue(ctx context.Context, claim Claims) (Token, error) {
 	}
 
 	return Token{
-		AccessToken:  string(signedAccessToken),
+		AccessToken:  signedAccessToken,
 		RefreshToken: string(signedRefreshToken),
 		AccessType:   "Bearer",
 	}, nil
@@ -84,14 +80,35 @@ func (repo tokenRepo) Parse(ctx context.Context, accessToken string) (Claims, er
 	if !ok {
 		return Claims{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
-	identity, ok := token.Get("identity")
-	if !ok {
-		return Claims{}, errors.Wrap(errors.ErrAuthentication, err)
-	}
 	claim := Claims{
 		ClientID: token.Subject(),
-		Email:    identity.(string),
 		Type:     tType.(string),
 	}
+
 	return claim, nil
+}
+
+func (repo tokenRepo) generateAccessToken(claim Claims) (string, error) {
+	if claim.Type == "" {
+		claim.Type = AccessToken
+	}
+
+	aexpiry := time.Now().Add(repo.accessDuration)
+	accessToken, err := jwt.NewBuilder().
+		Issuer(issuerName).
+		IssuedAt(time.Now()).
+		Subject(claim.ClientID).
+		Claim("type", claim.Type).
+		Expiration(aexpiry).
+		Build()
+	if err != nil {
+		return "", errors.Wrap(errors.ErrAuthentication, err)
+	}
+
+	signedAccessToken, err := jwt.Sign(accessToken, jwt.WithKey(jwa.HS512, repo.secret))
+	if err != nil {
+		return "", errors.Wrap(errors.ErrAuthentication, err)
+	}
+
+	return string(signedAccessToken), nil
 }

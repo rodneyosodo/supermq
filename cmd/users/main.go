@@ -73,7 +73,8 @@ type config struct {
 	PassRegexText   string `env:"MF_USERS_PASS_REGEX"             envDefault:"^.{8,}$"`
 	AccessDuration  string `env:"MF_USERS_ACCESS_TOKEN_DURATION"  envDefault:"15m"`
 	RefreshDuration string `env:"MF_USERS_REFRESH_TOKEN_DURATION" envDefault:"24h"`
-	ResetURL        string `env:"MF_TOKEN_RESET_ENDPOINT"         envDefault:"/reset-request"`
+	ResetURL        string `env:"MF_USERS_RESET_PWD_ENDPOINT"     envDefault:"/reset-request"`
+	InvitationURL   string `env:"MF_USERS_INVITATION_ENDPOINT"    envDefault:"/invitation"`
 	JaegerURL       string `env:"MF_JAEGER_URL"                   envDefault:"http://jaeger:14268/api/traces"`
 	SendTelemetry   bool   `env:"MF_SEND_TELEMETRY"               envDefault:"true"`
 	InstanceID      string `env:"MF_USERS_INSTANCE_ID"            envDefault:""`
@@ -213,7 +214,7 @@ func newService(ctx context.Context, db *sqlx.DB, dbConfig pgclient.Config, trac
 	}
 	tokenizer := jwt.NewRepository([]byte(c.SecretKey), aDuration, rDuration)
 
-	emailer, err := emailer.New(c.ResetURL, &ec)
+	emailer, err := emailer.New(c.ResetURL, c.InvitationURL, &ec)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to configure e-mailing util: %s", err.Error()))
 	}

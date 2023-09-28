@@ -17,6 +17,7 @@ const (
 	refreshTokenEndpoint  = "tokens/refresh"
 	membersEndpoint       = "members"
 	PasswordResetEndpoint = "password"
+	InviteEndpoint        = "invite-user"
 )
 
 // User represents mainflux user its credentials.
@@ -190,7 +191,7 @@ func (sdk mfSDK) UpdateUserIdentity(user User, token string) (User, errors.SDKEr
 }
 
 func (sdk mfSDK) ResetPasswordRequest(email string) errors.SDKError {
-	rpr := resetPasswordRequestreq{Email: email}
+	rpr := resetPasswordRequestReq{Email: email}
 
 	data, err := json.Marshal(rpr)
 	if err != nil {
@@ -286,4 +287,21 @@ func (sdk mfSDK) changeClientStatus(token, id, status string) (User, errors.SDKE
 	}
 
 	return user, nil
+}
+
+func (sdk mfSDK) SendInvitation(email, token string) errors.SDKError {
+	rpr := invitationReq{Email: email}
+
+	data, err := json.Marshal(rpr)
+	if err != nil {
+		return errors.NewSDKError(err)
+	}
+	url := fmt.Sprintf("%s/%s", sdk.usersURL, InviteEndpoint)
+
+	header := make(map[string]string)
+	header["Referer"] = sdk.HostURL
+
+	_, _, sdkerr := sdk.processRequest(http.MethodPost, url, token, data, header, http.StatusCreated)
+
+	return sdkerr
 }

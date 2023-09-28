@@ -191,3 +191,12 @@ func (ms *metricsMiddleware) Identify(ctx context.Context, token string) (string
 	}(time.Now())
 	return ms.svc.Identify(ctx, token)
 }
+
+// SendInvitation instruments SendInvitation method with metrics.
+func (ms *metricsMiddleware) SendInvitation(ctx context.Context, host, email, token string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "send_invitation").Add(1)
+		ms.latency.With("method", "send_invitation").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return ms.svc.SendInvitation(ctx, host, email, token)
+}

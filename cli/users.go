@@ -251,6 +251,26 @@ var cmdUsers = []cobra.Command{
 		},
 	},
 	{
+		Use:   "sendinvitation <email> <user_auth_token>",
+		Short: "Send invitation",
+		Long: "Send invitation request\n" +
+			"Usage:\n" +
+			"\tmainflux-cli users sendinvitation example@mail.com $USERTOKEN\n",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 2 {
+				logUsage(cmd.Use)
+				return
+			}
+
+			if err := sdk.SendInvitation(args[0], args[1]); err != nil {
+				logError(err)
+				return
+			}
+
+			logOK()
+		},
+	},
+	{
 		Use:   "resetpassword <password> <confpass> <password_request_token>",
 		Short: "Reset password",
 		Long: "Reset password\n" +

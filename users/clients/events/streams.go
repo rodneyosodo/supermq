@@ -288,3 +288,15 @@ func (es *eventStore) SendPasswordReset(ctx context.Context, host, email, user, 
 
 	return es.Publish(ctx, event)
 }
+
+func (es *eventStore) SendInvitation(ctx context.Context, host, email, token string) error {
+	if err := es.svc.SendInvitation(ctx, host, email, token); err != nil {
+		return err
+	}
+	event := sendInvitationEvent{
+		host:  host,
+		email: email,
+	}
+
+	return es.Publish(ctx, event)
+}

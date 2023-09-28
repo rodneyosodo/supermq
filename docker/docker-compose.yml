@@ -192,7 +192,8 @@ services:
       MF_USERS_PASS_REGEX: ${MF_USERS_PASS_REGEX}
       MF_USERS_ACCESS_TOKEN_DURATION: ${MF_USERS_ACCESS_TOKEN_DURATION}
       MF_USERS_REFRESH_TOKEN_DURATION: ${MF_USERS_REFRESH_TOKEN_DURATION}
-      MF_TOKEN_RESET_ENDPOINT: ${MF_TOKEN_RESET_ENDPOINT}
+      MF_USERS_RESET_PWD_ENDPOINT: ${MF_USERS_RESET_PWD_ENDPOINT}
+      MF_USERS_INVITATION_ENDPOINT: ${MF_USERS_INVITATION_ENDPOINT}
       MF_USERS_HTTP_HOST: ${MF_USERS_HTTP_HOST}
       MF_USERS_HTTP_PORT: ${MF_USERS_HTTP_PORT}
       MF_USERS_HTTP_SERVER_CERT: ${MF_USERS_HTTP_SERVER_CERT}
@@ -228,7 +229,7 @@ services:
     networks:
       - mainflux-base-net
     volumes:
-      - ./templates/${MF_USERS_RESET_PWD_TEMPLATE}:/email.tmpl
+      - ./templates/${MF_USERS_EMAIL_TEMPLATE}:/email.tmpl
       # Users gRPC mTLS server certificates
       - type: bind
         source: ${MF_USERS_GRPC_SERVER_CERT:-ssl/certs/dummy/server_cert}
