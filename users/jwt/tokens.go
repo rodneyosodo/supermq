@@ -10,6 +10,7 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/mainflux/mainflux/pkg/errors"
+	"google.golang.org/api/idtoken"
 )
 
 const (
@@ -75,6 +76,7 @@ func (repo tokenRepo) Issue(ctx context.Context, claim Claims) (Token, error) {
 }
 
 func (repo tokenRepo) Parse(ctx context.Context, accessToken string) (Claims, error) {
+	// Decode token to get issuer
 	token, err := jwt.Parse(
 		[]byte(accessToken),
 		jwt.WithValidate(true),
@@ -85,6 +87,14 @@ func (repo tokenRepo) Parse(ctx context.Context, accessToken string) (Claims, er
 	}
 	switch token.Issuer() {
 	case mainfluxIssuer:
+		token, err := jwt.Parse(
+			[]byte(accessToken),
+			jwt.WithValidate(true),
+			jwt.WithKey(jwa.HS512, repo.secret),
+		)
+		if err != nil {
+			return Claims{}, errors.Wrap(errors.ErrAuthentication, err)
+		}
 		tType, ok := token.Get("type")
 		if !ok {
 			return Claims{}, errors.Wrap(errors.ErrAuthentication, err)
@@ -95,17 +105,21 @@ func (repo tokenRepo) Parse(ctx context.Context, accessToken string) (Claims, er
 		}
 		return claim, nil
 	case googleIssuer:
-		for _, aud := range token.Audience() {
-			if aud == repo.googleClientID {
-				claim := Claims{
-					ClientID: token.Subject(),
-					Type:     AccessToken,
-				}
-
-				return claim, nil
-			}
+		tokenValidator, err := idtoken.NewValidator(ctx)
+		if err != nil {
+			return Claims{}, errors.Wrap(errors.ErrAuthentication, err)
 		}
-	}
 
-	return Claims{}, nil
+		payload, err := tokenValidator.Validate(ctx, accessToken, repo.googleClientID)
+		if err != nil {
+			return Claims{}, errors.Wrap(errors.ErrAuthentication, err)
+		}
+
+		return Claims{
+			ClientID: payload.Subject,
+			Type:     AccessToken,
+		}, nil
+	default:
+		return Claims{}, errors.Wrap(errors.ErrAuthentication, err)
+	}
 }
