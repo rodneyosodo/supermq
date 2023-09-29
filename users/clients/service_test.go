@@ -321,6 +321,186 @@ func TestViewClient(t *testing.T) {
 	}
 }
 
+func TestViewProfile(t *testing.T) {
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
+	e := mocks.NewEmailer()
+	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
+
+	cases := []struct {
+		desc     string
+		token    string
+		clientID string
+		response mfclients.Client
+		err      error
+	}{
+		{
+			desc:     "view profile successfully",
+			response: client,
+			token:    testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), svc, cRepo, phasher),
+			clientID: client.ID,
+			err:      nil,
+		},
+		{
+			desc:     "view profile with an invalid token",
+			response: mfclients.Client{},
+			token:    inValidToken,
+			clientID: "",
+			err:      errors.ErrAuthentication,
+		},
+		{
+			desc:     "view profile with valid token and invalid client id",
+			response: mfclients.Client{},
+			token:    testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), svc, cRepo, phasher),
+			clientID: mocks.WrongID,
+			err:      errors.ErrNotFound,
+		},
+		{
+			desc:     "view profile with an invalid token and invalid client id",
+			response: mfclients.Client{},
+			token:    inValidToken,
+			clientID: mocks.WrongID,
+			err:      errors.ErrAuthentication,
+		},
+	}
+
+	for _, tc := range cases {
+		repoCall := pRepo.On("Evaluate", context.Background(), "client", mock.Anything).Return(nil)
+		repoCall1 := cRepo.On("RetrieveByID", context.Background(), mock.Anything).Return(tc.response, tc.err)
+		rClient, err := svc.ViewProfile(context.Background(), tc.token)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		tc.response.Credentials.Secret = ""
+		assert.Equal(t, tc.response, rClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, rClient))
+		if tc.err == nil {
+			ok := repoCall1.Parent.AssertCalled(t, "RetrieveByID", context.Background(), mock.Anything)
+			assert.True(t, ok, fmt.Sprintf("RetrieveByID was not called on %s", tc.desc))
+		}
+		repoCall1.Unset()
+		repoCall.Unset()
+	}
+}
+
+func TestGenerateResetToken(t *testing.T) {
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
+	e := mocks.NewEmailer()
+	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
+
+	cases := []struct {
+		desc     string
+		email    string
+		host     string
+		response mfclients.Client
+		err      error
+	}{
+		{
+			desc:     "generate reset token successfully",
+			email:    client.Credentials.Identity,
+			host:     "localhost",
+			response: client,
+			err:      nil,
+		},
+		{
+			desc:     "generate reset token for a non existing client",
+			email:    "nonexistent@email.com",
+			host:     "localhost",
+			response: client,
+			err:      errors.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		repoCall := cRepo.On("RetrieveByIdentity", context.Background(), tc.email).Return(tc.response, tc.err)
+		err := svc.GenerateResetToken(context.Background(), tc.email, tc.host)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		if tc.err == nil {
+			ok := repoCall.Parent.AssertCalled(t, "RetrieveByIdentity", context.Background(), tc.email)
+			assert.True(t, ok, fmt.Sprintf("RetrieveByIdentity was not called on %s", tc.desc))
+		}
+		repoCall.Unset()
+	}
+}
+
+func TestSendPasswordReset(t *testing.T) {
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
+	e := mocks.NewEmailer()
+	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
+
+	cases := []struct {
+		desc     string
+		email    string
+		host     string
+		user     string
+		token    string
+		response mfclients.Client
+		err      error
+	}{
+		{
+			desc:     "send password reset successfully",
+			email:    client.Credentials.Identity,
+			host:     "localhost",
+			user:     client.Name,
+			token:    testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), svc, cRepo, phasher),
+			response: client,
+			err:      nil,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.SendPasswordReset(context.Background(), tc.host, tc.email, tc.user, tc.token)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestSendInvitation(t *testing.T) {
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
+	e := mocks.NewEmailer()
+	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
+
+	cases := []struct {
+		desc     string
+		email    string
+		host     string
+		token    string
+		response mfclients.Client
+		err      error
+	}{
+		{
+			desc:     "generate reset token for existing client",
+			email:    client.Credentials.Identity,
+			host:     "localhost",
+			token:    testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), svc, cRepo, phasher),
+			response: client,
+			err:      errors.ErrConflict,
+		},
+		{
+			desc:     "generate reset token for a non existing client",
+			email:    "nonexistent@email.com",
+			host:     "localhost",
+			token:    testsutil.GenerateValidToken(t, testsutil.GenerateUUID(t, idProvider), svc, cRepo, phasher),
+			response: mfclients.Client{},
+			err:      nil,
+		},
+	}
+
+	for _, tc := range cases {
+		repoCall := cRepo.On("RetrieveByIdentity", context.Background(), tc.email).Return(tc.response, nil)
+		err := svc.SendInvitation(context.Background(), tc.host, tc.email, tc.token)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		if tc.err == nil {
+			ok := repoCall.Parent.AssertCalled(t, "RetrieveByIdentity", context.Background(), tc.email)
+			assert.True(t, ok, fmt.Sprintf("RetrieveByIdentity was not called on %s", tc.desc))
+		}
+		repoCall.Unset()
+	}
+}
+
 func TestListClients(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)

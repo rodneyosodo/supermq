@@ -1350,3 +1350,116 @@ func TestDisableClient(t *testing.T) {
 		repoCall1.Unset()
 	}
 }
+
+func TestResetPasswordRequest(t *testing.T) {
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
+
+	svc := clients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
+	ts := newClientServer(svc)
+	defer ts.Close()
+
+	user = sdk.User{
+		Name:        "clientname",
+		Tags:        []string{"tag1", "tag2"},
+		Credentials: sdk.Credentials{Identity: "clientidentity", Secret: secret},
+		Metadata:    validMetadata,
+		Status:      mfclients.EnabledStatus.String(),
+	}
+	conf := sdk.Config{
+		UsersURL: ts.URL,
+		HostURL:  "http://localhost:8080",
+	}
+	mfsdk := sdk.NewSDK(conf)
+
+	cases := []struct {
+		desc     string
+		email    string
+		response sdk.User
+		err      errors.SDKError
+	}{
+		{
+			desc:     "reset password request successfully",
+			response: user,
+			email:    user.Credentials.Identity,
+			err:      nil,
+		},
+		{
+			desc:     "reset password request with an invalid token",
+			response: sdk.User{},
+			email:    user.Credentials.Identity,
+			err:      errors.NewSDKErrorWithStatus(errors.ErrNotFound, http.StatusNotFound),
+		},
+	}
+
+	for _, tc := range cases {
+		repoCall := cRepo.On("RetrieveByIdentity", mock.Anything, tc.email).Return(convertClient(tc.response), tc.err)
+		err := mfsdk.ResetPasswordRequest(tc.email)
+		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
+		tc.response.Credentials.Secret = ""
+		if tc.err == nil {
+			ok := repoCall.Parent.AssertCalled(t, "RetrieveByIdentity", mock.Anything, tc.email)
+			assert.True(t, ok, fmt.Sprintf("RetrieveByIdentity was not called on %s", tc.desc))
+		}
+		repoCall.Unset()
+	}
+}
+
+func TestSendInvitation(t *testing.T) {
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
+
+	svc := clients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
+	ts := newClientServer(svc)
+	defer ts.Close()
+
+	user = sdk.User{
+		Name:        "clientname",
+		Tags:        []string{"tag1", "tag2"},
+		Credentials: sdk.Credentials{Identity: "clientidentity", Secret: secret},
+		Metadata:    validMetadata,
+		Status:      mfclients.EnabledStatus.String(),
+	}
+	conf := sdk.Config{
+		UsersURL: ts.URL,
+		HostURL:  "http://localhost:8080",
+	}
+	mfsdk := sdk.NewSDK(conf)
+
+	cases := []struct {
+		desc     string
+		email    string
+		token    string
+		response sdk.User
+		err      errors.SDKError
+	}{
+		{
+			desc:     "send invitation to existing user",
+			response: user,
+			email:    user.Credentials.Identity,
+			token:    generateValidToken(t, svc, cRepo),
+			err:      errors.NewSDKErrorWithStatus(errors.ErrConflict, http.StatusConflict),
+		},
+		{
+			desc:     "send invitation to non-existing user",
+			response: sdk.User{},
+			email:    user.Credentials.Identity,
+			token:    generateValidToken(t, svc, cRepo),
+			err:      nil,
+		},
+	}
+
+	for _, tc := range cases {
+		repoCall := cRepo.On("RetrieveByIdentity", mock.Anything, tc.email).Return(convertClient(tc.response), nil)
+		err := mfsdk.SendInvitation(tc.email, tc.token)
+		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
+		tc.response.Credentials.Secret = ""
+		if tc.err == nil {
+			ok := repoCall.Parent.AssertCalled(t, "RetrieveByIdentity", mock.Anything, tc.email)
+			assert.True(t, ok, fmt.Sprintf("RetrieveByIdentity was not called on %s", tc.desc))
+		}
+		repoCall.Unset()
+	}
+}

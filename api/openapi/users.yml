@@ -323,7 +323,7 @@ paths:
     post:
       summary: User password reset request
       description: |
-        Generates a reset token and sends and
+        Generates a reset token and sends an
         email with link for resetting password.
       tags:
         - Users
@@ -331,6 +331,30 @@ paths:
         - $ref: "#/components/parameters/Referrer"
       requestBody:
         $ref: '#/components/requestBodies/RequestPasswordReset'
+      responses:
+        '201':
+          description: Users link for resetting password.
+        '400':
+          description: Failed due to malformed JSON.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: '#/components/responses/ServiceError'
+
+  /invite-user:
+    post:
+      summary: Send invitation email to User
+      description: |
+        Generates an invitation token and sends an
+        email with link for inviting the specified user
+      tags:
+        - Users
+      parameters:
+        - $ref: "#/components/parameters/Referrer"
+      requestBody:
+        $ref: '#/components/requestBodies/InviteUser'
+      security:
+        - bearerAuth: []        
       responses:
         '201':
           description: Users link for resetting password.
@@ -1766,6 +1790,19 @@ components:
                 
     RequestPasswordReset:
       description: Initiate password request procedure.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+                format: email
+                description: User email.
+
+    InviteUser:
+      description: Sends an invitation link to user.
       required: true
       content:
         application/json:
