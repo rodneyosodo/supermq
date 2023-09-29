@@ -280,7 +280,7 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, token string) (id str
 // SendInvitation logs the send_invitation request. It logs the email and token and the time it took to complete the request.
 func (lm *loggingMiddleware) SendInvitation(ctx context.Context, host, email, token string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method send_invitation for email %s and token %s took %s to complete", email, token, time.Since(begin))
+		message := fmt.Sprintf("Method send_invitation to email %s and token %s took %s to complete", email, token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

@@ -78,9 +78,10 @@ func NewService(c postgres.Repository, p policies.Repository, t jwt.Repository, 
 
 func (svc service) RegisterClient(ctx context.Context, token string, cli mfclients.Client) (mfclients.Client, error) {
 	// We don't check the error currently since we can register client with empty token
-	claims, err := svc.tokens.Parse(ctx, token)
 	var ownerID string
-	if claims.Type == jwt.AccessToken || claims.Type == jwt.Invitation && err == nil {
+
+	claims, err := svc.tokens.Parse(ctx, token)
+	if (claims.Type == jwt.AccessToken || claims.Type == jwt.Invitation) && err == nil {
 		ownerID = claims.ClientID
 	}
 
@@ -455,17 +456,18 @@ func (svc service) ListMembers(ctx context.Context, token, groupID string, pm mf
 }
 
 func (svc service) SendInvitation(ctx context.Context, host, email, token string) error {
-	if _, err := svc.Identify(ctx, token); err != nil {
+	clientID, err := svc.Identify(ctx, token)
+	if err != nil {
 		return err
 	}
 
-	client, err := svc.clients.RetrieveByIdentity(ctx, email)
-	if err == nil && client.Credentials.Identity != "" {
+	if client, err := svc.clients.RetrieveByIdentity(ctx, email); err == nil && client.Credentials.Identity != "" {
 		return errors.ErrConflict
 	}
 
 	claims := jwt.Claims{
-		Type: jwt.Invitation,
+		Type:     jwt.Invitation,
+		ClientID: clientID,
 	}
 	t, err := svc.tokens.Issue(ctx, claims)
 	if err != nil {

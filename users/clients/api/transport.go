@@ -103,7 +103,7 @@ func MakeHandler(svc clients.Service, mux *bone.Mux, logger mflog.Logger, instan
 		decodeInvitationRequest,
 		api.EncodeResponse,
 		opts...,
-	), "password_reset_req"))
+	), "invitation_req"))
 
 	mux.Put("/password/reset", otelhttp.NewHandler(kithttp.NewServer(
 		passwordResetEndpoint(svc),

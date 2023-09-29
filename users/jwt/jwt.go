@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	AccessToken  string = "access"
-	RefreshToken string = "refresh"
-	RestPassword string = "reset"
-	Invitation   string = "invitation"
+	AccessToken  = "access"
+	RefreshToken = "refresh"
+	RestPassword = "reset"
+	Invitation   = "invitation"
 )
 
 // Token is used for authentication purposes.
