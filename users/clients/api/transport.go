@@ -141,62 +141,12 @@ func MakeHandler(svc clients.Service, mux *bone.Mux, logger mflog.Logger, instan
 		opts...,
 	), "disable_client"))
 
-	mux.HandleFunc("/google-callback", googleCallbackHandler(gconf, svc, redirectURL))
+	mux.HandleFunc("/google-callback", oauth.CallbackHandler(gconf, svc, redirectURL))
 
 	mux.GetFunc("/health", mainflux.Health("users", instanceID))
 	mux.Handle("/metrics", promhttp.Handler())
 
 	return mux
-}
-
-func googleCallbackHandler(conf *oauth.Config, svc clients.Service, redirectURL string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if state := r.FormValue("state"); state != conf.State {
-			http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
-			return
-		}
-
-		if code := r.FormValue("code"); code != "" {
-			user, token, err := conf.Profile(r.Context(), code)
-			if err != nil {
-				http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
-				return
-			}
-
-			cookie := &http.Cookie{
-				Name:     "token",
-				Value:    token.Extra("id_token").(string),
-				Path:     "/",
-				HttpOnly: true,
-			}
-
-			http.SetCookie(w, cookie)
-
-			client := mfclients.Client{
-				ID:   user.ID,
-				Name: user.Name,
-				Credentials: mfclients.Credentials{
-					Identity: user.Email,
-				},
-				Metadata: map[string]interface{}{
-					"profile_picture": user.Picture,
-				},
-				Status: mfclients.EnabledStatus,
-			}
-
-			// We don't need to check for error here,
-			// because if the client already exists
-			// we will get an error and we will just
-			// redirect to the redirectURL.
-			_, _ = svc.RegisterClient(r.Context(), "", client)
-
-			http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
-
-			return
-		}
-
-		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
-	}
 }
 
 func decodeViewClient(_ context.Context, r *http.Request) (interface{}, error) {
