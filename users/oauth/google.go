@@ -3,7 +3,6 @@ package oauth
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -16,32 +15,16 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
-const (
-	userInfoURL = "https://www.googleapis.com/oauth2/v2/userinfo?access_token="
-)
+const userInfoURL = "https://www.googleapis.com/oauth2/v2/userinfo?access_token="
 
-var (
-	scopes = []string{
-		"https://www.googleapis.com/auth/userinfo.email",
-		"https://www.googleapis.com/auth/userinfo.profile",
-	}
-
-	errFailedToSignUp  = errors.New("failed to sign up")
-	errUserNotSignedUp = errors.New("user not signed up")
-
-	cookieErrDuration = 10 * time.Second
-)
+var scopes = []string{
+	"https://www.googleapis.com/auth/userinfo.email",
+	"https://www.googleapis.com/auth/userinfo.profile",
+}
 
 type Config struct {
 	*oauth2.Config
 	State string
-}
-
-type user struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	Email   string `json:"email"`
-	Picture string `json:"picture"`
 }
 
 func NewConfig(clientId, clientSecret, redirectURL string) Config {
@@ -56,26 +39,31 @@ func NewConfig(clientId, clientSecret, redirectURL string) Config {
 	return Config{Config: cfg}
 }
 
-func (conf *Config) Profile(ctx context.Context, code string) (mfclients.Client, *oauth2.Token, error) {
+func (conf *Config) Profile(ctx context.Context, code string) (mfclients.Client, error) {
 	token, err := conf.Config.Exchange(ctx, code)
 	if err != nil {
-		return mfclients.Client{}, &oauth2.Token{}, err
+		return mfclients.Client{}, err
 	}
 
 	resp, err := http.Get(userInfoURL + url.QueryEscape(token.AccessToken))
 	if err != nil {
-		return mfclients.Client{}, token, err
+		return mfclients.Client{}, err
 	}
 	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return mfclients.Client{}, token, err
+		return mfclients.Client{}, err
 	}
 
-	var user user
+	var user struct {
+		ID      string `json:"id"`
+		Name    string `json:"name"`
+		Email   string `json:"email"`
+		Picture string `json:"picture"`
+	}
 	if err := json.Unmarshal(data, &user); err != nil {
-		return mfclients.Client{}, token, err
+		return mfclients.Client{}, err
 	}
 
 	var client = mfclients.Client{
@@ -91,7 +79,7 @@ func (conf *Config) Profile(ctx context.Context, code string) (mfclients.Client,
 		Status: mfclients.EnabledStatus,
 	}
 
-	return client, token, nil
+	return client, nil
 }
 
 func CallbackHandler(conf *Config, svc clients.Service, redirectURL string) http.HandlerFunc {
@@ -108,51 +96,41 @@ func CallbackHandler(conf *Config, svc clients.Service, redirectURL string) http
 		}
 
 		if code := r.FormValue("code"); code != "" {
-			client, token, err := conf.Profile(r.Context(), code)
+			client, err := conf.Profile(r.Context(), code)
 			if err != nil {
 				http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 				return
 			}
 
-			var idToken = token.Extra("id_token").(string)
-
-			var rclient mfclients.Client
-			switch action {
-			case "signin":
-				rclient, err = svc.ViewProfile(r.Context(), idToken)
-				if err != nil {
-					err = errUserNotSignedUp
-				}
-			case "signup":
-				rclient, err = svc.RegisterClient(r.Context(), "", client)
-				if err != nil {
-					err = errFailedToSignUp
-				}
-			default:
-				err = nil
-			}
-
+			jwt, err := svc.GoogleCallback(r.Context(), action, client)
 			if err != nil {
 				// We set the error cookie to be read by the frontend
 				cookie := &http.Cookie{
 					Name:    "error",
 					Value:   err.Error(),
 					Path:    "/",
-					Expires: time.Now().Add(cookieErrDuration),
+					Expires: time.Now().Add(time.Second),
 				}
 
 				http.SetCookie(w, cookie)
 			}
 
-			if client.ID == rclient.ID {
-				cookie := &http.Cookie{
+			if jwt.AccessToken != "" && jwt.RefreshToken != "" {
+				accessTokenCookie := &http.Cookie{
 					Name:     "token",
-					Value:    idToken,
+					Value:    jwt.AccessToken,
+					Path:     "/",
+					HttpOnly: true,
+				}
+				refresTokenCookie := &http.Cookie{
+					Name:     "refresh_token",
+					Value:    jwt.RefreshToken,
 					Path:     "/",
 					HttpOnly: true,
 				}
 
-				http.SetCookie(w, cookie)
+				http.SetCookie(w, accessTokenCookie)
+				http.SetCookie(w, refresTokenCookie)
 			}
 		}
 

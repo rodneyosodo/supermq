@@ -38,7 +38,7 @@ func TestCreateGroup(t *testing.T) {
 	cRepo := new(cmocks.Repository)
 	gRepo := new(gmocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)
@@ -152,7 +152,7 @@ func TestListGroups(t *testing.T) {
 	cRepo := new(cmocks.Repository)
 	gRepo := new(gmocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)
@@ -279,7 +279,7 @@ func TestListParentGroups(t *testing.T) {
 	cRepo := new(cmocks.Repository)
 	gRepo := new(gmocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)
@@ -409,7 +409,7 @@ func TestListChildrenGroups(t *testing.T) {
 	cRepo := new(cmocks.Repository)
 	gRepo := new(gmocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)
@@ -540,7 +540,7 @@ func TestViewGroup(t *testing.T) {
 	cRepo := new(cmocks.Repository)
 	gRepo := new(gmocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)
@@ -618,7 +618,7 @@ func TestUpdateGroup(t *testing.T) {
 	cRepo := new(cmocks.Repository)
 	gRepo := new(gmocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)
@@ -787,7 +787,7 @@ func TestListMemberships(t *testing.T) {
 	cRepo := new(cmocks.Repository)
 	gRepo := new(gmocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)
@@ -921,7 +921,7 @@ func TestEnableGroup(t *testing.T) {
 	cRepo := new(cmocks.Repository)
 	gRepo := new(gmocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)
@@ -986,7 +986,7 @@ func TestDisableGroup(t *testing.T) {
 	cRepo := new(cmocks.Repository)
 	gRepo := new(gmocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := groups.NewService(gRepo, pRepo, tokenizer, idProvider)

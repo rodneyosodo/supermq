@@ -276,3 +276,16 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, token string) (id str
 	}(time.Now())
 	return lm.svc.Identify(ctx, token)
 }
+
+// GoogleLogin logs the google_login request. It logs the state and the time it took to complete the request.
+func (lm *loggingMiddleware) GoogleCallback(ctx context.Context, state string, client mfclients.Client) (tkn jwt.Token, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method google_callback for state %s with id %s took %s to complete", state, client.ID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+	return lm.svc.GoogleCallback(ctx, state, client)
+}

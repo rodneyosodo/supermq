@@ -28,6 +28,7 @@ const (
 	refreshToken       = clientPrefix + "refresh_token"
 	resetSecret        = clientPrefix + "reset_secret"
 	sendPasswordReset  = clientPrefix + "send_password_reset"
+	googleCallback     = clientPrefix + "google_callback"
 )
 
 var (
@@ -44,6 +45,7 @@ var (
 	_ events.Event = (*refreshTokenEvent)(nil)
 	_ events.Event = (*resetSecretEvent)(nil)
 	_ events.Event = (*sendPasswordResetEvent)(nil)
+	_ events.Event = (*googleCallbackEvent)(nil)
 )
 
 type createClientEvent struct {
@@ -413,5 +415,18 @@ func (spre sendPasswordResetEvent) Encode() (map[string]interface{}, error) {
 		"host":      spre.host,
 		"email":     spre.email,
 		"user":      spre.user,
+	}, nil
+}
+
+type googleCallbackEvent struct {
+	state string
+	email string
+}
+
+func (gce googleCallbackEvent) Encode() (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"operation": googleCallback,
+		"state":     gce.state,
+		"email":     gce.email,
 	}, nil
 }

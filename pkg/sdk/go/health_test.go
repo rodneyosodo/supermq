@@ -30,7 +30,7 @@ func TestHealth(t *testing.T) {
 	uauth := cmocks.NewAuthService(users, map[string][]cmocks.SubjectSet{adminID: {uadminPolicy}})
 	thingCache := thingsclientsmock.NewCache()
 	policiesCache := thingspmocks.NewCache()
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	thingspRepo := new(thingspmocks.Repository)
 	psvc := policies.NewService(uauth, thingspRepo, policiesCache, idProvider)

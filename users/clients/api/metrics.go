@@ -191,3 +191,12 @@ func (ms *metricsMiddleware) Identify(ctx context.Context, token string) (string
 	}(time.Now())
 	return ms.svc.Identify(ctx, token)
 }
+
+// GoogleLogin instruments GoogleLogin method with metrics.
+func (ms *metricsMiddleware) GoogleCallback(ctx context.Context, state string, client mfclients.Client) (tkn jwt.Token, err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "google_callback").Add(1)
+		ms.latency.With("method", "google_callback").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return ms.svc.GoogleCallback(ctx, state, client)
+}

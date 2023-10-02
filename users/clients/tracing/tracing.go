@@ -186,3 +186,11 @@ func (tm *tracingMiddleware) Identify(ctx context.Context, token string) (string
 
 	return tm.svc.Identify(ctx, token)
 }
+
+// GoogleLogin traces the "GoogleLogin" operation of the wrapped clients.Service.
+func (tm *tracingMiddleware) GoogleCallback(ctx context.Context, state string, client mfclients.Client) (tkn jwt.Token, err error) {
+	ctx, span := tm.tracer.Start(ctx, "svc_google_callback", trace.WithAttributes(attribute.String("state", state)))
+	defer span.End()
+
+	return tm.svc.GoogleCallback(ctx, state, client)
+}

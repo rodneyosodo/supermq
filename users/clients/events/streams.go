@@ -288,3 +288,20 @@ func (es *eventStore) SendPasswordReset(ctx context.Context, host, email, user, 
 
 	return es.Publish(ctx, event)
 }
+
+func (es *eventStore) GoogleCallback(ctx context.Context, state string, user mfclients.Client) (jwt.Token, error) {
+	token, err := es.svc.GoogleCallback(ctx, state, user)
+	if err != nil {
+		return token, err
+	}
+	event := googleCallbackEvent{
+		state: state,
+		email: user.Credentials.Identity,
+	}
+
+	if err := es.Publish(ctx, event); err != nil {
+		return token, err
+	}
+
+	return token, nil
+}

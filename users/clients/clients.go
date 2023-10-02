@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/mainflux/mainflux/pkg/clients"
+	"github.com/mainflux/mainflux/users/jwt"
 )
 
 // ClientService specifies an API that must be fullfiled by the domain service
@@ -62,4 +63,7 @@ type ClientService interface {
 
 	// Identify returns the client id from the given token.
 	Identify(ctx context.Context, tkn string) (string, error)
+
+	// GoogleCallback handles the callback from Google OAuth.
+	GoogleCallback(ctx context.Context, state string, client clients.Client) (jwt.Token, error)
 }

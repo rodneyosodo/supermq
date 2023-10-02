@@ -40,7 +40,7 @@ var (
 func TestAddPolicy(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 	svc := policies.NewService(pRepo, tokenizer, idProvider)
@@ -186,7 +186,7 @@ func TestAddPolicy(t *testing.T) {
 func TestAuthorize(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 	svc := policies.NewService(pRepo, tokenizer, idProvider)
@@ -261,7 +261,7 @@ func TestAuthorize(t *testing.T) {
 func TestDeletePolicy(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 	svc := policies.NewService(pRepo, tokenizer, idProvider)
@@ -281,7 +281,7 @@ func TestDeletePolicy(t *testing.T) {
 func TestListPolicies(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 	svc := policies.NewService(pRepo, tokenizer, idProvider)
@@ -379,7 +379,7 @@ func TestListPolicies(t *testing.T) {
 func TestUpdatePolicies(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	csvc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 	svc := policies.NewService(pRepo, tokenizer, idProvider)

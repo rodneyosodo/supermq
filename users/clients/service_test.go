@@ -49,7 +49,7 @@ var (
 func TestRegisterClient(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -260,7 +260,7 @@ func TestRegisterClient(t *testing.T) {
 func TestViewClient(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -324,7 +324,7 @@ func TestViewClient(t *testing.T) {
 func TestListClients(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -610,7 +610,7 @@ func TestListClients(t *testing.T) {
 func TestUpdateClient(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -686,7 +686,7 @@ func TestUpdateClient(t *testing.T) {
 func TestUpdateClientTags(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -745,7 +745,7 @@ func TestUpdateClientTags(t *testing.T) {
 func TestUpdateClientIdentity(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -806,7 +806,7 @@ func TestUpdateClientIdentity(t *testing.T) {
 func TestUpdateClientOwner(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -865,7 +865,7 @@ func TestUpdateClientOwner(t *testing.T) {
 func TestUpdateClientSecret(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -935,7 +935,7 @@ func TestUpdateClientSecret(t *testing.T) {
 func TestEnableClient(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -1065,7 +1065,7 @@ func TestEnableClient(t *testing.T) {
 func TestDisableClient(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -1195,7 +1195,7 @@ func TestDisableClient(t *testing.T) {
 func TestListMembers(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -1338,7 +1338,7 @@ func TestListMembers(t *testing.T) {
 func TestIssueToken(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -1392,7 +1392,7 @@ func TestIssueToken(t *testing.T) {
 func TestRefreshToken(t *testing.T) {
 	cRepo := new(mocks.Repository)
 	pRepo := new(pmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 	e := mocks.NewEmailer()
 	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
 
@@ -1457,5 +1457,96 @@ func TestRefreshToken(t *testing.T) {
 		}
 		repoCall1.Unset()
 		repoCall2.Unset()
+	}
+}
+
+func TestGoogleCallback(t *testing.T) {
+	cRepo := new(mocks.Repository)
+	pRepo := new(pmocks.Repository)
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
+	e := mocks.NewEmailer()
+	svc := clients.NewService(cRepo, pRepo, tokenizer, e, phasher, idProvider, passRegex)
+
+	cases := []struct {
+		desc     string
+		state    string
+		client   mfclients.Client
+		response mfclients.Client
+		err      error
+	}{
+		{
+			desc:     "signin client successfully",
+			client:   client,
+			response: client,
+			state:    "signin",
+			err:      nil,
+		},
+		{
+			desc:     "signin client with an invalid state",
+			client:   client,
+			response: mfclients.Client{},
+			state:    "invalid",
+			err:      nil,
+		},
+		{
+			desc:     "signin client with valid state and invalid client",
+			client:   mfclients.Client{},
+			response: mfclients.Client{},
+			state:    "signin",
+			err:      errors.New("user not signed up"),
+		},
+		{
+			desc:     "signin client with an invalid state and invalid client",
+			client:   mfclients.Client{},
+			response: mfclients.Client{},
+			state:    "invalid",
+			err:      nil,
+		},
+		{
+			desc:     "signup client successfully",
+			client:   client,
+			response: client,
+			state:    "signup",
+			err:      nil,
+		},
+		{
+			desc:     "signup client with an invalid state",
+			client:   client,
+			response: mfclients.Client{},
+			state:    "invalid",
+			err:      nil,
+		},
+		{
+			desc:     "signup client with valid state and invalid client",
+			client:   mfclients.Client{},
+			response: mfclients.Client{},
+			state:    "signup",
+			err:      errors.New("failed to sign up"),
+		},
+		{
+			desc:     "signup client with an invalid state and invalid client",
+			client:   mfclients.Client{},
+			response: mfclients.Client{},
+			state:    "invalid",
+			err:      nil,
+		},
+	}
+
+	for _, tc := range cases {
+		repoCall := cRepo.On("RetrieveByID", context.Background(), tc.client.ID).Return(tc.response, tc.err)
+		repoCall1 := cRepo.On("Save", context.Background(), mock.Anything).Return(tc.response, tc.err)
+		token, err := svc.GoogleCallback(context.Background(), tc.state, tc.client)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		if err == nil {
+			assert.NotEqual(t, token, "", fmt.Sprintf("%s: expected %s not to be empty\n", tc.desc, token))
+			ok := repoCall.Parent.AssertCalled(t, "RetrieveByID", context.Background(), tc.client.ID)
+			assert.True(t, ok, fmt.Sprintf("RetrieveByID was not called on %s", tc.desc))
+			if tc.state == "signup" {
+				ok = repoCall1.Parent.AssertCalled(t, "Save", context.Background(), mock.Anything)
+				assert.True(t, ok, fmt.Sprintf("Save was not called on %s", tc.desc))
+			}
+		}
+		repoCall.Unset()
+		repoCall1.Unset()
 	}
 }

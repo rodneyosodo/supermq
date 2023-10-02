@@ -27,6 +27,9 @@ const (
 	deleteRelationKey = "c_delete"
 
 	entityType = "client"
+
+	signInState = "signin"
+	signUpState = "signup"
 )
 
 var (
@@ -42,6 +45,11 @@ var (
 
 	// ErrPasswordFormat indicates weak password.
 	ErrPasswordFormat = errors.New("password does not meet the requirements")
+
+	// errFailedToSignUp indicates failed sign up during google sign in.
+	errFailedToSignUp = errors.New("failed to sign up")
+	// errFailedToSignIn indicates failed sign in during google sign in.
+	errUserNotSignedUp = errors.New("user not signed up")
 )
 
 // Service unites Clients and JWT services.
@@ -87,6 +95,7 @@ func (svc service) RegisterClient(ctx context.Context, token string, cli mfclien
 	if cli.Owner == "" && ownerID != "" {
 		cli.Owner = ownerID
 	}
+	// Federated clients have no secret.
 	if cli.Credentials.Secret != "" {
 		hash, err := svc.hasher.Hash(cli.Credentials.Secret)
 		if err != nil {
@@ -443,6 +452,31 @@ func (svc service) ListMembers(ctx context.Context, token, groupID string, pm mf
 	pm.Action = "g_list"
 
 	return svc.clients.Members(ctx, groupID, pm)
+}
+
+func (svc service) GoogleCallback(ctx context.Context, state string, client mfclients.Client) (jwt.Token, error) {
+	switch state {
+	case signInState:
+		rclient, err := svc.clients.RetrieveByID(ctx, client.ID)
+		if err != nil {
+			return jwt.Token{}, errUserNotSignedUp
+		}
+		claims := jwt.Claims{
+			ClientID: rclient.ID,
+		}
+		return svc.tokens.Issue(ctx, claims)
+	case signUpState:
+		rclient, err := svc.RegisterClient(ctx, "", client)
+		if err != nil {
+			return jwt.Token{}, errFailedToSignUp
+		}
+		claims := jwt.Claims{
+			ClientID: rclient.ID,
+		}
+		return svc.tokens.Issue(ctx, claims)
+	default:
+		return jwt.Token{}, nil
+	}
 }
 
 func (svc service) authorize(ctx context.Context, subject, object, action string) error {

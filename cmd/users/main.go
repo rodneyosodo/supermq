@@ -220,7 +220,7 @@ func newService(ctx context.Context, db *sqlx.DB, dbConfig pgclient.Config, trac
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to parse refresh token duration: %s", err.Error()))
 	}
-	tokenizer := jwt.NewRepository([]byte(c.SecretKey), aDuration, rDuration, c.GoogleClientID)
+	tokenizer := jwt.NewRepository([]byte(c.SecretKey), aDuration, rDuration)
 
 	emailer, err := emailer.New(c.ResetURL, &ec)
 	if err != nil {

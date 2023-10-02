@@ -49,7 +49,7 @@ func newThingsPolicyServer(svc tclients.Service, psvc tpolicies.Service) *httpte
 func TestCreatePolicyUser(t *testing.T) {
 	cRepo := new(umocks.Repository)
 	pRepo := new(upmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
@@ -174,7 +174,7 @@ func TestCreatePolicyUser(t *testing.T) {
 func TestAuthorizeUser(t *testing.T) {
 	cRepo := new(umocks.Repository)
 	pRepo := new(upmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
@@ -279,7 +279,7 @@ func TestAuthorizeUser(t *testing.T) {
 func TestAssign(t *testing.T) {
 	cRepo := new(umocks.Repository)
 	pRepo := new(upmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
@@ -404,7 +404,7 @@ func TestAssign(t *testing.T) {
 func TestUpdatePolicy(t *testing.T) {
 	cRepo := new(umocks.Repository)
 	pRepo := new(upmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
@@ -532,7 +532,7 @@ func TestUpdateThingsPolicy(t *testing.T) {
 func TestListPolicies(t *testing.T) {
 	cRepo := new(umocks.Repository)
 	pRepo := new(upmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
@@ -666,7 +666,7 @@ func TestListPolicies(t *testing.T) {
 func TestDeletePolicy(t *testing.T) {
 	cRepo := new(umocks.Repository)
 	pRepo := new(upmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
@@ -708,7 +708,7 @@ func TestDeletePolicy(t *testing.T) {
 func TestUnassign(t *testing.T) {
 	cRepo := new(umocks.Repository)
 	pRepo := new(upmocks.Repository)
-	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration, "")
+	tokenizer := jwt.NewRepository([]byte(secret), accessDuration, refreshDuration)
 
 	csvc := uclients.NewService(cRepo, pRepo, tokenizer, emailer, phasher, idProvider, passRegex)
 	svc := upolicies.NewService(pRepo, tokenizer, idProvider)
