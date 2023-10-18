@@ -118,6 +118,22 @@ func TestPubsub(t *testing.T) {
 			handler:      handler{},
 		},
 		{
+			desc:         "Subscribe using malformed topic and ID",
+			topic:        fmt.Sprintf("%s.>", chansPrefix),
+			clientID:     "clientid1",
+			errorMessage: nil,
+			pubsub:       true,
+			handler:      handler{},
+		},
+		{
+			desc:         "Subscribe using malformed topic and ID",
+			topic:        fmt.Sprintf("%s.*", chansPrefix),
+			clientID:     "clientid1",
+			errorMessage: nil,
+			pubsub:       true,
+			handler:      handler{},
+		},
+		{
 			desc:         "Subscribe to the same topic with a different ID",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
 			clientID:     "clientid2",

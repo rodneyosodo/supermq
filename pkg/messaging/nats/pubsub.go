@@ -146,12 +146,15 @@ func (ps *pubsub) natsHandler(h messaging.MessageHandler) func(m jetstream.Msg) 
 
 func formatConsumerName(topic, id string) string {
 	// A durable name cannot contain whitespace, ., *, >, path separators (forward or backwards slash), and non-printable characters.
-	topic = strings.ReplaceAll(topic, " ", "_")
-	topic = strings.ReplaceAll(topic, ".", "_")
-	topic = strings.ReplaceAll(topic, "*", "_")
-	topic = strings.ReplaceAll(topic, ">", "_")
-	topic = strings.ReplaceAll(topic, "/", "_")
-	topic = strings.ReplaceAll(topic, "\\", "_")
+	chars := []string{
+		" ", "_",
+		".", "_",
+		"*", "_",
+		">", "_",
+		"/", "_",
+		"\\", "_",
+	}
+	topic = strings.NewReplacer(chars...).Replace(topic)
 
 	return fmt.Sprintf("%s-%s", topic, id)
 }
