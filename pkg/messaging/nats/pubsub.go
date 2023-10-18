@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -121,10 +122,15 @@ func (ps *pubsub) Subscribe(ctx context.Context, id, topic string, handler messa
 	nh := ps.natsHandler(handler)
 
 	consumerConfig := jetstream.ConsumerConfig{
-		Name:          id,
+		Name:          formatConsumerName(topic, id),
 		Description:   fmt.Sprintf("Mainflux consumer of id %s for topic %s", id, topic),
 		DeliverPolicy: jetstream.DeliverNewPolicy,
 		FilterSubject: topic,
+	}
+
+	// A durable name cannot contain whitespace, ., *, >, path separators (forward or backwards slash), and non-printable characters.
+	if !strings.ContainsAny(topic, " .*>\\/") {
+		consumerConfig.Durable = formatConsumerName(topic, id)
 	}
 
 	consumer, err := ps.stream.CreateOrUpdateConsumer(ctx, consumerConfig)
@@ -172,7 +178,7 @@ func (ps *pubsub) Unsubscribe(ctx context.Context, id, topic string) error {
 
 	current.Stop()
 
-	if err := ps.stream.DeleteConsumer(ctx, id); err != nil {
+	if err := ps.stream.DeleteConsumer(ctx, formatConsumerName(topic, id)); err != nil {
 		return err
 	}
 
@@ -200,4 +206,8 @@ func (ps *pubsub) natsHandler(h messaging.MessageHandler) func(m jetstream.Msg) 
 			ps.logger.Warn(fmt.Sprintf("Failed to ack message: %s", err))
 		}
 	}
+}
+
+func formatConsumerName(topic, id string) string {
+	return fmt.Sprintf("%s-%s", topic, id)
 }
