@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	mflog "github.com/mainflux/mainflux/logger"
@@ -41,17 +40,10 @@ var (
 
 var _ messaging.PubSub = (*pubsub)(nil)
 
-type subscription struct {
-	jetstream.ConsumeContext
-	cancel func() error
-}
-
 type pubsub struct {
 	publisher
-	logger        mflog.Logger
-	mu            sync.Mutex
-	stream        jetstream.Stream
-	subscriptions map[string]map[string]subscription
+	logger mflog.Logger
+	stream jetstream.Stream
 }
 
 // NewPubSub returns NATS message publisher/subscriber.
@@ -80,9 +72,8 @@ func NewPubSub(ctx context.Context, url string, logger mflog.Logger) (messaging.
 			js:   js,
 			conn: conn,
 		},
-		stream:        stream,
-		logger:        logger,
-		subscriptions: make(map[string]map[string]subscription),
+		stream: stream,
+		logger: logger,
 	}
 
 	return ret, nil
@@ -96,41 +87,14 @@ func (ps *pubsub) Subscribe(ctx context.Context, id, topic string, handler messa
 		return ErrEmptyTopic
 	}
 
-	ps.mu.Lock()
-	// Check topic
-	s, ok := ps.subscriptions[topic]
-	if ok {
-		// Check client ID
-		if _, ok := s[id]; ok {
-			// Unlocking, so that Unsubscribe() can access ps.subscriptions
-			ps.mu.Unlock()
-			if err := ps.Unsubscribe(ctx, id, topic); err != nil {
-				return err
-			}
-
-			ps.mu.Lock()
-			// value of s can be changed while ps.mu is unlocked
-			s = ps.subscriptions[topic]
-		}
-	}
-	defer ps.mu.Unlock()
-	if s == nil {
-		s = make(map[string]subscription)
-		ps.subscriptions[topic] = s
-	}
-
 	nh := ps.natsHandler(handler)
 
 	consumerConfig := jetstream.ConsumerConfig{
 		Name:          formatConsumerName(topic, id),
+		Durable:       formatConsumerName(topic, id),
 		Description:   fmt.Sprintf("Mainflux consumer of id %s for topic %s", id, topic),
 		DeliverPolicy: jetstream.DeliverNewPolicy,
 		FilterSubject: topic,
-	}
-
-	// A durable name cannot contain whitespace, ., *, >, path separators (forward or backwards slash), and non-printable characters.
-	if !strings.ContainsAny(topic, " .*>\\/") {
-		consumerConfig.Durable = formatConsumerName(topic, id)
 	}
 
 	consumer, err := ps.stream.CreateOrUpdateConsumer(ctx, consumerConfig)
@@ -138,14 +102,8 @@ func (ps *pubsub) Subscribe(ctx context.Context, id, topic string, handler messa
 		return fmt.Errorf("failed to create consumer: %w", err)
 	}
 
-	cc, err := consumer.Consume(nh)
-	if err != nil {
+	if _, err = consumer.Consume(nh); err != nil {
 		return fmt.Errorf("failed to consume: %w", err)
-	}
-
-	s[id] = subscription{
-		ConsumeContext: cc,
-		cancel:         handler.Cancel,
 	}
 
 	return nil
@@ -158,36 +116,14 @@ func (ps *pubsub) Unsubscribe(ctx context.Context, id, topic string) error {
 	if topic == "" {
 		return ErrEmptyTopic
 	}
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-	// Check topic
-	s, ok := ps.subscriptions[topic]
-	if !ok {
-		return ErrNotSubscribed
-	}
-	// Check topic ID
-	current, ok := s[id]
-	if !ok {
-		return ErrNotSubscribed
-	}
-	if current.cancel != nil {
-		if err := current.cancel(); err != nil {
-			return err
-		}
-	}
 
-	current.Stop()
-
-	if err := ps.stream.DeleteConsumer(ctx, formatConsumerName(topic, id)); err != nil {
+	err := ps.stream.DeleteConsumer(ctx, formatConsumerName(topic, id))
+	switch {
+	case errors.Is(err, jetstream.ErrConsumerNotFound):
+		return ErrNotSubscribed
+	default:
 		return err
 	}
-
-	delete(s, id)
-	if len(s) == 0 {
-		delete(ps.subscriptions, topic)
-	}
-
-	return nil
 }
 
 func (ps *pubsub) natsHandler(h messaging.MessageHandler) func(m jetstream.Msg) {
@@ -209,5 +145,13 @@ func (ps *pubsub) natsHandler(h messaging.MessageHandler) func(m jetstream.Msg) 
 }
 
 func formatConsumerName(topic, id string) string {
+	// A durable name cannot contain whitespace, ., *, >, path separators (forward or backwards slash), and non-printable characters.
+	topic = strings.ReplaceAll(topic, " ", "_")
+	topic = strings.ReplaceAll(topic, ".", "_")
+	topic = strings.ReplaceAll(topic, "*", "_")
+	topic = strings.ReplaceAll(topic, ">", "_")
+	topic = strings.ReplaceAll(topic, "/", "_")
+	topic = strings.ReplaceAll(topic, "\\", "_")
+
 	return fmt.Sprintf("%s-%s", topic, id)
 }
