@@ -36,7 +36,6 @@ import (
 	"github.com/mainflux/mainflux/pkg/uuid"
 	"github.com/mainflux/mainflux/users"
 	capi "github.com/mainflux/mainflux/users/api"
-	"github.com/mainflux/mainflux/users/emailer"
 	uevents "github.com/mainflux/mainflux/users/events"
 	"github.com/mainflux/mainflux/users/hasher"
 	clientspg "github.com/mainflux/mainflux/users/postgres"
@@ -191,15 +190,15 @@ func newService(ctx context.Context, auth mainflux.AuthServiceClient, db *sqlx.D
 	idp := uuid.New()
 	hsr := hasher.New()
 
-	emailer, err := emailer.New(c.ResetURL, &ec)
-	if err != nil {
-		logger.Error(fmt.Sprintf("failed to configure e-mailing util: %s", err.Error()))
-	}
+	// emailer, err := emailer.New(c.ResetURL, &ec)
+	// if err != nil {
+	// 	logger.Error(fmt.Sprintf("failed to configure e-mailing util: %s", err.Error()))
+	// }
 
-	csvc := users.NewService(cRepo, auth, emailer, hsr, idp, c.PassRegex)
+	csvc := users.NewService(auth)
 	gsvc := mfgroups.NewService(gRepo, idp, auth)
 
-	csvc, err = uevents.NewEventStoreMiddleware(ctx, csvc, c.ESURL)
+	csvc, err := uevents.NewEventStoreMiddleware(ctx, csvc, c.ESURL)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -17,6 +17,7 @@ volumes:
   mainflux-broker-volume:
   mainflux-spicedb-db-volume:
   mainflux-auth-db-volume:
+  mainflux-gotrue-db-volume:
 
 include:
   - path: brokers/docker-compose.yml
@@ -547,3 +548,34 @@ services:
         target: /server_ca${MF_THINGS_AUTH_GRPC_SERVER_CA_CERTS:+.crt}
         bind:
           create_host_path: true
+
+  gotrue:
+    image: ghcr.io/supabase/gotrue:v2.105.0
+    container_name: mainflux-gotrue
+    depends_on:
+      - gotrue-postgres
+    restart: on-failure
+    env_file:
+      - .env
+    ports:
+      - 9999:9999
+      - 9100:9100
+    networks:
+      - mainflux-base-net
+
+  gotrue-postgres:
+    image: postgres:15.1-alpine
+    container_name: mainflux-gotrue-postgres
+    restart: on-failure
+    ports:
+      - 5432:5432
+    volumes:
+      - mainflux-gotrue-db-volume:/var/lib/postgresql/data
+      - ./gotrue/init.sh:/docker-entrypoint-initdb.d/init.sh
+    environment:
+      - POSTGRES_USER=mainflux
+      - POSTGRES_PASSWORD=mainflux
+      - POSTGRES_DB=users
+      - DB_NAMESPACE=users
+    networks:
+      - mainflux-base-net

@@ -114,11 +114,11 @@ func Test(conf Config) {
 
 	time.Sleep(5 * time.Second)
 
-	// Update users, groups, things and channels
-	if err := update(s, token, users, groups, things, channels); err != nil {
-		errExit(fmt.Errorf("unable to update users, groups, things and channels: %w", err))
-	}
-	color.Success.Println("updated users, groups, things and channels")
+	// // Update users, groups, things and channels
+	// if err := update(s, token, users, groups, things, channels); err != nil {
+	// 	errExit(fmt.Errorf("unable to update users, groups, things and channels: %w", err))
+	// }
+	// color.Success.Println("updated users, groups, things and channels")
 
 	// Send messages to channels
 	if err := messaging(s, conf, token, things, channels); err != nil {
