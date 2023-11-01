@@ -5,15 +5,15 @@ package users
 
 import (
 	"context"
-	"regexp"
 	"time"
 
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/auth"
 	"github.com/mainflux/mainflux/internal/apiutil"
+	sdk "github.com/mainflux/mainflux/internal/kratos"
 	mfclients "github.com/mainflux/mainflux/pkg/clients"
 	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/users/postgres"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -38,23 +38,13 @@ var (
 )
 
 type service struct {
-	clients    postgres.Repository
-	idProvider mainflux.IDProvider
-	auth       mainflux.AuthServiceClient
-	hasher     Hasher
-	email      Emailer
-	passRegex  *regexp.Regexp
+	auth mainflux.AuthServiceClient
 }
 
 // NewService returns a new Users service implementation.
-func NewService(crepo postgres.Repository, auth mainflux.AuthServiceClient, emailer Emailer, hasher Hasher, idp mainflux.IDProvider, pr *regexp.Regexp) Service {
+func NewService(auth mainflux.AuthServiceClient) Service {
 	return service{
-		clients:    crepo,
-		auth:       auth,
-		hasher:     hasher,
-		email:      emailer,
-		idProvider: idp,
-		passRegex:  pr,
+		auth: auth,
 	}
 }
 
@@ -62,34 +52,38 @@ func (svc service) RegisterClient(ctx context.Context, token string, cli mfclien
 	// We don't check the error currently since we can register client with empty token
 	ownerID, _ := svc.Identify(ctx, token)
 
-	clientID, err := svc.idProvider.ID()
-	if err != nil {
-		return mfclients.Client{}, err
-	}
-	if cli.Owner == "" && ownerID != "" {
-		cli.Owner = ownerID
-	}
+	// clientID, err := svc.idProvider.ID()
+	// if err != nil {
+	// 	return mfclients.Client{}, err
+	// }
+	// if cli.Owner == "" && ownerID != "" {
+	// 	cli.Owner = ownerID
+	// }
 	if cli.Credentials.Secret == "" {
 		return mfclients.Client{}, apiutil.ErrMissingSecret
 	}
-	hash, err := svc.hasher.Hash(cli.Credentials.Secret)
-	if err != nil {
-		return mfclients.Client{}, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
-	cli.Credentials.Secret = hash
+	// hash, err := svc.hasher.Hash(cli.Credentials.Secret)
+	// if err != nil {
+	// 	return mfclients.Client{}, errors.Wrap(errors.ErrMalformedEntity, err)
+	// }
+	// cli.Credentials.Secret = hash
 	if cli.Status != mfclients.DisabledStatus && cli.Status != mfclients.EnabledStatus {
 		return mfclients.Client{}, apiutil.ErrInvalidStatus
 	}
 	if cli.Role != mfclients.UserRole && cli.Role != mfclients.AdminRole {
 		return mfclients.Client{}, apiutil.ErrInvalidRole
 	}
-	cli.ID = clientID
-	cli.CreatedAt = time.Now()
-
-	client, err := svc.clients.Save(ctx, cli)
+	// cli.ID = clientID
+	// cli.CreatedAt = time.Now()
+	client, err := sdk.CreateUser(cli)
 	if err != nil {
 		return mfclients.Client{}, err
 	}
+
+	// client, err := svc.clients.Save(ctx, cli)
+	// if err != nil {
+	// 	return mfclients.Client{}, err
+	// }
 
 	if err := svc.addOwnerPolicy(ctx, ownerID, client.ID); err != nil {
 		return mfclients.Client{}, err
@@ -99,19 +93,30 @@ func (svc service) RegisterClient(ctx context.Context, token string, cli mfclien
 }
 
 func (svc service) IssueToken(ctx context.Context, identity, secret string) (*mainflux.Token, error) {
-	dbUser, err := svc.clients.RetrieveByIdentity(ctx, identity)
+	// dbUser, err := svc.clients.RetrieveByIdentity(ctx, identity)
+	// if err != nil {
+	// 	return &mainflux.Token{}, err
+	// }
+	// if err := svc.hasher.Compare(secret, dbUser.Credentials.Secret); err != nil {
+	// 	return &mainflux.Token{}, errors.Wrap(errors.ErrLogin, err)
+	// }
+
+	// return svc.auth.Issue(ctx, &mainflux.IssueReq{Id: dbUser.ID, Type: 0})
+	tkn, err := sdk.IssueToken(identity, secret)
 	if err != nil {
 		return &mainflux.Token{}, err
 	}
-	if err := svc.hasher.Compare(secret, dbUser.Credentials.Secret); err != nil {
-		return &mainflux.Token{}, errors.Wrap(errors.ErrLogin, err)
-	}
-
-	return svc.auth.Issue(ctx, &mainflux.IssueReq{Id: dbUser.ID, Type: 0})
+	return &mainflux.Token{
+		AccessToken:  tkn.SessionToken,
+		RefreshToken: &tkn.SessionToken,
+		AccessType:   "Bearer",
+	}, nil
 }
 
 func (svc service) RefreshToken(ctx context.Context, refreshToken string) (*mainflux.Token, error) {
-	return svc.auth.Refresh(ctx, &mainflux.RefreshReq{Value: refreshToken})
+	// return svc.auth.Refresh(ctx, &mainflux.RefreshReq{Value: refreshToken})
+
+	return &mainflux.Token{}, nil
 }
 
 func (svc service) ViewClient(ctx context.Context, token string, id string) (mfclients.Client, error) {
@@ -126,13 +131,14 @@ func (svc service) ViewClient(ctx context.Context, token string, id string) (mfc
 		}
 	}
 
-	client, err := svc.clients.RetrieveByID(ctx, id)
-	if err != nil {
-		return mfclients.Client{}, err
-	}
-	client.Credentials.Secret = ""
+	// client, err := svc.clients.RetrieveByID(ctx, id)
+	// if err != nil {
+	// 	return mfclients.Client{}, err
+	// }
+	// client.Credentials.Secret = ""
 
-	return client, nil
+	// return client, nil
+	return sdk.GetUser(token, id)
 }
 
 func (svc service) ViewProfile(ctx context.Context, token string) (mfclients.Client, error) {
@@ -140,13 +146,14 @@ func (svc service) ViewProfile(ctx context.Context, token string) (mfclients.Cli
 	if err != nil {
 		return mfclients.Client{}, err
 	}
-	client, err := svc.clients.RetrieveByID(ctx, id)
-	if err != nil {
-		return mfclients.Client{}, err
-	}
-	client.Credentials.Secret = ""
+	// client, err := svc.clients.RetrieveByID(ctx, id)
+	// if err != nil {
+	// 	return mfclients.Client{}, err
+	// }
+	// client.Credentials.Secret = ""
 
-	return client, nil
+	// return client, nil
+	return sdk.GetUser(token, id)
 }
 
 func (svc service) ListClients(ctx context.Context, token string, pm mfclients.Page) (mfclients.ClientsPage, error) {
@@ -155,11 +162,27 @@ func (svc service) ListClients(ctx context.Context, token string, pm mfclients.P
 		return mfclients.ClientsPage{}, err
 	}
 	pm.Owner = id
-	clients, err := svc.clients.RetrieveAll(ctx, pm)
+	// clients, err := svc.clients.RetrieveAll(ctx, pm)
+	// if err != nil {
+	// 	return mfclients.ClientsPage{}, err
+	// }
+
+	clients, err := sdk.ListUsers(token, pm.Offset, pm.Limit)
 	if err != nil {
 		return mfclients.ClientsPage{}, err
 	}
-	return clients, nil
+
+	filteredClients := []mfclients.Client{}
+	for _, client := range clients.Clients {
+		if err := svc.isOwner(ctx, client.ID, id); err == nil {
+			filteredClients = append(filteredClients, client)
+		}
+	}
+
+	return mfclients.ClientsPage{
+		Page:    mfclients.Page{Total: uint64(len(filteredClients)), Limit: clients.Page.Limit},
+		Clients: filteredClients,
+	}, nil
 }
 
 func (svc service) UpdateClient(ctx context.Context, token string, cli mfclients.Client) (mfclients.Client, error) {
@@ -182,7 +205,8 @@ func (svc service) UpdateClient(ctx context.Context, token string, cli mfclients
 		UpdatedBy: tokenUserID,
 	}
 
-	return svc.clients.Update(ctx, client)
+	// return svc.clients.Update(ctx, client)
+	return sdk.UpdateUser(token, client)
 }
 
 func (svc service) UpdateClientTags(ctx context.Context, token string, cli mfclients.Client) (mfclients.Client, error) {
@@ -204,7 +228,8 @@ func (svc service) UpdateClientTags(ctx context.Context, token string, cli mfcli
 		UpdatedBy: tokenUserID,
 	}
 
-	return svc.clients.UpdateTags(ctx, client)
+	// return svc.clients.UpdateTags(ctx, client)
+	return sdk.UpdateUser(token, client)
 }
 
 func (svc service) UpdateClientIdentity(ctx context.Context, token, clientID, identity string) (mfclients.Client, error) {
@@ -227,24 +252,26 @@ func (svc service) UpdateClientIdentity(ctx context.Context, token, clientID, id
 		UpdatedAt: time.Now(),
 		UpdatedBy: tokenUserID,
 	}
-	return svc.clients.UpdateIdentity(ctx, cli)
+	// return svc.clients.UpdateIdentity(ctx, cli)
+	return sdk.UpdateUser(token, cli)
 }
 
 func (svc service) GenerateResetToken(ctx context.Context, email, host string) error {
-	client, err := svc.clients.RetrieveByIdentity(ctx, email)
-	if err != nil || client.Credentials.Identity == "" {
-		return errors.ErrNotFound
-	}
-	issueReq := &mainflux.IssueReq{
-		Id:   client.ID,
-		Type: uint32(auth.RecoveryKey),
-	}
-	token, err := svc.auth.Issue(ctx, issueReq)
-	if err != nil {
-		return errors.Wrap(ErrRecoveryToken, err)
-	}
+	// client, err := svc.clients.RetrieveByIdentity(ctx, email)
+	// if err != nil || client.Credentials.Identity == "" {
+	// 	return errors.ErrNotFound
+	// }
+	// issueReq := &mainflux.IssueReq{
+	// 	Id:   client.ID,
+	// 	Type: uint32(auth.RecoveryKey),
+	// }
+	// token, err := svc.auth.Issue(ctx, issueReq)
+	// if err != nil {
+	// 	return errors.Wrap(ErrRecoveryToken, err)
+	// }
 
-	return svc.SendPasswordReset(ctx, host, email, client.Name, token.AccessToken)
+	// return svc.SendPasswordReset(ctx, host, email, client.Name, token.AccessToken)
+	return nil
 }
 
 func (svc service) ResetSecret(ctx context.Context, resetToken, secret string) error {
@@ -252,20 +279,24 @@ func (svc service) ResetSecret(ctx context.Context, resetToken, secret string) e
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
-	c, err := svc.clients.RetrieveByID(ctx, id)
+	// c, err := svc.clients.RetrieveByID(ctx, id)
+	// if err != nil {
+	// 	return err
+	// }
+	c, err := sdk.GetUser(resetToken, id)
 	if err != nil {
 		return err
 	}
 	if c.Credentials.Identity == "" {
 		return errors.ErrNotFound
 	}
-	if !svc.passRegex.MatchString(secret) {
-		return ErrPasswordFormat
-	}
-	secret, err = svc.hasher.Hash(secret)
-	if err != nil {
-		return err
-	}
+	// if !svc.passRegex.MatchString(secret) {
+	// 	return ErrPasswordFormat
+	// }
+	// secret, err = svc.hasher.Hash(secret)
+	// if err != nil {
+	// 	return err
+	// }
 	c = mfclients.Client{
 		Credentials: mfclients.Credentials{
 			Identity: c.Credentials.Identity,
@@ -274,9 +305,14 @@ func (svc service) ResetSecret(ctx context.Context, resetToken, secret string) e
 		UpdatedAt: time.Now(),
 		UpdatedBy: id,
 	}
-	if _, err := svc.clients.UpdateSecret(ctx, c); err != nil {
+	// if _, err := svc.clients.UpdateSecret(ctx, c); err != nil {
+	// 	return err
+	// }
+	// return nil
+	if _, err := sdk.UpdateUser(resetToken, c); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -285,30 +321,36 @@ func (svc service) UpdateClientSecret(ctx context.Context, token, oldSecret, new
 	if err != nil {
 		return mfclients.Client{}, err
 	}
-	if !svc.passRegex.MatchString(newSecret) {
-		return mfclients.Client{}, ErrPasswordFormat
-	}
-	dbClient, err := svc.clients.RetrieveByID(ctx, id)
+	// if !svc.passRegex.MatchString(newSecret) {
+	// 	return mfclients.Client{}, ErrPasswordFormat
+	// }
+	// dbClient, err := svc.clients.RetrieveByID(ctx, id)
+	// if err != nil {
+	// 	return mfclients.Client{}, err
+	// }
+	dbClient, err := sdk.GetUser(token, id)
 	if err != nil {
 		return mfclients.Client{}, err
 	}
 	if _, err := svc.IssueToken(ctx, dbClient.Credentials.Identity, oldSecret); err != nil {
 		return mfclients.Client{}, err
 	}
-	newSecret, err = svc.hasher.Hash(newSecret)
-	if err != nil {
-		return mfclients.Client{}, err
-	}
+	// newSecret, err = svc.hasher.Hash(newSecret)
+	// if err != nil {
+	// 	return mfclients.Client{}, err
+	// }
 	dbClient.Credentials.Secret = newSecret
 	dbClient.UpdatedAt = time.Now()
 	dbClient.UpdatedBy = id
 
-	return svc.clients.UpdateSecret(ctx, dbClient)
+	// return svc.clients.UpdateSecret(ctx, dbClient)
+	return sdk.UpdateUser(token, dbClient)
 }
 
 func (svc service) SendPasswordReset(_ context.Context, host, email, user, token string) error {
-	to := []string{email}
-	return svc.email.SendPasswordReset(to, host, user, token)
+	// to := []string{email}
+	// return svc.email.SendPasswordReset(to, host, user, token)
+	return nil
 }
 
 func (svc service) UpdateClientOwner(ctx context.Context, token string, cli mfclients.Client) (mfclients.Client, error) {
@@ -332,7 +374,8 @@ func (svc service) UpdateClientOwner(ctx context.Context, token string, cli mfcl
 	if err := svc.updateOwnerPolicy(ctx, tokenUserID, cli.Owner, cli.ID); err != nil {
 		return mfclients.Client{}, err
 	}
-	return svc.clients.UpdateOwner(ctx, client)
+	// return svc.clients.UpdateOwner(ctx, client)
+	return sdk.UpdateUser(token, client)
 }
 
 func (svc service) EnableClient(ctx context.Context, token, id string) (mfclients.Client, error) {
@@ -373,15 +416,16 @@ func (svc service) changeClientStatus(ctx context.Context, token string, client 
 			return mfclients.Client{}, err
 		}
 	}
-	dbClient, err := svc.clients.RetrieveByID(ctx, client.ID)
-	if err != nil {
-		return mfclients.Client{}, err
-	}
-	if dbClient.Status == client.Status {
-		return mfclients.Client{}, mfclients.ErrStatusAlreadyAssigned
-	}
+	// dbClient, err := svc.clients.RetrieveByID(ctx, client.ID)
+	// if err != nil {
+	// 	return mfclients.Client{}, err
+	// }
+	// if dbClient.Status == client.Status {
+	// 	return mfclients.Client{}, mfclients.ErrStatusAlreadyAssigned
+	// }
 	client.UpdatedBy = tokenUserID
-	return svc.clients.ChangeStatus(ctx, client)
+	// return svc.clients.ChangeStatus(ctx, client)
+	return sdk.UpdateUser(token, client)
 }
 
 func (svc service) ListMembers(ctx context.Context, token, objectKind string, objectID string, pm mfclients.Page) (mfclients.MembersPage, error) {
@@ -418,14 +462,31 @@ func (svc service) ListMembers(ctx context.Context, token, objectKind string, ob
 
 	pm.IDs = uids.Policies
 
-	cp, err := svc.clients.RetrieveAll(ctx, pm)
+	// cp, err := svc.clients.RetrieveAll(ctx, pm)
+	// if err != nil {
+	// 	return mfclients.MembersPage{}, err
+	// }
+
+	// return mfclients.MembersPage{
+	// 	Page:    cp.Page,
+	// 	Members: cp.Clients,
+	// }, nil
+
+	clients, err := sdk.ListUsers(token, pm.Offset, pm.Limit)
 	if err != nil {
 		return mfclients.MembersPage{}, err
 	}
 
+	filteredClients := []mfclients.Client{}
+	for _, client := range clients.Clients {
+		if slices.Contains(uids.Policies, client.ID) {
+			filteredClients = append(filteredClients, client)
+		}
+	}
+
 	return mfclients.MembersPage{
-		Page:    cp.Page,
-		Members: cp.Clients,
+		Page:    mfclients.Page{Total: uint64(len(filteredClients)), Limit: clients.Page.Limit},
+		Members: filteredClients,
 	}, nil
 }
 

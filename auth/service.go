@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mainflux/mainflux"
+	sdk "github.com/mainflux/mainflux/internal/kratos"
 	"github.com/mainflux/mainflux/pkg/errors"
 )
 
@@ -150,27 +151,28 @@ func (svc service) RetrieveKey(ctx context.Context, token, id string) (Key, erro
 }
 
 func (svc service) Identify(ctx context.Context, token string) (string, error) {
-	key, err := svc.tokenizer.Parse(token)
-	if err == ErrAPIKeyExpired {
-		err = svc.keys.Remove(ctx, key.Issuer, key.ID)
-		return "", errors.Wrap(ErrAPIKeyExpired, err)
-	}
-	if err != nil {
-		return "", errors.Wrap(errIdentify, err)
-	}
+	// key, err := svc.tokenizer.Parse(token)
+	// if err == ErrAPIKeyExpired {
+	// 	err = svc.keys.Remove(ctx, key.Issuer, key.ID)
+	// 	return "", errors.Wrap(ErrAPIKeyExpired, err)
+	// }
+	// if err != nil {
+	// 	return "", errors.Wrap(errIdentify, err)
+	// }
 
-	switch key.Type {
-	case RecoveryKey, AccessKey:
-		return key.Subject, nil
-	case APIKey:
-		_, err := svc.keys.Retrieve(ctx, key.Issuer, key.ID)
-		if err != nil {
-			return "", errors.ErrAuthentication
-		}
-		return key.Subject, nil
-	default:
-		return "", errors.ErrAuthentication
-	}
+	// switch key.Type {
+	// case RecoveryKey, AccessKey:
+	// 	return key.Subject, nil
+	// case APIKey:
+	// 	_, err := svc.keys.Retrieve(ctx, key.Issuer, key.ID)
+	// 	if err != nil {
+	// 		return "", errors.ErrAuthentication
+	// 	}
+	// 	return key.Subject, nil
+	// default:
+	// 	return "", errors.ErrAuthentication
+	// }
+	return sdk.IdentifyUser(token)
 }
 
 func (svc service) Authorize(ctx context.Context, pr PolicyReq) error {

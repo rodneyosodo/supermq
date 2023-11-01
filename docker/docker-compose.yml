@@ -17,6 +17,7 @@ volumes:
   mainflux-broker-volume:
   mainflux-spicedb-db-volume:
   mainflux-auth-db-volume:
+  mainflux-kratos-db-volume:
 
 include:
   - path: brokers/docker-compose.yml
@@ -547,3 +548,81 @@ services:
         target: /server_ca${MF_THINGS_AUTH_GRPC_SERVER_CA_CERTS:+.crt}
         bind:
           create_host_path: true
+
+  kratos-postgres:
+    image: postgres:15.1-alpine
+    container_name: mainflux-kratos-postgres
+    restart: on-failure
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=${KRATOS_DB_USER}
+      - POSTGRES_PASSWORD=${KRATOS_DB_PASS}
+      - POSTGRES_DB=${KRATOS_DB_NAME}
+    networks:
+      - mainflux-base-net
+    volumes:
+      - mainflux-kratos-db-volume:/var/lib/postgresql/data
+
+  kratos-migrate:
+    image: oryd/kratos:v0.13.0
+    container_name: mainflux-kratos-migrate
+    restart: on-failure
+    environment:
+      - DSN=${KRATOS_DB_URL}
+    volumes:
+      - type: bind
+        source: ./kratos/kratos.yml
+        target: /etc/config/kratos/kratos.yml
+      - type: bind
+        source: ./kratos/identity.schema.json
+        target: /etc/config/kratos/identity.schema.json
+    command: -c /etc/config/kratos/kratos.yml migrate sql -e --yes
+    networks:
+      - mainflux-base-net
+
+  kratos-selfservice-ui-node:
+    image: oryd/kratos-selfservice-ui-node:v0.13.0
+    container_name: mainflux-kratos-selfservice-ui-node
+    restart: on-failure
+    environment:
+      - KRATOS_PUBLIC_URL=${KRATOS_SELFSERVICE_PUBLIC_URL}
+      - KRATOS_BROWSER_URL=${KRATOS_SELFSERVICE_BROWSER_URL}
+      - PORT=${KRATOS_SELFSERVICE_PORT}
+    ports:
+      - ${KRATOS_SELFSERVICE_PORT}:${KRATOS_SELFSERVICE_PORT}
+    networks:
+      - mainflux-base-net
+
+  kratos:
+    image: oryd/kratos:v0.13.0
+    container_name: mainflux-kratos
+    restart: on-failure
+    depends_on:
+      - kratos-migrate
+    ports:
+      - ${KRATOS_PUBLIC_PORT}:${KRATOS_PUBLIC_PORT}
+      - ${KRATOS_ADMIN_PORT}:${KRATOS_ADMIN_PORT}
+    environment:
+      - DSN=${KRATOS_DB_URL}
+      - LOG_LEVEL=${KRATOS_LOG_LEVEL}
+    command: serve -c /etc/config/kratos/kratos.yml --dev --watch-courier
+    volumes:
+      - type: bind
+        source: ./kratos/kratos.yml
+        target: /etc/config/kratos/kratos.yml
+      - type: bind
+        source: ./kratos/identity.schema.json
+        target: /etc/config/kratos/identity.schema.json
+    networks:
+      - mainflux-base-net
+
+  mailslurper:
+    image: oryd/mailslurper:latest-smtps
+    container_name: mainflux-mailslurper
+    restart: on-failure
+    ports:
+      - ${KRATOS_MAILSLURPER_PORT}:${KRATOS_MAILSLURPER_PORT}
+      - "4437:4437"
+    networks:
+      - mainflux-base-net
