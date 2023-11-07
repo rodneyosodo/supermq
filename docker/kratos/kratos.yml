@@ -1,10 +1,10 @@
 version: v0.13.0
 
-dsn: memory
+dsn: postgres://mainflux:mainflux@kratos-postgres:5432/users
 
 serve:
   public:
-    base_url: http://kratos:4433/
+    base_url: http://127.0.0.1:4433/
     cors:
       enabled: true
   admin:
@@ -20,7 +20,7 @@ selfservice:
       enabled: true
     totp:
       config:
-        issuer: Kratos
+        issuer: mainflux
       enabled: true
     lookup_secret:
       enabled: true
@@ -40,7 +40,15 @@ selfservice:
             scope:
               - email
               - profile
-            # supported scopes can be found in your providers dev docs
+          - id: github
+            provider: github
+            client_id: <GITHUB_CLIENT_ID>
+            client_secret: <GITHUB_CLIENT_SECRET>
+            mapper_url: "base64://bG9jYWwgY2xhaW1zID0gewogICAgZW1haWxfdmVyaWZpZWQ6IHRydWUsCn0gKyBzdGQuZXh0VmFyKCdjbGFpbXMnKTsKICAKewogICAgaWRlbnRpdHk6IHsKICAgICAgICB0cmFpdHM6IHsKICAgICAgICAgICAgW2lmICdlbWFpbCcgaW4gY2xhaW1zICYmIGNsYWltcy5lbWFpbF92ZXJpZmllZCB0aGVuICdlbWFpbCcgZWxzZSBudWxsXTogY2xhaW1zLmVtYWlsLAogICAgICAgICAgICB1c2VybmFtZTogY2xhaW1zLm5hbWUsCiAgICAgICAgICAgIG5ld3NsZXR0ZXI6IHRydWUsCiAgICAgICAgICAgIFtpZiAnaGQnIGluIGNsYWltcyAmJiBjbGFpbXMuZW1haWxfdmVyaWZpZWQgdGhlbiAnaGQnIGVsc2UgbnVsbF06IGNsYWltcy5oZCwKICAgICAgICB9LAogICAgfSwKfQ=="
+            scope:
+              - user:email
+              - read:user
+
       enabled: true
   flows:
     error:
@@ -79,6 +87,9 @@ selfservice:
           hooks:
             - hook: session
             - hook: show_verification_ui
+        oidc:
+          hooks:
+            - hook: session
 
 log:
   level: debug
@@ -87,9 +98,9 @@ log:
 
 secrets:
   cookie:
-    - PLEASE-CHANGE-ME-I-AM-VERY-INSECURE
+    - McBNO88UQxixLvMqRbuLd8XBzFdnIZzisPXQHbA52GNp3dM6kbt6I4pzylmKXlgmHKr56P8rpugDyDanbnyuSJVCLsi3FLvLYTQA2QPXcVMFpSSXrtmbwKumRyuesgxA
   cipher:
-    - 32-LONG-SECRET-NOT-SECURE-AT-ALL
+    - d8HflHOLXeKXkn8siJdVSBUSGhACTQ28
 
 ciphers:
   algorithm: xchacha20-poly1305
@@ -97,7 +108,7 @@ ciphers:
 hashers:
   algorithm: bcrypt
   bcrypt:
-    cost: 8
+    cost: 10
 
 identity:
   default_schema_id: default
