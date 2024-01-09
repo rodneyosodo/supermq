@@ -20,7 +20,6 @@ require (
 	github.com/go-kit/kit v0.13.0
 	github.com/gofrs/uuid/v5 v5.3.0
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/go-zoo/bone v1.3.0
 	github.com/go-zookeeper/zk v1.0.2
 	github.com/gocql/gocql v1.6.0
 	github.com/gookit/color v1.5.4
@@ -45,6 +44,7 @@ require (
 	github.com/redis/go-redis/v9 v9.6.2
 	github.com/rubenv/sql-migrate v1.7.0
 	github.com/spf13/cobra v1.8.1
+	github.com/segmentio/kafka-go v0.4.42
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.56.0
@@ -139,6 +139,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/pion/dtls/v3 v3.0.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
+	github.com/pion/dtls/v2 v2.2.10 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/transport/v3 v3.0.7 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
