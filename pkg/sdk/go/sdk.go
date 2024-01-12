@@ -114,6 +114,9 @@ type PageMetadata struct {
 	UserID          string   `json:"user_id,omitempty"`
 	DomainID        string   `json:"domain_id,omitempty"`
 	Relation        string   `json:"relation,omitempty"`
+	Operation       string   `json:"operation,omitempty"`
+	From            int64    `json:"from,omitempty"`
+	To              int64    `json:"to,omitempty"`
 }
 
 // Credentials represent client credentials: it contains
@@ -1153,6 +1156,13 @@ type SDK interface {
 	//  err := sdk.DeleteInvitation("userID", "domainID", "token")
 	//  fmt.Println(err)
 	DeleteInvitation(userID, domainID, token string) (err error)
+
+	// Events returns a list of events.
+	//
+	// For example:
+	//  events, _ := sdk.Events(PageMetadata{Offset: 0, Limit: 10, Operation: "users.create"}, "userID", "user", "token")
+	//  fmt.Println(events)
+	Events(pm PageMetadata, id, entityType, token string) (events EventsPage, err error)
 }
 
 type mgSDK struct {
@@ -1164,6 +1174,7 @@ type mgSDK struct {
 	usersURL       string
 	domainsURL     string
 	invitationsURL string
+	eventsURL      string
 	HostURL        string
 
 	msgContentType ContentType
@@ -1180,6 +1191,7 @@ type Config struct {
 	UsersURL       string
 	DomainsURL     string
 	InvitationsURL string
+	EventsURL      string
 	HostURL        string
 
 	MsgContentType  ContentType
@@ -1197,6 +1209,7 @@ func NewSDK(conf Config) SDK {
 		usersURL:       conf.UsersURL,
 		domainsURL:     conf.DomainsURL,
 		invitationsURL: conf.InvitationsURL,
+		eventsURL:      conf.EventsURL,
 		HostURL:        conf.HostURL,
 
 		msgContentType: conf.MsgContentType,
