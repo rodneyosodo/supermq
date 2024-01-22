@@ -464,17 +464,25 @@ func (svc service) DeleteClient(ctx context.Context, token, id string) error {
 	}
 
 	if _, err := svc.auth.DeletePolicy(ctx, &magistrala.DeletePolicyReq{
-		SubjectType: auth.GroupType,
-		Object:      id,
+		Subject:     id,
+		SubjectType: auth.UserType,
 		ObjectType:  auth.ThingType,
 	}); err != nil {
 		return err
 	}
 
 	if _, err := svc.auth.DeletePolicy(ctx, &magistrala.DeletePolicyReq{
-		SubjectType: auth.DomainType,
-		Object:      id,
-		ObjectType:  auth.ThingType,
+		Subject:     id,
+		SubjectType: auth.UserType,
+		ObjectType:  auth.GroupType,
+	}); err != nil {
+		return err
+	}
+
+	if _, err := svc.auth.DeletePolicy(ctx, &magistrala.DeletePolicyReq{
+		Subject:     id,
+		SubjectType: auth.UserType,
+		ObjectType:  auth.DomainType,
 	}); err != nil {
 		return err
 	}
@@ -484,9 +492,10 @@ func (svc service) DeleteClient(ctx context.Context, token, id string) error {
 	}
 
 	if _, err := svc.auth.DeletePolicy(ctx, &magistrala.DeletePolicyReq{
+		Subject:     id,
 		SubjectType: auth.UserType,
-		Object:      id,
-		ObjectType:  auth.ThingType,
+		ObjectType:  auth.PlatformType,
+		Object:      auth.MagistralaObject,
 	}); err != nil {
 		return err
 	}
