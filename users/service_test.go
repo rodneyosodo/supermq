@@ -18,7 +18,6 @@ import (
 	"github.com/absmach/magistrala/pkg/errors"
 	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
-	"github.com/absmach/magistrala/pkg/uuid"
 	"github.com/absmach/magistrala/users"
 	"github.com/absmach/magistrala/users/hasher"
 	"github.com/absmach/magistrala/users/mocks"
@@ -28,7 +27,6 @@ import (
 )
 
 var (
-	idProvider     = uuid.New()
 	phasher        = hasher.New()
 	secret         = "strongsecret"
 	validCMetadata = mgclients.Metadata{"role": "client"}
@@ -54,7 +52,7 @@ func newService(selfRegister bool) (users.Service, *mocks.Repository, *authmocks
 	cRepo := new(mocks.Repository)
 	auth := new(authmocks.AuthClient)
 	e := mocks.NewEmailer()
-	return users.NewService(cRepo, auth, e, phasher, idProvider, passRegex, selfRegister), cRepo, auth, e
+	return users.NewService(cRepo, auth, e, passRegex, selfRegister), cRepo, auth, e
 }
 
 func TestRegisterClient(t *testing.T) {

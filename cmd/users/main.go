@@ -40,11 +40,13 @@ import (
 	"github.com/absmach/magistrala/users/emailer"
 	uevents "github.com/absmach/magistrala/users/events"
 	"github.com/absmach/magistrala/users/hasher"
+	"github.com/absmach/magistrala/users/kratos"
 	clientspg "github.com/absmach/magistrala/users/postgres"
 	ctracing "github.com/absmach/magistrala/users/tracing"
 	"github.com/caarlos0/env/v10"
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
+	ory "github.com/ory/client-go"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
 )
@@ -61,18 +63,21 @@ const (
 )
 
 type config struct {
-	LogLevel      string  `env:"MG_USERS_LOG_LEVEL"              envDefault:"info"`
-	AdminEmail    string  `env:"MG_USERS_ADMIN_EMAIL"            envDefault:"admin@example.com"`
-	AdminPassword string  `env:"MG_USERS_ADMIN_PASSWORD"         envDefault:"12345678"`
-	PassRegexText string  `env:"MG_USERS_PASS_REGEX"             envDefault:"^.{8,}$"`
-	ResetURL      string  `env:"MG_TOKEN_RESET_ENDPOINT"         envDefault:"/reset-request"`
-	JaegerURL     url.URL `env:"MG_JAEGER_URL"                   envDefault:"http://localhost:14268/api/traces"`
-	SendTelemetry bool    `env:"MG_SEND_TELEMETRY"               envDefault:"true"`
-	InstanceID    string  `env:"MG_USERS_INSTANCE_ID"            envDefault:""`
-	ESURL         string  `env:"MG_ES_URL"                       envDefault:"nats://localhost:4222"`
-	TraceRatio    float64 `env:"MG_JAEGER_TRACE_RATIO"           envDefault:"1.0"`
-	SelfRegister  bool    `env:"MG_USERS_ALLOW_SELF_REGISTER"    envDefault:"false"`
-	PassRegex     *regexp.Regexp
+	LogLevel       string  `env:"MG_USERS_LOG_LEVEL"              envDefault:"info"`
+	AdminEmail     string  `env:"MG_USERS_ADMIN_EMAIL"            envDefault:"admin@example.com"`
+	AdminPassword  string  `env:"MG_USERS_ADMIN_PASSWORD"         envDefault:"12345678"`
+	PassRegexText  string  `env:"MG_USERS_PASS_REGEX"             envDefault:"^.{8,}$"`
+	ResetURL       string  `env:"MG_TOKEN_RESET_ENDPOINT"         envDefault:"/reset-request"`
+	JaegerURL      url.URL `env:"MG_JAEGER_URL"                   envDefault:"http://localhost:14268/api/traces"`
+	SendTelemetry  bool    `env:"MG_SEND_TELEMETRY"               envDefault:"true"`
+	InstanceID     string  `env:"MG_USERS_INSTANCE_ID"            envDefault:""`
+	ESURL          string  `env:"MG_ES_URL"                       envDefault:"nats://localhost:4222"`
+	TraceRatio     float64 `env:"MG_JAEGER_TRACE_RATIO"           envDefault:"1.0"`
+	SelfRegister   bool    `env:"MG_USERS_ALLOW_SELF_REGISTER"    envDefault:"false"`
+	PassRegex      *regexp.Regexp
+	KratosURL      string `env:"MG_KRATOS_URL"                    envDefault:"http://localhost:4433"`
+	KratosAPIKey   string `env:"MG_KRATOS_API_KEY"                envDefault:""`
+	KratosSchemaID string `env:"MG_KRATOS_SCHEMA_ID"              envDefault:""`
 }
 
 func main() {
@@ -194,19 +199,25 @@ func main() {
 }
 
 func newService(ctx context.Context, authClient magistrala.AuthServiceClient, db *sqlx.DB, dbConfig pgclient.Config, tracer trace.Tracer, c config, ec email.Config, logger *slog.Logger) (users.Service, groups.Service, error) {
+	hsr := hasher.New()
+
 	database := postgres.NewDatabase(db, dbConfig, tracer)
-	cRepo := clientspg.NewRepository(database)
+
+	conf := ory.NewConfiguration()
+	conf.Servers = []ory.ServerConfiguration{{URL: c.KratosURL}}
+	conf.AddDefaultHeader("Authorization", "Bearer "+c.KratosAPIKey)
+	client := ory.NewAPIClient(conf)
+	cRepo := kratos.NewRepository(client, c.KratosSchemaID, hsr)
 	gRepo := gpostgres.New(database)
 
 	idp := uuid.New()
-	hsr := hasher.New()
 
 	emailerClient, err := emailer.New(c.ResetURL, &ec)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to configure e-mailing util: %s", err.Error()))
 	}
 
-	csvc := users.NewService(cRepo, authClient, emailerClient, hsr, idp, c.PassRegex, c.SelfRegister)
+	csvc := users.NewService(cRepo, authClient, emailerClient, c.PassRegex, c.SelfRegister)
 	gsvc := mggroups.NewService(gRepo, idp, authClient)
 
 	csvc, err = uevents.NewEventStoreMiddleware(ctx, csvc, c.ESURL)
@@ -228,9 +239,9 @@ func newService(ctx context.Context, authClient magistrala.AuthServiceClient, db
 	counter, latency = internal.MakeMetrics("groups", "api")
 	gsvc = gapi.MetricsMiddleware(gsvc, counter, latency)
 
-	clientID, err := createAdmin(ctx, c, cRepo, hsr, csvc)
+	clientID, err := createAdmin(ctx, c, cRepo, csvc)
 	if err != nil {
-		logger.Error(fmt.Sprintf("failed to create admin client: %s", err))
+		return nil, nil, err
 	}
 	if err := createAdminPolicy(ctx, clientID, authClient); err != nil {
 		return nil, nil, err
@@ -238,22 +249,12 @@ func newService(ctx context.Context, authClient magistrala.AuthServiceClient, db
 	return csvc, gsvc, err
 }
 
-func createAdmin(ctx context.Context, c config, crepo clientspg.Repository, hsr users.Hasher, svc users.Service) (string, error) {
-	id, err := uuid.New().ID()
-	if err != nil {
-		return "", err
-	}
-	hash, err := hsr.Hash(c.AdminPassword)
-	if err != nil {
-		return "", err
-	}
-
+func createAdmin(ctx context.Context, c config, crepo clientspg.Repository, svc users.Service) (string, error) {
 	client := mgclients.Client{
-		ID:   id,
-		Name: "admin",
+		Name: "admin-client",
 		Credentials: mgclients.Credentials{
 			Identity: c.AdminEmail,
-			Secret:   hash,
+			Secret:   c.AdminPassword,
 		},
 		Metadata: mgclients.Metadata{
 			"role": "admin",
@@ -269,10 +270,10 @@ func createAdmin(ctx context.Context, c config, crepo clientspg.Repository, hsr 
 	}
 
 	// Create an admin
-	if _, err = crepo.Save(ctx, client); err != nil {
+	if _, err := crepo.Save(ctx, client); err != nil {
 		return "", err
 	}
-	if _, err = svc.IssueToken(ctx, c.AdminEmail, c.AdminPassword, ""); err != nil {
+	if _, err := svc.IssueToken(ctx, c.AdminEmail, c.AdminPassword, ""); err != nil {
 		return "", err
 	}
 	return client.ID, nil

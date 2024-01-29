@@ -432,6 +432,10 @@ services:
       MG_AUTH_GRPC_CLIENT_CERT: ${MG_AUTH_GRPC_CLIENT_CERT:+/auth-grpc-client.crt}
       MG_AUTH_GRPC_CLIENT_KEY: ${MG_AUTH_GRPC_CLIENT_KEY:+/auth-grpc-client.key}
       MG_AUTH_GRPC_SERVER_CA_CERTS: ${MG_AUTH_GRPC_SERVER_CA_CERTS:+/auth-grpc-server-ca.crt}
+      MG_KRATOS_URL: ${MG_KRATOS_URL}
+      MG_KRATOS_SCHEMA_ID: ${MG_KRATOS_SCHEMA_ID}
+      MG_KRATOS_API_KEY: ${MG_KRATOS_API_KEY}
+
     ports:
       - ${MG_USERS_HTTP_PORT}:${MG_USERS_HTTP_PORT}
     networks:
