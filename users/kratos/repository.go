@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+	"strconv"
 
 	mgclients "github.com/absmach/magistrala/pkg/clients"
 	"github.com/absmach/magistrala/pkg/errors"
@@ -50,7 +51,7 @@ func NewRepository(client *ory.APIClient, schemaID string, hasher users.Hasher) 
 	}
 }
 
-func (repo repository) Save(ctx context.Context, user mgclients.Client) (mgclients.Client, error) {
+func (repo *repository) Save(ctx context.Context, user mgclients.Client) (mgclients.Client, error) {
 	hashedPassword, err := repo.hasher.Hash(user.Credentials.Secret)
 	if err != nil {
 		return mgclients.Client{}, errors.Wrap(repoerr.ErrCreateEntity, err)
@@ -88,7 +89,7 @@ func (repo repository) Save(ctx context.Context, user mgclients.Client) (mgclien
 	return toClient(identity), nil
 }
 
-func (repo repository) RetrieveByID(ctx context.Context, id string) (mgclients.Client, error) {
+func (repo *repository) RetrieveByID(ctx context.Context, id string) (mgclients.Client, error) {
 	identity, resp, err := repo.IdentityAPI.GetIdentity(ctx, id).Execute()
 	if err != nil {
 		return mgclients.Client{}, errors.Wrap(errors.ErrViewEntity, decodeError(resp))
@@ -101,7 +102,7 @@ func (repo repository) RetrieveByID(ctx context.Context, id string) (mgclients.C
 	return toClient(identity), nil
 }
 
-func (repo repository) RetrieveByIdentity(ctx context.Context, identity string) (mgclients.Client, error) {
+func (repo *repository) RetrieveByIdentity(ctx context.Context, identity string) (mgclients.Client, error) {
 	identities, resp, err := repo.IdentityAPI.ListIdentities(ctx).PageSize(1).CredentialsIdentifier(identity).Execute()
 	if err != nil {
 		return mgclients.Client{}, errors.Wrap(errors.ErrViewEntity, decodeError(resp))
@@ -114,10 +115,110 @@ func (repo repository) RetrieveByIdentity(ctx context.Context, identity string) 
 	return toClient(&identities[0]), nil
 }
 
-func (repo repository) RetrieveAll(ctx context.Context, pm mgclients.Page) (mgclients.ClientsPage, error) {
-	identities, resp, err := repo.IdentityAPI.ListIdentities(ctx).Page(int64(pm.Offset)).PerPage(int64(pm.Limit)).Execute()
+func (repo *repository) RetrieveAll(ctx context.Context, page mgclients.Page) (mgclients.ClientsPage, error) {
+	return repo.filterUsers(ctx, page)
+}
+
+func (repo *repository) filterUsers(ctx context.Context, page mgclients.Page) (mgclients.ClientsPage, error) {
+	identities, resp, err := repo.IdentityAPI.ListIdentities(ctx).Page(0).PerPage(1000).Execute()
 	if err != nil {
 		return mgclients.ClientsPage{}, errors.Wrap(errors.ErrViewEntity, decodeError(resp))
+	}
+	total, err := strconv.ParseUint(resp.Header.Get("X-Total-Count"), 10, 64)
+	if err != nil {
+		return mgclients.ClientsPage{}, errors.Wrap(errors.ErrViewEntity, err)
+	}
+
+	clients := []mgclients.Client{}
+	for _, identity := range identities {
+		client := toClient(&identity)
+		if client.Status != mgclients.AllStatus {
+			if client.Status != page.Status {
+				continue
+			}
+		}
+		if client.Role != mgclients.AllRole {
+			if client.Role != page.Role {
+				continue
+			}
+		}
+		if page.Name != "" {
+			if client.Name != page.Name {
+				continue
+			}
+		}
+		if page.Domain != "" {
+			if client.Domain != page.Domain {
+				continue
+			}
+		}
+		if page.Tag != "" {
+			if !slices.Contains(client.Tags, page.Tag) {
+				continue
+			}
+		}
+		if page.Permission != "" {
+			if !slices.Contains(client.Permissions, page.Permission) {
+				continue
+			}
+		}
+		if page.Identity != "" {
+			if client.Credentials.Identity != page.Identity {
+				continue
+			}
+		}
+		if len(page.IDs) > 0 {
+			if !slices.Contains(page.IDs, client.ID) {
+				continue
+			}
+		}
+		clients = append(clients, client)
+	}
+	clientPage := mgclients.ClientsPage{
+		Page: mgclients.Page{
+			Total:  total,
+			Offset: page.Offset,
+			Limit:  page.Limit,
+		},
+	}
+
+	if len(clients) < int(page.Limit) {
+		clientPage.Clients = clients
+		return clientPage, nil
+	}
+
+	clientPage.Clients = clients[page.Offset : page.Offset+page.Limit]
+
+	return clientPage, nil
+}
+
+func (repo *repository) RetrieveAllBasicInfo(ctx context.Context, pm mgclients.Page) (mgclients.ClientsPage, error) {
+	clientPage, err := repo.filterUsers(ctx, pm)
+	if err != nil {
+		return mgclients.ClientsPage{}, err
+	}
+	for i, client := range clientPage.Clients {
+		clientPage.Clients[i] = mgclients.Client{
+			ID:        client.ID,
+			Name:      client.Name,
+			CreatedAt: client.CreatedAt,
+			UpdatedAt: client.UpdatedAt,
+			Status:    client.Status,
+		}
+	}
+
+	return clientPage, nil
+}
+
+// This is not used by users service also when being used it is used to filter by IDs only not by other fields
+func (repo *repository) RetrieveAllByIDs(ctx context.Context, pm mgclients.Page) (mgclients.ClientsPage, error) {
+	identities, resp, err := repo.IdentityAPI.ListIdentities(ctx).Page(int64(pm.Offset)).PerPage(int64(pm.Limit)).IdsFilter(pm.IDs).Execute()
+	if err != nil {
+		return mgclients.ClientsPage{}, errors.Wrap(errors.ErrViewEntity, decodeError(resp))
+	}
+	total, err := strconv.ParseUint(resp.Header.Get("X-Total-Count"), 10, 64)
+	if err != nil {
+		return mgclients.ClientsPage{}, errors.Wrap(errors.ErrViewEntity, err)
 	}
 
 	clients := []mgclients.Client{}
@@ -127,7 +228,7 @@ func (repo repository) RetrieveAll(ctx context.Context, pm mgclients.Page) (mgcl
 
 	return mgclients.ClientsPage{
 		Page: mgclients.Page{
-			Total:  uint64(len(clients)),
+			Total:  total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
 		},
@@ -135,55 +236,7 @@ func (repo repository) RetrieveAll(ctx context.Context, pm mgclients.Page) (mgcl
 	}, nil
 }
 
-func (repo repository) RetrieveAllBasicInfo(ctx context.Context, pm mgclients.Page) (mgclients.ClientsPage, error) {
-	identities, resp, err := repo.IdentityAPI.ListIdentities(ctx).Page(int64(pm.Offset)).PerPage(int64(pm.Limit)).Execute()
-	if err != nil {
-		return mgclients.ClientsPage{}, errors.Wrap(errors.ErrViewEntity, decodeError(resp))
-	}
-
-	clients := []mgclients.Client{}
-	for _, identity := range identities {
-		client := toClient(&identity)
-
-		clients = append(clients, mgclients.Client{
-			ID:        client.ID,
-			Name:      client.Name,
-			CreatedAt: client.CreatedAt,
-			UpdatedAt: client.UpdatedAt,
-		})
-	}
-
-	return mgclients.ClientsPage{
-		Page: mgclients.Page{
-			Total:  uint64(len(clients)),
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-		Clients: clients,
-	}, nil
-}
-
-func (repo repository) RetrieveAllByIDs(ctx context.Context, pm mgclients.Page) (mgclients.ClientsPage, error) {
-	clients := []mgclients.Client{}
-	for _, id := range pm.IDs {
-		client, err := repo.RetrieveByID(ctx, id)
-		if err != nil {
-			return mgclients.ClientsPage{}, err
-		}
-		clients = append(clients, client)
-	}
-
-	return mgclients.ClientsPage{
-		Page: mgclients.Page{
-			Total:  uint64(len(clients)),
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-		Clients: clients,
-	}, nil
-}
-
-func (repo repository) Update(ctx context.Context, user mgclients.Client) (mgclients.Client, error) {
+func (repo *repository) Update(ctx context.Context, user mgclients.Client) (mgclients.Client, error) {
 	rclient, err := repo.RetrieveByID(ctx, user.ID)
 	if err != nil {
 		return mgclients.Client{}, err
@@ -203,7 +256,7 @@ func (repo repository) Update(ctx context.Context, user mgclients.Client) (mgcli
 	return toClient(identity), nil
 }
 
-func (repo repository) UpdateTags(ctx context.Context, user mgclients.Client) (mgclients.Client, error) {
+func (repo *repository) UpdateTags(ctx context.Context, user mgclients.Client) (mgclients.Client, error) {
 	rclient, err := repo.RetrieveByID(ctx, user.ID)
 	if err != nil {
 		return mgclients.Client{}, err
@@ -224,7 +277,7 @@ func (repo repository) UpdateTags(ctx context.Context, user mgclients.Client) (m
 	return toClient(identity), nil
 }
 
-func (repo repository) UpdateIdentity(ctx context.Context, user mgclients.Client) (mgclients.Client, error) {
+func (repo *repository) UpdateIdentity(ctx context.Context, user mgclients.Client) (mgclients.Client, error) {
 	rclient, err := repo.RetrieveByID(ctx, user.ID)
 	if err != nil {
 		return mgclients.Client{}, err
@@ -243,7 +296,7 @@ func (repo repository) UpdateIdentity(ctx context.Context, user mgclients.Client
 	return toClient(identity), nil
 }
 
-func (repo repository) UpdateSecret(ctx context.Context, user mgclients.Client) (mgclients.Client, error) {
+func (repo *repository) UpdateSecret(ctx context.Context, user mgclients.Client) (mgclients.Client, error) {
 	hashedPassword, err := repo.hasher.Hash(user.Credentials.Secret)
 	if err != nil {
 		return mgclients.Client{}, errors.Wrap(errors.ErrUpdateEntity, err)
@@ -265,7 +318,7 @@ func (repo repository) UpdateSecret(ctx context.Context, user mgclients.Client) 
 	return toClient(identity), nil
 }
 
-func (repo repository) ChangeStatus(ctx context.Context, user mgclients.Client) (mgclients.Client, error) {
+func (repo *repository) ChangeStatus(ctx context.Context, user mgclients.Client) (mgclients.Client, error) {
 	rclient, err := repo.RetrieveByID(ctx, user.ID)
 	if err != nil {
 		return mgclients.Client{}, err
@@ -285,7 +338,7 @@ func (repo repository) ChangeStatus(ctx context.Context, user mgclients.Client) 
 	return toClient(identity), nil
 }
 
-func (repo repository) UpdateRole(ctx context.Context, user mgclients.Client) (mgclients.Client, error) {
+func (repo *repository) UpdateRole(ctx context.Context, user mgclients.Client) (mgclients.Client, error) {
 	rclient, err := repo.RetrieveByID(ctx, user.ID)
 	if err != nil {
 		return mgclients.Client{}, err
@@ -308,7 +361,7 @@ func (repo repository) UpdateRole(ctx context.Context, user mgclients.Client) (m
 	return toClient(identity), nil
 }
 
-func (repo repository) CheckSuperAdmin(ctx context.Context, adminID string) error {
+func (repo *repository) CheckSuperAdmin(ctx context.Context, adminID string) error {
 	rclient, err := repo.RetrieveByID(ctx, adminID)
 	if err != nil {
 		return errors.ErrAuthorization
