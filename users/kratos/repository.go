@@ -69,7 +69,6 @@ func (repo repository) Save(ctx context.Context, user mgclients.Client) (mgclien
 			MetadataPublic: user.Metadata,
 			MetadataAdmin: map[string]interface{}{
 				"role":        user.Role,
-				"owner":       user.Owner,
 				"permissions": user.Permissions,
 			},
 			Credentials: &ory.IdentityWithCredentials{
@@ -266,26 +265,6 @@ func (repo repository) UpdateSecret(ctx context.Context, user mgclients.Client) 
 	return toClient(identity), nil
 }
 
-func (repo repository) UpdateOwner(ctx context.Context, user mgclients.Client) (mgclients.Client, error) {
-	rclient, err := repo.RetrieveByID(ctx, user.ID)
-	if err != nil {
-		return mgclients.Client{}, err
-	}
-
-	identity, resp, err := repo.IdentityAPI.UpdateIdentity(ctx, user.ID).UpdateIdentityBody(ory.UpdateIdentityBody{
-		MetadataAdmin: map[string]interface{}{
-			"owner":       user.Owner,
-			"role":        rclient.Role,
-			"permissions": rclient.Permissions,
-		},
-	}).Execute()
-	if err != nil {
-		return mgclients.Client{}, errors.Wrap(errors.ErrUpdateEntity, decodeError(resp))
-	}
-
-	return toClient(identity), nil
-}
-
 func (repo repository) ChangeStatus(ctx context.Context, user mgclients.Client) (mgclients.Client, error) {
 	rclient, err := repo.RetrieveByID(ctx, user.ID)
 	if err != nil {
@@ -316,7 +295,6 @@ func (repo repository) UpdateRole(ctx context.Context, user mgclients.Client) (m
 		MetadataAdmin: map[string]interface{}{
 			"role":        user.Role,
 			"permissions": rclient.Permissions,
-			"owner":       rclient.Owner,
 		},
 		Traits: map[string]interface{}{
 			"email":    rclient.Credentials.Identity,
@@ -339,7 +317,6 @@ func (repo repository) CheckSuperAdmin(ctx context.Context, adminID string) erro
 		return errors.ErrAuthorization
 	}
 	return nil
-
 }
 
 func decodeError(response *http.Response) error {
@@ -387,13 +364,6 @@ func toClient(identity *ory.Identity) mgclients.Client {
 		status = mgclients.DisabledStatus
 	}
 
-	owner := ""
-	if identity.MetadataAdmin != nil {
-		if identity.MetadataAdmin["owner"] != nil {
-			owner = identity.MetadataAdmin["owner"].(string)
-		}
-	}
-
 	role := mgclients.UserRole
 	if identity.MetadataAdmin != nil {
 		if identity.MetadataAdmin["role"] != nil {
@@ -424,7 +394,6 @@ func toClient(identity *ory.Identity) mgclients.Client {
 		Credentials: mgclients.Credentials{
 			Identity: email,
 		},
-		Owner:       owner,
 		Role:        role,
 		Status:      status,
 		Permissions: permissions,

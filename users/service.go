@@ -14,7 +14,6 @@ import (
 	"github.com/absmach/magistrala/pkg/errors"
 	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
-	"github.com/absmach/magistrala/users/postgres"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -42,7 +41,7 @@ var (
 )
 
 type service struct {
-	clients      postgres.Repository
+	clients      Repository
 	auth         magistrala.AuthServiceClient
 	email        Emailer
 	passRegex    *regexp.Regexp
@@ -50,7 +49,7 @@ type service struct {
 }
 
 // NewService returns a new Users service implementation.
-func NewService(crepo postgres.Repository, authClient magistrala.AuthServiceClient, emailer Emailer, pr *regexp.Regexp, selfRegister bool) Service {
+func NewService(crepo Repository, authClient magistrala.AuthServiceClient, emailer Emailer, pr *regexp.Regexp, selfRegister bool) Service {
 	return service{
 		clients:      crepo,
 		auth:         authClient,

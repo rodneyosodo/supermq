@@ -41,7 +41,6 @@ import (
 	uevents "github.com/absmach/magistrala/users/events"
 	"github.com/absmach/magistrala/users/hasher"
 	"github.com/absmach/magistrala/users/kratos"
-	clientspg "github.com/absmach/magistrala/users/postgres"
 	ctracing "github.com/absmach/magistrala/users/tracing"
 	"github.com/caarlos0/env/v10"
 	"github.com/go-chi/chi/v5"
@@ -123,10 +122,8 @@ func main() {
 		exitCode = 1
 		return
 	}
-	cm := clientspg.Migration()
 	gm := gpostgres.Migration()
-	cm.Migrations = append(cm.Migrations, gm.Migrations...)
-	db, err := pgclient.Setup(dbConfig, *cm)
+	db, err := pgclient.Setup(dbConfig, *gm)
 	if err != nil {
 		logger.Error(err.Error())
 		exitCode = 1
@@ -249,7 +246,7 @@ func newService(ctx context.Context, authClient magistrala.AuthServiceClient, db
 	return csvc, gsvc, err
 }
 
-func createAdmin(ctx context.Context, c config, crepo clientspg.Repository, svc users.Service) (string, error) {
+func createAdmin(ctx context.Context, c config, crepo users.Repository, svc users.Service) (string, error) {
 	client := mgclients.Client{
 		Name: "admin-client",
 		Credentials: mgclients.Credentials{
