@@ -41,7 +41,7 @@ func setupGroups() (*httptest.Server, *mocks.Repository, *authmocks.AuthClient) 
 
 	logger := mglog.NewMock()
 	mux := chi.NewRouter()
-	api.MakeHandler(csvc, gsvc, mux, logger, "")
+	api.MakeHandler(csvc, gsvc, mux, logger, "", nil)
 
 	return httptest.NewServer(mux), grepo, auth
 }

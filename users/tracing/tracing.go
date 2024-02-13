@@ -192,3 +192,11 @@ func (tm *tracingMiddleware) Identify(ctx context.Context, token string) (string
 
 	return tm.svc.Identify(ctx, token)
 }
+
+// KratosCallback traces the "KratosCallback" operation of the wrapped clients.Service.
+func (tm *tracingMiddleware) KratosCallback(ctx context.Context, state string, client mgclients.Client) (*magistrala.Token, error) {
+	ctx, span := tm.tracer.Start(ctx, "svc_kratos_callback", trace.WithAttributes(attribute.String("state", state)))
+	defer span.End()
+
+	return tm.svc.KratosCallback(ctx, state, client)
+}

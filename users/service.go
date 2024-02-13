@@ -18,6 +18,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const (
+	signInState = "signin"
+	signUpState = "signup"
+)
+
 var (
 	// ErrRecoveryToken indicates error in generating password recovery token.
 	ErrRecoveryToken = errors.New("failed to generate password recovery token")
@@ -39,6 +44,11 @@ var (
 
 	// ErrAddPolicies indictaed a failre to add policies.
 	errDeletePolicies = errors.New("failed to delete policies")
+
+	// errFailedToSignUp indicates failed sign up during oauth2.0 sign in.
+	errFailedToSignUp = errors.New("failed to sign up")
+	// errFailedToSignIn indicates failed sign in during oauth2.0 sign in.
+	errUserNotSignedUp = errors.New("user not signed up")
 )
 
 type service struct {
@@ -591,6 +601,33 @@ func (svc service) Identify(ctx context.Context, token string) (string, error) {
 		return "", errors.Wrap(svcerr.ErrAuthentication, err)
 	}
 	return user.GetUserId(), nil
+}
+
+func (svc service) KratosCallback(ctx context.Context, state string, client mgclients.Client) (*magistrala.Token, error) {
+	switch state {
+	case signInState:
+		rclient, err := svc.clients.RetrieveByID(ctx, client.ID)
+		if err != nil {
+			return &magistrala.Token{}, errUserNotSignedUp
+		}
+		claims := &magistrala.IssueReq{
+			UserId: rclient.ID,
+			Type:   0,
+		}
+		return svc.auth.Issue(ctx, claims)
+	case signUpState:
+		rclient, err := svc.RegisterClient(ctx, "", client)
+		if err != nil {
+			return &magistrala.Token{}, errFailedToSignUp
+		}
+		claims := &magistrala.IssueReq{
+			UserId: rclient.ID,
+			Type:   0,
+		}
+		return svc.auth.Issue(ctx, claims)
+	default:
+		return &magistrala.Token{}, nil
+	}
 }
 
 func (svc service) addClientPolicy(ctx context.Context, userID string, role mgclients.Role) error {

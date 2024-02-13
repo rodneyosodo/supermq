@@ -397,3 +397,20 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, token string) (id str
 	}(time.Now())
 	return lm.svc.Identify(ctx, token)
 }
+
+// KratosCallback logs the kratos_callback request. It logs the state and the time it took to complete the request.
+func (lm *loggingMiddleware) KratosCallback(ctx context.Context, state string, client mgclients.Client) (t *magistrala.Token, err error) {
+	defer func(begin time.Time) {
+		args := []any{
+			slog.String("duration", time.Since(begin).String()),
+			slog.String("state", state),
+		}
+		if err != nil {
+			args = append(args, slog.Any("error", err))
+			lm.logger.Warn("Kratos callback failed to complete successfully", args...)
+			return
+		}
+		lm.logger.Info("Kratos callback completed successfully", args...)
+	}(time.Now())
+	return lm.svc.KratosCallback(ctx, state, client)
+}

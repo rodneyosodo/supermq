@@ -191,3 +191,12 @@ func (ms *metricsMiddleware) Identify(ctx context.Context, token string) (string
 	}(time.Now())
 	return ms.svc.Identify(ctx, token)
 }
+
+// KratosCallback instruments KratosCallback method with metrics.
+func (ms *metricsMiddleware) KratosCallback(ctx context.Context, state string, client mgclients.Client) (*magistrala.Token, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "kratos_callback").Add(1)
+		ms.latency.With("method", "kratos_callback").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return ms.svc.KratosCallback(ctx, state, client)
+}

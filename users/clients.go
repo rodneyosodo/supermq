@@ -73,4 +73,7 @@ type Service interface {
 	// After an access token expires, the refresh token is used to get
 	// a new pair of access and refresh tokens.
 	RefreshToken(ctx context.Context, accessToken, domainID string) (*magistrala.Token, error)
+
+	// KratosCallback handles the callback from Kratos.
+	KratosCallback(ctx context.Context, state string, client clients.Client) (*magistrala.Token, error)
 }
