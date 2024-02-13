@@ -40,6 +40,7 @@ import (
 	"github.com/absmach/magistrala/users/emailer"
 	uevents "github.com/absmach/magistrala/users/events"
 	"github.com/absmach/magistrala/users/hasher"
+	"github.com/absmach/magistrala/users/oauth"
 	clientspg "github.com/absmach/magistrala/users/postgres"
 	ctracing "github.com/absmach/magistrala/users/tracing"
 	"github.com/caarlos0/env/v10"
@@ -61,18 +62,24 @@ const (
 )
 
 type config struct {
-	LogLevel      string  `env:"MG_USERS_LOG_LEVEL"              envDefault:"info"`
-	AdminEmail    string  `env:"MG_USERS_ADMIN_EMAIL"            envDefault:"admin@example.com"`
-	AdminPassword string  `env:"MG_USERS_ADMIN_PASSWORD"         envDefault:"12345678"`
-	PassRegexText string  `env:"MG_USERS_PASS_REGEX"             envDefault:"^.{8,}$"`
-	ResetURL      string  `env:"MG_TOKEN_RESET_ENDPOINT"         envDefault:"/reset-request"`
-	JaegerURL     url.URL `env:"MG_JAEGER_URL"                   envDefault:"http://localhost:14268/api/traces"`
-	SendTelemetry bool    `env:"MG_SEND_TELEMETRY"               envDefault:"true"`
-	InstanceID    string  `env:"MG_USERS_INSTANCE_ID"            envDefault:""`
-	ESURL         string  `env:"MG_ES_URL"                       envDefault:"nats://localhost:4222"`
-	TraceRatio    float64 `env:"MG_JAEGER_TRACE_RATIO"           envDefault:"1.0"`
-	SelfRegister  bool    `env:"MG_USERS_ALLOW_SELF_REGISTER"    envDefault:"false"`
-	PassRegex     *regexp.Regexp
+	LogLevel           string  `env:"MG_USERS_LOG_LEVEL"              envDefault:"info"`
+	AdminEmail         string  `env:"MG_USERS_ADMIN_EMAIL"            envDefault:"admin@example.com"`
+	AdminPassword      string  `env:"MG_USERS_ADMIN_PASSWORD"         envDefault:"12345678"`
+	PassRegexText      string  `env:"MG_USERS_PASS_REGEX"             envDefault:"^.{8,}$"`
+	ResetURL           string  `env:"MG_TOKEN_RESET_ENDPOINT"         envDefault:"/reset-request"`
+	JaegerURL          url.URL `env:"MG_JAEGER_URL"                   envDefault:"http://localhost:14268/api/traces"`
+	SendTelemetry      bool    `env:"MG_SEND_TELEMETRY"               envDefault:"true"`
+	InstanceID         string  `env:"MG_USERS_INSTANCE_ID"            envDefault:""`
+	ESURL              string  `env:"MG_ES_URL"                       envDefault:"nats://localhost:4222"`
+	TraceRatio         float64 `env:"MG_JAEGER_TRACE_RATIO"           envDefault:"1.0"`
+	SelfRegister       bool    `env:"MG_USERS_ALLOW_SELF_REGISTER"    envDefault:"false"`
+	KratosURL          string  `env:"MG_USERS_KRATOS_URL"             envDefault:"http://localhost:4433"`
+	KratosClientID     string  `env:"MG_USERS_KRATOS_CLIENT_ID"       envDefault:""`
+	KratosClientSecret string  `env:"MG_USERS_KRATOS_CLIENT_SECRET"   envDefault:""`
+	KratosRedirectURL  string  `env:"MG_UI_KRATOS_REDIRECT_URL"       envDefault:"http://localhost/oauth/callback/kratos"`
+	State              string  `env:"MG_USERS_KRATOS_STATE"           envDefault:""`
+	RedirectURL        string  `env:"MG_USERS_UI_REDIRECT_URL"        envDefault:"http://localhost:9095"`
+	PassRegex          *regexp.Regexp
 }
 
 func main() {
@@ -88,6 +95,8 @@ func main() {
 		log.Fatalf("invalid password validation rules %s\n", cfg.PassRegexText)
 	}
 	cfg.PassRegex = passRegex
+
+	kconf := oauth.NewConfig(cfg.KratosURL, cfg.KratosClientID, cfg.KratosClientSecret, cfg.State, cfg.KratosRedirectURL, cfg.RedirectURL)
 
 	logger, err := mglog.New(os.Stdout, cfg.LogLevel)
 	if err != nil {
@@ -173,7 +182,7 @@ func main() {
 	}
 
 	mux := chi.NewRouter()
-	httpSrv := httpserver.New(ctx, cancel, svcName, httpServerConfig, capi.MakeHandler(csvc, gsvc, mux, logger, cfg.InstanceID), logger)
+	httpSrv := httpserver.New(ctx, cancel, svcName, httpServerConfig, capi.MakeHandler(csvc, gsvc, mux, logger, cfg.InstanceID, &kconf), logger)
 
 	if cfg.SendTelemetry {
 		chc := chclient.New(svcName, magistrala.Version, logger, cancel)

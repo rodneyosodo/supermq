@@ -151,6 +151,36 @@ func (_m *Service) IssueToken(ctx context.Context, identity string, secret strin
 	return r0, r1
 }
 
+// KratosCallback provides a mock function with given fields: ctx, state, client
+func (_m *Service) KratosCallback(ctx context.Context, state string, client clients.Client) (*magistrala.Token, error) {
+	ret := _m.Called(ctx, state, client)
+
+	if len(ret) == 0 {
+		panic("no return value specified for KratosCallback")
+	}
+
+	var r0 *magistrala.Token
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, clients.Client) (*magistrala.Token, error)); ok {
+		return rf(ctx, state, client)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, clients.Client) *magistrala.Token); ok {
+		r0 = rf(ctx, state, client)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*magistrala.Token)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, clients.Client) error); ok {
+		r1 = rf(ctx, state, client)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ListClients provides a mock function with given fields: ctx, token, pm
 func (_m *Service) ListClients(ctx context.Context, token string, pm clients.Page) (clients.ClientsPage, error) {
 	ret := _m.Called(ctx, token, pm)

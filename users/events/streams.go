@@ -295,3 +295,20 @@ func (es *eventStore) SendPasswordReset(ctx context.Context, host, email, user, 
 
 	return es.Publish(ctx, event)
 }
+
+func (es *eventStore) KratosCallback(ctx context.Context, state string, client mgclients.Client) (*magistrala.Token, error) {
+	token, err := es.svc.KratosCallback(ctx, state, client)
+	if err != nil {
+		return token, err
+	}
+
+	event := kratosCallbackEvent{
+		state: state,
+	}
+
+	if err := es.Publish(ctx, event); err != nil {
+		return token, err
+	}
+
+	return token, nil
+}
