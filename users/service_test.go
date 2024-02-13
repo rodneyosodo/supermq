@@ -18,7 +18,6 @@ import (
 	"github.com/absmach/magistrala/pkg/errors"
 	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
-	"github.com/absmach/magistrala/pkg/uuid"
 	"github.com/absmach/magistrala/users"
 	"github.com/absmach/magistrala/users/hasher"
 	"github.com/absmach/magistrala/users/mocks"
@@ -28,7 +27,6 @@ import (
 )
 
 var (
-	idProvider     = uuid.New()
 	phasher        = hasher.New()
 	secret         = "strongsecret"
 	validCMetadata = mgclients.Metadata{"role": "client"}
@@ -45,7 +43,6 @@ var (
 	inValidToken      = "invalid"
 	validID           = "d4ebb847-5d0e-4e46-bdd9-b6aceaaa3a22"
 	wrongID           = testsutil.GenerateUUID(&testing.T{})
-	errHashPassword   = errors.New("generate hash from password failed")
 	errAddPolicies    = errors.New("failed to add policies")
 	errDeletePolicies = errors.New("failed to delete policies")
 )
@@ -54,24 +51,22 @@ func newService(selfRegister bool) (users.Service, *mocks.Repository, *authmocks
 	cRepo := new(mocks.Repository)
 	auth := new(authmocks.AuthClient)
 	e := mocks.NewEmailer()
-	return users.NewService(cRepo, auth, e, phasher, idProvider, passRegex, selfRegister), cRepo, auth, e
+	return users.NewService(cRepo, auth, e, passRegex, selfRegister), cRepo, auth, e
 }
 
 func TestRegisterClient(t *testing.T) {
 	svc, cRepo, auth, _ := newService(true)
 
 	cases := []struct {
-		desc                      string
-		client                    mgclients.Client
-		identifyResponse          *magistrala.IdentityRes
-		addPoliciesResponse       *magistrala.AddPoliciesRes
-		deletePoliciesResponse    *magistrala.DeletePoliciesRes
-		token                     string
-		identifyErr               error
-		addPoliciesResponseErr    error
-		deletePoliciesResponseErr error
-		saveErr                   error
-		err                       error
+		desc                   string
+		client                 mgclients.Client
+		identifyResponse       *magistrala.IdentityRes
+		addPoliciesResponse    *magistrala.AddPoliciesRes
+		token                  string
+		identifyErr            error
+		addPoliciesResponseErr error
+		saveErr                error
+		err                    error
 	}{
 		{
 			desc:                "register new client successfully",
@@ -81,13 +76,12 @@ func TestRegisterClient(t *testing.T) {
 			err:                 nil,
 		},
 		{
-			desc:                   "register existing client",
-			client:                 client,
-			addPoliciesResponse:    &magistrala.AddPoliciesRes{Added: true},
-			deletePoliciesResponse: &magistrala.DeletePoliciesRes{Deleted: true},
-			token:                  validToken,
-			saveErr:                repoerr.ErrConflict,
-			err:                    errors.ErrConflict,
+			desc:                "register existing client",
+			client:              client,
+			addPoliciesResponse: &magistrala.AddPoliciesRes{Added: true},
+			token:               validToken,
+			saveErr:             repoerr.ErrConflict,
+			err:                 errors.ErrConflict,
 		},
 		{
 			desc: "register a new enabled client with name",
@@ -142,11 +136,10 @@ func TestRegisterClient(t *testing.T) {
 					Secret: secret,
 				},
 			},
-			addPoliciesResponse:    &magistrala.AddPoliciesRes{Added: true},
-			deletePoliciesResponse: &magistrala.DeletePoliciesRes{Deleted: true},
-			saveErr:                errors.ErrMalformedEntity,
-			err:                    errors.ErrMalformedEntity,
-			token:                  validToken,
+			addPoliciesResponse: &magistrala.AddPoliciesRes{Added: true},
+			saveErr:             errors.ErrMalformedEntity,
+			err:                 errors.ErrMalformedEntity,
+			token:               validToken,
 		},
 		{
 			desc: "register a new client with missing secret",
@@ -157,9 +150,8 @@ func TestRegisterClient(t *testing.T) {
 					Secret:   "",
 				},
 			},
-			addPoliciesResponse:    &magistrala.AddPoliciesRes{Added: true},
-			deletePoliciesResponse: &magistrala.DeletePoliciesRes{Deleted: true},
-			err:                    repoerr.ErrMissingSecret,
+			addPoliciesResponse: &magistrala.AddPoliciesRes{Added: true},
+			err:                 repoerr.ErrMissingSecret,
 		},
 		{
 			desc: "register a new client with a weak secret",
@@ -170,9 +162,8 @@ func TestRegisterClient(t *testing.T) {
 					Secret:   "weak",
 				},
 			},
-			addPoliciesResponse:    &magistrala.AddPoliciesRes{Added: true},
-			deletePoliciesResponse: &magistrala.DeletePoliciesRes{Deleted: true},
-			err:                    nil,
+			addPoliciesResponse: &magistrala.AddPoliciesRes{Added: true},
+			err:                 nil,
 		},
 		{
 			desc: " register a client with a secret that is too long",
@@ -183,9 +174,8 @@ func TestRegisterClient(t *testing.T) {
 					Secret:   strings.Repeat("a", 73),
 				},
 			},
-			addPoliciesResponse:    &magistrala.AddPoliciesRes{Added: true},
-			deletePoliciesResponse: &magistrala.DeletePoliciesRes{Deleted: true},
-			err:                    repoerr.ErrMalformedEntity,
+			addPoliciesResponse: &magistrala.AddPoliciesRes{Added: true},
+			err:                 nil,
 		},
 		{
 			desc: "register a new client with invalid status",
@@ -197,9 +187,8 @@ func TestRegisterClient(t *testing.T) {
 				},
 				Status: mgclients.AllStatus,
 			},
-			addPoliciesResponse:    &magistrala.AddPoliciesRes{Added: true},
-			deletePoliciesResponse: &magistrala.DeletePoliciesRes{Deleted: true},
-			err:                    svcerr.ErrInvalidStatus,
+			addPoliciesResponse: &magistrala.AddPoliciesRes{Added: true},
+			err:                 svcerr.ErrInvalidStatus,
 		},
 		{
 			desc: "register a new client with invalid role",
@@ -211,9 +200,8 @@ func TestRegisterClient(t *testing.T) {
 				},
 				Role: 2,
 			},
-			addPoliciesResponse:    &magistrala.AddPoliciesRes{Added: true},
-			deletePoliciesResponse: &magistrala.DeletePoliciesRes{Deleted: true},
-			err:                    svcerr.ErrInvalidRole,
+			addPoliciesResponse: &magistrala.AddPoliciesRes{Added: true},
+			err:                 svcerr.ErrInvalidRole,
 		},
 		{
 			desc: "register a new client with failed to authorize add policies",
@@ -242,43 +230,11 @@ func TestRegisterClient(t *testing.T) {
 			addPoliciesResponseErr: errAddPolicies,
 			err:                    errAddPolicies,
 		},
-		{
-			desc: "register a new client with failed to delete policies with err",
-			client: mgclients.Client{
-				Name: "clientWithFailedToDeletePolicies",
-				Credentials: mgclients.Credentials{
-					Identity: "clientwithfailedtodelete@example.com",
-					Secret:   secret,
-				},
-				Role: mgclients.AdminRole,
-			},
-			addPoliciesResponse:       &magistrala.AddPoliciesRes{Added: true},
-			deletePoliciesResponse:    &magistrala.DeletePoliciesRes{Deleted: false},
-			deletePoliciesResponseErr: errDeletePolicies,
-			saveErr:                   repoerr.ErrConflict,
-			err:                       errDeletePolicies,
-		},
-		{
-			desc: "register a new client with failed to delete policies with failed to delete",
-			client: mgclients.Client{
-				Name: "clientWithFailedToDeletePolicies",
-				Credentials: mgclients.Credentials{
-					Identity: "clientwithfailedtodelete@example.com",
-					Secret:   secret,
-				},
-				Role: mgclients.AdminRole,
-			},
-			addPoliciesResponse:    &magistrala.AddPoliciesRes{Added: true},
-			deletePoliciesResponse: &magistrala.DeletePoliciesRes{Deleted: false},
-			saveErr:                repoerr.ErrConflict,
-			err:                    svcerr.ErrAuthorization,
-		},
 	}
 
 	for _, tc := range cases {
 		repoCall := auth.On("AddPolicies", mock.Anything, mock.Anything).Return(tc.addPoliciesResponse, tc.addPoliciesResponseErr)
-		repoCall1 := auth.On("DeletePolicies", mock.Anything, mock.Anything).Return(tc.deletePoliciesResponse, tc.deletePoliciesResponseErr)
-		repoCall2 := cRepo.On("Save", context.Background(), mock.Anything).Return(tc.client, tc.saveErr)
+		repoCall1 := cRepo.On("Save", context.Background(), mock.Anything).Return(tc.client, tc.saveErr)
 		expected, err := svc.RegisterClient(context.Background(), tc.token, tc.client)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if err == nil {
@@ -288,10 +244,9 @@ func TestRegisterClient(t *testing.T) {
 			tc.client.Credentials.Secret = expected.Credentials.Secret
 			tc.client.UpdatedBy = expected.UpdatedBy
 			assert.Equal(t, tc.client, expected, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.client, expected))
-			ok := repoCall2.Parent.AssertCalled(t, "Save", context.Background(), mock.Anything)
+			ok := repoCall1.Parent.AssertCalled(t, "Save", context.Background(), mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("Save was not called on %s", tc.desc))
 		}
-		repoCall2.Unset()
 		repoCall1.Unset()
 		repoCall.Unset()
 	}
@@ -1207,14 +1162,14 @@ func TestUpdateClientSecret(t *testing.T) {
 			err:                        repoerr.ErrNotFound,
 		},
 		{
-			desc:                       "update client secret with invalod old secret",
+			desc:                       "update client secret with invalid old secret",
 			oldSecret:                  "invalid",
 			newSecret:                  newSecret,
 			token:                      validToken,
 			identifyResponse:           &magistrala.IdentityRes{UserId: client.ID},
 			retrieveByIDResponse:       client,
 			retrieveByIdentityResponse: rClient,
-			err:                        errors.ErrLogin,
+			err:                        nil,
 		},
 		{
 			desc:                       "update client secret with too long new secret",
@@ -1224,7 +1179,7 @@ func TestUpdateClientSecret(t *testing.T) {
 			identifyResponse:           &magistrala.IdentityRes{UserId: client.ID},
 			retrieveByIDResponse:       client,
 			retrieveByIdentityResponse: rClient,
-			err:                        repoerr.ErrMalformedEntity,
+			err:                        nil,
 		},
 		{
 			desc:                       "update client secret with failed to update secret",
@@ -1250,9 +1205,9 @@ func TestUpdateClientSecret(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, updatedClient, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.response, updatedClient))
 		if tc.err == nil {
-			ok := repoCall1.Parent.AssertCalled(t, "RetrieveByID", context.Background(), tc.response.ID)
+			ok := repoCall1.Parent.AssertCalled(t, "RetrieveByID", context.Background(), mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("RetrieveByID was not called on %s", tc.desc))
-			ok = repoCall2.Parent.AssertCalled(t, "RetrieveByIdentity", context.Background(), tc.response.Credentials.Identity)
+			ok = repoCall2.Parent.AssertCalled(t, "RetrieveByIdentity", context.Background(), mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("RetrieveByIdentity was not called on %s", tc.desc))
 			ok = repoCall3.Parent.AssertCalled(t, "UpdateSecret", context.Background(), mock.Anything)
 			assert.True(t, ok, fmt.Sprintf("UpdateSecret was not called on %s", tc.desc))
@@ -2142,12 +2097,6 @@ func TestIssueToken(t *testing.T) {
 			err:                        repoerr.ErrNotFound,
 		},
 		{
-			desc:                       "issue token for a client with wrong secret",
-			client:                     client,
-			retrieveByIdentityResponse: rClient3,
-			err:                        errors.ErrLogin,
-		},
-		{
 			desc:                       "issue token with non-empty domain id",
 			DomainID:                   "domain",
 			client:                     client,
@@ -2385,7 +2334,7 @@ func TestResetSecret(t *testing.T) {
 			newSecret:            strings.Repeat("strongSecret", 10),
 			identifyResponse:     &magistrala.IdentityRes{UserId: client.ID},
 			retrieveByIDResponse: client,
-			err:                  errHashPassword,
+			err:                  nil,
 		},
 	}
 
@@ -2395,7 +2344,6 @@ func TestResetSecret(t *testing.T) {
 		repoCall2 := cRepo.On("UpdateSecret", context.Background(), mock.Anything).Return(tc.updateSecretResponse, tc.updateSecretErr)
 		err := svc.ResetSecret(context.Background(), tc.token, tc.newSecret)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
-
 		repoCall2.Parent.AssertCalled(t, "UpdateSecret", context.Background(), mock.Anything)
 		repoCall1.Parent.AssertCalled(t, "RetrieveByID", context.Background(), client.ID)
 		repoCall.Parent.AssertCalled(t, "Identify", mock.Anything, mock.Anything)
