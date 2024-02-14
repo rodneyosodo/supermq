@@ -141,7 +141,7 @@ func CallbackHandler(cfg *Config, svc users.Service) http.HandlerFunc {
 				refresTokenCookie := &http.Cookie{
 					Name:     "refresh_token",
 					Value:    *jwt.RefreshToken,
-					Path:     "/",
+					Path:     "/domains",
 					HttpOnly: true,
 				}
 
