@@ -72,7 +72,7 @@ func newService() (auth.Service, *mocks.KeyRepository) {
 	drepo := new(mocks.DomainsRepository)
 	idProvider := uuid.NewMock()
 
-	t := jwt.New([]byte(secret))
+	t := jwt.New([]byte(secret), nil)
 
 	return auth.New(krepo, drepo, idProvider, t, prepo, loginDuration, refreshDuration, invalidDuration), krepo
 }

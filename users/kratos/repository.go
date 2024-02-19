@@ -44,7 +44,12 @@ type Repository interface {
 	CheckSuperAdmin(ctx context.Context, adminID string) error
 }
 
-func NewRepository(client *ory.APIClient, schemaID string, hasher users.Hasher) Repository {
+func NewRepository(url, apiKey, schemaID string, hasher users.Hasher) Repository {
+	conf := ory.NewConfiguration()
+	conf.Servers = []ory.ServerConfiguration{{URL: url}}
+	conf.AddDefaultHeader("Authorization", "Bearer "+apiKey)
+	client := ory.NewAPIClient(conf)
+
 	return &repository{
 		APIClient: client,
 		schemaID:  schemaID,

@@ -46,7 +46,6 @@ import (
 	"github.com/caarlos0/env/v10"
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
-	ory "github.com/ory/client-go"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
 )
@@ -209,11 +208,7 @@ func newService(ctx context.Context, authClient magistrala.AuthServiceClient, db
 
 	database := postgres.NewDatabase(db, dbConfig, tracer)
 
-	conf := ory.NewConfiguration()
-	conf.Servers = []ory.ServerConfiguration{{URL: c.KratosURL}}
-	conf.AddDefaultHeader("Authorization", "Bearer "+c.KratosAPIKey)
-	client := ory.NewAPIClient(conf)
-	cRepo := kratos.NewRepository(client, c.KratosSchemaID, hsr)
+	cRepo := kratos.NewRepository(c.KratosURL, c.KratosAPIKey, c.KratosSchemaID, hsr)
 	gRepo := gpostgres.New(database)
 
 	idp := uuid.New()

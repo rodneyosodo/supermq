@@ -62,7 +62,7 @@ func newToken(issuerName string, key auth.Key) string {
 }
 
 func TestIssue(t *testing.T) {
-	tokenizer := authjwt.New([]byte(secret))
+	tokenizer := authjwt.New([]byte(secret), nil)
 
 	cases := []struct {
 		desc string
@@ -86,7 +86,7 @@ func TestIssue(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-	tokenizer := authjwt.New([]byte(secret))
+	tokenizer := authjwt.New([]byte(secret), nil)
 
 	token, err := tokenizer.Issue(key())
 	require.Nil(t, err, fmt.Sprintf("issuing key expected to succeed: %s", err))

@@ -8,6 +8,7 @@ import (
 
 	"github.com/absmach/magistrala"
 	"github.com/absmach/magistrala/pkg/clients"
+	"golang.org/x/oauth2"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -75,7 +76,7 @@ type Service interface {
 	RefreshToken(ctx context.Context, accessToken, domainID string) (*magistrala.Token, error)
 
 	// KratosCallback handles the callback from Kratos.
-	KratosCallback(ctx context.Context, state string, client clients.Client) (*magistrala.Token, error)
+	KratosCallback(ctx context.Context, state string, kratosToken *oauth2.Token, client clients.Client) (*magistrala.Token, error)
 }
 
 // Repository defines the required dependencies for Client repository.

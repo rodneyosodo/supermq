@@ -69,7 +69,7 @@ func newService() (auth.Service, string) {
 	drepo = new(mocks.DomainsRepository)
 	idProvider := uuid.NewMock()
 
-	t := jwt.New([]byte(secret))
+	t := jwt.New([]byte(secret), nil)
 	key := auth.Key{
 		IssuedAt:  time.Now(),
 		ExpiresAt: time.Now().Add(refreshDuration),
@@ -86,7 +86,7 @@ func newService() (auth.Service, string) {
 func TestIssue(t *testing.T) {
 	svc, accessToken := newService()
 
-	n := jwt.New([]byte(secret))
+	n := jwt.New([]byte(secret), nil)
 	apikey := auth.Key{
 		IssuedAt:  time.Now(),
 		ExpiresAt: time.Now().Add(refreshDuration),
@@ -627,7 +627,7 @@ func TestIdentify(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing expired login key expected to succeed: %s", err))
 	repocall4.Unset()
 
-	te := jwt.New([]byte(secret))
+	te := jwt.New([]byte(secret), nil)
 	key := auth.Key{
 		IssuedAt:  time.Now(),
 		ExpiresAt: time.Now().Add(refreshDuration),
@@ -721,7 +721,7 @@ func TestAuthorize(t *testing.T) {
 	repocall2.Unset()
 	repocall3.Unset()
 
-	te := jwt.New([]byte(secret))
+	te := jwt.New([]byte(secret), nil)
 	key := auth.Key{
 		IssuedAt:  time.Now(),
 		ExpiresAt: time.Now().Add(refreshDuration),

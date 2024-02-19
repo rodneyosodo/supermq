@@ -19,6 +19,7 @@ import (
 	grpcapi "github.com/absmach/magistrala/auth/api/grpc"
 	httpapi "github.com/absmach/magistrala/auth/api/http"
 	"github.com/absmach/magistrala/auth/jwt"
+	"github.com/absmach/magistrala/auth/kratos"
 	apostgres "github.com/absmach/magistrala/auth/postgres"
 	"github.com/absmach/magistrala/auth/spicedb"
 	"github.com/absmach/magistrala/auth/tracing"
@@ -67,6 +68,10 @@ type config struct {
 	SpicedbSchemaFile   string        `env:"MG_SPICEDB_SCHEMA_FILE"          envDefault:"./docker/spicedb/schema.zed"`
 	SpicedbPreSharedKey string        `env:"MG_SPICEDB_PRE_SHARED_KEY"       envDefault:"12345678"`
 	TraceRatio          float64       `env:"MG_JAEGER_TRACE_RATIO"           envDefault:"1.0"`
+	KratosURL           string        `env:"MG_KRATOS_URL"                   envDefault:"http://localhost:4433"`
+	KratosAPIKey        string        `env:"MG_KRATOS_API_KEY"               envDefault:""`
+	KratosClientID      string        `env:"MG_KRATOS_CLIENT_ID"             envDefault:""`
+	KratosClientSecret  string        `env:"MG_KRATOS_CLIENT_SECRET"         envDefault:""`
 }
 
 func main() {
@@ -207,7 +212,8 @@ func newService(db *sqlx.DB, tracer trace.Tracer, cfg config, dbConfig pgclient.
 	domainsRepo := apostgres.NewDomainRepository(database)
 	pa := spicedb.NewPolicyAgent(spicedbClient, logger)
 	idProvider := uuid.New()
-	t := jwt.New([]byte(cfg.SecretKey))
+	sdk := kratos.NewSDK(cfg.KratosURL, cfg.KratosAPIKey, cfg.KratosClientID, cfg.KratosClientSecret)
+	t := jwt.New([]byte(cfg.SecretKey), sdk)
 
 	svc := auth.New(keysRepo, domainsRepo, idProvider, t, pa, cfg.AccessDuration, cfg.RefreshDuration, cfg.InvitationDuration)
 	svc = api.LoggingMiddleware(svc, logger)

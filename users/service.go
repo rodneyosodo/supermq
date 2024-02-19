@@ -14,6 +14,7 @@ import (
 	"github.com/absmach/magistrala/pkg/errors"
 	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
+	"golang.org/x/oauth2"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -572,7 +573,7 @@ func (svc service) Identify(ctx context.Context, token string) (string, error) {
 	return user.GetUserId(), nil
 }
 
-func (svc service) KratosCallback(ctx context.Context, state string, client mgclients.Client) (*magistrala.Token, error) {
+func (svc service) KratosCallback(ctx context.Context, state string, token *oauth2.Token, client mgclients.Client) (*magistrala.Token, error) {
 	switch state {
 	case signInState:
 		rclient, err := svc.clients.RetrieveByID(ctx, client.ID)
@@ -580,8 +581,10 @@ func (svc service) KratosCallback(ctx context.Context, state string, client mgcl
 			return &magistrala.Token{}, errUserNotSignedUp
 		}
 		claims := &magistrala.IssueReq{
-			UserId: rclient.ID,
-			Type:   0,
+			UserId:             rclient.ID,
+			Type:               0,
+			KratosAccessToken:  token.AccessToken,
+			KratosRefreshToken: token.RefreshToken,
 		}
 		return svc.auth.Issue(ctx, claims)
 	case signUpState:
@@ -590,8 +593,10 @@ func (svc service) KratosCallback(ctx context.Context, state string, client mgcl
 			return &magistrala.Token{}, errFailedToSignUp
 		}
 		claims := &magistrala.IssueReq{
-			UserId: rclient.ID,
-			Type:   0,
+			UserId:             rclient.ID,
+			Type:               0,
+			KratosAccessToken:  token.AccessToken,
+			KratosRefreshToken: token.RefreshToken,
 		}
 		return svc.auth.Issue(ctx, claims)
 	default:

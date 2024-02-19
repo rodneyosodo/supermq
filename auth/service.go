@@ -428,6 +428,9 @@ func (svc service) refreshKey(ctx context.Context, token string, key Key) (Token
 	key.User = k.User
 	key.Type = AccessKey
 
+	key.Kratos.AccessToken = k.Kratos.AccessToken
+	key.Kratos.RefreshToken = k.Kratos.RefreshToken
+
 	key.Subject, err = svc.checkUserDomain(ctx, key)
 	if err != nil {
 		return Token{}, errors.Wrap(svcerr.ErrAuthorization, err)

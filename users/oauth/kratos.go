@@ -26,6 +26,7 @@ const (
 var scopes = []string{
 	"email",
 	"profile",
+	"offline_access",
 }
 
 type Config struct {
@@ -57,13 +58,19 @@ func NewConfig(baseURL, clientID, clientSecret, state, redirectURL, uiRedirectUR
 	}
 }
 
-func (cfg *Config) Profile(ctx context.Context, code string) (mfclients.Client, error) {
+func (cfg *Config) Profile(ctx context.Context, code string) (mfclients.Client, *oauth2.Token, error) {
 	token, err := cfg.config.Exchange(ctx, code)
 	if err != nil {
-		return mfclients.Client{}, err
+		return mfclients.Client{}, &oauth2.Token{}, err
 	}
 
-	resp, err := http.Get(cfg.userInfoURL + url.QueryEscape(token.AccessToken))
+	client, err := cfg.Client(token.AccessToken)
+
+	return client, token, err
+}
+
+func (cfg *Config) Client(accessToken string) (mfclients.Client, error) {
+	resp, err := http.Get(cfg.userInfoURL + url.QueryEscape(accessToken))
 	if err != nil {
 		return mfclients.Client{}, err
 	}
@@ -112,13 +119,13 @@ func CallbackHandler(cfg *Config, svc users.Service) http.HandlerFunc {
 		}
 
 		if code := r.FormValue("code"); code != "" {
-			client, err := cfg.Profile(r.Context(), code)
+			client, token, err := cfg.Profile(r.Context(), code)
 			if err != nil {
 				http.Redirect(w, r, cfg.uiRedirectURL, http.StatusTemporaryRedirect)
 				return
 			}
 
-			jwt, err := svc.KratosCallback(r.Context(), action, client)
+			jwt, err := svc.KratosCallback(r.Context(), action, token, client)
 			if err != nil {
 				// We set the error cookie to be read by the frontend
 				cookie := &http.Cookie{

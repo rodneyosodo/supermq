@@ -11,6 +11,7 @@ import (
 	"github.com/absmach/magistrala/pkg/events"
 	"github.com/absmach/magistrala/pkg/events/store"
 	"github.com/absmach/magistrala/users"
+	"golang.org/x/oauth2"
 )
 
 const streamID = "magistrala.users"
@@ -296,8 +297,8 @@ func (es *eventStore) SendPasswordReset(ctx context.Context, host, email, user, 
 	return es.Publish(ctx, event)
 }
 
-func (es *eventStore) KratosCallback(ctx context.Context, state string, client mgclients.Client) (*magistrala.Token, error) {
-	token, err := es.svc.KratosCallback(ctx, state, client)
+func (es *eventStore) KratosCallback(ctx context.Context, state string, kratosToken *oauth2.Token, client mgclients.Client) (*magistrala.Token, error) {
+	token, err := es.svc.KratosCallback(ctx, state, kratosToken, client)
 	if err != nil {
 		return token, err
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/absmach/magistrala/users"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/oauth2"
 )
 
 var _ users.Service = (*tracingMiddleware)(nil)
@@ -194,9 +195,9 @@ func (tm *tracingMiddleware) Identify(ctx context.Context, token string) (string
 }
 
 // KratosCallback traces the "KratosCallback" operation of the wrapped clients.Service.
-func (tm *tracingMiddleware) KratosCallback(ctx context.Context, state string, client mgclients.Client) (*magistrala.Token, error) {
+func (tm *tracingMiddleware) KratosCallback(ctx context.Context, state string, token *oauth2.Token, client mgclients.Client) (*magistrala.Token, error) {
 	ctx, span := tm.tracer.Start(ctx, "svc_kratos_callback", trace.WithAttributes(attribute.String("state", state)))
 	defer span.End()
 
-	return tm.svc.KratosCallback(ctx, state, client)
+	return tm.svc.KratosCallback(ctx, state, token, client)
 }

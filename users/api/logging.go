@@ -11,6 +11,7 @@ import (
 	"github.com/absmach/magistrala"
 	mgclients "github.com/absmach/magistrala/pkg/clients"
 	"github.com/absmach/magistrala/users"
+	"golang.org/x/oauth2"
 )
 
 var _ users.Service = (*loggingMiddleware)(nil)
@@ -399,7 +400,7 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, token string) (id str
 }
 
 // KratosCallback logs the kratos_callback request. It logs the state and the time it took to complete the request.
-func (lm *loggingMiddleware) KratosCallback(ctx context.Context, state string, client mgclients.Client) (t *magistrala.Token, err error) {
+func (lm *loggingMiddleware) KratosCallback(ctx context.Context, state string, token *oauth2.Token, client mgclients.Client) (t *magistrala.Token, err error) {
 	defer func(begin time.Time) {
 		args := []any{
 			slog.String("duration", time.Since(begin).String()),
@@ -412,5 +413,5 @@ func (lm *loggingMiddleware) KratosCallback(ctx context.Context, state string, c
 		}
 		lm.logger.Info("Kratos callback completed successfully", args...)
 	}(time.Now())
-	return lm.svc.KratosCallback(ctx, state, client)
+	return lm.svc.KratosCallback(ctx, state, token, client)
 }

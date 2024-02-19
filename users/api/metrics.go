@@ -11,6 +11,7 @@ import (
 	mgclients "github.com/absmach/magistrala/pkg/clients"
 	"github.com/absmach/magistrala/users"
 	"github.com/go-kit/kit/metrics"
+	"golang.org/x/oauth2"
 )
 
 var _ users.Service = (*metricsMiddleware)(nil)
@@ -193,10 +194,10 @@ func (ms *metricsMiddleware) Identify(ctx context.Context, token string) (string
 }
 
 // KratosCallback instruments KratosCallback method with metrics.
-func (ms *metricsMiddleware) KratosCallback(ctx context.Context, state string, client mgclients.Client) (*magistrala.Token, error) {
+func (ms *metricsMiddleware) KratosCallback(ctx context.Context, state string, token *oauth2.Token, client mgclients.Client) (*magistrala.Token, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "kratos_callback").Add(1)
 		ms.latency.With("method", "kratos_callback").Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return ms.svc.KratosCallback(ctx, state, client)
+	return ms.svc.KratosCallback(ctx, state, token, client)
 }
