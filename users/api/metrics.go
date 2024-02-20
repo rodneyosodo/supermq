@@ -193,11 +193,11 @@ func (ms *metricsMiddleware) Identify(ctx context.Context, token string) (string
 	return ms.svc.Identify(ctx, token)
 }
 
-// KratosCallback instruments KratosCallback method with metrics.
-func (ms *metricsMiddleware) KratosCallback(ctx context.Context, state string, token *oauth2.Token, client mgclients.Client) (*magistrala.Token, error) {
+// OAuthCallback instruments OAuthCallback method with metrics.
+func (ms *metricsMiddleware) OAuthCallback(ctx context.Context, state string, token *oauth2.Token, client mgclients.Client) (*magistrala.Token, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "kratos_callback").Add(1)
-		ms.latency.With("method", "kratos_callback").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "oauth_callback").Add(1)
+		ms.latency.With("method", "oauth_callback").Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return ms.svc.KratosCallback(ctx, state, token, client)
+	return ms.svc.OAuthCallback(ctx, state, token, client)
 }

@@ -573,7 +573,7 @@ func (svc service) Identify(ctx context.Context, token string) (string, error) {
 	return user.GetUserId(), nil
 }
 
-func (svc service) KratosCallback(ctx context.Context, state string, token *oauth2.Token, client mgclients.Client) (*magistrala.Token, error) {
+func (svc service) OAuthCallback(ctx context.Context, state string, token *oauth2.Token, client mgclients.Client) (*magistrala.Token, error) {
 	switch state {
 	case signInState:
 		rclient, err := svc.clients.RetrieveByID(ctx, client.ID)
@@ -581,10 +581,10 @@ func (svc service) KratosCallback(ctx context.Context, state string, token *oaut
 			return &magistrala.Token{}, errUserNotSignedUp
 		}
 		claims := &magistrala.IssueReq{
-			UserId:             rclient.ID,
-			Type:               0,
-			KratosAccessToken:  token.AccessToken,
-			KratosRefreshToken: token.RefreshToken,
+			UserId:            rclient.ID,
+			Type:              0,
+			OauthAccessToken:  token.AccessToken,
+			OauthRefreshToken: token.RefreshToken,
 		}
 		return svc.auth.Issue(ctx, claims)
 	case signUpState:
@@ -593,10 +593,10 @@ func (svc service) KratosCallback(ctx context.Context, state string, token *oaut
 			return &magistrala.Token{}, errFailedToSignUp
 		}
 		claims := &magistrala.IssueReq{
-			UserId:             rclient.ID,
-			Type:               0,
-			KratosAccessToken:  token.AccessToken,
-			KratosRefreshToken: token.RefreshToken,
+			UserId:            rclient.ID,
+			Type:              0,
+			OauthAccessToken:  token.AccessToken,
+			OauthRefreshToken: token.RefreshToken,
 		}
 		return svc.auth.Issue(ctx, claims)
 	default:

@@ -36,12 +36,12 @@ var (
 )
 
 const (
-	issuerName              = "magistrala.auth"
-	tokenType               = "type"
-	userField               = "user"
-	domainField             = "domain"
-	kratosAccessTokenField  = "access_token"
-	kratosRefreshTokenField = "refresh_token"
+	issuerName             = "magistrala.auth"
+	tokenType              = "type"
+	userField              = "user"
+	domainField            = "domain"
+	oauthAccessTokenField  = "access_token"
+	oauthRefreshTokenField = "refresh_token"
 )
 
 type tokenizer struct {
@@ -69,8 +69,8 @@ func (repo *tokenizer) Issue(key auth.Key) (string, error) {
 		Expiration(key.ExpiresAt)
 	builder.Claim(userField, key.User)
 	builder.Claim(domainField, key.Domain)
-	builder.Claim(kratosAccessTokenField, key.Kratos.AccessToken)
-	builder.Claim(kratosRefreshTokenField, key.Kratos.RefreshToken)
+	builder.Claim(oauthAccessTokenField, key.OAuth.AccessToken)
+	builder.Claim(oauthRefreshTokenField, key.OAuth.RefreshToken)
 	if key.ID != "" {
 		builder.JwtID(key.ID)
 	}
@@ -133,35 +133,35 @@ func (repo *tokenizer) Parse(token string) (auth.Key, error) {
 	key.IssuedAt = tkn.IssuedAt()
 	key.ExpiresAt = tkn.Expiration()
 
-	kratosAccessToken, ok := tkn.Get(kratosAccessTokenField)
+	kratosAccessToken, ok := tkn.Get(oauthAccessTokenField)
 	switch {
 	case ok:
 		switch repo.sdk.Validate(context.Background(), kratosAccessToken.(string)) {
 		case nil:
-			key.Kratos.AccessToken = kratosAccessToken.(string)
+			key.OAuth.AccessToken = kratosAccessToken.(string)
 		default:
-			kratosRefreshToken, ok := tkn.Get(kratosRefreshTokenField)
+			kratosRefreshToken, ok := tkn.Get(oauthRefreshTokenField)
 			if !ok {
-				return auth.Key{}, errors.Wrap(errors.ErrAuthentication, err)
+				return auth.Key{}, errors.ErrAuthentication
 			}
 			token, err := repo.sdk.Refresh(context.Background(), kratosRefreshToken.(string))
 			if err != nil {
 				return auth.Key{}, errors.Wrap(errors.ErrAuthentication, err)
 			}
-			key.Kratos.AccessToken = token.AccessToken
-			key.Kratos.RefreshToken = token.RefreshToken
+			key.OAuth.AccessToken = token.AccessToken
+			key.OAuth.RefreshToken = token.RefreshToken
 
 			return key, nil
 		}
 	case !ok:
-		return auth.Key{}, errors.Wrap(errors.ErrAuthentication, err)
+		return auth.Key{}, errors.ErrAuthentication
 	}
-	kratosRefreshToken, ok := tkn.Get(kratosRefreshTokenField)
+	kratosRefreshToken, ok := tkn.Get(oauthRefreshTokenField)
 	switch {
 	case ok:
-		key.Kratos.RefreshToken = kratosRefreshToken.(string)
+		key.OAuth.RefreshToken = kratosRefreshToken.(string)
 	case !ok:
-		return auth.Key{}, errors.Wrap(errors.ErrAuthentication, err)
+		return auth.Key{}, errors.ErrAuthentication
 	}
 
 	return key, nil

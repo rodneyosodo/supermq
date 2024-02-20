@@ -75,8 +75,8 @@ type Service interface {
 	// a new pair of access and refresh tokens.
 	RefreshToken(ctx context.Context, accessToken, domainID string) (*magistrala.Token, error)
 
-	// KratosCallback handles the callback from Kratos.
-	KratosCallback(ctx context.Context, state string, kratosToken *oauth2.Token, client clients.Client) (*magistrala.Token, error)
+	// OAuthCallback handles the callback from any OAuth provider.
+	OAuthCallback(ctx context.Context, state string, kratosToken *oauth2.Token, client clients.Client) (*magistrala.Token, error)
 }
 
 // Repository defines the required dependencies for Client repository.

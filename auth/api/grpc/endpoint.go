@@ -21,9 +21,9 @@ func issueEndpoint(svc auth.Service) endpoint.Endpoint {
 			Type:   req.keyType,
 			User:   req.userID,
 			Domain: req.domainID,
-			Kratos: auth.KratosToken{
-				AccessToken:  req.kratosAccessToken,
-				RefreshToken: req.kratosRefreshToken,
+			OAuth: auth.OAuthToken{
+				AccessToken:  req.oauthAccessToken,
+				RefreshToken: req.oauthRefreshToken,
 			},
 		}
 		tkn, err := svc.Issue(ctx, "", key)

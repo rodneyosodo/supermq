@@ -125,7 +125,7 @@ func CallbackHandler(cfg *Config, svc users.Service) http.HandlerFunc {
 				return
 			}
 
-			jwt, err := svc.KratosCallback(r.Context(), action, token, client)
+			jwt, err := svc.OAuthCallback(r.Context(), action, token, client)
 			if err != nil {
 				// We set the error cookie to be read by the frontend
 				cookie := &http.Cookie{

@@ -153,36 +153,6 @@ func (_m *Service) IssueToken(ctx context.Context, identity string, secret strin
 	return r0, r1
 }
 
-// KratosCallback provides a mock function with given fields: ctx, state, kratosToken, client
-func (_m *Service) KratosCallback(ctx context.Context, state string, kratosToken *oauth2.Token, client clients.Client) (*magistrala.Token, error) {
-	ret := _m.Called(ctx, state, kratosToken, client)
-
-	if len(ret) == 0 {
-		panic("no return value specified for KratosCallback")
-	}
-
-	var r0 *magistrala.Token
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, *oauth2.Token, clients.Client) (*magistrala.Token, error)); ok {
-		return rf(ctx, state, kratosToken, client)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, *oauth2.Token, clients.Client) *magistrala.Token); ok {
-		r0 = rf(ctx, state, kratosToken, client)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*magistrala.Token)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string, *oauth2.Token, clients.Client) error); ok {
-		r1 = rf(ctx, state, kratosToken, client)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // ListClients provides a mock function with given fields: ctx, token, pm
 func (_m *Service) ListClients(ctx context.Context, token string, pm clients.Page) (clients.ClientsPage, error) {
 	ret := _m.Called(ctx, token, pm)
@@ -232,6 +202,36 @@ func (_m *Service) ListMembers(ctx context.Context, token string, objectKind str
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, string, string, clients.Page) error); ok {
 		r1 = rf(ctx, token, objectKind, objectID, pm)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// OAuthCallback provides a mock function with given fields: ctx, state, kratosToken, client
+func (_m *Service) OAuthCallback(ctx context.Context, state string, kratosToken *oauth2.Token, client clients.Client) (*magistrala.Token, error) {
+	ret := _m.Called(ctx, state, kratosToken, client)
+
+	if len(ret) == 0 {
+		panic("no return value specified for OAuthCallback")
+	}
+
+	var r0 *magistrala.Token
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, *oauth2.Token, clients.Client) (*magistrala.Token, error)); ok {
+		return rf(ctx, state, kratosToken, client)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, *oauth2.Token, clients.Client) *magistrala.Token); ok {
+		r0 = rf(ctx, state, kratosToken, client)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*magistrala.Token)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, *oauth2.Token, clients.Client) error); ok {
+		r1 = rf(ctx, state, kratosToken, client)
 	} else {
 		r1 = ret.Error(1)
 	}

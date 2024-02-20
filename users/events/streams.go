@@ -297,13 +297,13 @@ func (es *eventStore) SendPasswordReset(ctx context.Context, host, email, user, 
 	return es.Publish(ctx, event)
 }
 
-func (es *eventStore) KratosCallback(ctx context.Context, state string, kratosToken *oauth2.Token, client mgclients.Client) (*magistrala.Token, error) {
-	token, err := es.svc.KratosCallback(ctx, state, kratosToken, client)
+func (es *eventStore) OAuthCallback(ctx context.Context, state string, kratosToken *oauth2.Token, client mgclients.Client) (*magistrala.Token, error) {
+	token, err := es.svc.OAuthCallback(ctx, state, kratosToken, client)
 	if err != nil {
 		return token, err
 	}
 
-	event := kratosCallbackEvent{
+	event := oauthCallbackEvent{
 		state: state,
 	}
 

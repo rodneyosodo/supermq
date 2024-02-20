@@ -21,11 +21,11 @@ func (req identityReq) validate() error {
 }
 
 type issueReq struct {
-	userID             string
-	domainID           string // optional
-	keyType            auth.KeyType
-	kratosAccessToken  string
-	kratosRefreshToken string
+	userID            string
+	domainID          string // optional
+	keyType           auth.KeyType
+	oauthAccessToken  string
+	oauthRefreshToken string
 }
 
 func (req issueReq) validate() error {

@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"strings"
 
@@ -42,6 +41,7 @@ func NewSDK(url, apiKey, clientID, clientSecret string) *SDK {
 	}
 }
 
+// Validate checks if the token is valid.
 func (sdk *SDK) Validate(ctx context.Context, token string) error {
 	introspectedToken, resp, err := sdk.client.OAuth2API.IntrospectOAuth2Token(ctx).Token(token).Execute()
 	if err != nil {
@@ -54,6 +54,7 @@ func (sdk *SDK) Validate(ctx context.Context, token string) error {
 	return nil
 }
 
+// Refresh refreshes the token.
 func (sdk *SDK) Refresh(ctx context.Context, token string) (oauth2.Token, error) {
 	payload := strings.NewReader("grant_type=refresh_token&refresh_token=" + token + "&scope=email%20profile%20offline_access")
 
@@ -98,7 +99,6 @@ func decodeError(response *http.Response) error {
 	if err != nil {
 		return fmt.Errorf("error reading response body: %w", err)
 	}
-	slog.Warn("Error response", slog.Any("body", string(body)))
 
 	var content struct {
 		Error ory.GenericError `json:"error,omitempty"`

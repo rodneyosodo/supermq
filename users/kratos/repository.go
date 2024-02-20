@@ -383,7 +383,6 @@ func decodeError(response *http.Response) error {
 	if err != nil {
 		return fmt.Errorf("error reading response body: %w", err)
 	}
-	slog.Warn("Error response", slog.Any("body", string(body)))
 
 	var content struct {
 		Error ory.GenericError `json:"error,omitempty"`

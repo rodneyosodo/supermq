@@ -399,8 +399,8 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, token string) (id str
 	return lm.svc.Identify(ctx, token)
 }
 
-// KratosCallback logs the kratos_callback request. It logs the state and the time it took to complete the request.
-func (lm *loggingMiddleware) KratosCallback(ctx context.Context, state string, token *oauth2.Token, client mgclients.Client) (t *magistrala.Token, err error) {
+// OAuthCallback logs the oauth_callback request. It logs the state and the time it took to complete the request.
+func (lm *loggingMiddleware) OAuthCallback(ctx context.Context, state string, token *oauth2.Token, client mgclients.Client) (t *magistrala.Token, err error) {
 	defer func(begin time.Time) {
 		args := []any{
 			slog.String("duration", time.Since(begin).String()),
@@ -408,10 +408,10 @@ func (lm *loggingMiddleware) KratosCallback(ctx context.Context, state string, t
 		}
 		if err != nil {
 			args = append(args, slog.Any("error", err))
-			lm.logger.Warn("Kratos callback failed to complete successfully", args...)
+			lm.logger.Warn("OAuth callback failed to complete successfully", args...)
 			return
 		}
-		lm.logger.Info("Kratos callback completed successfully", args...)
+		lm.logger.Info("OAuth callback completed successfully", args...)
 	}(time.Now())
-	return lm.svc.KratosCallback(ctx, state, token, client)
+	return lm.svc.OAuthCallback(ctx, state, token, client)
 }

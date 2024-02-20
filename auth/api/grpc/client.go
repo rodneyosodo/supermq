@@ -174,7 +174,7 @@ func (client grpcClient) Issue(ctx context.Context, req *magistrala.IssueReq, _ 
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.issue(ctx, issueReq{userID: req.GetUserId(), domainID: req.GetDomainId(), keyType: auth.KeyType(req.Type), kratosAccessToken: req.GetKratosAccessToken(), kratosRefreshToken: req.GetKratosRefreshToken()})
+	res, err := client.issue(ctx, issueReq{userID: req.GetUserId(), domainID: req.GetDomainId(), keyType: auth.KeyType(req.Type), oauthAccessToken: req.GetOauthAccessToken(), oauthRefreshToken: req.GetOauthRefreshToken()})
 	if err != nil {
 		return &magistrala.Token{}, decodeError(err)
 	}
@@ -183,7 +183,7 @@ func (client grpcClient) Issue(ctx context.Context, req *magistrala.IssueReq, _ 
 
 func encodeIssueRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(issueReq)
-	return &magistrala.IssueReq{UserId: req.userID, DomainId: &req.domainID, Type: uint32(req.keyType), KratosAccessToken: req.kratosAccessToken, KratosRefreshToken: req.kratosRefreshToken}, nil
+	return &magistrala.IssueReq{UserId: req.userID, DomainId: &req.domainID, Type: uint32(req.keyType), OauthAccessToken: req.oauthAccessToken, OauthRefreshToken: req.oauthRefreshToken}, nil
 }
 
 func decodeIssueResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {

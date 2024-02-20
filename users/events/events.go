@@ -28,7 +28,7 @@ const (
 	refreshToken       = clientPrefix + "refresh_token"
 	resetSecret        = clientPrefix + "reset_secret"
 	sendPasswordReset  = clientPrefix + "send_password_reset"
-	kratosCallback     = clientPrefix + "kratos_callback"
+	oauthCallback      = clientPrefix + "oauth_callback"
 )
 
 var (
@@ -45,7 +45,7 @@ var (
 	_ events.Event = (*refreshTokenEvent)(nil)
 	_ events.Event = (*resetSecretEvent)(nil)
 	_ events.Event = (*sendPasswordResetEvent)(nil)
-	_ events.Event = (*kratosCallbackEvent)(nil)
+	_ events.Event = (*oauthCallbackEvent)(nil)
 )
 
 type createClientEvent struct {
@@ -413,13 +413,13 @@ func (spre sendPasswordResetEvent) Encode() (map[string]interface{}, error) {
 	}, nil
 }
 
-type kratosCallbackEvent struct {
+type oauthCallbackEvent struct {
 	state string
 }
 
-func (kce kratosCallbackEvent) Encode() (map[string]interface{}, error) {
+func (kce oauthCallbackEvent) Encode() (map[string]interface{}, error) {
 	return map[string]interface{}{
-		"operation": kratosCallback,
+		"operation": oauthCallback,
 		"state":     kce.state,
 	}, nil
 }
