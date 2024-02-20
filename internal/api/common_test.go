@@ -15,6 +15,7 @@ import (
 	"github.com/absmach/magistrala/internal/apiutil"
 	"github.com/absmach/magistrala/internal/testsutil"
 	"github.com/absmach/magistrala/pkg/errors"
+	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
 	"github.com/stretchr/testify/assert"
 )
@@ -256,7 +257,7 @@ func TestEncodeError(t *testing.T) {
 			desc: "Unauthorized",
 			errs: []error{
 				svcerr.ErrAuthentication,
-				errors.ErrAuthentication,
+				svcerr.ErrAuthentication,
 				apiutil.ErrBearerToken,
 			},
 			code: http.StatusUnauthorized,
@@ -272,8 +273,8 @@ func TestEncodeError(t *testing.T) {
 		{
 			desc: "Conflict",
 			errs: []error{
-				svcerr.ErrConflict,
-				errors.ErrConflict,
+				repoerr.ErrConflict,
+				repoerr.ErrConflict,
 			},
 			code: http.StatusConflict,
 		},
@@ -281,8 +282,8 @@ func TestEncodeError(t *testing.T) {
 			desc: "Forbidden",
 			errs: []error{
 				svcerr.ErrAuthorization,
-				errors.ErrAuthorization,
-				errors.ErrDomainAuthorization,
+				svcerr.ErrAuthorization,
+				svcerr.ErrDomainAuthorization,
 			},
 			code: http.StatusForbidden,
 		},

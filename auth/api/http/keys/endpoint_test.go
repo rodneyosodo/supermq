@@ -20,7 +20,8 @@ import (
 	"github.com/absmach/magistrala/auth/mocks"
 	"github.com/absmach/magistrala/internal/apiutil"
 	mglog "github.com/absmach/magistrala/logger"
-	"github.com/absmach/magistrala/pkg/errors"
+	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
+	svcerr "github.com/absmach/magistrala/pkg/errors/service"
 	"github.com/absmach/magistrala/pkg/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -240,21 +241,21 @@ func TestRetrieve(t *testing.T) {
 			id:     "non-existing",
 			token:  token.AccessToken,
 			status: http.StatusNotFound,
-			err:    errors.ErrNotFound,
+			err:    repoerr.ErrNotFound,
 		},
 		{
 			desc:   "retrieve a key with an invalid token",
 			id:     k.AccessToken,
 			token:  "wrong",
 			status: http.StatusUnauthorized,
-			err:    errors.ErrAuthentication,
+			err:    svcerr.ErrAuthentication,
 		},
 		{
 			desc:   "retrieve a key with an empty token",
 			token:  "",
 			id:     k.AccessToken,
 			status: http.StatusUnauthorized,
-			err:    errors.ErrAuthentication,
+			err:    svcerr.ErrAuthentication,
 		},
 	}
 
