@@ -17,7 +17,6 @@ import (
 	"github.com/absmach/magistrala"
 	"github.com/absmach/magistrala/coap"
 	"github.com/absmach/magistrala/pkg/errors"
-	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
 	"github.com/absmach/magistrala/pkg/messaging"
 	"github.com/go-chi/chi/v5"
@@ -100,13 +99,13 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 		resp.Code = codes.Created
 		err = service.Publish(m.Context, key, msg)
 	default:
-		err = repoerr.ErrNotFound
+		err = svcerr.ErrNotFound
 	}
 	if err != nil {
 		switch {
 		case err == errBadOptions:
 			resp.Code = codes.BadOption
-		case err == repoerr.ErrNotFound:
+		case err == svcerr.ErrNotFound:
 			resp.Code = codes.NotFound
 		case errors.Contains(err, svcerr.ErrAuthorization),
 			errors.Contains(err, svcerr.ErrAuthentication):

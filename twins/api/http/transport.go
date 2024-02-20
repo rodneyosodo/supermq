@@ -214,6 +214,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, svcerr.ErrNotFound):
 		w.WriteHeader(http.StatusNotFound)
+	case errors.Contains(err, svcerr.ErrConflict):
+		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, svcerr.ErrCreateEntity),
 		errors.Contains(err, svcerr.ErrUpdateEntity),
 		errors.Contains(err, svcerr.ErrViewEntity),

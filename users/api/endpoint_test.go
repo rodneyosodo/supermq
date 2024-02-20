@@ -21,7 +21,6 @@ import (
 	mglog "github.com/absmach/magistrala/logger"
 	mgclients "github.com/absmach/magistrala/pkg/clients"
 	"github.com/absmach/magistrala/pkg/errors"
-	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
 	gmocks "github.com/absmach/magistrala/pkg/groups/mocks"
 	"github.com/absmach/magistrala/pkg/uuid"
@@ -129,7 +128,7 @@ func TestRegisterClient(t *testing.T) {
 			token:       validToken,
 			contentType: contentType,
 			status:      http.StatusConflict,
-			err:         repoerr.ErrConflict,
+			err:         svcerr.ErrConflict,
 		},
 		{
 			desc:        "register a new user with an empty token",
@@ -1094,7 +1093,7 @@ func TestPasswordResetRequest(t *testing.T) {
 			data:        fmt.Sprintf(`{"email": "%s", "host": "%s"}`, "invalid", testhost),
 			contentType: contentType,
 			status:      http.StatusNotFound,
-			err:         repoerr.ErrNotFound,
+			err:         svcerr.ErrNotFound,
 		},
 		{
 			desc:        "password reset with malformed data",

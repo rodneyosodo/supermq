@@ -10,7 +10,6 @@ import (
 
 	"github.com/absmach/magistrala"
 	"github.com/absmach/magistrala/pkg/errors"
-	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
 	"github.com/go-kit/kit/endpoint"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
@@ -88,9 +87,9 @@ func decodeError(err error) error {
 		case codes.FailedPrecondition:
 			return errors.Wrap(errors.ErrMalformedEntity, errors.New(st.Message()))
 		case codes.NotFound:
-			return errors.Wrap(repoerr.ErrNotFound, errors.New(st.Message()))
+			return errors.Wrap(svcerr.ErrNotFound, errors.New(st.Message()))
 		case codes.AlreadyExists:
-			return errors.Wrap(repoerr.ErrConflict, errors.New(st.Message()))
+			return errors.Wrap(svcerr.ErrConflict, errors.New(st.Message()))
 		case codes.OK:
 			if msg := st.Message(); msg != "" {
 				return errors.Wrap(errors.ErrUnidentified, errors.New(msg))

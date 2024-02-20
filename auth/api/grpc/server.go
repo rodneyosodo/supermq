@@ -10,7 +10,6 @@ import (
 	"github.com/absmach/magistrala/auth"
 	"github.com/absmach/magistrala/internal/apiutil"
 	"github.com/absmach/magistrala/pkg/errors"
-	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
 	"google.golang.org/grpc/codes"
@@ -547,9 +546,9 @@ func encodeError(err error) error {
 	case errors.Contains(err, svcerr.ErrAuthorization),
 		errors.Contains(err, svcerr.ErrDomainAuthorization):
 		return status.Error(codes.PermissionDenied, err.Error())
-	case errors.Contains(err, repoerr.ErrNotFound):
+	case errors.Contains(err, svcerr.ErrNotFound):
 		return status.Error(codes.NotFound, err.Error())
-	case errors.Contains(err, repoerr.ErrConflict):
+	case errors.Contains(err, svcerr.ErrConflict):
 		return status.Error(codes.AlreadyExists, err.Error())
 	default:
 		return status.Error(codes.Internal, err.Error())

@@ -11,7 +11,6 @@ import (
 	"github.com/absmach/magistrala"
 	"github.com/absmach/magistrala/auth"
 	"github.com/absmach/magistrala/pkg/errors"
-	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
 	"github.com/go-kit/kit/endpoint"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
@@ -727,11 +726,11 @@ func decodeError(err error) error {
 	if st, ok := status.FromError(err); ok {
 		switch st.Code() {
 		case codes.NotFound:
-			return errors.Wrap(repoerr.ErrNotFound, errors.New(st.Message()))
+			return errors.Wrap(svcerr.ErrNotFound, errors.New(st.Message()))
 		case codes.InvalidArgument:
 			return errors.Wrap(errors.ErrMalformedEntity, errors.New(st.Message()))
 		case codes.AlreadyExists:
-			return errors.Wrap(repoerr.ErrConflict, errors.New(st.Message()))
+			return errors.Wrap(svcerr.ErrConflict, errors.New(st.Message()))
 		case codes.Unauthenticated:
 			return errors.Wrap(svcerr.ErrAuthentication, errors.New(st.Message()))
 		case codes.OK:

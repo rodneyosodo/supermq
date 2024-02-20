@@ -21,7 +21,6 @@ import (
 	mglog "github.com/absmach/magistrala/logger"
 	mgclients "github.com/absmach/magistrala/pkg/clients"
 	"github.com/absmach/magistrala/pkg/errors"
-	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
 	gmocks "github.com/absmach/magistrala/pkg/groups/mocks"
 	"github.com/absmach/magistrala/pkg/uuid"
@@ -130,7 +129,7 @@ func TestCreateThing(t *testing.T) {
 			token:       validToken,
 			contentType: contentType,
 			status:      http.StatusConflict,
-			err:         repoerr.ErrConflict,
+			err:         svcerr.ErrConflict,
 		},
 		{
 			desc:        "register a new thing with an empty token",

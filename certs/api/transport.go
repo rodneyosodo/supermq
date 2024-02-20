@@ -155,6 +155,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		errors.Contains(err, apiutil.ErrInvalidCertData),
 		errors.Contains(err, apiutil.ErrLimitSize):
 		w.WriteHeader(http.StatusBadRequest)
+	case errors.Contains(err, svcerr.ErrConflict):
+		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, svcerr.ErrCreateEntity),
 		errors.Contains(err, svcerr.ErrViewEntity),
 		errors.Contains(err, svcerr.ErrRemoveEntity):

@@ -297,7 +297,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusForbidden)
 	case errors.Contains(err, bootstrap.ErrThings):
 		w.WriteHeader(http.StatusServiceUnavailable)
-
+	case errors.Contains(err, svcerr.ErrConflict):
+		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, svcerr.ErrCreateEntity),
 		errors.Contains(err, svcerr.ErrUpdateEntity),
 		errors.Contains(err, svcerr.ErrViewEntity),

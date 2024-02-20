@@ -20,7 +20,6 @@ import (
 	"github.com/absmach/magistrala/auth/mocks"
 	"github.com/absmach/magistrala/internal/apiutil"
 	mglog "github.com/absmach/magistrala/logger"
-	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
 	"github.com/absmach/magistrala/pkg/uuid"
 	"github.com/stretchr/testify/assert"
@@ -241,7 +240,7 @@ func TestRetrieve(t *testing.T) {
 			id:     "non-existing",
 			token:  token.AccessToken,
 			status: http.StatusNotFound,
-			err:    repoerr.ErrNotFound,
+			err:    svcerr.ErrNotFound,
 		},
 		{
 			desc:   "retrieve a key with an invalid token",

@@ -13,7 +13,6 @@ import (
 	"github.com/absmach/magistrala/internal/postgres"
 	mgclients "github.com/absmach/magistrala/pkg/clients"
 	"github.com/absmach/magistrala/pkg/errors"
-	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
 	"github.com/gofrs/uuid"
 )
@@ -130,7 +129,7 @@ func EncodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case errors.Contains(err, svcerr.ErrNotFound):
 		w.WriteHeader(http.StatusNotFound)
 	case errors.Contains(err, postgres.ErrMemberAlreadyAssigned),
-		errors.Contains(err, repoerr.ErrConflict):
+		errors.Contains(err, svcerr.ErrConflict):
 		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, svcerr.ErrAuthorization),
 		errors.Contains(err, svcerr.ErrDomainAuthorization):

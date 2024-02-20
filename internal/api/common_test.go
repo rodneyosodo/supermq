@@ -15,7 +15,6 @@ import (
 	"github.com/absmach/magistrala/internal/apiutil"
 	"github.com/absmach/magistrala/internal/testsutil"
 	"github.com/absmach/magistrala/pkg/errors"
-	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
 	"github.com/stretchr/testify/assert"
 )
@@ -273,8 +272,8 @@ func TestEncodeError(t *testing.T) {
 		{
 			desc: "Conflict",
 			errs: []error{
-				repoerr.ErrConflict,
-				repoerr.ErrConflict,
+				svcerr.ErrConflict,
+				svcerr.ErrConflict,
 			},
 			code: http.StatusConflict,
 		},
