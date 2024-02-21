@@ -13,7 +13,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/absmach/magistrala/pkg/errors"
+	svcerr "github.com/absmach/magistrala/pkg/errors/service"
 	ory "github.com/ory/client-go"
 	"golang.org/x/oauth2"
 )
@@ -48,7 +48,7 @@ func (sdk *SDK) Validate(ctx context.Context, token string) error {
 		return fmt.Errorf("failed to identify user: %w", decodeError(resp))
 	}
 	if !introspectedToken.Active {
-		return errors.ErrAuthentication
+		return svcerr.ErrAuthentication
 	}
 
 	return nil
@@ -74,7 +74,7 @@ func (sdk *SDK) Refresh(ctx context.Context, token string) (oauth2.Token, error)
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return oauth2.Token{}, errors.ErrAuthentication
+		return oauth2.Token{}, svcerr.ErrAuthentication
 	}
 
 	body, err := io.ReadAll(res.Body)

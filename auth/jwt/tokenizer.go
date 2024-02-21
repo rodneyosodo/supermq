@@ -142,11 +142,11 @@ func (repo *tokenizer) Parse(token string) (auth.Key, error) {
 		default:
 			kratosRefreshToken, ok := tkn.Get(oauthRefreshTokenField)
 			if !ok {
-				return auth.Key{}, errors.ErrAuthentication
+				return auth.Key{}, svcerr.ErrAuthentication
 			}
 			token, err := repo.sdk.Refresh(context.Background(), kratosRefreshToken.(string))
 			if err != nil {
-				return auth.Key{}, errors.Wrap(errors.ErrAuthentication, err)
+				return auth.Key{}, errors.Wrap(svcerr.ErrAuthentication, err)
 			}
 			key.OAuth.AccessToken = token.AccessToken
 			key.OAuth.RefreshToken = token.RefreshToken
@@ -154,14 +154,14 @@ func (repo *tokenizer) Parse(token string) (auth.Key, error) {
 			return key, nil
 		}
 	case !ok:
-		return auth.Key{}, errors.ErrAuthentication
+		return auth.Key{}, svcerr.ErrAuthentication
 	}
 	kratosRefreshToken, ok := tkn.Get(oauthRefreshTokenField)
 	switch {
 	case ok:
 		key.OAuth.RefreshToken = kratosRefreshToken.(string)
 	case !ok:
-		return auth.Key{}, errors.ErrAuthentication
+		return auth.Key{}, svcerr.ErrAuthentication
 	}
 
 	return key, nil
