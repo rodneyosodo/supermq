@@ -13,6 +13,7 @@ import (
 	"time"
 
 	mfclients "github.com/absmach/magistrala/pkg/clients"
+	"github.com/absmach/magistrala/pkg/errors"
 	"github.com/absmach/magistrala/users"
 	"golang.org/x/oauth2"
 )
@@ -114,49 +115,55 @@ func CallbackHandler(cfg *Config, svc users.Service) http.HandlerFunc {
 		}
 
 		if state != cfg.state {
-			http.Redirect(w, r, cfg.uiRedirectURL, http.StatusTemporaryRedirect)
+			encodeError(w, errors.New("invalid state"))
+			http.Redirect(w, r, cfg.uiRedirectURL, http.StatusSeeOther)
 			return
 		}
 
 		if code := r.FormValue("code"); code != "" {
 			client, token, err := cfg.Profile(r.Context(), code)
 			if err != nil {
-				http.Redirect(w, r, cfg.uiRedirectURL, http.StatusTemporaryRedirect)
+				encodeError(w, err)
+				http.Redirect(w, r, cfg.uiRedirectURL, http.StatusSeeOther)
 				return
 			}
 
 			jwt, err := svc.OAuthCallback(r.Context(), action, token, client)
 			if err != nil {
-				// We set the error cookie to be read by the frontend
-				cookie := &http.Cookie{
-					Name:    "error",
-					Value:   err.Error(),
-					Path:    "/",
-					Expires: time.Now().Add(time.Second),
-				}
-
-				http.SetCookie(w, cookie)
+				encodeError(w, err)
+				http.Redirect(w, r, cfg.uiRedirectURL, http.StatusSeeOther)
+				return
 			}
 
-			if jwt.AccessToken != "" && jwt.RefreshToken != nil {
-				accessTokenCookie := &http.Cookie{
-					Name:     "token",
-					Value:    jwt.AccessToken,
-					Path:     "/",
-					HttpOnly: true,
-				}
-				refresTokenCookie := &http.Cookie{
-					Name:     "refresh_token",
-					Value:    *jwt.RefreshToken,
-					Path:     "/",
-					HttpOnly: true,
-				}
+			http.SetCookie(w, &http.Cookie{
+				Name:     "access_token",
+				Value:    jwt.AccessToken,
+				Path:     "/",
+				HttpOnly: true,
+				Secure:   true,
+			})
+			http.SetCookie(w, &http.Cookie{
+				Name:     "refresh_token",
+				Value:    *jwt.RefreshToken,
+				Path:     "/",
+				HttpOnly: true,
+				Secure:   true,
+			})
 
-				http.SetCookie(w, accessTokenCookie)
-				http.SetCookie(w, refresTokenCookie)
-			}
+			http.Redirect(w, r, cfg.uiRedirectURL, http.StatusFound)
+			return
 		}
 
-		http.Redirect(w, r, cfg.uiRedirectURL, http.StatusTemporaryRedirect)
+		encodeError(w, errors.New("empty code"))
+		http.Redirect(w, r, cfg.uiRedirectURL, http.StatusSeeOther)
 	}
+}
+
+func encodeError(w http.ResponseWriter, err error) {
+	http.SetCookie(w, &http.Cookie{
+		Name:    "magistrala-error",
+		Value:   err.Error(),
+		Path:    "/",
+		Expires: time.Now().Add(time.Second * 10),
+	})
 }
