@@ -69,8 +69,12 @@ func (repo *tokenizer) Issue(key auth.Key) (string, error) {
 		Expiration(key.ExpiresAt)
 	builder.Claim(userField, key.User)
 	builder.Claim(domainField, key.Domain)
-	builder.Claim(oauthAccessTokenField, key.OAuth.AccessToken)
-	builder.Claim(oauthRefreshTokenField, key.OAuth.RefreshToken)
+	if key.OAuth.AccessToken != "" {
+		builder.Claim(oauthAccessTokenField, key.OAuth.AccessToken)
+	}
+	if key.OAuth.RefreshToken != "" {
+		builder.Claim(oauthRefreshTokenField, key.OAuth.RefreshToken)
+	}
 	if key.ID != "" {
 		builder.JwtID(key.ID)
 	}
@@ -134,8 +138,7 @@ func (repo *tokenizer) Parse(token string) (auth.Key, error) {
 	key.ExpiresAt = tkn.Expiration()
 
 	kratosAccessToken, ok := tkn.Get(oauthAccessTokenField)
-	switch {
-	case ok:
+	if ok {
 		switch repo.sdk.Validate(context.Background(), kratosAccessToken.(string)) {
 		case nil:
 			key.OAuth.AccessToken = kratosAccessToken.(string)
@@ -153,15 +156,13 @@ func (repo *tokenizer) Parse(token string) (auth.Key, error) {
 
 			return key, nil
 		}
-	case !ok:
-		return auth.Key{}, svcerr.ErrAuthentication
 	}
+
 	kratosRefreshToken, ok := tkn.Get(oauthRefreshTokenField)
-	switch {
-	case ok:
-		key.OAuth.RefreshToken = kratosRefreshToken.(string)
-	case !ok:
-		return auth.Key{}, svcerr.ErrAuthentication
+	if ok {
+		if kratosRefreshToken.(string) != "" {
+			key.OAuth.RefreshToken = kratosRefreshToken.(string)
+		}
 	}
 
 	return key, nil
