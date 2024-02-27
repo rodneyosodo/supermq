@@ -414,12 +414,14 @@ func (spre sendPasswordResetEvent) Encode() (map[string]interface{}, error) {
 }
 
 type oauthCallbackEvent struct {
-	state string
+	state    string
+	provider string
 }
 
 func (kce oauthCallbackEvent) Encode() (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"operation": oauthCallback,
 		"state":     kce.state,
+		"provider":  kce.provider,
 	}, nil
 }

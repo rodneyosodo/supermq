@@ -34,6 +34,8 @@ import (
 	mgclients "github.com/absmach/magistrala/pkg/clients"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
 	"github.com/absmach/magistrala/pkg/groups"
+	"github.com/absmach/magistrala/pkg/oauth"
+	kratosoauth "github.com/absmach/magistrala/pkg/oauth/kratos"
 	"github.com/absmach/magistrala/pkg/uuid"
 	"github.com/absmach/magistrala/users"
 	capi "github.com/absmach/magistrala/users/api"
@@ -41,7 +43,6 @@ import (
 	uevents "github.com/absmach/magistrala/users/events"
 	"github.com/absmach/magistrala/users/hasher"
 	"github.com/absmach/magistrala/users/kratos"
-	"github.com/absmach/magistrala/users/oauth"
 	ctracing "github.com/absmach/magistrala/users/tracing"
 	"github.com/caarlos0/env/v10"
 	"github.com/go-chi/chi/v5"
@@ -51,12 +52,13 @@ import (
 )
 
 const (
-	svcName        = "users"
-	envPrefixDB    = "MG_USERS_DB_"
-	envPrefixHTTP  = "MG_USERS_HTTP_"
-	envPrefixAuth  = "MG_AUTH_GRPC_"
-	defDB          = "users"
-	defSvcHTTPPort = "9002"
+	svcName         = "users"
+	envPrefixDB     = "MG_USERS_DB_"
+	envPrefixHTTP   = "MG_USERS_HTTP_"
+	envPrefixAuth   = "MG_AUTH_GRPC_"
+	envPrefixKratos = "MG_KRATOS_"
+	defDB           = "users"
+	defSvcHTTPPort  = "9002"
 
 	streamID = "magistrala.users"
 )
@@ -76,11 +78,7 @@ type config struct {
 	KratosURL          string  `env:"MG_KRATOS_URL"                envDefault:"http://localhost:4433"`
 	KratosAPIKey       string  `env:"MG_KRATOS_API_KEY"            envDefault:""`
 	KratosSchemaID     string  `env:"MG_KRATOS_SCHEMA_ID"          envDefault:""`
-	KratosClientID     string  `env:"MG_KRATOS_CLIENT_ID"          envDefault:""`
-	KratosClientSecret string  `env:"MG_KRATOS_CLIENT_SECRET"      envDefault:""`
-	KratosRedirectURL  string  `env:"MG_KRATOS_REDIRECT_URL"       envDefault:"http://localhost/oauth/callback/kratos"`
-	State              string  `env:"MG_KRATOS_STATE"              envDefault:""`
-	RedirectURL        string  `env:"MG_USERS_UI_REDIRECT_URL"     envDefault:"http://localhost:9095/domains"`
+	OAuthUIRedirectURL string  `env:"MG_OAUTH_UI_REDIRECT_URL"     envDefault:"http://localhost:9095/domains"`
 	PassRegex          *regexp.Regexp
 }
 
@@ -97,8 +95,6 @@ func main() {
 		log.Fatalf("invalid password validation rules %s\n", cfg.PassRegexText)
 	}
 	cfg.PassRegex = passRegex
-
-	kconf := oauth.NewConfig(cfg.KratosURL, cfg.KratosClientID, cfg.KratosClientSecret, cfg.State, cfg.KratosRedirectURL, cfg.RedirectURL)
 
 	logger, err := mglog.New(os.Stdout, cfg.LogLevel)
 	if err != nil {
@@ -182,8 +178,16 @@ func main() {
 		return
 	}
 
+	kratosConfig := oauth.Config{}
+	if err := env.ParseWithOptions(&kratosConfig, env.Options{Prefix: envPrefixKratos}); err != nil {
+		logger.Error(err.Error())
+		exitCode = 1
+		return
+	}
+	kratosProvider := kratosoauth.NewProvider(kratosConfig, cfg.KratosURL, cfg.OAuthUIRedirectURL, "")
+
 	mux := chi.NewRouter()
-	httpSrv := httpserver.New(ctx, cancel, svcName, httpServerConfig, capi.MakeHandler(csvc, gsvc, mux, logger, cfg.InstanceID, &kconf), logger)
+	httpSrv := httpserver.New(ctx, cancel, svcName, httpServerConfig, capi.MakeHandler(csvc, gsvc, mux, logger, cfg.InstanceID, kratosProvider), logger)
 
 	if cfg.SendTelemetry {
 		chc := chclient.New(svcName, magistrala.Version, logger, cancel)

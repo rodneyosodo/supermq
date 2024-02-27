@@ -194,10 +194,11 @@ func (ms *metricsMiddleware) Identify(ctx context.Context, token string) (string
 }
 
 // OAuthCallback instruments OAuthCallback method with metrics.
-func (ms *metricsMiddleware) OAuthCallback(ctx context.Context, state string, token *oauth2.Token, client mgclients.Client) (*magistrala.Token, error) {
+func (ms *metricsMiddleware) OAuthCallback(ctx context.Context, provider, state string, token oauth2.Token, client mgclients.Client) (*magistrala.Token, error) {
+	method := provider + "_oauth_callback_" + state
 	defer func(begin time.Time) {
-		ms.counter.With("method", "oauth_callback").Add(1)
-		ms.latency.With("method", "oauth_callback").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", method).Add(1)
+		ms.latency.With("method", method).Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return ms.svc.OAuthCallback(ctx, state, token, client)
+	return ms.svc.OAuthCallback(ctx, provider, state, token, client)
 }

@@ -297,8 +297,8 @@ func (es *eventStore) SendPasswordReset(ctx context.Context, host, email, user, 
 	return es.Publish(ctx, event)
 }
 
-func (es *eventStore) OAuthCallback(ctx context.Context, state string, kratosToken *oauth2.Token, client mgclients.Client) (*magistrala.Token, error) {
-	token, err := es.svc.OAuthCallback(ctx, state, kratosToken, client)
+func (es *eventStore) OAuthCallback(ctx context.Context, provider, state string, oauthToken oauth2.Token, client mgclients.Client) (*magistrala.Token, error) {
+	token, err := es.svc.OAuthCallback(ctx, provider, state, oauthToken, client)
 	if err != nil {
 		return token, err
 	}

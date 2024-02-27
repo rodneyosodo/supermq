@@ -10,9 +10,9 @@ import (
 	"strconv"
 
 	"github.com/absmach/magistrala/auth"
-	"github.com/absmach/magistrala/auth/kratos"
 	"github.com/absmach/magistrala/pkg/errors"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
+	"github.com/absmach/magistrala/pkg/oauth"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
@@ -40,22 +40,23 @@ const (
 	tokenType              = "type"
 	userField              = "user"
 	domainField            = "domain"
+	oauthProviderField     = "oauth_provider"
 	oauthAccessTokenField  = "access_token"
 	oauthRefreshTokenField = "refresh_token"
 )
 
 type tokenizer struct {
 	secret []byte
-	sdk    *kratos.SDK
+	kratos oauth.Provider
 }
 
 var _ auth.Tokenizer = (*tokenizer)(nil)
 
 // NewRepository instantiates an implementation of Token repository.
-func New(secret []byte, sdk *kratos.SDK) auth.Tokenizer {
+func New(secret []byte, kratos oauth.Provider) auth.Tokenizer {
 	return &tokenizer{
 		secret: secret,
-		sdk:    sdk,
+		kratos: kratos,
 	}
 }
 
@@ -69,11 +70,12 @@ func (repo *tokenizer) Issue(key auth.Key) (string, error) {
 		Expiration(key.ExpiresAt)
 	builder.Claim(userField, key.User)
 	builder.Claim(domainField, key.Domain)
-	if key.OAuth.AccessToken != "" {
-		builder.Claim(oauthAccessTokenField, key.OAuth.AccessToken)
-	}
-	if key.OAuth.RefreshToken != "" {
-		builder.Claim(oauthRefreshTokenField, key.OAuth.RefreshToken)
+	if key.OAuth.Provider == repo.kratos.Name() {
+		builder.Claim(oauthProviderField, repo.kratos.Name())
+		builder.Claim(repo.kratos.Name(), map[string]interface{}{
+			oauthAccessTokenField:  key.OAuth.AccessToken,
+			oauthRefreshTokenField: key.OAuth.RefreshToken,
+		})
 	}
 	if key.ID != "" {
 		builder.JwtID(key.ID)
@@ -137,17 +139,46 @@ func (repo *tokenizer) Parse(token string) (auth.Key, error) {
 	key.IssuedAt = tkn.IssuedAt()
 	key.ExpiresAt = tkn.Expiration()
 
-	kratosAccessToken, ok := tkn.Get(oauthAccessTokenField)
+	oauthProvider, ok := tkn.Get(oauthProviderField)
 	if ok {
-		switch repo.sdk.Validate(context.Background(), kratosAccessToken.(string)) {
-		case nil:
-			key.OAuth.AccessToken = kratosAccessToken.(string)
-		default:
-			kratosRefreshToken, ok := tkn.Get(oauthRefreshTokenField)
-			if !ok {
-				return auth.Key{}, svcerr.ErrAuthentication
+		provider, ok := oauthProvider.(string)
+		if !ok {
+			return auth.Key{}, svcerr.ErrAuthentication
+		}
+		if provider == repo.kratos.Name() {
+			key, err = parseOAuthToken(context.Background(), repo.kratos, tkn, key)
+			if err != nil {
+				return auth.Key{}, errors.Wrap(svcerr.ErrAuthentication, err)
 			}
-			token, err := repo.sdk.Refresh(context.Background(), kratosRefreshToken.(string))
+
+			return key, nil
+		}
+	}
+
+	return key, nil
+}
+
+func parseOAuthToken(ctx context.Context, provider oauth.Provider, token jwt.Token, key auth.Key) (auth.Key, error) {
+	oauthToken, ok := token.Get(provider.Name())
+	if ok {
+		claims, ok := oauthToken.(map[string]interface{})
+		if !ok {
+			return auth.Key{}, svcerr.ErrAuthentication
+		}
+		accessToken, ok := claims[oauthAccessTokenField].(string)
+		if !ok {
+			return auth.Key{}, svcerr.ErrAuthentication
+		}
+		refreshToken, ok := claims[oauthRefreshTokenField].(string)
+		if !ok {
+			return auth.Key{}, svcerr.ErrAuthentication
+		}
+
+		switch provider.Validate(ctx, accessToken) {
+		case nil:
+			key.OAuth.AccessToken = accessToken
+		default:
+			token, err := provider.Refresh(ctx, refreshToken)
 			if err != nil {
 				return auth.Key{}, errors.Wrap(svcerr.ErrAuthentication, err)
 			}
@@ -156,13 +187,10 @@ func (repo *tokenizer) Parse(token string) (auth.Key, error) {
 
 			return key, nil
 		}
-	}
 
-	kratosRefreshToken, ok := tkn.Get(oauthRefreshTokenField)
-	if ok {
-		if kratosRefreshToken.(string) != "" {
-			key.OAuth.RefreshToken = kratosRefreshToken.(string)
-		}
+		key.OAuth.RefreshToken = refreshToken
+
+		return key, nil
 	}
 
 	return key, nil

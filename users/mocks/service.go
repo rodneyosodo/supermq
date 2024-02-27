@@ -209,9 +209,9 @@ func (_m *Service) ListMembers(ctx context.Context, token string, objectKind str
 	return r0, r1
 }
 
-// OAuthCallback provides a mock function with given fields: ctx, state, kratosToken, client
-func (_m *Service) OAuthCallback(ctx context.Context, state string, kratosToken *oauth2.Token, client clients.Client) (*magistrala.Token, error) {
-	ret := _m.Called(ctx, state, kratosToken, client)
+// OAuthCallback provides a mock function with given fields: ctx, provider, state, token, client
+func (_m *Service) OAuthCallback(ctx context.Context, provider string, state string, token oauth2.Token, client clients.Client) (*magistrala.Token, error) {
+	ret := _m.Called(ctx, provider, state, token, client)
 
 	if len(ret) == 0 {
 		panic("no return value specified for OAuthCallback")
@@ -219,19 +219,19 @@ func (_m *Service) OAuthCallback(ctx context.Context, state string, kratosToken 
 
 	var r0 *magistrala.Token
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, *oauth2.Token, clients.Client) (*magistrala.Token, error)); ok {
-		return rf(ctx, state, kratosToken, client)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, oauth2.Token, clients.Client) (*magistrala.Token, error)); ok {
+		return rf(ctx, provider, state, token, client)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, *oauth2.Token, clients.Client) *magistrala.Token); ok {
-		r0 = rf(ctx, state, kratosToken, client)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, oauth2.Token, clients.Client) *magistrala.Token); ok {
+		r0 = rf(ctx, provider, state, token, client)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*magistrala.Token)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, *oauth2.Token, clients.Client) error); ok {
-		r1 = rf(ctx, state, kratosToken, client)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, oauth2.Token, clients.Client) error); ok {
+		r1 = rf(ctx, provider, state, token, client)
 	} else {
 		r1 = ret.Error(1)
 	}

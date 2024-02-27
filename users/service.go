@@ -573,7 +573,7 @@ func (svc service) Identify(ctx context.Context, token string) (string, error) {
 	return user.GetUserId(), nil
 }
 
-func (svc service) OAuthCallback(ctx context.Context, state string, token *oauth2.Token, client mgclients.Client) (*magistrala.Token, error) {
+func (svc service) OAuthCallback(ctx context.Context, provider, state string, token oauth2.Token, client mgclients.Client) (*magistrala.Token, error) {
 	switch state {
 	case signInState:
 		rclient, err := svc.clients.RetrieveByID(ctx, client.ID)
@@ -583,6 +583,7 @@ func (svc service) OAuthCallback(ctx context.Context, state string, token *oauth
 		claims := &magistrala.IssueReq{
 			UserId:            rclient.ID,
 			Type:              0,
+			OauthProvider:     provider,
 			OauthAccessToken:  token.AccessToken,
 			OauthRefreshToken: token.RefreshToken,
 		}
@@ -595,6 +596,7 @@ func (svc service) OAuthCallback(ctx context.Context, state string, token *oauth
 		claims := &magistrala.IssueReq{
 			UserId:            rclient.ID,
 			Type:              0,
+			OauthProvider:     provider,
 			OauthAccessToken:  token.AccessToken,
 			OauthRefreshToken: token.RefreshToken,
 		}

@@ -21,10 +21,7 @@ func issueEndpoint(svc auth.Service) endpoint.Endpoint {
 			Type:   req.keyType,
 			User:   req.userID,
 			Domain: req.domainID,
-			OAuth: auth.OAuthToken{
-				AccessToken:  req.oauthAccessToken,
-				RefreshToken: req.oauthRefreshToken,
-			},
+			OAuth:  req.oauthToken,
 		}
 		tkn, err := svc.Issue(ctx, "", key)
 		if err != nil {

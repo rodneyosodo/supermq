@@ -59,6 +59,7 @@ func (kt KeyType) String() string {
 }
 
 type OAuthToken struct {
+	Provider     string `json:"provider,omitempty"`
 	AccessToken  string `json:"access_token,omitempty"`
 	RefreshToken string `json:"refresh_token,omitempty"`
 }

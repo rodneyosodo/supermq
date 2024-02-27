@@ -400,11 +400,12 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, token string) (id str
 }
 
 // OAuthCallback logs the oauth_callback request. It logs the state and the time it took to complete the request.
-func (lm *loggingMiddleware) OAuthCallback(ctx context.Context, state string, token *oauth2.Token, client mgclients.Client) (t *magistrala.Token, err error) {
+func (lm *loggingMiddleware) OAuthCallback(ctx context.Context, provider, state string, token oauth2.Token, client mgclients.Client) (t *magistrala.Token, err error) {
 	defer func(begin time.Time) {
 		args := []any{
 			slog.String("duration", time.Since(begin).String()),
 			slog.String("state", state),
+			slog.String("provider", provider),
 		}
 		if err != nil {
 			args = append(args, slog.Any("error", err))
@@ -413,5 +414,5 @@ func (lm *loggingMiddleware) OAuthCallback(ctx context.Context, state string, to
 		}
 		lm.logger.Info("OAuth callback completed successfully", args...)
 	}(time.Now())
-	return lm.svc.OAuthCallback(ctx, state, token, client)
+	return lm.svc.OAuthCallback(ctx, provider, state, token, client)
 }

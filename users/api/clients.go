@@ -15,15 +15,15 @@ import (
 	"github.com/absmach/magistrala/internal/apiutil"
 	mgclients "github.com/absmach/magistrala/pkg/clients"
 	"github.com/absmach/magistrala/pkg/errors"
+	"github.com/absmach/magistrala/pkg/oauth"
 	"github.com/absmach/magistrala/users"
-	"github.com/absmach/magistrala/users/oauth"
 	"github.com/go-chi/chi/v5"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func clientsHandler(svc users.Service, r *chi.Mux, logger *slog.Logger, cfg *oauth.Config) http.Handler {
+func clientsHandler(svc users.Service, r *chi.Mux, logger *slog.Logger, kratos oauth.Provider) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, api.EncodeError)),
 	}
@@ -172,7 +172,7 @@ func clientsHandler(svc users.Service, r *chi.Mux, logger *slog.Logger, cfg *oau
 		opts...,
 	), "list_users_by_domain_id").ServeHTTP)
 
-	r.HandleFunc("/oauth/callback/kratos", oauth.CallbackHandler(cfg, svc))
+	r.HandleFunc("/oauth/callback/kratos", oauth.CallbackHandler(kratos, svc))
 
 	return r
 }
