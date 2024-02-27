@@ -16,6 +16,7 @@ import (
 	mgclients "github.com/absmach/magistrala/pkg/clients"
 	"github.com/absmach/magistrala/pkg/errors"
 	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
+	svcerr "github.com/absmach/magistrala/pkg/errors/service"
 	"github.com/absmach/magistrala/users"
 	ory "github.com/ory/client-go"
 )
@@ -92,7 +93,7 @@ func (repo *repository) Save(ctx context.Context, user mgclients.Client) (mgclie
 func (repo *repository) RetrieveByID(ctx context.Context, id string) (mgclients.Client, error) {
 	identity, resp, err := repo.IdentityAPI.GetIdentity(ctx, id).Execute()
 	if err != nil {
-		return mgclients.Client{}, errors.Wrap(errors.ErrViewEntity, decodeError(resp))
+		return mgclients.Client{}, errors.Wrap(repoerr.ErrViewEntity, decodeError(resp))
 	}
 
 	if identity == nil {
@@ -105,7 +106,7 @@ func (repo *repository) RetrieveByID(ctx context.Context, id string) (mgclients.
 func (repo *repository) RetrieveByIdentity(ctx context.Context, identity string) (mgclients.Client, error) {
 	identities, resp, err := repo.IdentityAPI.ListIdentities(ctx).PageSize(1).CredentialsIdentifier(identity).Execute()
 	if err != nil {
-		return mgclients.Client{}, errors.Wrap(errors.ErrViewEntity, decodeError(resp))
+		return mgclients.Client{}, errors.Wrap(repoerr.ErrViewEntity, decodeError(resp))
 	}
 
 	if len(identities) == 0 || len(identities) != 1 {
@@ -122,11 +123,11 @@ func (repo *repository) RetrieveAll(ctx context.Context, page mgclients.Page) (m
 func (repo *repository) filterUsers(ctx context.Context, page mgclients.Page) (mgclients.ClientsPage, error) {
 	identities, resp, err := repo.IdentityAPI.ListIdentities(ctx).Page(0).PerPage(1000).Execute()
 	if err != nil {
-		return mgclients.ClientsPage{}, errors.Wrap(errors.ErrViewEntity, decodeError(resp))
+		return mgclients.ClientsPage{}, errors.Wrap(repoerr.ErrViewEntity, decodeError(resp))
 	}
 	total, err := strconv.ParseUint(resp.Header.Get("X-Total-Count"), 10, 64)
 	if err != nil {
-		return mgclients.ClientsPage{}, errors.Wrap(errors.ErrViewEntity, err)
+		return mgclients.ClientsPage{}, errors.Wrap(repoerr.ErrViewEntity, err)
 	}
 
 	clients := []mgclients.Client{}
@@ -214,11 +215,11 @@ func (repo *repository) RetrieveAllBasicInfo(ctx context.Context, pm mgclients.P
 func (repo *repository) RetrieveAllByIDs(ctx context.Context, pm mgclients.Page) (mgclients.ClientsPage, error) {
 	identities, resp, err := repo.IdentityAPI.ListIdentities(ctx).Page(int64(pm.Offset)).PerPage(int64(pm.Limit)).IdsFilter(pm.IDs).Execute()
 	if err != nil {
-		return mgclients.ClientsPage{}, errors.Wrap(errors.ErrViewEntity, decodeError(resp))
+		return mgclients.ClientsPage{}, errors.Wrap(repoerr.ErrViewEntity, decodeError(resp))
 	}
 	total, err := strconv.ParseUint(resp.Header.Get("X-Total-Count"), 10, 64)
 	if err != nil {
-		return mgclients.ClientsPage{}, errors.Wrap(errors.ErrViewEntity, err)
+		return mgclients.ClientsPage{}, errors.Wrap(repoerr.ErrViewEntity, err)
 	}
 
 	clients := []mgclients.Client{}
@@ -250,7 +251,7 @@ func (repo *repository) Update(ctx context.Context, user mgclients.Client) (mgcl
 		MetadataPublic: user.Metadata,
 	}).Execute()
 	if err != nil {
-		return mgclients.Client{}, errors.Wrap(errors.ErrUpdateEntity, decodeError(resp))
+		return mgclients.Client{}, errors.Wrap(repoerr.ErrUpdateEntity, decodeError(resp))
 	}
 
 	return toClient(identity), nil
@@ -271,7 +272,7 @@ func (repo *repository) UpdateTags(ctx context.Context, user mgclients.Client) (
 		},
 	}).Execute()
 	if err != nil {
-		return mgclients.Client{}, errors.Wrap(errors.ErrUpdateEntity, decodeError(resp))
+		return mgclients.Client{}, errors.Wrap(repoerr.ErrUpdateEntity, decodeError(resp))
 	}
 
 	return toClient(identity), nil
@@ -290,7 +291,7 @@ func (repo *repository) UpdateIdentity(ctx context.Context, user mgclients.Clien
 		},
 	}).Execute()
 	if err != nil {
-		return mgclients.Client{}, errors.Wrap(errors.ErrUpdateEntity, decodeError(resp))
+		return mgclients.Client{}, errors.Wrap(repoerr.ErrUpdateEntity, decodeError(resp))
 	}
 
 	return toClient(identity), nil
@@ -299,7 +300,7 @@ func (repo *repository) UpdateIdentity(ctx context.Context, user mgclients.Clien
 func (repo *repository) UpdateSecret(ctx context.Context, user mgclients.Client) (mgclients.Client, error) {
 	hashedPassword, err := repo.hasher.Hash(user.Credentials.Secret)
 	if err != nil {
-		return mgclients.Client{}, errors.Wrap(errors.ErrUpdateEntity, err)
+		return mgclients.Client{}, errors.Wrap(repoerr.ErrUpdateEntity, err)
 	}
 	identity, resp, err := repo.IdentityAPI.UpdateIdentity(ctx, user.ID).UpdateIdentityBody(ory.UpdateIdentityBody{
 		Credentials: &ory.IdentityWithCredentials{
@@ -312,7 +313,7 @@ func (repo *repository) UpdateSecret(ctx context.Context, user mgclients.Client)
 		},
 	}).Execute()
 	if err != nil {
-		return mgclients.Client{}, errors.Wrap(errors.ErrUpdateEntity, decodeError(resp))
+		return mgclients.Client{}, errors.Wrap(repoerr.ErrUpdateEntity, decodeError(resp))
 	}
 
 	return toClient(identity), nil
@@ -332,7 +333,7 @@ func (repo *repository) ChangeStatus(ctx context.Context, user mgclients.Client)
 		},
 	}).Execute()
 	if err != nil {
-		return mgclients.Client{}, errors.Wrap(errors.ErrUpdateEntity, decodeError(resp))
+		return mgclients.Client{}, errors.Wrap(repoerr.ErrUpdateEntity, decodeError(resp))
 	}
 
 	return toClient(identity), nil
@@ -355,7 +356,7 @@ func (repo *repository) UpdateRole(ctx context.Context, user mgclients.Client) (
 		},
 	}).Execute()
 	if err != nil {
-		return mgclients.Client{}, errors.Wrap(errors.ErrUpdateEntity, decodeError(resp))
+		return mgclients.Client{}, errors.Wrap(repoerr.ErrUpdateEntity, decodeError(resp))
 	}
 
 	return toClient(identity), nil
@@ -364,10 +365,10 @@ func (repo *repository) UpdateRole(ctx context.Context, user mgclients.Client) (
 func (repo *repository) CheckSuperAdmin(ctx context.Context, adminID string) error {
 	rclient, err := repo.RetrieveByID(ctx, adminID)
 	if err != nil {
-		return errors.ErrAuthorization
+		return svcerr.ErrAuthorization
 	}
 	if rclient.Role != mgclients.AdminRole {
-		return errors.ErrAuthorization
+		return svcerr.ErrAuthorization
 	}
 	return nil
 }
