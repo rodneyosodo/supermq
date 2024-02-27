@@ -220,7 +220,7 @@ func newService(db *sqlx.DB, tracer trace.Tracer, cfg config, dbConfig pgclient.
 	pa := spicedb.NewPolicyAgent(spicedbClient, logger)
 	idProvider := uuid.New()
 
-	kratosProvider := kratos.NewProvider(kratosConfig, cfg.KratosURL, "", cfg.KratosAPIKey)
+	kratosProvider := kratos.NewProvider(kratosConfig, cfg.KratosURL, "", "", cfg.KratosAPIKey)
 	t := jwt.New([]byte(cfg.SecretKey), kratosProvider)
 
 	svc := auth.New(keysRepo, domainsRepo, idProvider, t, pa, cfg.AccessDuration, cfg.RefreshDuration, cfg.InvitationDuration)

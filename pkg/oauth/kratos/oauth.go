@@ -40,11 +40,12 @@ type config struct {
 	state         string
 	baseURL       string
 	uiRedirectURL string
+	errorURL      string
 	userInfoURL   string
 }
 
 // NewProvider returns a new Kratos OAuth provider.
-func NewProvider(cfg oauth.Config, baseURL, uiRedirectURL, apiKey string) oauth.Provider {
+func NewProvider(cfg oauth.Config, baseURL, uiRedirectURL, errorURL, apiKey string) oauth.Provider {
 	conf := ory.NewConfiguration()
 	conf.Servers = []ory.ServerConfiguration{{URL: baseURL}}
 	conf.AddDefaultHeader("Authorization", "Bearer "+apiKey)
@@ -65,6 +66,7 @@ func NewProvider(cfg oauth.Config, baseURL, uiRedirectURL, apiKey string) oauth.
 		state:         cfg.State,
 		baseURL:       baseURL,
 		uiRedirectURL: uiRedirectURL,
+		errorURL:      errorURL,
 		userInfoURL:   baseURL + userInfoEndpoint,
 	}
 }
@@ -79,6 +81,10 @@ func (cfg *config) State() string {
 
 func (cfg *config) RedirectURL() string {
 	return cfg.uiRedirectURL
+}
+
+func (cfg *config) ErrorURL() string {
+	return cfg.errorURL
 }
 
 func (cfg *config) Profile(ctx context.Context, code string) (mfclients.Client, oauth2.Token, error) {

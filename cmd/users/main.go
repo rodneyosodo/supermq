@@ -79,6 +79,7 @@ type config struct {
 	KratosAPIKey       string  `env:"MG_KRATOS_API_KEY"            envDefault:""`
 	KratosSchemaID     string  `env:"MG_KRATOS_SCHEMA_ID"          envDefault:""`
 	OAuthUIRedirectURL string  `env:"MG_OAUTH_UI_REDIRECT_URL"     envDefault:"http://localhost:9095/domains"`
+	OAuthUIErrorURL    string  `env:"MG_OAUTH_UI_ERROR_URL"        envDefault:"http://localhost:9095/error"`
 	PassRegex          *regexp.Regexp
 }
 
@@ -184,7 +185,7 @@ func main() {
 		exitCode = 1
 		return
 	}
-	kratosProvider := kratosoauth.NewProvider(kratosConfig, cfg.KratosURL, cfg.OAuthUIRedirectURL, "")
+	kratosProvider := kratosoauth.NewProvider(kratosConfig, cfg.KratosURL, cfg.OAuthUIRedirectURL, cfg.OAuthUIErrorURL, "")
 
 	mux := chi.NewRouter()
 	httpSrv := httpserver.New(ctx, cancel, svcName, httpServerConfig, capi.MakeHandler(csvc, gsvc, mux, logger, cfg.InstanceID, kratosProvider), logger)

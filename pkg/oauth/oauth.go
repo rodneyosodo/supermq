@@ -7,10 +7,8 @@ import (
 	"context"
 	"net/http"
 	"strings"
-	"time"
 
 	mfclients "github.com/absmach/magistrala/pkg/clients"
-	"github.com/absmach/magistrala/pkg/errors"
 	"github.com/absmach/magistrala/users"
 	"golang.org/x/oauth2"
 )
@@ -32,6 +30,8 @@ type Provider interface {
 	State() string
 	// RedirectURL returns the URL to redirect the user to after the OAuth2 flow
 	RedirectURL() string
+	// ErrorURL returns the URL to redirect the user to if an error occurs during the OAuth2 flow
+	ErrorURL() string
 	// Profile returns the user's profile and token from the OAuth2 provider
 	Profile(ctx context.Context, code string) (mfclients.Client, oauth2.Token, error)
 	// Validate checks if the access token is valid.
@@ -50,23 +50,20 @@ func CallbackHandler(oauth Provider, svc users.Service) http.HandlerFunc {
 		}
 
 		if state != oauth.State() {
-			encodeError(w, errors.New("invalid state"))
-			http.Redirect(w, r, oauth.RedirectURL(), http.StatusSeeOther)
+			http.Redirect(w, r, oauth.ErrorURL()+"?error=invalid%20state", http.StatusSeeOther)
 			return
 		}
 
 		if code := r.FormValue("code"); code != "" {
 			client, token, err := oauth.Profile(r.Context(), code)
 			if err != nil {
-				encodeError(w, err)
-				http.Redirect(w, r, oauth.RedirectURL(), http.StatusSeeOther)
+				http.Redirect(w, r, oauth.ErrorURL()+"?error="+err.Error(), http.StatusSeeOther)
 				return
 			}
 
 			jwt, err := svc.OAuthCallback(r.Context(), oauth.Name(), action, token, client)
 			if err != nil {
-				encodeError(w, err)
-				http.Redirect(w, r, oauth.RedirectURL(), http.StatusSeeOther)
+				http.Redirect(w, r, oauth.ErrorURL()+"?error="+err.Error(), http.StatusSeeOther)
 				return
 			}
 
@@ -89,16 +86,6 @@ func CallbackHandler(oauth Provider, svc users.Service) http.HandlerFunc {
 			return
 		}
 
-		encodeError(w, errors.New("empty code"))
-		http.Redirect(w, r, oauth.RedirectURL(), http.StatusSeeOther)
+		http.Redirect(w, r, oauth.ErrorURL()+"?error=empty%20code", http.StatusSeeOther)
 	}
-}
-
-func encodeError(w http.ResponseWriter, err error) {
-	http.SetCookie(w, &http.Cookie{
-		Name:    "magistrala_error",
-		Value:   err.Error(),
-		Path:    "/",
-		Expires: time.Now().Add(time.Second * 10),
-	})
 }
