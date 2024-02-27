@@ -12,6 +12,7 @@ import (
 	"github.com/absmach/magistrala/auth"
 	"github.com/absmach/magistrala/pkg/errors"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
+	"github.com/absmach/magistrala/pkg/oauth2"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
@@ -35,22 +36,27 @@ var (
 )
 
 const (
-	issuerName  = "magistrala.auth"
-	tokenType   = "type"
-	userField   = "user"
-	domainField = "domain"
+	issuerName             = "magistrala.auth"
+	tokenType              = "type"
+	userField              = "user"
+	domainField            = "domain"
+	oauthProviderField     = "oauth_provider"
+	oauthAccessTokenField  = "access_token"
+	oauthRefreshTokenField = "refresh_token"
 )
 
 type tokenizer struct {
 	secret []byte
+	google oauth2.Provider
 }
 
 var _ auth.Tokenizer = (*tokenizer)(nil)
 
 // NewRepository instantiates an implementation of Token repository.
-func New(secret []byte) auth.Tokenizer {
+func New(secret []byte, google oauth2.Provider) auth.Tokenizer {
 	return &tokenizer{
 		secret: secret,
+		google: google,
 	}
 }
 
@@ -64,6 +70,13 @@ func (repo *tokenizer) Issue(key auth.Key) (string, error) {
 		Expiration(key.ExpiresAt)
 	builder.Claim(userField, key.User)
 	builder.Claim(domainField, key.Domain)
+	if key.OAuth.Provider == repo.google.Name() {
+		builder.Claim(oauthProviderField, repo.google.Name())
+		builder.Claim(repo.google.Name(), map[string]interface{}{
+			oauthAccessTokenField:  key.OAuth.AccessToken,
+			oauthRefreshTokenField: key.OAuth.RefreshToken,
+		})
+	}
 	if key.ID != "" {
 		builder.JwtID(key.ID)
 	}
@@ -125,5 +138,61 @@ func (repo *tokenizer) Parse(token string) (auth.Key, error) {
 	key.Subject = tkn.Subject()
 	key.IssuedAt = tkn.IssuedAt()
 	key.ExpiresAt = tkn.Expiration()
+
+	oauthProvider, ok := tkn.Get(oauthProviderField)
+	if ok {
+		provider, ok := oauthProvider.(string)
+		if !ok {
+			return auth.Key{}, svcerr.ErrAuthentication
+		}
+		key.OAuth.Provider = provider
+		if provider == repo.google.Name() {
+			key, err = parseOAuthToken(context.Background(), repo.google, tkn, key)
+			if err != nil {
+				return auth.Key{}, errors.Wrap(svcerr.ErrAuthentication, err)
+			}
+
+			return key, nil
+		}
+	}
+
+	return key, nil
+}
+
+func parseOAuthToken(ctx context.Context, provider oauth2.Provider, token jwt.Token, key auth.Key) (auth.Key, error) {
+	oauthToken, ok := token.Get(provider.Name())
+	if ok {
+		claims, ok := oauthToken.(map[string]interface{})
+		if !ok {
+			return auth.Key{}, svcerr.ErrAuthentication
+		}
+		accessToken, ok := claims[oauthAccessTokenField].(string)
+		if !ok {
+			return auth.Key{}, svcerr.ErrAuthentication
+		}
+		refreshToken, ok := claims[oauthRefreshTokenField].(string)
+		if !ok {
+			return auth.Key{}, svcerr.ErrAuthentication
+		}
+
+		switch provider.Validate(ctx, accessToken) {
+		case nil:
+			key.OAuth.AccessToken = accessToken
+		default:
+			token, err := provider.Refresh(ctx, refreshToken)
+			if err != nil {
+				return auth.Key{}, errors.Wrap(svcerr.ErrAuthentication, err)
+			}
+			key.OAuth.AccessToken = token.AccessToken
+			key.OAuth.RefreshToken = token.RefreshToken
+
+			return key, nil
+		}
+
+		key.OAuth.RefreshToken = refreshToken
+
+		return key, nil
+	}
+
 	return key, nil
 }

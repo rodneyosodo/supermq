@@ -89,7 +89,7 @@ func newUsersServer() (*httptest.Server, *mocks.Service) {
 
 	logger := mglog.NewMock()
 	mux := chi.NewRouter()
-	httpapi.MakeHandler(svc, gsvc, mux, logger, "")
+	httpapi.MakeHandler(svc, gsvc, mux, logger, nil, "")
 
 	return httptest.NewServer(mux), svc
 }

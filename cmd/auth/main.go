@@ -30,6 +30,8 @@ import (
 	grpcserver "github.com/absmach/magistrala/internal/server/grpc"
 	httpserver "github.com/absmach/magistrala/internal/server/http"
 	mglog "github.com/absmach/magistrala/logger"
+	"github.com/absmach/magistrala/pkg/oauth2"
+	"github.com/absmach/magistrala/pkg/oauth2/google"
 	"github.com/absmach/magistrala/pkg/uuid"
 	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
@@ -44,13 +46,14 @@ import (
 )
 
 const (
-	svcName        = "auth"
-	envPrefixHTTP  = "MG_AUTH_HTTP_"
-	envPrefixGrpc  = "MG_AUTH_GRPC_"
-	envPrefixDB    = "MG_AUTH_DB_"
-	defDB          = "auth"
-	defSvcHTTPPort = "8180"
-	defSvcGRPCPort = "8181"
+	svcName         = "auth"
+	envPrefixHTTP   = "MG_AUTH_HTTP_"
+	envPrefixGrpc   = "MG_AUTH_GRPC_"
+	envPrefixDB     = "MG_AUTH_DB_"
+	envPrefixGoogle = "MG_GOOGLE_"
+	defDB           = "auth"
+	defSvcHTTPPort  = "8180"
+	defSvcGRPCPort  = "8181"
 )
 
 type config struct {
@@ -127,7 +130,14 @@ func main() {
 		return
 	}
 
-	svc := newService(db, tracer, cfg, dbConfig, logger, spicedbclient)
+	googleConfig := oauth2.Config{}
+	if err := env.ParseWithOptions(&googleConfig, env.Options{Prefix: envPrefixGoogle}); err != nil {
+		logger.Error(err.Error())
+		exitCode = 1
+		return
+	}
+
+	svc := newService(db, tracer, cfg, dbConfig, googleConfig, logger, spicedbclient)
 
 	httpServerConfig := server.Config{Port: defSvcHTTPPort}
 	if err := env.ParseWithOptions(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
@@ -201,13 +211,14 @@ func initSchema(ctx context.Context, client *authzed.ClientWithExperimental, sch
 	return nil
 }
 
-func newService(db *sqlx.DB, tracer trace.Tracer, cfg config, dbConfig pgclient.Config, logger *slog.Logger, spicedbClient *authzed.ClientWithExperimental) auth.Service {
+func newService(db *sqlx.DB, tracer trace.Tracer, cfg config, dbConfig pgclient.Config, googleConfig oauth2.Config, logger *slog.Logger, spicedbClient *authzed.ClientWithExperimental) auth.Service {
 	database := postgres.NewDatabase(db, dbConfig, tracer)
 	keysRepo := apostgres.New(database)
 	domainsRepo := apostgres.NewDomainRepository(database)
 	pa := spicedb.NewPolicyAgent(spicedbClient, logger)
 	idProvider := uuid.New()
-	t := jwt.New([]byte(cfg.SecretKey))
+	googleProvider := google.NewProvider(googleConfig, "", "")
+	t := jwt.New([]byte(cfg.SecretKey), googleProvider)
 
 	svc := auth.New(keysRepo, domainsRepo, idProvider, t, pa, cfg.AccessDuration, cfg.RefreshDuration, cfg.InvitationDuration)
 	svc = api.LoggingMiddleware(svc, logger)

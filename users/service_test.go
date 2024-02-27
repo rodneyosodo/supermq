@@ -159,7 +159,7 @@ func TestRegisterClient(t *testing.T) {
 			},
 			addPoliciesResponse:    &magistrala.AddPoliciesRes{Added: true},
 			deletePoliciesResponse: &magistrala.DeletePoliciesRes{Deleted: true},
-			err:                    repoerr.ErrMissingSecret,
+			err:                    nil,
 		},
 		{
 			desc: "register a new client with a weak secret",

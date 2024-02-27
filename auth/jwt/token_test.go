@@ -12,6 +12,7 @@ import (
 	authjwt "github.com/absmach/magistrala/auth/jwt"
 	"github.com/absmach/magistrala/pkg/errors"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
+	oauth2mocks "github.com/absmach/magistrala/pkg/oauth2/mocks"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/stretchr/testify/assert"
@@ -62,7 +63,9 @@ func newToken(issuerName string, key auth.Key) string {
 }
 
 func TestIssue(t *testing.T) {
-	tokenizer := authjwt.New([]byte(secret))
+	provider := new(oauth2mocks.Provider)
+	tokenizer := authjwt.New([]byte(secret), provider)
+	provider.On("Name").Return("test")
 
 	cases := []struct {
 		desc string
@@ -86,7 +89,9 @@ func TestIssue(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-	tokenizer := authjwt.New([]byte(secret))
+	provider := new(oauth2mocks.Provider)
+	tokenizer := authjwt.New([]byte(secret), provider)
+	provider.On("Name").Return("test")
 
 	token, err := tokenizer.Issue(key())
 	require.Nil(t, err, fmt.Sprintf("issuing key expected to succeed: %s", err))
