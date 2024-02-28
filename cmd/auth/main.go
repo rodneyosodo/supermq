@@ -136,8 +136,9 @@ func main() {
 		exitCode = 1
 		return
 	}
+	googleProvider := google.NewProvider(googleConfig, "", "")
 
-	svc := newService(db, tracer, cfg, dbConfig, googleConfig, logger, spicedbclient)
+	svc := newService(db, tracer, cfg, dbConfig, logger, spicedbclient, googleProvider)
 
 	httpServerConfig := server.Config{Port: defSvcHTTPPort}
 	if err := env.ParseWithOptions(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
@@ -211,14 +212,14 @@ func initSchema(ctx context.Context, client *authzed.ClientWithExperimental, sch
 	return nil
 }
 
-func newService(db *sqlx.DB, tracer trace.Tracer, cfg config, dbConfig pgclient.Config, googleConfig oauth2.Config, logger *slog.Logger, spicedbClient *authzed.ClientWithExperimental) auth.Service {
+func newService(db *sqlx.DB, tracer trace.Tracer, cfg config, dbConfig pgclient.Config, logger *slog.Logger, spicedbClient *authzed.ClientWithExperimental, providers ...oauth2.Provider) auth.Service {
 	database := postgres.NewDatabase(db, dbConfig, tracer)
 	keysRepo := apostgres.New(database)
 	domainsRepo := apostgres.NewDomainRepository(database)
 	pa := spicedb.NewPolicyAgent(spicedbClient, logger)
 	idProvider := uuid.New()
-	googleProvider := google.NewProvider(googleConfig, "", "")
-	t := jwt.New([]byte(cfg.SecretKey), googleProvider)
+
+	t := jwt.New([]byte(cfg.SecretKey), providers...)
 
 	svc := auth.New(keysRepo, domainsRepo, idProvider, t, pa, cfg.AccessDuration, cfg.RefreshDuration, cfg.InvitationDuration)
 	svc = api.LoggingMiddleware(svc, logger)

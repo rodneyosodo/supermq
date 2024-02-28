@@ -23,7 +23,7 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func clientsHandler(svc users.Service, r *chi.Mux, logger *slog.Logger, google oauth2.Provider) http.Handler {
+func clientsHandler(svc users.Service, r *chi.Mux, logger *slog.Logger, providers ...oauth2.Provider) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, api.EncodeError)),
 	}
@@ -172,7 +172,9 @@ func clientsHandler(svc users.Service, r *chi.Mux, logger *slog.Logger, google o
 		opts...,
 	), "list_users_by_domain_id").ServeHTTP)
 
-	r.HandleFunc("/oauth/callback/google", oauth2CallbackHandler(google, svc))
+	for _, provider := range providers {
+		r.HandleFunc("/oauth/callback/"+provider.Name(), oauth2CallbackHandler(provider, svc))
+	}
 
 	return r
 }

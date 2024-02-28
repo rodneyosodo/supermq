@@ -48,7 +48,7 @@ func setupUsers() (*httptest.Server, *umocks.Repository, *gmocks.Repository, *au
 
 	logger := mglog.NewMock()
 	mux := chi.NewRouter()
-	api.MakeHandler(csvc, gsvc, mux, logger, new(oauth2mocks.Provider), "")
+	api.MakeHandler(csvc, gsvc, mux, logger, "", new(oauth2mocks.Provider))
 
 	return httptest.NewServer(mux), crepo, gRepo, auth
 }

@@ -6,6 +6,7 @@ package google
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -151,7 +152,7 @@ func (cfg *config) Validate(ctx context.Context, token string) error {
 }
 
 func (cfg *config) Refresh(ctx context.Context, token string) (oauth2.Token, error) {
-	payload := strings.NewReader("grant_type=refresh_token&refresh_token=" + token + "&client_id=" + cfg.config.ClientID + "&client_secret=" + cfg.config.ClientSecret)
+	payload := strings.NewReader(fmt.Sprintf("grant_type=refresh_token&refresh_token=%s&client_id=%s&client_secret=%s", token, cfg.config.ClientID, cfg.config.ClientSecret))
 	client := &http.Client{
 		Timeout: defTimeout,
 	}

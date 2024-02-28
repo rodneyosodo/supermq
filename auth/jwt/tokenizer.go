@@ -49,21 +49,21 @@ const (
 )
 
 type tokenizer struct {
-	secret []byte
-	google oauth2.Provider
+	secret    []byte
+	providers []oauth2.Provider
 }
 
 var _ auth.Tokenizer = (*tokenizer)(nil)
 
 // NewRepository instantiates an implementation of Token repository.
-func New(secret []byte, google oauth2.Provider) auth.Tokenizer {
+func New(secret []byte, providers ...oauth2.Provider) auth.Tokenizer {
 	return &tokenizer{
-		secret: secret,
-		google: google,
+		secret:    secret,
+		providers: providers,
 	}
 }
 
-func (repo *tokenizer) Issue(key auth.Key) (string, error) {
+func (tok *tokenizer) Issue(key auth.Key) (string, error) {
 	builder := jwt.NewBuilder()
 	builder.
 		Issuer(issuerName).
@@ -73,13 +73,16 @@ func (repo *tokenizer) Issue(key auth.Key) (string, error) {
 		Expiration(key.ExpiresAt)
 	builder.Claim(userField, key.User)
 	builder.Claim(domainField, key.Domain)
-	if key.OAuth.Provider == repo.google.Name() {
-		builder.Claim(oauthProviderField, repo.google.Name())
-		builder.Claim(repo.google.Name(), map[string]interface{}{
-			oauthAccessTokenField:  key.OAuth.AccessToken,
-			oauthRefreshTokenField: key.OAuth.RefreshToken,
-		})
+	for _, provider := range tok.providers {
+		if key.OAuth.Provider == provider.Name() {
+			builder.Claim(oauthProviderField, provider.Name())
+			builder.Claim(provider.Name(), map[string]interface{}{
+				oauthAccessTokenField:  key.OAuth.AccessToken,
+				oauthRefreshTokenField: key.OAuth.RefreshToken,
+			})
+		}
 	}
+
 	if key.ID != "" {
 		builder.JwtID(key.ID)
 	}
@@ -87,18 +90,18 @@ func (repo *tokenizer) Issue(key auth.Key) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(svcerr.ErrAuthentication, err)
 	}
-	signedTkn, err := jwt.Sign(tkn, jwt.WithKey(jwa.HS512, repo.secret))
+	signedTkn, err := jwt.Sign(tkn, jwt.WithKey(jwa.HS512, tok.secret))
 	if err != nil {
 		return "", errors.Wrap(ErrSignJWT, err)
 	}
 	return string(signedTkn), nil
 }
 
-func (repo *tokenizer) Parse(token string) (auth.Key, error) {
+func (tok *tokenizer) Parse(token string) (auth.Key, error) {
 	tkn, err := jwt.Parse(
 		[]byte(token),
 		jwt.WithValidate(true),
-		jwt.WithKey(jwa.HS512, repo.secret),
+		jwt.WithKey(jwa.HS512, tok.secret),
 	)
 	if err != nil {
 		if errors.Contains(err, errJWTExpiryKey) {
@@ -149,15 +152,15 @@ func (repo *tokenizer) Parse(token string) (auth.Key, error) {
 			return auth.Key{}, errors.Wrap(svcerr.ErrAuthentication, errInvalidProvider)
 		}
 		key.OAuth.Provider = provider
-		if provider == repo.google.Name() {
-			key, err = parseOAuthToken(context.Background(), repo.google, tkn, key)
-			if err != nil {
-				return auth.Key{}, errors.Wrap(svcerr.ErrAuthentication, err)
-			}
+		for _, provider := range tok.providers {
+			if key.OAuth.Provider == provider.Name() {
+				key, err = parseOAuthToken(context.Background(), provider, tkn, key)
+				if err != nil {
+					return auth.Key{}, errors.Wrap(svcerr.ErrAuthentication, err)
+				}
 
-			return key, nil
-		} else {
-			return auth.Key{}, errors.Wrap(svcerr.ErrAuthentication, errInvalidProvider)
+				return key, nil
+			}
 		}
 	}
 
