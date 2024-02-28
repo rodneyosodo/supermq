@@ -22,6 +22,7 @@ import (
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
 	mggroups "github.com/absmach/magistrala/pkg/groups"
 	"github.com/absmach/magistrala/pkg/groups/mocks"
+	oauth2mocks "github.com/absmach/magistrala/pkg/oauth2/mocks"
 	sdk "github.com/absmach/magistrala/pkg/sdk/go"
 	"github.com/absmach/magistrala/users"
 	"github.com/absmach/magistrala/users/api"
@@ -41,7 +42,7 @@ func setupGroups() (*httptest.Server, *mocks.Repository, *authmocks.AuthClient) 
 
 	logger := mglog.NewMock()
 	mux := chi.NewRouter()
-	api.MakeHandler(csvc, gsvc, mux, logger, nil, "")
+	api.MakeHandler(csvc, gsvc, mux, logger, new(oauth2mocks.Provider), "")
 
 	return httptest.NewServer(mux), grepo, auth
 }
