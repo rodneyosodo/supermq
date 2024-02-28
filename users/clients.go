@@ -76,6 +76,7 @@ type Service interface {
 	// a new pair of access and refresh tokens.
 	RefreshToken(ctx context.Context, accessToken, domainID string) (*magistrala.Token, error)
 
-	// OAuthCallback handles the callback from any OAuth provider.
+	// OAuthCallback handles the callback from any supported OAuth provider.
+	// It processes the OAuth tokens and either signs in or signs up the user based on the provided state.
 	OAuthCallback(ctx context.Context, provider string, state mgoauth2.State, token oauth2.Token, client clients.Client) (*magistrala.Token, error)
 }

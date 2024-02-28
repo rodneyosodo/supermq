@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	mfclients "github.com/absmach/magistrala/pkg/clients"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
@@ -19,6 +20,7 @@ import (
 )
 
 const (
+	defTimeout   = 1 * time.Minute
 	userInfoURL  = "https://www.googleapis.com/oauth2/v2/userinfo?access_token="
 	tokenInfoURL = "https://oauth2.googleapis.com/tokeninfo?access_token="
 )
@@ -128,7 +130,9 @@ func (cfg *config) Profile(ctx context.Context, code string) (mfclients.Client, 
 }
 
 func (cfg *config) Validate(ctx context.Context, token string) error {
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: defTimeout,
+	}
 	req, err := http.NewRequest(http.MethodGet, tokenInfoURL+token, http.NoBody)
 	if err != nil {
 		return svcerr.ErrAuthentication
@@ -148,7 +152,9 @@ func (cfg *config) Validate(ctx context.Context, token string) error {
 
 func (cfg *config) Refresh(ctx context.Context, token string) (oauth2.Token, error) {
 	payload := strings.NewReader("grant_type=refresh_token&refresh_token=" + token + "&client_id=" + cfg.config.ClientID + "&client_secret=" + cfg.config.ClientSecret)
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: defTimeout,
+	}
 	req, err := http.NewRequest(http.MethodPost, cfg.config.Endpoint.TokenURL, payload)
 	if err != nil {
 		return oauth2.Token{}, err

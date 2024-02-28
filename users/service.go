@@ -5,6 +5,7 @@ package users
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"time"
 
@@ -41,12 +42,6 @@ var (
 
 	// ErrAddPolicies indictaed a failre to add policies.
 	errDeletePolicies = errors.New("failed to delete policies")
-
-	// errFailedToSignUp indicates failed sign up during oauth2.0 sign in.
-	errFailedToSignUp = errors.New("failed to sign up")
-
-	// errFailedToSignIn indicates failed sign in during oauth2.0 sign in.
-	errUserNotSignedUp = errors.New("user not signed up")
 )
 
 type service struct {
@@ -598,7 +593,10 @@ func (svc service) OAuthCallback(ctx context.Context, provider string, state mgo
 	case mgoauth2.SignIn:
 		rclient, err := svc.clients.RetrieveByIdentity(ctx, client.Credentials.Identity)
 		if err != nil {
-			return &magistrala.Token{}, errUserNotSignedUp
+			if errors.Contains(err, repoerr.ErrNotFound) {
+				return &magistrala.Token{}, errors.New("user not signed up")
+			}
+			return &magistrala.Token{}, err
 		}
 		claims := &magistrala.IssueReq{
 			UserId:            rclient.ID,
@@ -611,7 +609,10 @@ func (svc service) OAuthCallback(ctx context.Context, provider string, state mgo
 	case mgoauth2.SignUp:
 		rclient, err := svc.RegisterClient(ctx, "", client)
 		if err != nil {
-			return &magistrala.Token{}, errFailedToSignUp
+			if errors.Contains(err, repoerr.ErrConflict) {
+				return &magistrala.Token{}, errors.New("user already exists")
+			}
+			return &magistrala.Token{}, err
 		}
 		claims := &magistrala.IssueReq{
 			UserId:            rclient.ID,
@@ -622,7 +623,7 @@ func (svc service) OAuthCallback(ctx context.Context, provider string, state mgo
 		}
 		return svc.auth.Issue(ctx, claims)
 	default:
-		return &magistrala.Token{}, nil
+		return &magistrala.Token{}, fmt.Errorf("unknown state %s", state)
 	}
 }
 

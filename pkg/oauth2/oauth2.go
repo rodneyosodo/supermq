@@ -57,20 +57,20 @@ type Config struct {
 //
 //go:generate mockery --name Provider --output=./mocks --filename oauth2.go --quiet --note "Copyright (c) Abstract Machines"
 type Provider interface {
-	// Name returns the name of the OAuth2 provider
+	// Name returns the name of the OAuth2 provider.
 	Name() string
-	// State returns the state for the OAuth2 flow
+	// State returns the current state for the OAuth2 flow.
 	State() string
-	// RedirectURL returns the URL to redirect the user to after the OAuth2 flow
+	// RedirectURL returns the URL to redirect the user to after completing the OAuth2 flow.
 	RedirectURL() string
-	// ErrorURL returns the URL to redirect the user to if an error occurs during the OAuth2 flow
+	// ErrorURL returns the URL to redirect the user to in case of an error during the OAuth2 flow.
 	ErrorURL() string
-	// IsEnabled returns true if the provider is enabled
+	// IsEnabled checks if the OAuth2 provider is enabled.
 	IsEnabled() bool
-	// Profile returns the user's profile and token from the OAuth2 provider
+	// Profile retrieves the user's profile and OAuth tokens from the OAuth2 provider.
 	Profile(ctx context.Context, code string) (mfclients.Client, oauth2.Token, error)
-	// Validate checks if the access token is valid.
+	// Validate checks the validity of the access token.
 	Validate(ctx context.Context, token string) error
-	// Refresh refreshes the token.
+	// Refresh refreshes the access token using the refresh token.
 	Refresh(ctx context.Context, token string) (oauth2.Token, error)
 }
