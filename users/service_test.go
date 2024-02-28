@@ -2587,7 +2587,7 @@ func TestOAuthCallback(t *testing.T) {
 			saveResponse:      mgclients.Client{},
 			saveErr:           repoerr.ErrConflict,
 			issueResponse:     &magistrala.Token{},
-			err:               errors.New("failed to sign up"),
+			err:               errors.New("user already exists"),
 		},
 	}
 
