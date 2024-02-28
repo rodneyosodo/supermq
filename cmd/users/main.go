@@ -179,7 +179,7 @@ func main() {
 
 	googleConfig := oauth2.Config{}
 	if err := env.ParseWithOptions(&googleConfig, env.Options{Prefix: envPrefixGoogle}); err != nil {
-		logger.Error(err.Error())
+		logger.Error(fmt.Sprintf("failed to load %s Google configuration : %s", svcName, err.Error()))
 		exitCode = 1
 		return
 	}

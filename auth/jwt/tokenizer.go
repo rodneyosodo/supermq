@@ -33,6 +33,9 @@ var (
 	ErrValidateJWTToken = errors.New("failed to validate jwt token")
 	// ErrJSONHandle indicates an error in handling JSON.
 	ErrJSONHandle = errors.New("failed to perform operation JSON")
+
+	// errInvalidProvider indicates an invalid OAuth2.0 provider.
+	errInvalidProvider = errors.New("invalid OAuth2.0 provider")
 )
 
 const (
@@ -143,7 +146,7 @@ func (repo *tokenizer) Parse(token string) (auth.Key, error) {
 	if ok {
 		provider, ok := oauthProvider.(string)
 		if !ok {
-			return auth.Key{}, svcerr.ErrAuthentication
+			return auth.Key{}, errors.Wrap(svcerr.ErrAuthentication, errInvalidProvider)
 		}
 		key.OAuth.Provider = provider
 		if provider == repo.google.Name() {
@@ -153,6 +156,8 @@ func (repo *tokenizer) Parse(token string) (auth.Key, error) {
 			}
 
 			return key, nil
+		} else {
+			return auth.Key{}, errors.Wrap(svcerr.ErrAuthentication, errInvalidProvider)
 		}
 	}
 
@@ -164,15 +169,15 @@ func parseOAuthToken(ctx context.Context, provider oauth2.Provider, token jwt.To
 	if ok {
 		claims, ok := oauthToken.(map[string]interface{})
 		if !ok {
-			return auth.Key{}, svcerr.ErrAuthentication
+			return auth.Key{}, errors.Wrap(fmt.Errorf("invalid claims for %s token", provider.Name()), ErrParseToken)
 		}
 		accessToken, ok := claims[oauthAccessTokenField].(string)
 		if !ok {
-			return auth.Key{}, svcerr.ErrAuthentication
+			return auth.Key{}, errors.Wrap(fmt.Errorf("invalid access token claim for %s token", provider.Name()), ErrParseToken)
 		}
 		refreshToken, ok := claims[oauthRefreshTokenField].(string)
 		if !ok {
-			return auth.Key{}, svcerr.ErrAuthentication
+			return auth.Key{}, errors.Wrap(fmt.Errorf("invalid refresh token claim for %s token", provider.Name()), ErrParseToken)
 		}
 
 		switch provider.Validate(ctx, accessToken) {
