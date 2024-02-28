@@ -50,16 +50,20 @@ const (
 
 type tokenizer struct {
 	secret    []byte
-	providers []oauth2.Provider
+	providers map[string]oauth2.Provider
 }
 
 var _ auth.Tokenizer = (*tokenizer)(nil)
 
 // NewRepository instantiates an implementation of Token repository.
 func New(secret []byte, providers ...oauth2.Provider) auth.Tokenizer {
+	providersMap := make(map[string]oauth2.Provider)
+	for _, provider := range providers {
+		providersMap[provider.Name()] = provider
+	}
 	return &tokenizer{
 		secret:    secret,
-		providers: providers,
+		providers: providersMap,
 	}
 }
 
@@ -73,14 +77,17 @@ func (tok *tokenizer) Issue(key auth.Key) (string, error) {
 		Expiration(key.ExpiresAt)
 	builder.Claim(userField, key.User)
 	builder.Claim(domainField, key.Domain)
-	for _, provider := range tok.providers {
-		if key.OAuth.Provider == provider.Name() {
-			builder.Claim(oauthProviderField, provider.Name())
-			builder.Claim(provider.Name(), map[string]interface{}{
-				oauthAccessTokenField:  key.OAuth.AccessToken,
-				oauthRefreshTokenField: key.OAuth.RefreshToken,
-			})
+
+	if key.OAuth.Provider != "" {
+		provider, ok := tok.providers[key.OAuth.Provider]
+		if !ok {
+			return "", errors.Wrap(svcerr.ErrAuthentication, errInvalidProvider)
 		}
+		builder.Claim(oauthProviderField, provider.Name())
+		builder.Claim(provider.Name(), map[string]interface{}{
+			oauthAccessTokenField:  key.OAuth.AccessToken,
+			oauthRefreshTokenField: key.OAuth.RefreshToken,
+		})
 	}
 
 	if key.ID != "" {
@@ -151,16 +158,19 @@ func (tok *tokenizer) Parse(token string) (auth.Key, error) {
 		if !ok {
 			return auth.Key{}, errors.Wrap(svcerr.ErrAuthentication, errInvalidProvider)
 		}
-		key.OAuth.Provider = provider
-		for _, provider := range tok.providers {
-			if key.OAuth.Provider == provider.Name() {
-				key, err = parseOAuthToken(context.Background(), provider, tkn, key)
-				if err != nil {
-					return auth.Key{}, errors.Wrap(svcerr.ErrAuthentication, err)
-				}
-
-				return key, nil
+		if provider != "" {
+			prov, ok := tok.providers[provider]
+			if !ok {
+				return auth.Key{}, errors.Wrap(svcerr.ErrAuthentication, errInvalidProvider)
 			}
+			key.OAuth.Provider = prov.Name()
+
+			key, err = parseOAuthToken(context.Background(), prov, tkn, key)
+			if err != nil {
+				return auth.Key{}, errors.Wrap(svcerr.ErrAuthentication, err)
+			}
+
+			return key, nil
 		}
 	}
 

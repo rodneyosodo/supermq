@@ -57,8 +57,8 @@ func newToken(issuerName string, key auth.Key) string {
 
 func TestIssue(t *testing.T) {
 	provider := new(oauth2mocks.Provider)
-	tokenizer := authjwt.New([]byte(secret), provider)
 	provider.On("Name").Return("test")
+	tokenizer := authjwt.New([]byte(secret), provider)
 
 	cases := []struct {
 		desc string
@@ -101,8 +101,8 @@ func TestIssue(t *testing.T) {
 
 func TestParse(t *testing.T) {
 	provider := new(oauth2mocks.Provider)
-	tokenizer := authjwt.New([]byte(secret), provider)
 	provider.On("Name").Return("test")
+	tokenizer := authjwt.New([]byte(secret), provider)
 
 	token, err := tokenizer.Issue(key())
 	require.Nil(t, err, fmt.Sprintf("issuing key expected to succeed: %s", err))
@@ -175,6 +175,7 @@ func TestParse(t *testing.T) {
 
 func TestParseOAuthToken(t *testing.T) {
 	provider := new(oauth2mocks.Provider)
+	provider.On("Name").Return("test")
 	tokenizer := authjwt.New([]byte(secret), provider)
 
 	validKey := oauthKey(t)
