@@ -533,7 +533,7 @@ func oauth2CallbackHandler(oauth oauth2.Provider, svc users.Service) http.Handle
 		var state string
 		var flow oauth2.State
 		var err error
-		if r.FormValue("state") != "" && strings.Contains(r.FormValue("state"), "-") {
+		if strings.Contains(r.FormValue("state"), "-") {
 			state = strings.Split(r.FormValue("state"), "-")[1]
 			flow, err = oauth2.ToState(strings.Split(r.FormValue("state"), "-")[0])
 			if err != nil {

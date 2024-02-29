@@ -177,16 +177,16 @@ func main() {
 		return
 	}
 
-	googleConfig := oauth2.Config{}
-	if err := env.ParseWithOptions(&googleConfig, env.Options{Prefix: envPrefixGoogle}); err != nil {
+	oauthConfig := oauth2.Config{}
+	if err := env.ParseWithOptions(&oauthConfig, env.Options{Prefix: envPrefixGoogle}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s Google configuration : %s", svcName, err.Error()))
 		exitCode = 1
 		return
 	}
-	googleProvider := googleoauth.NewProvider(googleConfig, cfg.OAuthUIRedirectURL, cfg.OAuthUIErrorURL)
+	oauthProvider := googleoauth.NewProvider(oauthConfig, cfg.OAuthUIRedirectURL, cfg.OAuthUIErrorURL)
 
 	mux := chi.NewRouter()
-	httpSrv := httpserver.New(ctx, cancel, svcName, httpServerConfig, capi.MakeHandler(csvc, gsvc, mux, logger, cfg.InstanceID, googleProvider), logger)
+	httpSrv := httpserver.New(ctx, cancel, svcName, httpServerConfig, capi.MakeHandler(csvc, gsvc, mux, logger, cfg.InstanceID, oauthProvider), logger)
 
 	if cfg.SendTelemetry {
 		chc := chclient.New(svcName, magistrala.Version, logger, cancel)

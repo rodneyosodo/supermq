@@ -130,15 +130,15 @@ func main() {
 		return
 	}
 
-	googleConfig := oauth2.Config{}
-	if err := env.ParseWithOptions(&googleConfig, env.Options{Prefix: envPrefixGoogle}); err != nil {
+	oauthConfig := oauth2.Config{}
+	if err := env.ParseWithOptions(&oauthConfig, env.Options{Prefix: envPrefixGoogle}); err != nil {
 		logger.Error(fmt.Sprintf("failed to load %s Google configuration : %s", svcName, err.Error()))
 		exitCode = 1
 		return
 	}
-	googleProvider := google.NewProvider(googleConfig, "", "")
+	oauthProvider := google.NewProvider(oauthConfig, "", "")
 
-	svc := newService(db, tracer, cfg, dbConfig, logger, spicedbclient, googleProvider)
+	svc := newService(db, tracer, cfg, dbConfig, logger, spicedbclient, oauthProvider)
 
 	httpServerConfig := server.Config{Port: defSvcHTTPPort}
 	if err := env.ParseWithOptions(&httpServerConfig, env.Options{Prefix: envPrefixHTTP}); err != nil {
