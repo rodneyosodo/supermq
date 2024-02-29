@@ -182,15 +182,15 @@ func parseOAuthToken(ctx context.Context, provider oauth2.Provider, token jwt.To
 	if ok {
 		claims, ok := oauthToken.(map[string]interface{})
 		if !ok {
-			return auth.Key{}, errors.Wrap(fmt.Errorf("invalid claims for %s token", provider.Name()), ErrParseToken)
+			return auth.Key{}, errors.Wrap(ErrParseToken, fmt.Errorf("invalid claims for %s token", provider.Name()))
 		}
 		accessToken, ok := claims[oauthAccessTokenField].(string)
 		if !ok {
-			return auth.Key{}, errors.Wrap(fmt.Errorf("invalid access token claim for %s token", provider.Name()), ErrParseToken)
+			return auth.Key{}, errors.Wrap(ErrParseToken, fmt.Errorf("invalid access token claim for %s token", provider.Name()))
 		}
 		refreshToken, ok := claims[oauthRefreshTokenField].(string)
 		if !ok {
-			return auth.Key{}, errors.Wrap(fmt.Errorf("invalid refresh token claim for %s token", provider.Name()), ErrParseToken)
+			return auth.Key{}, errors.Wrap(ErrParseToken, fmt.Errorf("invalid refresh token claim for %s token", provider.Name()))
 		}
 
 		switch provider.Validate(ctx, accessToken) {
