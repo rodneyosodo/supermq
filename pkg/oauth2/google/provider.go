@@ -21,6 +21,7 @@ import (
 )
 
 const (
+	providerName = "google"
 	defTimeout   = 1 * time.Minute
 	userInfoURL  = "https://www.googleapis.com/oauth2/v2/userinfo?access_token="
 	tokenInfoURL = "https://oauth2.googleapis.com/tokeninfo?access_token="
@@ -57,7 +58,7 @@ func NewProvider(cfg mgoauth2.Config, uiRedirectURL, errorURL string) mgoauth2.P
 }
 
 func (cfg *config) Name() string {
-	return "google"
+	return providerName
 }
 
 func (cfg *config) State() string {
@@ -121,7 +122,7 @@ func (cfg *config) UserDetails(ctx context.Context, code string) (mfclients.Clie
 			Identity: user.Email,
 		},
 		Metadata: map[string]interface{}{
-			"oauth_provider":  "google",
+			"oauth_provider":  providerName,
 			"profile_picture": user.Picture,
 		},
 		Status: mfclients.EnabledStatus,

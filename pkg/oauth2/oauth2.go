@@ -59,18 +59,25 @@ type Config struct {
 type Provider interface {
 	// Name returns the name of the OAuth2 provider.
 	Name() string
+
 	// State returns the current state for the OAuth2 flow.
 	State() string
+
 	// RedirectURL returns the URL to redirect the user to after completing the OAuth2 flow.
 	RedirectURL() string
+
 	// ErrorURL returns the URL to redirect the user to in case of an error during the OAuth2 flow.
 	ErrorURL() string
+
 	// IsEnabled checks if the OAuth2 provider is enabled.
 	IsEnabled() bool
+
 	// UserDetails retrieves the user's details and OAuth tokens from the OAuth2 provider.
 	UserDetails(ctx context.Context, code string) (mfclients.Client, oauth2.Token, error)
+
 	// Validate checks the validity of the access token.
 	Validate(ctx context.Context, token string) error
+
 	// Refresh refreshes the access token using the refresh token.
 	Refresh(ctx context.Context, token string) (oauth2.Token, error)
 }
