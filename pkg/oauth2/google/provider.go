@@ -76,7 +76,7 @@ func (cfg *config) IsEnabled() bool {
 	return cfg.config.ClientID != "" && cfg.config.ClientSecret != ""
 }
 
-func (cfg *config) Profile(ctx context.Context, code string) (mfclients.Client, oauth2.Token, error) {
+func (cfg *config) UserDetails(ctx context.Context, code string) (mfclients.Client, oauth2.Token, error) {
 	token, err := cfg.config.Exchange(ctx, code)
 	if err != nil {
 		return mfclients.Client{}, oauth2.Token{}, err

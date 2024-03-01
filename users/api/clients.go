@@ -548,7 +548,7 @@ func oauth2CallbackHandler(oauth oauth2.Provider, svc users.Service) http.Handle
 		}
 
 		if code := r.FormValue("code"); code != "" {
-			client, token, err := oauth.Profile(r.Context(), code)
+			client, token, err := oauth.UserDetails(r.Context(), code)
 			if err != nil {
 				http.Redirect(w, r, oauth.ErrorURL()+"?error="+err.Error(), http.StatusSeeOther)
 				return

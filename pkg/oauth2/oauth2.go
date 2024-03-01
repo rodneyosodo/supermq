@@ -55,7 +55,7 @@ type Config struct {
 // Provider is an interface that provides the OAuth2 flow for a specific provider
 // (e.g. Google, GitHub, etc.)
 //
-//go:generate mockery --name Provider --output=./mocks --filename oauth2.go --quiet --note "Copyright (c) Abstract Machines"
+//go:generate mockery --name Provider --output=./mocks --filename provider.go --quiet --note "Copyright (c) Abstract Machines"
 type Provider interface {
 	// Name returns the name of the OAuth2 provider.
 	Name() string
@@ -67,8 +67,8 @@ type Provider interface {
 	ErrorURL() string
 	// IsEnabled checks if the OAuth2 provider is enabled.
 	IsEnabled() bool
-	// Profile retrieves the user's profile and OAuth tokens from the OAuth2 provider.
-	Profile(ctx context.Context, code string) (mfclients.Client, oauth2.Token, error)
+	// UserDetails retrieves the user's details and OAuth tokens from the OAuth2 provider.
+	UserDetails(ctx context.Context, code string) (mfclients.Client, oauth2.Token, error)
 	// Validate checks the validity of the access token.
 	Validate(ctx context.Context, token string) error
 	// Refresh refreshes the access token using the refresh token.
