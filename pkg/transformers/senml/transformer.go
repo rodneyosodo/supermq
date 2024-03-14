@@ -59,8 +59,16 @@ func (t transformer) Transform(msg *messaging.Message) (interface{}, error) {
 		// Use reception timestamp if SenML messsage Time is missing
 		t := v.Time
 		if t == 0 {
-			// Convert the Unix timestamp in nanoseconds to float64
-			t = float64(msg.GetCreated()) / float64(1e9)
+			t = float64(msg.GetCreated())
+		}
+
+		// If time is below 2**28 it is relative to the current time
+		// https://datatracker.ietf.org/doc/html/rfc8428#section-4.5.3
+		if t > 1<<28 {
+			t = transformers.ToUnixNano(t)
+		}
+		if v.UpdateTime > 1<<28 {
+			v.UpdateTime = transformers.ToUnixNano(v.UpdateTime)
 		}
 
 		msgs[i] = Message{
