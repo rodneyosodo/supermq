@@ -43,6 +43,36 @@ func TestInt64ToUnixNano(t *testing.T) {
 			time: now.UnixNano(),
 			want: now.UnixNano(),
 		},
+		{
+			desc: "1e9 nano",
+			time: time.Unix(1e9, 0).Unix(),
+			want: time.Unix(1e9, 0).UnixNano(),
+		},
+		{
+			desc: "1e10 nano",
+			time: time.Unix(1e10, 0).Unix(),
+			want: time.Unix(1e10, 0).UnixNano(),
+		},
+		{
+			desc: "1e12 nano",
+			time: time.UnixMilli(1e12).Unix(),
+			want: time.UnixMilli(1e12).UnixNano(),
+		},
+		{
+			desc: "1e13 nano",
+			time: time.UnixMilli(1e13).Unix(),
+			want: time.UnixMilli(1e13).UnixNano(),
+		},
+		{
+			desc: "1e15 nano",
+			time: time.UnixMicro(1e15).Unix(),
+			want: time.UnixMicro(1e15).UnixNano(),
+		},
+		{
+			desc: "1e16 nano",
+			time: time.UnixMicro(1e16).Unix(),
+			want: time.UnixMicro(1e16).UnixNano(),
+		},
 	}
 
 	for _, c := range cases {

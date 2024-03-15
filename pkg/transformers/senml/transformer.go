@@ -15,6 +15,8 @@ const (
 	JSON = "application/senml+json"
 	// CBOR represents SenML in CBOR format content type.
 	CBOR = "application/senml+cbor"
+
+	maxRelativeTime = 1 << 28
 )
 
 var (
@@ -64,10 +66,10 @@ func (t transformer) Transform(msg *messaging.Message) (interface{}, error) {
 
 		// If time is below 2**28 it is relative to the current time
 		// https://datatracker.ietf.org/doc/html/rfc8428#section-4.5.3
-		if t > 1<<28 {
+		if t >= maxRelativeTime {
 			t = transformers.ToUnixNano(t)
 		}
-		if v.UpdateTime > 1<<28 {
+		if v.UpdateTime >= maxRelativeTime {
 			v.UpdateTime = transformers.ToUnixNano(v.UpdateTime)
 		}
 

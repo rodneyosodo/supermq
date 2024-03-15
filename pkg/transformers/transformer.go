@@ -21,15 +21,15 @@ func ToUnixNano[N number](t N) N {
 		return 0
 	}
 	// Check if the value is in nanoseconds
-	if t > 1e18 {
+	if t >= 1e18 {
 		return t
 	}
 	// Check if the value is in milliseconds
-	if t > 1e15 && t < 1e18 {
+	if t >= 1e15 && t < 1e18 {
 		return t * 1e3
 	}
 	// Check if the value is in microseconds
-	if t > 1e12 && t < 1e15 {
+	if t >= 1e12 && t < 1e15 {
 		return t * 1e6
 	}
 	// Assume it's in seconds (Unix time)
