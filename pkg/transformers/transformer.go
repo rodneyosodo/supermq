@@ -17,21 +17,16 @@ type number interface {
 
 // ToUnixNano converts time to UnixNano time format.
 func ToUnixNano[N number](t N) N {
-	if t == 0 {
+	switch {
+	case t == 0:
 		return 0
-	}
-	// Check if the value is in nanoseconds
-	if t >= 1e18 {
+	case t >= 1e18: // Check if the value is in nanoseconds
 		return t
-	}
-	// Check if the value is in milliseconds
-	if t >= 1e15 && t < 1e18 {
+	case t >= 1e15 && t < 1e18: // Check if the value is in milliseconds
 		return t * 1e3
-	}
-	// Check if the value is in microseconds
-	if t >= 1e12 && t < 1e15 {
+	case t >= 1e12 && t < 1e15: // Check if the value is in microseconds
 		return t * 1e6
+	default: // Assume it's in seconds (Unix time)
+		return t * 1e9
 	}
-	// Assume it's in seconds (Unix time)
-	return t * 1e9
 }
