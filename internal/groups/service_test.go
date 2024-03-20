@@ -2468,23 +2468,17 @@ func TestDeleteGroup(t *testing.T) {
 	svc := groups.NewService(repo, idProvider, authsvc)
 
 	cases := []struct {
-		desc                     string
-		token                    string
-		groupID                  string
-		idResp                   *magistrala.IdentityRes
-		idErr                    error
-		authzResp                *magistrala.AuthorizeRes
-		authzErr                 error
-		deleteChildPoliciesRes   *magistrala.DeletePolicyRes
-		deleteChildPoliciesErr   error
-		deleteThingsPoliciesRes  *magistrala.DeletePolicyRes
-		deleteThingsPoliciesErr  error
-		deleteDomainsPoliciesRes *magistrala.DeletePolicyRes
-		deleteDomainsPoliciesErr error
-		deleteUsersPoliciesRes   *magistrala.DeletePolicyRes
-		deleteUsersPoliciesErr   error
-		repoErr                  error
-		err                      error
+		desc              string
+		token             string
+		groupID           string
+		idResp            *magistrala.IdentityRes
+		idErr             error
+		authzResp         *magistrala.AuthorizeRes
+		authzErr          error
+		deletePoliciesRes *magistrala.DeletePolicyRes
+		deletePoliciesErr error
+		repoErr           error
+		err               error
 	}{
 		{
 			desc:    "successfully",
@@ -2497,26 +2491,18 @@ func TestDeleteGroup(t *testing.T) {
 			authzResp: &magistrala.AuthorizeRes{
 				Authorized: true,
 			},
-			deleteChildPoliciesRes: &magistrala.DeletePolicyRes{
-				Deleted: true,
-			},
-			deleteThingsPoliciesRes: &magistrala.DeletePolicyRes{
-				Deleted: true,
-			},
-			deleteDomainsPoliciesRes: &magistrala.DeletePolicyRes{
-				Deleted: true,
-			},
-			deleteUsersPoliciesRes: &magistrala.DeletePolicyRes{
+			deletePoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
 		},
 		{
-			desc:    "unsuccessfully with invalid token",
-			token:   token,
-			groupID: testsutil.GenerateUUID(t),
-			idResp:  &magistrala.IdentityRes{},
-			idErr:   svcerr.ErrAuthentication,
-			err:     svcerr.ErrAuthentication,
+			desc:              "unsuccessfully with invalid token",
+			token:             token,
+			groupID:           testsutil.GenerateUUID(t),
+			idResp:            &magistrala.IdentityRes{},
+			deletePoliciesRes: &magistrala.DeletePolicyRes{},
+			idErr:             svcerr.ErrAuthentication,
+			err:               svcerr.ErrAuthentication,
 		},
 		{
 			desc:    "unsuccessfully with authorization error",
@@ -2529,11 +2515,12 @@ func TestDeleteGroup(t *testing.T) {
 			authzResp: &magistrala.AuthorizeRes{
 				Authorized: false,
 			},
-			authzErr: svcerr.ErrAuthorization,
-			err:      svcerr.ErrAuthorization,
+			deletePoliciesRes: &magistrala.DeletePolicyRes{},
+			authzErr:          svcerr.ErrAuthorization,
+			err:               svcerr.ErrAuthorization,
 		},
 		{
-			desc:    "unsuccessfully with failed to remove child group policy",
+			desc:    "unsuccessfully with failed to remove policy",
 			token:   token,
 			groupID: testsutil.GenerateUUID(t),
 			idResp: &magistrala.IdentityRes{
@@ -2543,80 +2530,11 @@ func TestDeleteGroup(t *testing.T) {
 			authzResp: &magistrala.AuthorizeRes{
 				Authorized: true,
 			},
-			deleteChildPoliciesRes: &magistrala.DeletePolicyRes{
+			deletePoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: false,
 			},
-			deleteChildPoliciesErr: svcerr.ErrAuthorization,
-			err:                    svcerr.ErrAuthorization,
-		},
-		{
-			desc:    "unsuccessfully with failed to remove things policy",
-			token:   token,
-			groupID: testsutil.GenerateUUID(t),
-			idResp: &magistrala.IdentityRes{
-				Id:       testsutil.GenerateUUID(t),
-				DomainId: testsutil.GenerateUUID(t),
-			},
-			authzResp: &magistrala.AuthorizeRes{
-				Authorized: true,
-			},
-			deleteChildPoliciesRes: &magistrala.DeletePolicyRes{
-				Deleted: true,
-			},
-			deleteThingsPoliciesRes: &magistrala.DeletePolicyRes{
-				Deleted: false,
-			},
-			deleteThingsPoliciesErr: svcerr.ErrAuthorization,
-			err:                     svcerr.ErrAuthorization,
-		},
-		{
-			desc:    "unsuccessfully with failed to remove domain policy",
-			token:   token,
-			groupID: testsutil.GenerateUUID(t),
-			idResp: &magistrala.IdentityRes{
-				Id:       testsutil.GenerateUUID(t),
-				DomainId: testsutil.GenerateUUID(t),
-			},
-			authzResp: &magistrala.AuthorizeRes{
-				Authorized: true,
-			},
-			deleteChildPoliciesRes: &magistrala.DeletePolicyRes{
-				Deleted: true,
-			},
-			deleteThingsPoliciesRes: &magistrala.DeletePolicyRes{
-				Deleted: true,
-			},
-			deleteDomainsPoliciesRes: &magistrala.DeletePolicyRes{
-				Deleted: false,
-			},
-			deleteDomainsPoliciesErr: svcerr.ErrAuthorization,
-			err:                      svcerr.ErrAuthorization,
-		},
-		{
-			desc:    "unsuccessfully with failed to remove user policy",
-			token:   token,
-			groupID: testsutil.GenerateUUID(t),
-			idResp: &magistrala.IdentityRes{
-				Id:       testsutil.GenerateUUID(t),
-				DomainId: testsutil.GenerateUUID(t),
-			},
-			authzResp: &magistrala.AuthorizeRes{
-				Authorized: true,
-			},
-			deleteChildPoliciesRes: &magistrala.DeletePolicyRes{
-				Deleted: true,
-			},
-			deleteThingsPoliciesRes: &magistrala.DeletePolicyRes{
-				Deleted: true,
-			},
-			deleteDomainsPoliciesRes: &magistrala.DeletePolicyRes{
-				Deleted: true,
-			},
-			deleteUsersPoliciesRes: &magistrala.DeletePolicyRes{
-				Deleted: false,
-			},
-			deleteUsersPoliciesErr: svcerr.ErrAuthorization,
-			err:                    svcerr.ErrAuthorization,
+			deletePoliciesErr: svcerr.ErrAuthorization,
+			err:               svcerr.ErrAuthorization,
 		},
 		{
 			desc:    "unsuccessfully with repo err",
@@ -2629,13 +2547,7 @@ func TestDeleteGroup(t *testing.T) {
 			authzResp: &magistrala.AuthorizeRes{
 				Authorized: true,
 			},
-			deleteChildPoliciesRes: &magistrala.DeletePolicyRes{
-				Deleted: true,
-			},
-			deleteThingsPoliciesRes: &magistrala.DeletePolicyRes{
-				Deleted: true,
-			},
-			deleteDomainsPoliciesRes: &magistrala.DeletePolicyRes{
+			deletePoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
 			repoErr: repoerr.ErrNotFound,
@@ -2655,36 +2567,17 @@ func TestDeleteGroup(t *testing.T) {
 				Object:      tc.groupID,
 				ObjectType:  auth.GroupType,
 			}).Return(tc.authzResp, tc.authzErr)
-			authcall2 := authsvc.On("DeletePolicyFilter", context.Background(), &magistrala.DeletePolicyFilterReq{
-				SubjectType: auth.GroupType,
-				Subject:     tc.groupID,
-				ObjectType:  auth.GroupType,
-			}).Return(tc.deleteChildPoliciesRes, tc.deleteChildPoliciesErr)
-			authcall3 := authsvc.On("DeletePolicyFilter", context.Background(), &magistrala.DeletePolicyFilterReq{
-				SubjectType: auth.GroupType,
-				Subject:     tc.groupID,
-				ObjectType:  auth.ThingType,
-			}).Return(tc.deleteThingsPoliciesRes, tc.deleteThingsPoliciesErr)
-			authcall4 := authsvc.On("DeletePolicyFilter", context.Background(), &magistrala.DeletePolicyFilterReq{
-				SubjectType: auth.DomainType,
-				Object:      tc.groupID,
-				ObjectType:  auth.GroupType,
-			}).Return(tc.deleteDomainsPoliciesRes, tc.deleteDomainsPoliciesErr)
-			authcall5 := repo.On("Delete", context.Background(), tc.groupID).Return(tc.repoErr)
-			authcall6 := authsvc.On("DeletePolicyFilter", context.Background(), &magistrala.DeletePolicyFilterReq{
-				SubjectType: auth.UserType,
-				Object:      tc.groupID,
-				ObjectType:  auth.GroupType,
-			}).Return(tc.deleteUsersPoliciesRes, tc.deleteUsersPoliciesErr)
+			authcall2 := authsvc.On("DeleteEntityPolicies", context.Background(), &magistrala.DeleteEntityPoliciesReq{
+				EntityType: auth.GroupType,
+				Id:         tc.groupID,
+			}).Return(tc.deletePoliciesRes, tc.deletePoliciesErr)
+			repocall := repo.On("Delete", context.Background(), tc.groupID).Return(tc.repoErr)
 			err := svc.DeleteGroup(context.Background(), tc.token, tc.groupID)
 			assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("expected error %v to contain %v", err, tc.err))
 			authcall.Unset()
 			authcall1.Unset()
 			authcall2.Unset()
-			authcall3.Unset()
-			authcall4.Unset()
-			authcall5.Unset()
-			authcall6.Unset()
+			repocall.Unset()
 		})
 	}
 }

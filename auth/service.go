@@ -35,6 +35,8 @@ var (
 	errRollbackPolicy     = errors.New("failed to rollback policy")
 	errRemoveLocalPolicy  = errors.New("failed to remove from local policy copy")
 	errRemovePolicyEngine = errors.New("failed to remove from policy engine")
+	// errInvalidEntityType indicates invalid entity type.
+	errInvalidEntityType = errors.New("invalid entity type")
 )
 
 var (
@@ -1006,6 +1008,7 @@ func DecodeDomainUserID(domainUserID string) (string, string) {
 func (svc service) DeleteEntityPolicies(ctx context.Context, entityType, id string) (err error) {
 	switch entityType {
 	case ThingType:
+		// Remove policy of groups
 		req := PolicyReq{
 			SubjectType: GroupType,
 			Object:      id,
@@ -1016,11 +1019,13 @@ func (svc service) DeleteEntityPolicies(ctx context.Context, entityType, id stri
 			return err
 		}
 
+		// Remove policy from domain
 		req.SubjectType = DomainType
 		if err := svc.DeletePolicyFilter(ctx, req); err != nil {
 			return err
 		}
 
+		// Remove policy of users
 		req.SubjectType = UserType
 		if err := svc.DeletePolicyFilter(ctx, req); err != nil {
 			return err
@@ -1083,7 +1088,38 @@ func (svc service) DeleteEntityPolicies(ctx context.Context, entityType, id stri
 		}
 
 		return nil
-	default:
+	case GroupType:
+		// Remove policy of child groups
+		req := PolicyReq{
+			SubjectType: GroupType,
+			Subject:     id,
+			ObjectType:  GroupType,
+		}
+		if err := svc.DeletePolicyFilter(ctx, req); err != nil {
+			return err
+		}
+
+		// Remove policy of things
+		req.ObjectType = ThingType
+		if err := svc.DeletePolicyFilter(ctx, req); err != nil {
+			return err
+		}
+
+		// Remove policy from domain
+		req.SubjectType = DomainType
+		req.ObjectType = GroupType
+		if err := svc.DeletePolicyFilter(ctx, req); err != nil {
+			return err
+		}
+
+		// Remove policy of users
+		req.SubjectType = UserType
+		if err := svc.DeletePolicyFilter(ctx, req); err != nil {
+			return err
+		}
+
 		return nil
+	default:
+		return errInvalidEntityType
 	}
 }

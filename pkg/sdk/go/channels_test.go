@@ -771,7 +771,7 @@ func TestDeleteChannel(t *testing.T) {
 	authCall1.Unset()
 	repoCall.Unset()
 
-	authCall = auth.On("DeletePolicyFilter", mock.Anything, mock.Anything, mock.Anything).Return(&magistrala.DeletePolicyRes{Deleted: true}, nil)
+	authCall = auth.On("DeleteEntityPolicies", mock.Anything, mock.Anything, mock.Anything).Return(&magistrala.DeletePolicyRes{Deleted: true}, nil)
 	authCall1 = auth.On("Identify", mock.Anything, &magistrala.IdentityReq{Token: validToken}).Return(&magistrala.IdentityRes{Id: validID, DomainId: testsutil.GenerateUUID(t)}, nil)
 	authCall2 := auth.On("Authorize", mock.Anything, mock.Anything).Return(&magistrala.AuthorizeRes{Authorized: true}, nil)
 	repoCall = grepo.On("Delete", mock.Anything, mock.Anything).Return(nil)
