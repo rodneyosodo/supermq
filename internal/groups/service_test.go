@@ -66,7 +66,7 @@ func TestCreateGroup(t *testing.T) {
 		repoErr       error
 		addPolResp    *magistrala.AddPoliciesRes
 		addPolErr     error
-		deletePolResp *magistrala.DeletePoliciesRes
+		deletePolResp *magistrala.DeletePolicyRes
 		deletePolErr  error
 		err           error
 	}{
@@ -1666,7 +1666,7 @@ func TestAssign(t *testing.T) {
 		repoErr                 error
 		addParentPoliciesRes    *magistrala.AddPoliciesRes
 		addParentPoliciesErr    error
-		deleteParentPoliciesRes *magistrala.DeletePoliciesRes
+		deleteParentPoliciesRes *magistrala.DeletePolicyRes
 		deleteParentPoliciesErr error
 		repoParentGroupErr      error
 		err                     error
@@ -1890,7 +1890,7 @@ func TestAssign(t *testing.T) {
 			addPoliciesRes: &magistrala.AddPoliciesRes{
 				Added: true,
 			},
-			deleteParentPoliciesRes: &magistrala.DeletePoliciesRes{
+			deleteParentPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: false,
 			},
 			deleteParentPoliciesErr: svcerr.ErrAuthorization,
@@ -2069,13 +2069,13 @@ func TestUnassign(t *testing.T) {
 		idErr                   error
 		authzResp               *magistrala.AuthorizeRes
 		authzErr                error
-		deletePoliciesRes       *magistrala.DeletePoliciesRes
+		deletePoliciesRes       *magistrala.DeletePolicyRes
 		deletePoliciesErr       error
 		repoResp                mggroups.Page
 		repoErr                 error
 		addParentPoliciesRes    *magistrala.AddPoliciesRes
 		addParentPoliciesErr    error
-		deleteParentPoliciesRes *magistrala.DeletePoliciesRes
+		deleteParentPoliciesRes *magistrala.DeletePolicyRes
 		deleteParentPoliciesErr error
 		repoParentGroupErr      error
 		err                     error
@@ -2094,7 +2094,7 @@ func TestUnassign(t *testing.T) {
 			authzResp: &magistrala.AuthorizeRes{
 				Authorized: true,
 			},
-			deletePoliciesRes: &magistrala.DeletePoliciesRes{
+			deletePoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
 		},
@@ -2112,7 +2112,7 @@ func TestUnassign(t *testing.T) {
 			authzResp: &magistrala.AuthorizeRes{
 				Authorized: true,
 			},
-			deletePoliciesRes: &magistrala.DeletePoliciesRes{
+			deletePoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
 		},
@@ -2137,7 +2137,7 @@ func TestUnassign(t *testing.T) {
 					validGroup,
 				},
 			},
-			deletePoliciesRes: &magistrala.DeletePoliciesRes{
+			deletePoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
 			repoParentGroupErr: nil,
@@ -2156,7 +2156,7 @@ func TestUnassign(t *testing.T) {
 			authzResp: &magistrala.AuthorizeRes{
 				Authorized: true,
 			},
-			deletePoliciesRes: &magistrala.DeletePoliciesRes{
+			deletePoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
 		},
@@ -2242,7 +2242,7 @@ func TestUnassign(t *testing.T) {
 					validGroup,
 				},
 			},
-			deletePoliciesRes: &magistrala.DeletePoliciesRes{
+			deletePoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: false,
 			},
 			deletePoliciesErr: svcerr.ErrAuthorization,
@@ -2269,7 +2269,7 @@ func TestUnassign(t *testing.T) {
 					validGroup,
 				},
 			},
-			deletePoliciesRes: &magistrala.DeletePoliciesRes{
+			deletePoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
 			repoParentGroupErr: repoerr.ErrConflict,
@@ -2296,7 +2296,7 @@ func TestUnassign(t *testing.T) {
 					validGroup,
 				},
 			},
-			deletePoliciesRes: &magistrala.DeletePoliciesRes{
+			deletePoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
 			repoParentGroupErr: repoerr.ErrConflict,
@@ -2364,7 +2364,7 @@ func TestUnassign(t *testing.T) {
 			authzResp: &magistrala.AuthorizeRes{
 				Authorized: true,
 			},
-			deletePoliciesRes: &magistrala.DeletePoliciesRes{
+			deletePoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: false,
 			},
 			deletePoliciesErr: svcerr.ErrAuthorization,
@@ -2475,13 +2475,13 @@ func TestDeleteGroup(t *testing.T) {
 		idErr                    error
 		authzResp                *magistrala.AuthorizeRes
 		authzErr                 error
-		deleteChildPoliciesRes   *magistrala.DeletePolicyFilterRes
+		deleteChildPoliciesRes   *magistrala.DeletePolicyRes
 		deleteChildPoliciesErr   error
-		deleteThingsPoliciesRes  *magistrala.DeletePolicyFilterRes
+		deleteThingsPoliciesRes  *magistrala.DeletePolicyRes
 		deleteThingsPoliciesErr  error
-		deleteDomainsPoliciesRes *magistrala.DeletePolicyFilterRes
+		deleteDomainsPoliciesRes *magistrala.DeletePolicyRes
 		deleteDomainsPoliciesErr error
-		deleteUsersPoliciesRes   *magistrala.DeletePolicyFilterRes
+		deleteUsersPoliciesRes   *magistrala.DeletePolicyRes
 		deleteUsersPoliciesErr   error
 		repoErr                  error
 		err                      error
@@ -2497,16 +2497,16 @@ func TestDeleteGroup(t *testing.T) {
 			authzResp: &magistrala.AuthorizeRes{
 				Authorized: true,
 			},
-			deleteChildPoliciesRes: &magistrala.DeletePolicyFilterRes{
+			deleteChildPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
-			deleteThingsPoliciesRes: &magistrala.DeletePolicyFilterRes{
+			deleteThingsPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
-			deleteDomainsPoliciesRes: &magistrala.DeletePolicyFilterRes{
+			deleteDomainsPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
-			deleteUsersPoliciesRes: &magistrala.DeletePolicyFilterRes{
+			deleteUsersPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
 		},
@@ -2543,7 +2543,7 @@ func TestDeleteGroup(t *testing.T) {
 			authzResp: &magistrala.AuthorizeRes{
 				Authorized: true,
 			},
-			deleteChildPoliciesRes: &magistrala.DeletePolicyFilterRes{
+			deleteChildPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: false,
 			},
 			deleteChildPoliciesErr: svcerr.ErrAuthorization,
@@ -2560,10 +2560,10 @@ func TestDeleteGroup(t *testing.T) {
 			authzResp: &magistrala.AuthorizeRes{
 				Authorized: true,
 			},
-			deleteChildPoliciesRes: &magistrala.DeletePolicyFilterRes{
+			deleteChildPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
-			deleteThingsPoliciesRes: &magistrala.DeletePolicyFilterRes{
+			deleteThingsPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: false,
 			},
 			deleteThingsPoliciesErr: svcerr.ErrAuthorization,
@@ -2580,13 +2580,13 @@ func TestDeleteGroup(t *testing.T) {
 			authzResp: &magistrala.AuthorizeRes{
 				Authorized: true,
 			},
-			deleteChildPoliciesRes: &magistrala.DeletePolicyFilterRes{
+			deleteChildPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
-			deleteThingsPoliciesRes: &magistrala.DeletePolicyFilterRes{
+			deleteThingsPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
-			deleteDomainsPoliciesRes: &magistrala.DeletePolicyFilterRes{
+			deleteDomainsPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: false,
 			},
 			deleteDomainsPoliciesErr: svcerr.ErrAuthorization,
@@ -2603,16 +2603,16 @@ func TestDeleteGroup(t *testing.T) {
 			authzResp: &magistrala.AuthorizeRes{
 				Authorized: true,
 			},
-			deleteChildPoliciesRes: &magistrala.DeletePolicyFilterRes{
+			deleteChildPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
-			deleteThingsPoliciesRes: &magistrala.DeletePolicyFilterRes{
+			deleteThingsPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
-			deleteDomainsPoliciesRes: &magistrala.DeletePolicyFilterRes{
+			deleteDomainsPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
-			deleteUsersPoliciesRes: &magistrala.DeletePolicyFilterRes{
+			deleteUsersPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: false,
 			},
 			deleteUsersPoliciesErr: svcerr.ErrAuthorization,
@@ -2629,13 +2629,13 @@ func TestDeleteGroup(t *testing.T) {
 			authzResp: &magistrala.AuthorizeRes{
 				Authorized: true,
 			},
-			deleteChildPoliciesRes: &magistrala.DeletePolicyFilterRes{
+			deleteChildPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
-			deleteThingsPoliciesRes: &magistrala.DeletePolicyFilterRes{
+			deleteThingsPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
-			deleteDomainsPoliciesRes: &magistrala.DeletePolicyFilterRes{
+			deleteDomainsPoliciesRes: &magistrala.DeletePolicyRes{
 				Deleted: true,
 			},
 			repoErr: repoerr.ErrNotFound,

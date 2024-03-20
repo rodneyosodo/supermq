@@ -471,7 +471,7 @@ func TestDeletePolicyFilter(t *testing.T) {
 		desc                  string
 		token                 string
 		deletePolicyFilterReq *magistrala.DeletePolicyFilterReq
-		deletePolicyFilterRes *magistrala.DeletePolicyFilterRes
+		deletePolicyFilterRes *magistrala.DeletePolicyRes
 		err                   error
 	}{
 		{
@@ -485,7 +485,7 @@ func TestDeletePolicyFilter(t *testing.T) {
 				Relation:    readRelation,
 				Permission:  readRelation,
 			},
-			deletePolicyFilterRes: &magistrala.DeletePolicyFilterRes{Deleted: true},
+			deletePolicyFilterRes: &magistrala.DeletePolicyRes{Deleted: true},
 			err:                   nil,
 		},
 		{
@@ -499,7 +499,7 @@ func TestDeletePolicyFilter(t *testing.T) {
 				Relation:    readRelation,
 				Permission:  readRelation,
 			},
-			deletePolicyFilterRes: &magistrala.DeletePolicyFilterRes{Deleted: false},
+			deletePolicyFilterRes: &magistrala.DeletePolicyRes{Deleted: false},
 			err:                   svcerr.ErrAuthorization,
 		},
 	}
@@ -524,7 +524,7 @@ func TestDeletePolicies(t *testing.T) {
 		desc              string
 		token             string
 		deletePoliciesReq *magistrala.DeletePoliciesReq
-		deletePoliciesRes *magistrala.DeletePoliciesRes
+		deletePoliciesRes *magistrala.DeletePolicyRes
 		err               error
 	}{
 		{
@@ -542,7 +542,7 @@ func TestDeletePolicies(t *testing.T) {
 					},
 				},
 			},
-			deletePoliciesRes: &magistrala.DeletePoliciesRes{Deleted: true},
+			deletePoliciesRes: &magistrala.DeletePolicyRes{Deleted: true},
 			err:               nil,
 		},
 		{
@@ -560,7 +560,7 @@ func TestDeletePolicies(t *testing.T) {
 					},
 				},
 			},
-			deletePoliciesRes: &magistrala.DeletePoliciesRes{Deleted: false},
+			deletePoliciesRes: &magistrala.DeletePolicyRes{Deleted: false},
 			err:               svcerr.ErrAuthorization,
 		},
 	}
