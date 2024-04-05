@@ -1735,7 +1735,7 @@ func TestDisableClient(t *testing.T) {
 }
 
 func TestDeleteClient(t *testing.T) {
-	us, svc := newUsersServer()
+	us, svc, _ := newUsersServer()
 	defer us.Close()
 
 	cases := []struct {

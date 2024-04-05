@@ -1249,7 +1249,7 @@ func TestDeleteUser(t *testing.T) {
 	repoCall2 := crepo.On("CheckSuperAdmin", mock.Anything, mock.Anything).Return(nil)
 	repoCall3 := crepo.On("Delete", mock.Anything, mock.Anything).Return(nil)
 	err := mgsdk.DeleteUser("wrongID", validToken)
-	assert.Equal(t, err, errors.NewSDKErrorWithStatus(errors.Wrap(svcerr.ErrAuthorization, svcerr.ErrAuthorization), http.StatusForbidden), fmt.Sprintf("Delete user with wrong id: expected %v got %v", svcerr.ErrNotFound, err))
+	assert.Equal(t, err, errors.NewSDKErrorWithStatus(svcerr.ErrAuthorization, http.StatusForbidden), fmt.Sprintf("Delete user with wrong id: expected %v got %v", svcerr.ErrNotFound, err))
 	repoCall.Unset()
 	repoCall1.Unset()
 	repoCall2.Unset()
