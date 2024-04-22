@@ -71,7 +71,7 @@ func (sdk mgSDK) Channels(pm PageMetadata, token string) (ChannelsPage, errors.S
 }
 
 func (sdk mgSDK) ChannelsByThing(thingID string, pm PageMetadata, token string) (ChannelsPage, errors.SDKError) {
-	url, err := sdk.withQueryParams(fmt.Sprintf("%s/things/%s", sdk.thingsURL, thingID), channelsEndpoint, pm)
+	url, err := sdk.withQueryParams(sdk.thingsURL, fmt.Sprintf("%s/things/%s", channelsEndpoint, thingID), pm)
 	if err != nil {
 		return ChannelsPage{}, errors.NewSDKError(err)
 	}

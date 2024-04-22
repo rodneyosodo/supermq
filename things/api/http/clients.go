@@ -116,14 +116,14 @@ func clientsHandler(svc things.Service, r *chi.Mux, logger *slog.Logger) http.Ha
 			opts...,
 		), "delete_thing").ServeHTTP)
 
-		r.Get("/channels/{groupID}", otelhttp.NewHandler(kithttp.NewServer(
+		r.Get("/channels/{groupID}/", otelhttp.NewHandler(kithttp.NewServer(
 			listMembersEndpoint(svc),
 			decodeListMembersRequest,
 			api.EncodeResponse,
 			opts...,
 		), "list_things_by_channel_id").ServeHTTP)
 
-		r.Get("/users/{userID}", otelhttp.NewHandler(kithttp.NewServer(
+		r.Get("/users/{userID}/", otelhttp.NewHandler(kithttp.NewServer(
 			listClientsEndpoint(svc),
 			decodeListClients,
 			api.EncodeResponse,

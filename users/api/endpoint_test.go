@@ -1758,7 +1758,7 @@ func TestListUsersByUserGroupId(t *testing.T) {
 			desc:    "list users with empty id",
 			token:   validToken,
 			groupID: "",
-			status:  http.StatusBadRequest,
+			status:  http.StatusNotFound,
 			err:     apiutil.ErrMissingID,
 		},
 		{
@@ -2017,7 +2017,7 @@ func TestListUsersByUserGroupId(t *testing.T) {
 		req := testRequest{
 			client: us.Client(),
 			method: http.MethodGet,
-			url:    fmt.Sprintf("%s/groups/%s/users?", us.URL, tc.groupID) + tc.query,
+			url:    fmt.Sprintf("%s/users/groups/%s?", us.URL, tc.groupID) + tc.query,
 			token:  tc.token,
 		}
 
@@ -2312,7 +2312,7 @@ func TestListUsersByChannelID(t *testing.T) {
 		req := testRequest{
 			client: us.Client(),
 			method: http.MethodGet,
-			url:    fmt.Sprintf("%s/channels/%s/users?", us.URL, validID) + tc.query,
+			url:    fmt.Sprintf("%s/users/channels/%s?", us.URL, validID) + tc.query,
 			token:  tc.token,
 		}
 
@@ -2615,7 +2615,7 @@ func TestListUsersByDomainID(t *testing.T) {
 		req := testRequest{
 			client: us.Client(),
 			method: http.MethodGet,
-			url:    fmt.Sprintf("%s/domains/%s/users?", us.URL, validID) + tc.query,
+			url:    fmt.Sprintf("%s/users/domains/%s?", us.URL, validID) + tc.query,
 			token:  tc.token,
 		}
 
@@ -2889,7 +2889,7 @@ func TestListUsersByThingID(t *testing.T) {
 		req := testRequest{
 			client: us.Client(),
 			method: http.MethodGet,
-			url:    fmt.Sprintf("%s/things/%s/users?", us.URL, validID) + tc.query,
+			url:    fmt.Sprintf("%s/users/things/%s?", us.URL, validID) + tc.query,
 			token:  tc.token,
 		}
 

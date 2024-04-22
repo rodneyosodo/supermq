@@ -132,7 +132,7 @@ func groupsHandler(svc groups.Service, r *chi.Mux, logger *slog.Logger) http.Han
 			api.EncodeResponse,
 			opts...,
 		), "list_groups_by_channel_id").ServeHTTP)
-	
+
 		r.Get("/users/{memberID}", otelhttp.NewHandler(kithttp.NewServer(
 			gapi.ListGroupsEndpoint(svc, "users"),
 			gapi.DecodeListGroupsRequest,

@@ -1919,11 +1919,10 @@ func TestListMembers(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodGet,
-			url:         ts.URL + fmt.Sprintf("/channels/%s/things?", tc.groupdID) + tc.query,
+			url:         ts.URL + fmt.Sprintf("/things/channels/%s/?", tc.groupdID) + tc.query,
 			contentType: contentType,
 			token:       tc.token,
 		}
-
 		svcCall := svc.On("ListClientsByGroup", mock.Anything, tc.token, mock.Anything, mock.Anything).Return(tc.listMembersResponse, tc.err)
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
