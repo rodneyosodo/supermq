@@ -85,7 +85,7 @@ paths:
         "500":
           $ref: "#/components/responses/ServiceError"
 
-  /domains/{domainID}/domain:
+  /domains/{domainID}:
     get:
       summary: Retrieves domain information
       description: |
