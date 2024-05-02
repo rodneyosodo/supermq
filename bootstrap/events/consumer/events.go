@@ -19,6 +19,6 @@ type updateChannelEvent struct {
 
 // Connection event is either connect or disconnect event.
 type disconnectEvent struct {
-	thingID   string
+	thingIDs  []string
 	channelID string
 }

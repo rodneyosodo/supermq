@@ -4,14 +4,13 @@
 package events
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/absmach/magistrala/pkg/events"
 	groups "github.com/absmach/magistrala/pkg/groups"
 )
 
-const (
+var (
 	groupPrefix          = "group."
 	groupCreate          = groupPrefix + "create"
 	groupUpdate          = groupPrefix + "update"
@@ -44,13 +43,11 @@ type assignEvent struct {
 }
 
 func (cge assignEvent) Encode() (map[string]interface{}, error) {
-	val := map[string]interface{}{
+	return map[string]interface{}{
 		"operation":  groupAssign,
 		"member_ids": cge.memberIDs,
 		"group_id":   cge.groupID,
-	}
-
-	return val, nil
+	}, nil
 }
 
 type unassignEvent struct {
@@ -59,13 +56,11 @@ type unassignEvent struct {
 }
 
 func (cge unassignEvent) Encode() (map[string]interface{}, error) {
-	val := map[string]interface{}{
+	return map[string]interface{}{
 		"operation":  groupUnassign,
 		"member_ids": cge.memberIDs,
 		"group_id":   cge.groupID,
-	}
-
-	return val, nil
+	}, nil
 }
 
 type createGroupEvent struct {
@@ -93,12 +88,7 @@ func (cge createGroupEvent) Encode() (map[string]interface{}, error) {
 		val["description"] = cge.Description
 	}
 	if cge.Metadata != nil {
-		metadata, err := json.Marshal(cge.Metadata)
-		if err != nil {
-			return map[string]interface{}{}, err
-		}
-
-		val["metadata"] = metadata
+		val["metadata"] = cge.Metadata
 	}
 	if cge.Status.String() != "" {
 		val["status"] = cge.Status.String()
@@ -134,12 +124,7 @@ func (uge updateGroupEvent) Encode() (map[string]interface{}, error) {
 		val["description"] = uge.Description
 	}
 	if uge.Metadata != nil {
-		metadata, err := json.Marshal(uge.Metadata)
-		if err != nil {
-			return map[string]interface{}{}, err
-		}
-
-		val["metadata"] = metadata
+		val["metadata"] = uge.Metadata
 	}
 	if !uge.CreatedAt.IsZero() {
 		val["created_at"] = uge.CreatedAt
@@ -191,12 +176,7 @@ func (vge viewGroupEvent) Encode() (map[string]interface{}, error) {
 		val["description"] = vge.Description
 	}
 	if vge.Metadata != nil {
-		metadata, err := json.Marshal(vge.Metadata)
-		if err != nil {
-			return map[string]interface{}{}, err
-		}
-
-		val["metadata"] = metadata
+		val["metadata"] = vge.Metadata
 	}
 	if !vge.CreatedAt.IsZero() {
 		val["created_at"] = vge.CreatedAt
@@ -219,11 +199,10 @@ type viewGroupPermsEvent struct {
 }
 
 func (vgpe viewGroupPermsEvent) Encode() (map[string]interface{}, error) {
-	val := map[string]interface{}{
+	return map[string]interface{}{
 		"operation":   groupViewPerms,
 		"permissions": vgpe.permissions,
-	}
-	return val, nil
+	}, nil
 }
 
 type listGroupEvent struct {
@@ -248,12 +227,7 @@ func (lge listGroupEvent) Encode() (map[string]interface{}, error) {
 		val["tag"] = lge.Tag
 	}
 	if lge.Metadata != nil {
-		metadata, err := json.Marshal(lge.Metadata)
-		if err != nil {
-			return map[string]interface{}{}, err
-		}
-
-		val["metadata"] = metadata
+		val["metadata"] = lge.Metadata
 	}
 	if lge.Status.String() != "" {
 		val["status"] = lge.Status.String()
@@ -269,14 +243,12 @@ type listGroupMembershipEvent struct {
 }
 
 func (lgme listGroupMembershipEvent) Encode() (map[string]interface{}, error) {
-	val := map[string]interface{}{
+	return map[string]interface{}{
 		"operation":   groupListMemberships,
-		"group_id":    lgme.groupID,
+		"id":          lgme.groupID,
 		"permission":  lgme.permission,
 		"member_kind": lgme.memberKind,
-	}
-
-	return val, nil
+	}, nil
 }
 
 type deleteGroupEvent struct {

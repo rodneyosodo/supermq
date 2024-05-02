@@ -5,7 +5,6 @@ package consumer
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	"github.com/absmach/magistrala/bootstrap"
@@ -13,12 +12,12 @@ import (
 )
 
 const (
-	thingRemove     = "thing.remove"
-	thingDisconnect = "policy.delete"
+	thingRemove = "thing.remove"
 
-	channelPrefix = "group."
-	channelUpdate = channelPrefix + "update"
-	channelRemove = channelPrefix + "remove"
+	channelPrefix   = "channel."
+	channelUpdate   = channelPrefix + "update"
+	channelRemove   = channelPrefix + "remove"
+	thingDisconnect = channelPrefix + "unassign"
 )
 
 type eventHandler struct {
@@ -44,7 +43,12 @@ func (es *eventHandler) Handle(ctx context.Context, event events.Event) error {
 		err = es.svc.RemoveConfigHandler(ctx, rte.id)
 	case thingDisconnect:
 		dte := decodeDisconnectThing(msg)
-		err = es.svc.DisconnectThingHandler(ctx, dte.channelID, dte.thingID)
+
+		for _, thingID := range dte.thingIDs {
+			if err = es.svc.DisconnectThingHandler(ctx, dte.channelID, thingID); err != nil {
+				return err
+			}
+		}
 	case channelUpdate:
 		uce := decodeUpdateChannel(msg)
 		err = es.handleUpdateChannel(ctx, uce)
@@ -61,36 +65,32 @@ func (es *eventHandler) Handle(ctx context.Context, event events.Event) error {
 
 func decodeRemoveThing(event map[string]interface{}) removeEvent {
 	return removeEvent{
-		id: read(event, "id", ""),
+		id: events.Read(event, "id", ""),
 	}
 }
 
 func decodeUpdateChannel(event map[string]interface{}) updateChannelEvent {
-	strmeta := read(event, "metadata", "{}")
-	var metadata map[string]interface{}
-	if err := json.Unmarshal([]byte(strmeta), &metadata); err != nil {
-		metadata = map[string]interface{}{}
-	}
+	metadata := events.Read(event, "metadata", map[string]interface{}{})
 
 	return updateChannelEvent{
-		id:        read(event, "id", ""),
-		name:      read(event, "name", ""),
+		id:        events.Read(event, "id", ""),
+		name:      events.Read(event, "name", ""),
 		metadata:  metadata,
-		updatedAt: readTime(event, "updated_at", time.Now()),
-		updatedBy: read(event, "updated_by", ""),
+		updatedAt: events.Read(event, "updated_at", time.Now()),
+		updatedBy: events.Read(event, "updated_by", ""),
 	}
 }
 
 func decodeRemoveChannel(event map[string]interface{}) removeEvent {
 	return removeEvent{
-		id: read(event, "id", ""),
+		id: events.Read(event, "id", ""),
 	}
 }
 
 func decodeDisconnectThing(event map[string]interface{}) disconnectEvent {
 	return disconnectEvent{
-		channelID: read(event, "chan_id", ""),
-		thingID:   read(event, "thing_id", ""),
+		channelID: events.Read(event, "group_id", ""),
+		thingIDs:  events.ReadStringSlice(event, "member_ids"),
 	}
 }
 
@@ -103,22 +103,4 @@ func (es *eventHandler) handleUpdateChannel(ctx context.Context, uce updateChann
 		UpdatedBy: uce.updatedBy,
 	}
 	return es.svc.UpdateChannelHandler(ctx, channel)
-}
-
-func read(event map[string]interface{}, key, def string) string {
-	val, ok := event[key].(string)
-	if !ok {
-		return def
-	}
-
-	return val
-}
-
-func readTime(event map[string]interface{}, key string, def time.Time) time.Time {
-	val, ok := event[key].(time.Time)
-	if !ok {
-		return def
-	}
-
-	return val
 }
