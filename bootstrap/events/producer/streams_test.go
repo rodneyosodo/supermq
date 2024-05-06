@@ -5,7 +5,6 @@ package producer_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -122,7 +121,7 @@ func TestAdd(t *testing.T) {
 				"thing_id":    "1",
 				"owner":       email,
 				"name":        config.Name,
-				"channels":    strings.Join(channels, ", "),
+				"channels":    channels,
 				"external_id": config.ExternalID,
 				"content":     config.Content,
 				"timestamp":   time.Now().Unix(),
@@ -237,8 +236,6 @@ func TestUpdate(t *testing.T) {
 	nonExisting.ThingID = "unknown"
 
 	channels := []string{modified.Channels[0].ID, modified.Channels[1].ID}
-	chs, err := json.Marshal(channels)
-	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
 		desc   string
@@ -257,7 +254,7 @@ func TestUpdate(t *testing.T) {
 				"content":     modified.Content,
 				"timestamp":   time.Now().UnixNano(),
 				"operation":   configUpdate,
-				"channels":    string(chs),
+				"channels":    channels,
 				"external_id": modified.ExternalID,
 				"thing_id":    modified.ThingID,
 				"owner":       validID,
@@ -339,7 +336,7 @@ func TestUpdateConnections(t *testing.T) {
 			err:         nil,
 			event: map[string]interface{}{
 				"thing_id":  saved.ThingID,
-				"channels":  "2",
+				"channels":  []string{"2"},
 				"timestamp": time.Now().Unix(),
 				"operation": thingUpdateConnections,
 			},
@@ -1144,21 +1141,14 @@ func test(t *testing.T, expected, actual map[string]interface{}, description str
 			delete(actual, "occurred_at")
 		}
 
-		if expected["channels"] != nil || actual["channels"] != nil {
-			ech := expected["channels"]
-			ach := actual["channels"]
+		exchs := expected["channels"].([]interface{})
+		achs := actual["channels"].([]interface{})
 
-			che := []string{}
-			err = json.Unmarshal([]byte(ech.(string)), &che)
-			require.Nil(t, err, fmt.Sprintf("%s: expected to get a valid channels, got %s", description, err))
-
-			cha := []string{}
-			err = json.Unmarshal([]byte(ach.(string)), &cha)
-			require.Nil(t, err, fmt.Sprintf("%s: expected to get a valid channels, got %s", description, err))
-
-			if assert.ElementsMatchf(t, che, cha, "%s: got incorrect channels\n", description) {
-				delete(expected, "channels")
-				delete(actual, "channels")
+		if exchs != nil && achs != nil {
+			if assert.Len(t, exchs, len(achs), fmt.Sprintf("%s: got incorrect number of channels\n", description)) {
+				for _, exch := range exchs {
+					assert.Contains(t, achs, exch, fmt.Sprintf("%s: got incorrect channel\n", description))
+				}
 			}
 		}
 
