@@ -50,6 +50,7 @@ define make_docker
 
 	docker buildx build \
 		--platform linux/386,linux/amd64,linux/arm/v7,linux/arm64 \
+		--push \
 		--no-cache \
 		--build-arg SVC=$(svc) \
 		--build-arg GOARCH=$(GOARCH) \
@@ -191,7 +192,6 @@ changelog:
 	git log $(shell git describe --tags --abbrev=0)..HEAD --pretty=format:"- %s"
 
 latest: dockers
-	$(call docker_push,latest)
 
 release:
 	$(eval version = $(shell git describe --abbrev=0 --tags))
