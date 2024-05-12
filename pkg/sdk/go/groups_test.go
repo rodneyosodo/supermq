@@ -333,7 +333,7 @@ func TestListGroupsByUser(t *testing.T) {
 			offset:   offset,
 			limit:    limit,
 			userID:   validID,
-			err:      errors.NewSDKErrorWithStatus(errors.Wrap(svcerr.ErrAuthentication, svcerr.ErrAuthentication), http.StatusUnauthorized),
+			err:      errors.NewSDKErrorWithStatus(svcerr.ErrAuthentication, http.StatusUnauthorized),
 			response: nil,
 		},
 		{
@@ -351,7 +351,7 @@ func TestListGroupsByUser(t *testing.T) {
 			offset:   offset,
 			limit:    0,
 			userID:   "invalid",
-			err:      errors.NewSDKErrorWithStatus(errors.Wrap(svcerr.ErrViewEntity, svcerr.ErrViewEntity), http.StatusUnprocessableEntity),
+			err:      errors.NewSDKErrorWithStatus(svcerr.ErrViewEntity, http.StatusBadRequest),
 			response: nil,
 		},
 	}
@@ -561,7 +561,7 @@ func TestListGroupsByChannel(t *testing.T) {
 			offset:    offset,
 			limit:     limit,
 			channelID: validID,
-			err:       errors.NewSDKErrorWithStatus(errors.Wrap(svcerr.ErrAuthentication, svcerr.ErrAuthentication), http.StatusUnauthorized),
+			err:       errors.NewSDKErrorWithStatus(svcerr.ErrAuthentication, http.StatusUnauthorized),
 			response:  nil,
 		},
 		{
@@ -577,7 +577,7 @@ func TestListGroupsByChannel(t *testing.T) {
 			desc:      "get a list of groups with invalid user id",
 			token:     token,
 			channelID: invalidIdentity,
-			err:       errors.NewSDKErrorWithStatus(errors.Wrap(svcerr.ErrViewEntity, svcerr.ErrViewEntity), http.StatusUnprocessableEntity),
+			err:       errors.NewSDKErrorWithStatus(svcerr.ErrViewEntity, http.StatusBadRequest),
 			response:  nil,
 		},
 	}
