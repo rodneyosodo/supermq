@@ -89,6 +89,24 @@ func (sdk mgSDK) ChannelsByThing(thingID string, pm PageMetadata, token string) 
 	return cp, nil
 }
 
+func (sdk mgSDK) ListUserChannels(userID string, pm PageMetadata, token string) (ChannelsPage, errors.SDKError) {
+	url, err := sdk.withQueryParams(sdk.thingsURL, fmt.Sprintf("%s/%s/%s", channelsEndpoint, usersEndpoint, userID), pm)
+	if err != nil {
+		return ChannelsPage{}, errors.NewSDKError(err)
+	}
+
+	_, body, sdkerr := sdk.processRequest(http.MethodGet, url, token, nil, nil, http.StatusOK)
+	if sdkerr != nil {
+		return ChannelsPage{}, sdkerr
+	}
+	cp := ChannelsPage{}
+	if err := json.Unmarshal(body, &cp); err != nil {
+		return ChannelsPage{}, errors.NewSDKError(err)
+	}
+
+	return cp, nil
+}
+
 func (sdk mgSDK) ListGroupChannels(groupID string, pm PageMetadata, token string) (GroupsPage, errors.SDKError) {
 	url, err := sdk.withQueryParams(sdk.thingsURL, fmt.Sprintf("%s/%s/%s", channelsEndpoint, groupsEndpoint, groupID), pm)
 	if err != nil {

@@ -97,26 +97,8 @@ func (sdk mgSDK) Things(pm PageMetadata, token string) (ThingsPage, errors.SDKEr
 	return cp, nil
 }
 
-func (sdk mgSDK) ListUserChannels(userID string, pm PageMetadata, token string) (ChannelsPage, errors.SDKError) {
-	url, err := sdk.withQueryParams(sdk.thingsURL, fmt.Sprintf("%s/%s/%s", channelsEndpoint, usersEndpoint, userID), pm)
-	if err != nil {
-		return ChannelsPage{}, errors.NewSDKError(err)
-	}
-
-	_, body, sdkerr := sdk.processRequest(http.MethodGet, url, token, nil, nil, http.StatusOK)
-	if sdkerr != nil {
-		return ChannelsPage{}, sdkerr
-	}
-	cp := ChannelsPage{}
-	if err := json.Unmarshal(body, &cp); err != nil {
-		return ChannelsPage{}, errors.NewSDKError(err)
-	}
-
-	return cp, nil
-}
-
 func (sdk mgSDK) ListUserThings(userID string, pm PageMetadata, token string) (ThingsPage, errors.SDKError) {
-	url, err := sdk.withQueryParams(sdk.thingsURL, fmt.Sprintf("%s/%s/%s", thingsEndpoint, usersEndpoint, userID), pm)
+	url, err := sdk.withQueryParams(sdk.thingsURL, fmt.Sprintf("%s/%s/%s/", thingsEndpoint, usersEndpoint, userID), pm)
 	if err != nil {
 		return ThingsPage{}, errors.NewSDKError(err)
 	}
