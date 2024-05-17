@@ -19,6 +19,13 @@ var (
 	err0 = errors.New("0")
 	err1 = errors.New("1")
 	err2 = errors.New("2")
+	err3 = errors.New("3", errors.WithLevel(errors.LevelError))
+	err4 = errors.New("4", errors.WithLevel(errors.LevelWarn))
+	err5 = errors.New("5", errors.WithLevel(errors.LevelFatal))
+	err6 = errors.New("6", errors.WithCode(400))
+	err7 = errors.New("7", errors.WithCode(404))
+	err8 = errors.New("8", errors.WithCode(422))
+	err9 = errors.New("9", errors.WithCode(401), errors.WithLevel(errors.LevelWarn))
 	nat  = nerrors.New("native error")
 )
 
@@ -332,6 +339,198 @@ func TestUnwrap(t *testing.T) {
 			wrapper, wrapped := errors.Unwrap(c.err)
 			assert.Equal(t, c.wrapper, wrapper)
 			assert.Equal(t, c.wrapped, wrapped)
+		})
+	}
+}
+
+func TestLevel(t *testing.T) {
+	cases := []struct {
+		desc  string
+		err   errors.Error
+		level uint8
+	}{
+		{
+			desc:  "err0",
+			err:   err0,
+			level: 0,
+		},
+		{
+			desc:  "err1",
+			err:   err1,
+			level: 0,
+		},
+		{
+			desc:  "err2",
+			err:   err2,
+			level: 0,
+		},
+		{
+			desc:  "err3",
+			err:   err3,
+			level: errors.LevelError,
+		},
+		{
+			desc:  "err4",
+			err:   err4,
+			level: errors.LevelWarn,
+		},
+		{
+			desc:  "err5",
+			err:   err5,
+			level: errors.LevelFatal,
+		},
+		{
+			desc:  "err6",
+			err:   err6,
+			level: 0,
+		},
+		{
+			desc:  "err7",
+			err:   err7,
+			level: 0,
+		},
+		{
+			desc:  "err8",
+			err:   err8,
+			level: 0,
+		},
+		{
+			desc:  "err9",
+			err:   err9,
+			level: errors.LevelWarn,
+		},
+		{
+			desc:  "err0 wrapped in err1",
+			err:   errors.Wrap(err1, err0),
+			level: 0,
+		},
+		{
+			desc:  "err1 wrapped in err0",
+			err:   errors.Wrap(err0, err1),
+			level: 0,
+		},
+		{
+			desc:  "err2 wrapped in err3",
+			err:   errors.Wrap(err3, err2),
+			level: errors.LevelError,
+		},
+		{
+			desc:  "err3 wrapped in err4 wrapped in err5",
+			err:   errors.Wrap(err5, errors.Wrap(err4, err3)),
+			level: errors.LevelFatal,
+		},
+		{
+			desc:  "err5 wrapped in err4 wrapped in err3",
+			err:   errors.Wrap(err3, errors.Wrap(err4, err5)),
+			level: errors.LevelFatal,
+		},
+		{
+			desc:  "multiple wrapped errors",
+			err:   errors.Wrap(wrap(5), errors.Wrap(errors.New("warn", errors.WithLevel(errors.LevelWarn)), errors.New("fatal", errors.WithLevel(errors.LevelInfo)))),
+			level: errors.LevelWarn,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.desc, func(t *testing.T) {
+			level := c.err.Level()
+			assert.Equal(t, c.level, level)
+		})
+	}
+}
+
+func TestStatusCode(t *testing.T) {
+	cases := []struct {
+		desc string
+		err  errors.Error
+		code uint16
+	}{
+		{
+			desc: "err0",
+			err:  err0,
+			code: 400,
+		},
+		{
+			desc: "err1",
+			err:  err1,
+			code: 400,
+		},
+		{
+			desc: "err2",
+			err:  err2,
+			code: 400,
+		},
+		{
+			desc: "err3",
+			err:  err3,
+			code: 400,
+		},
+		{
+			desc: "err4",
+			err:  err4,
+			code: 400,
+		},
+		{
+			desc: "err5",
+			err:  err5,
+			code: 400,
+		},
+		{
+			desc: "err6",
+			err:  err6,
+			code: 400,
+		},
+		{
+			desc: "err7",
+			err:  err7,
+			code: 404,
+		},
+		{
+			desc: "err8",
+			err:  err8,
+			code: 422,
+		},
+		{
+			desc: "err9",
+			err:  err9,
+			code: 401,
+		},
+		{
+			desc: "err0 wrapped in err1",
+			err:  errors.Wrap(err1, err0),
+			code: 400,
+		},
+		{
+			desc: "err1 wrapped in err0",
+			err:  errors.Wrap(err0, err1),
+			code: 400,
+		},
+		{
+			desc: "err2 wrapped in err6",
+			err:  errors.Wrap(err6, err2),
+			code: 400,
+		},
+		{
+			desc: "err0 wrapped in err6 wrapped in err7",
+			err:  errors.Wrap(err7, errors.Wrap(err6, err0)),
+			code: 404,
+		},
+		{
+			desc: "err7 wrapped in err6 wrapped in err0",
+			err:  errors.Wrap(err0, errors.Wrap(err6, err7)),
+			code: 404,
+		},
+		{
+			desc: "multiple wrapped errors",
+			err:  errors.Wrap(wrap(5), errors.Wrap(errors.New("warn", errors.WithCode(422)), errors.New("fatal", errors.WithCode(401)))),
+			code: 422,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.desc, func(t *testing.T) {
+			code := c.err.HTTPStatusCode()
+			assert.Equal(t, c.code, code)
 		})
 	}
 }
