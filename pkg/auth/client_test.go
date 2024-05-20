@@ -4,6 +4,7 @@
 package auth_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -39,7 +40,7 @@ func TestSetupAuth(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.desc, func(t *testing.T) {
-			client, handler, err := auth.Setup(c.config)
+			client, handler, err := auth.Setup(context.Background(), c.config)
 			assert.True(t, errors.Contains(err, c.err), fmt.Sprintf("expected %s to contain %s", err, c.err))
 			if err == nil {
 				assert.NotNil(t, client)
@@ -75,7 +76,7 @@ func TestSetupAuthz(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.desc, func(t *testing.T) {
-			client, handler, err := auth.SetupAuthz(c.config)
+			client, handler, err := auth.SetupAuthz(context.Background(), c.config)
 			assert.True(t, errors.Contains(err, c.err), fmt.Sprintf("expected %s to contain %s", err, c.err))
 			if err == nil {
 				assert.NotNil(t, client)
