@@ -381,14 +381,9 @@ func TestListChannelUsers(t *testing.T) {
 
 	for i := 10; i < 20; i++ {
 		cl := sdk.User{
-			ID:   generateUUID(t),
-			Name: fmt.Sprintf("client_%d", i),
-			Credentials: sdk.Credentials{
-				Identity: fmt.Sprintf("identity_%d", i),
-				Secret:   fmt.Sprintf("password_%d", i),
-			},
-			Metadata: sdk.Metadata{"name": fmt.Sprintf("client_%d", i)},
-			Status:   mgclients.EnabledStatus.String(),
+			ID:     generateUUID(t),
+			Name:   fmt.Sprintf("client_%d", i),
+			Status: mgclients.EnabledStatus.String(),
 		}
 		cls = append(cls, cl)
 	}
@@ -475,14 +470,9 @@ func TestListGroupUsers(t *testing.T) {
 
 	for i := 10; i < 20; i++ {
 		cl := sdk.User{
-			ID:   generateUUID(t),
-			Name: fmt.Sprintf("client_%d", i),
-			Credentials: sdk.Credentials{
-				Identity: fmt.Sprintf("identity_%d", i),
-				Secret:   fmt.Sprintf("password_%d", i),
-			},
-			Metadata: sdk.Metadata{"name": fmt.Sprintf("client_%d", i)},
-			Status:   mgclients.EnabledStatus.String(),
+			ID:     generateUUID(t),
+			Name:   fmt.Sprintf("client_%d", i),
+			Status: mgclients.EnabledStatus.String(),
 		}
 		cls = append(cls, cl)
 	}
@@ -571,11 +561,6 @@ func TestListThingUsers(t *testing.T) {
 		cl := sdk.User{
 			ID:   generateUUID(t),
 			Name: fmt.Sprintf("client_%d", i),
-			Credentials: sdk.Credentials{
-				Identity: fmt.Sprintf("identity_%d", i),
-				Secret:   fmt.Sprintf("password_%d", i),
-			},
-			Metadata: sdk.Metadata{"name": fmt.Sprintf("client_%d", i)},
 			Status:   mgclients.EnabledStatus.String(),
 		}
 		cls = append(cls, cl)
@@ -665,11 +650,6 @@ func TestListDomainUsers(t *testing.T) {
 		cl := sdk.User{
 			ID:   generateUUID(t),
 			Name: fmt.Sprintf("client_%d", i),
-			Credentials: sdk.Credentials{
-				Identity: fmt.Sprintf("identity_%d", i),
-				Secret:   fmt.Sprintf("password_%d", i),
-			},
-			Metadata: sdk.Metadata{"name": fmt.Sprintf("client_%d", i)},
 			Status:   mgclients.EnabledStatus.String(),
 		}
 		cls = append(cls, cl)
