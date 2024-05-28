@@ -13,7 +13,7 @@ import (
 	grpchealth "google.golang.org/grpc/health/grpc_health_v1"
 )
 
-var errHealthCheckFailed = errors.New("health check failed")
+var errSvcNotServing = errors.New("service is not serving")
 
 // Setup loads Auth gRPC configuration and creates new Auth gRPC client.
 //
@@ -30,11 +30,8 @@ func Setup(ctx context.Context, cfg Config) (magistrala.AuthServiceClient, Handl
 	resp, err := health.Check(ctx, &grpchealth.HealthCheckRequest{
 		Service: "auth",
 	})
-	if err != nil {
-		return nil, nil, errors.Wrap(errHealthCheckFailed, err)
-	}
-	if resp.GetStatus() != grpchealth.HealthCheckResponse_SERVING {
-		return nil, nil, errors.Wrap(errHealthCheckFailed, errors.New("service is not serving"))
+	if err != nil || resp.GetStatus() != grpchealth.HealthCheckResponse_SERVING {
+		return nil, nil, errSvcNotServing
 	}
 
 	return authgrpc.NewClient(client.Connection(), cfg.Timeout), client, nil
@@ -55,11 +52,8 @@ func SetupAuthz(ctx context.Context, cfg Config) (magistrala.AuthzServiceClient,
 	resp, err := health.Check(ctx, &grpchealth.HealthCheckRequest{
 		Service: "things",
 	})
-	if err != nil {
-		return nil, nil, errors.Wrap(errHealthCheckFailed, err)
-	}
-	if resp.GetStatus() != grpchealth.HealthCheckResponse_SERVING {
-		return nil, nil, errors.Wrap(errHealthCheckFailed, errors.New("service is not serving"))
+	if err != nil || resp.GetStatus() != grpchealth.HealthCheckResponse_SERVING {
+		return nil, nil, errSvcNotServing
 	}
 
 	return thingsauth.NewClient(client.Connection(), cfg.Timeout), client, nil

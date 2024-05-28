@@ -58,7 +58,7 @@ func TestSetupAuth(t *testing.T) {
 				URL:     "",
 				Timeout: time.Second,
 			},
-			err: errors.New("health check failed"),
+			err: errors.New("service is not serving"),
 		},
 	}
 
@@ -109,7 +109,7 @@ func TestSetupAuthz(t *testing.T) {
 				URL:     "",
 				Timeout: time.Second,
 			},
-			err: errors.New("health check failed"),
+			err: errors.New("service is not serving"),
 		},
 	}
 
