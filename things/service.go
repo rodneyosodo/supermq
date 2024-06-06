@@ -10,7 +10,6 @@ import (
 	"github.com/absmach/magistrala/auth"
 	mgclients "github.com/absmach/magistrala/pkg/clients"
 	"github.com/absmach/magistrala/pkg/errors"
-	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
 	mggroups "github.com/absmach/magistrala/pkg/groups"
 	"github.com/absmach/magistrala/things/postgres"
@@ -100,7 +99,7 @@ func (svc service) CreateThings(ctx context.Context, token string, cls ...mgclie
 	defer func() {
 		if err != nil {
 			if errRollback := svc.addThingPoliciesRollback(ctx, user.GetId(), user.GetDomainId(), clients); errRollback != nil {
-				err = errors.Wrap(errors.Wrap(repoerr.ErrRollbackTx, errRollback), err)
+				err = errors.Wrap(errors.Wrap(errors.ErrRollbackTx, errRollback), err)
 			}
 		}
 	}()

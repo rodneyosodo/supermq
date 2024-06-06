@@ -13,7 +13,6 @@ import (
 	"github.com/absmach/magistrala/internal/apiutil"
 	mgclients "github.com/absmach/magistrala/pkg/clients"
 	"github.com/absmach/magistrala/pkg/errors"
-	repoerr "github.com/absmach/magistrala/pkg/errors/repository"
 	svcerr "github.com/absmach/magistrala/pkg/errors/service"
 	"github.com/absmach/magistrala/pkg/groups"
 	"golang.org/x/sync/errgroup"
@@ -73,7 +72,7 @@ func (svc service) CreateGroup(ctx context.Context, token, kind string, g groups
 	defer func() {
 		if err != nil {
 			if errRollback := svc.addGroupPolicyRollback(ctx, res.GetId(), res.GetDomainId(), g.ID, g.Parent, kind); errRollback != nil {
-				err = errors.Wrap(errors.Wrap(repoerr.ErrRollbackTx, errRollback), err)
+				err = errors.Wrap(errors.Wrap(errors.ErrRollbackTx, errRollback), err)
 			}
 		}
 	}()
