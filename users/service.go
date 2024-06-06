@@ -455,27 +455,14 @@ func (svc service) changeClientStatus(ctx context.Context, token string, client 
 }
 
 func (svc service) DeleteClient(ctx context.Context, token, id string) error {
-	res, err := svc.identify(ctx, token)
-	if err != nil {
-		return err
-	}
-	if err := svc.checkSuperAdmin(ctx, res.GetId()); err != nil {
-		return err
+	client := mgclients.Client{
+		ID:        id,
+		UpdatedAt: time.Now(),
+		Status:    mgclients.DeletedStatus,
 	}
 
-	deleteRes, err := svc.auth.DeleteEntityPolicies(ctx, &magistrala.DeleteEntityPoliciesReq{
-		Id:         id,
-		EntityType: auth.UserType,
-	})
-	if err != nil {
-		return errors.Wrap(svcerr.ErrDeletePolicies, err)
-	}
-	if !deleteRes.Deleted {
-		return svcerr.ErrAuthorization
-	}
-
-	if err := svc.clients.Delete(ctx, id); err != nil {
-		return errors.Wrap(repoerr.ErrRemoveEntity, err)
+	if _, err := svc.changeClientStatus(ctx, token, client); err != nil {
+		return err
 	}
 
 	return nil
