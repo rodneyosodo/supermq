@@ -1008,30 +1008,12 @@ func DecodeDomainUserID(domainUserID string) (string, string) {
 func (svc service) DeleteEntityPolicies(ctx context.Context, entityType, id string) (err error) {
 	switch entityType {
 	case ThingType:
-		// Remove policy of groups
 		req := PolicyReq{
-			SubjectType: GroupType,
-			Object:      id,
-			ObjectType:  ThingType,
+			Object:     id,
+			ObjectType: ThingType,
 		}
 
-		if err := svc.DeletePolicyFilter(ctx, req); err != nil {
-			return err
-		}
-
-		// Remove policy from domain
-		req.SubjectType = DomainType
-		if err := svc.DeletePolicyFilter(ctx, req); err != nil {
-			return err
-		}
-
-		// Remove policy of users
-		req.SubjectType = UserType
-		if err := svc.DeletePolicyFilter(ctx, req); err != nil {
-			return err
-		}
-
-		return nil
+		return svc.DeletePolicyFilter(ctx, req)
 	case UserType:
 		domainsPage, err := svc.domains.ListDomains(ctx, Page{SubjectID: id, Limit: defLimit})
 		if err != nil {
@@ -1053,20 +1035,8 @@ func (svc service) DeleteEntityPolicies(ctx context.Context, entityType, id stri
 			policy := PolicyReq{
 				Subject:     EncodeDomainUserID(domain.ID, id),
 				SubjectType: UserType,
-				ObjectType:  ThingType,
 			}
 			if err := svc.agent.DeletePolicyFilter(ctx, policy); err != nil {
-				return err
-			}
-
-			policy.ObjectType = GroupType
-			if err := svc.agent.DeletePolicy(ctx, policy); err != nil {
-				return err
-			}
-
-			policy.Object = domain.ID
-			policy.ObjectType = DomainType
-			if err := svc.agent.DeletePolicy(ctx, policy); err != nil {
 				return err
 			}
 		}
@@ -1074,21 +1044,7 @@ func (svc service) DeleteEntityPolicies(ctx context.Context, entityType, id stri
 		req := PolicyReq{
 			Subject:     id,
 			SubjectType: UserType,
-			ObjectType:  ThingType,
 		}
-		if err := svc.agent.DeletePolicyFilter(ctx, req); err != nil {
-			return err
-		}
-		req.ObjectType = GroupType
-		if err := svc.agent.DeletePolicyFilter(ctx, req); err != nil {
-			return err
-		}
-		req.ObjectType = DomainType
-		if err := svc.agent.DeletePolicyFilter(ctx, req); err != nil {
-			return err
-		}
-		req.ObjectType = PlatformType
-		req.Object = MagistralaObject
 		if err := svc.agent.DeletePolicyFilter(ctx, req); err != nil {
 			return err
 		}
@@ -1099,36 +1055,19 @@ func (svc service) DeleteEntityPolicies(ctx context.Context, entityType, id stri
 
 		return nil
 	case GroupType:
-		// Remove policy of child groups
 		req := PolicyReq{
 			SubjectType: GroupType,
 			Subject:     id,
-			ObjectType:  GroupType,
 		}
 		if err := svc.DeletePolicyFilter(ctx, req); err != nil {
 			return err
 		}
 
-		// Remove policy of things
-		req.ObjectType = ThingType
-		if err := svc.DeletePolicyFilter(ctx, req); err != nil {
-			return err
+		req = PolicyReq{
+			Object:     id,
+			ObjectType: GroupType,
 		}
-
-		// Remove policy from domain
-		req.SubjectType = DomainType
-		req.ObjectType = GroupType
-		if err := svc.DeletePolicyFilter(ctx, req); err != nil {
-			return err
-		}
-
-		// Remove policy of users
-		req.SubjectType = UserType
-		if err := svc.DeletePolicyFilter(ctx, req); err != nil {
-			return err
-		}
-
-		return nil
+		return svc.DeletePolicyFilter(ctx, req)
 	default:
 		return errInvalidEntityType
 	}
