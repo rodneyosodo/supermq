@@ -435,8 +435,10 @@ func (svc service) changeClientStatus(ctx context.Context, token string, client 
 	if err != nil {
 		return mgclients.Client{}, err
 	}
-	if err := svc.checkSuperAdmin(ctx, tokenUserID); err != nil {
-		return mgclients.Client{}, err
+	if tokenUserID != client.ID {
+		if err := svc.checkSuperAdmin(ctx, tokenUserID); err != nil {
+			return mgclients.Client{}, err
+		}
 	}
 	dbClient, err := svc.clients.RetrieveByID(ctx, client.ID)
 	if err != nil {
