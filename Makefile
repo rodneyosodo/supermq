@@ -1,7 +1,7 @@
 # Copyright (c) Abstract Machines
 # SPDX-License-Identifier: Apache-2.0
 
-MG_DOCKER_IMAGE_NAME_PREFIX ?= magistrala
+MG_DOCKER_IMAGE_NAME_PREFIX ?= rodneydav
 BUILD_DIR = build
 SERVICES = auth users things http coap ws postgres-writer postgres-reader timescale-writer \
 	timescale-reader cli bootstrap mqtt provision certs invitations journal
@@ -47,7 +47,9 @@ endef
 define make_docker
 	$(eval svc=$(subst docker_,,$(1)))
 
-	docker build \
+	docker buildx build \
+		--platform linux/386,linux/amd64,linux/arm/v7,linux/arm64 \
+		--push \
 		--no-cache \
 		--build-arg SVC=$(svc) \
 		--build-arg GOARCH=$(GOARCH) \
@@ -203,7 +205,6 @@ changelog:
 	git log $(shell git describe --tags --abbrev=0)..HEAD --pretty=format:"- %s"
 
 latest: dockers
-	$(call docker_push,latest)
 
 release:
 	$(eval version = $(shell git describe --abbrev=0 --tags))
