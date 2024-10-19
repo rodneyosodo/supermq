@@ -30,6 +30,10 @@ import (
 	"github.com/absmach/mproxy/pkg/session"
 	"github.com/absmach/mproxy/pkg/websockets"
 	"github.com/caarlos0/env/v10"
+	"github.com/grafana/loki-client-go/loki"
+	"github.com/grafana/pyroscope-go"
+	slogloki "github.com/samber/slog-loki/v3"
+	slogmulti "github.com/samber/slog-multi"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
 )
@@ -50,6 +54,8 @@ type config struct {
 	SendTelemetry bool    `env:"MG_SEND_TELEMETRY"          envDefault:"true"`
 	InstanceID    string  `env:"MG_WS_ADAPTER_INSTANCE_ID"  envDefault:""`
 	TraceRatio    float64 `env:"MG_JAEGER_TRACE_RATIO"      envDefault:"1.0"`
+	LokiURL       string  `env:"GOPHERCON_LOKI_URL"            envDefault:""`
+	PyroScopeURL  string  `env:"GOPHERCON_PYROSCOPE_URL"       envDefault:""`
 }
 
 func main() {
@@ -61,10 +67,38 @@ func main() {
 		log.Fatalf("failed to load %s configuration : %s", svcName, err)
 	}
 
-	logger, err := mglog.New(os.Stdout, cfg.LogLevel)
+	var level slog.Level
+	err := level.UnmarshalText([]byte(cfg.LogLevel))
 	if err != nil {
-		log.Fatalf("failed to init logger: %s", err.Error())
+		log.Fatalf("failed to parse log level: %s", err.Error())
 	}
+	fanout := slogmulti.Fanout(
+		slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: level,
+		}),
+	)
+	if cfg.LokiURL != "" {
+		config, err := loki.NewDefaultConfig(cfg.LokiURL)
+		if err != nil {
+			log.Fatalf("failed to create loki config: %s", err.Error())
+		}
+		config.TenantID = svcName
+		client, err := loki.New(config)
+		if err != nil {
+			log.Fatalf("failed to create loki client: %s", err.Error())
+		}
+
+		hander := slogloki.Option{Level: level, Client: client}.NewLokiHandler()
+		fanout = slogmulti.Fanout(
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+				Level: level,
+			}),
+			hander,
+		)
+	}
+
+	logger := slog.New(fanout).With("service", svcName)
+	slog.SetDefault(logger)
 
 	var exitCode int
 	defer mglog.ExitWithError(&exitCode)
@@ -118,6 +152,25 @@ func main() {
 		}
 	}()
 	tracer := tp.Tracer(svcName)
+
+	if cfg.PyroScopeURL != "" {
+		if _, err := pyroscope.Start(pyroscope.Config{
+			ApplicationName: svcName,
+			ServerAddress:   cfg.PyroScopeURL,
+			Logger:          nil,
+			ProfileTypes: []pyroscope.ProfileType{
+				pyroscope.ProfileCPU,
+				pyroscope.ProfileAllocObjects,
+				pyroscope.ProfileAllocSpace,
+				pyroscope.ProfileInuseObjects,
+				pyroscope.ProfileInuseSpace,
+				pyroscope.ProfileGoroutines,
+				pyroscope.ProfileMutexCount,
+			},
+		}); err != nil {
+			log.Fatalf("failed to start pyroscope: %s", err.Error())
+		}
+	}
 
 	nps, err := brokers.NewPubSub(ctx, cfg.BrokerURL, logger)
 	if err != nil {
