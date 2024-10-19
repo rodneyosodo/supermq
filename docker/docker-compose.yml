@@ -17,6 +17,8 @@ volumes:
   magistrala-spicedb-db-volume:
   magistrala-auth-db-volume:
   magistrala-invitations-db-volume:
+  prometheus-volume:
+  tempo-volume:
 
 services:
   spicedb:
@@ -122,6 +124,8 @@ services:
       MG_AUTH_DB_SSL_ROOT_CERT: ${MG_AUTH_DB_SSL_ROOT_CERT}
       MG_JAEGER_URL: ${MG_JAEGER_URL}
       MG_JAEGER_TRACE_RATIO: ${MG_JAEGER_TRACE_RATIO}
+      GOPHERCON_LOKI_URL: ${GOPHERCON_LOKI_URL}
+      GOPHERCON_PYROSCOPE_URL: ${GOPHERCON_PYROSCOPE_URL}
       MG_SEND_TELEMETRY: ${MG_SEND_TELEMETRY}
       MG_AUTH_ADAPTER_INSTANCE_ID: ${MG_AUTH_ADAPTER_INSTANCE_ID}
     ports:
@@ -200,6 +204,8 @@ services:
       MG_AUTH_GRPC_SERVER_CA_CERTS: ${MG_AUTH_GRPC_SERVER_CA_CERTS:+/auth-grpc-server-ca.crt}
       MG_JAEGER_URL: ${MG_JAEGER_URL}
       MG_JAEGER_TRACE_RATIO: ${MG_JAEGER_TRACE_RATIO}
+      GOPHERCON_LOKI_URL: ${GOPHERCON_LOKI_URL}
+      GOPHERCON_PYROSCOPE_URL: ${GOPHERCON_PYROSCOPE_URL}
       MG_SEND_TELEMETRY: ${MG_SEND_TELEMETRY}
       MG_INVITATIONS_INSTANCE_ID: ${MG_INVITATIONS_INSTANCE_ID}
     ports:
@@ -323,6 +329,8 @@ services:
       MG_AUTH_GRPC_SERVER_CA_CERTS: ${MG_AUTH_GRPC_SERVER_CA_CERTS:+/auth-grpc-server-ca.crt}
       MG_JAEGER_URL: ${MG_JAEGER_URL}
       MG_JAEGER_TRACE_RATIO: ${MG_JAEGER_TRACE_RATIO}
+      GOPHERCON_LOKI_URL: ${GOPHERCON_LOKI_URL}
+      GOPHERCON_PYROSCOPE_URL: ${GOPHERCON_PYROSCOPE_URL}
       MG_SEND_TELEMETRY: ${MG_SEND_TELEMETRY}
     ports:
       - ${MG_THINGS_HTTP_PORT}:${MG_THINGS_HTTP_PORT}
@@ -426,6 +434,8 @@ services:
       MG_ES_URL: ${MG_ES_URL}
       MG_JAEGER_URL: ${MG_JAEGER_URL}
       MG_JAEGER_TRACE_RATIO: ${MG_JAEGER_TRACE_RATIO}
+      GOPHERCON_LOKI_URL: ${GOPHERCON_LOKI_URL}
+      GOPHERCON_PYROSCOPE_URL: ${GOPHERCON_PYROSCOPE_URL}
       MG_SEND_TELEMETRY: ${MG_SEND_TELEMETRY}
       MG_AUTH_GRPC_URL: ${MG_AUTH_GRPC_URL}
       MG_AUTH_GRPC_TIMEOUT: ${MG_AUTH_GRPC_TIMEOUT}
@@ -455,15 +465,108 @@ services:
         bind:
           create_host_path: true
 
-  jaeger:
-    image: jaegertracing/all-in-one:1.53.0
-    container_name: magistrala-jaeger
-    environment:
-      COLLECTOR_OTLP_ENABLED: ${MG_JAEGER_COLLECTOR_OTLP_ENABLED}
-    command: --memory.max-traces ${MG_JAEGER_MEMORY_MAX_TRACES}
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: loki
+    restart: on-failure
     ports:
-      - ${MG_JAEGER_FRONTEND}:${MG_JAEGER_FRONTEND}
-      - ${MG_JAEGER_OLTP_HTTP}:${MG_JAEGER_OLTP_HTTP}
+      - ${LOKI_PORT}:${LOKI_PORT}
+    command: "-config.file=/etc/loki/config.yaml -target=all"
+    volumes:
+      - ./loki/loki-config.yaml:/etc/loki/config.yaml
+    networks:
+      - magistrala-base-net
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus
+    restart: on-failure
+    command:
+      - --web.enable-remote-write-receiver
+      - --enable-feature=native-histograms
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - ${PROMETHEUS_PORT}:9090
+    networks:
+      - magistrala-base-net
+    volumes:
+      - type: bind
+        source: ./prometheus/prometheus.yaml
+        target: /etc/prometheus/prometheus.yml
+      - prometheus-volume:/prometheus
+
+  tempo-init:
+    image: grafana/tempo:2.6.0
+    container_name: tempo-init
+    user: root
+    entrypoint:
+      - "chown"
+      - "10001:10001"
+      - "/var/tempo"
+    volumes:
+      - tempo-volume:/var/tempo
+    networks:
+      - magistrala-base-net
+
+  memcached:
+    image: memcached:1.6.29
+    container_name: memcached
+    restart: on-failure
+    ports:
+      - ${TEMPO_MEMCACHED_PORT}:11211
+    environment:
+      - MEMCACHED_MAX_MEMORY=${MEMCACHED_MAX_MEMORY}
+      - MEMCACHED_THREADS=${MEMCACHED_THREADS}
+    networks:
+      - magistrala-base-net
+
+  tempo:
+    image: grafana/tempo:2.6.0
+    container_name: tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+    restart: on-failure
+    depends_on:
+      - tempo-init
+      - memcached
+    ports:
+      - ${TEMPO_PORT}:3200
+      - ${TEMPO_OLTP_HTTP}:4318
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo.yaml
+      - tempo-volume:/var/tempo
+    networks:
+      - magistrala-base-net
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: grafana
+    restart: on-failure
+    depends_on:
+      - prometheus
+    ports:
+      - ${GRAFANA_PORT}:3000
+    environment:
+      - GF_LOG_LEVEL=ERROR
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - ./grafana:/etc/grafana/provisioning/
+    networks:
+      - magistrala-base-net
+
+  pyroscope:
+    image: grafana/pyroscope:latest
+    container_name: pyroscope
+    restart: on-failure
+    environment:
+      JAEGER_AGENT_HOST: tempo
+      JAEGER_SAMPLER_TYPE: const
+      JAEGER_SAMPLER_PARAM: 1
+    command: ["-config.file=/etc/pyroscope.yml"]
+    ports:
+      - "4040:4040"
+    volumes:
+      - ./pyroscope/pyroscope.yml:/etc/pyroscope.yml
     networks:
       - magistrala-base-net
 
@@ -498,6 +601,8 @@ services:
       MG_JAEGER_URL: ${MG_JAEGER_URL}
       MG_MESSAGE_BROKER_URL: ${MG_MESSAGE_BROKER_URL}
       MG_JAEGER_TRACE_RATIO: ${MG_JAEGER_TRACE_RATIO}
+      GOPHERCON_LOKI_URL: ${GOPHERCON_LOKI_URL}
+      GOPHERCON_PYROSCOPE_URL: ${GOPHERCON_PYROSCOPE_URL}
       MG_SEND_TELEMETRY: ${MG_SEND_TELEMETRY}
     networks:
       - magistrala-base-net
@@ -540,6 +645,8 @@ services:
       MG_MESSAGE_BROKER_URL: ${MG_MESSAGE_BROKER_URL}
       MG_JAEGER_URL: ${MG_JAEGER_URL}
       MG_JAEGER_TRACE_RATIO: ${MG_JAEGER_TRACE_RATIO}
+      GOPHERCON_LOKI_URL: ${GOPHERCON_LOKI_URL}
+      GOPHERCON_PYROSCOPE_URL: ${GOPHERCON_PYROSCOPE_URL}
       MG_SEND_TELEMETRY: ${MG_SEND_TELEMETRY}
       MG_HTTP_ADAPTER_INSTANCE_ID: ${MG_HTTP_ADAPTER_INSTANCE_ID}
     ports:
@@ -589,6 +696,8 @@ services:
       MG_MESSAGE_BROKER_URL: ${MG_MESSAGE_BROKER_URL}
       MG_JAEGER_URL: ${MG_JAEGER_URL}
       MG_JAEGER_TRACE_RATIO: ${MG_JAEGER_TRACE_RATIO}
+      GOPHERCON_LOKI_URL: ${GOPHERCON_LOKI_URL}
+      GOPHERCON_PYROSCOPE_URL: ${GOPHERCON_PYROSCOPE_URL}
       MG_SEND_TELEMETRY: ${MG_SEND_TELEMETRY}
       MG_COAP_ADAPTER_INSTANCE_ID: ${MG_COAP_ADAPTER_INSTANCE_ID}
     ports:
@@ -635,6 +744,8 @@ services:
       MG_MESSAGE_BROKER_URL: ${MG_MESSAGE_BROKER_URL}
       MG_JAEGER_URL: ${MG_JAEGER_URL}
       MG_JAEGER_TRACE_RATIO: ${MG_JAEGER_TRACE_RATIO}
+      GOPHERCON_LOKI_URL: ${GOPHERCON_LOKI_URL}
+      GOPHERCON_PYROSCOPE_URL: ${GOPHERCON_PYROSCOPE_URL}
       MG_SEND_TELEMETRY: ${MG_SEND_TELEMETRY}
       MG_WS_ADAPTER_INSTANCE_ID: ${MG_WS_ADAPTER_INSTANCE_ID}
     ports:

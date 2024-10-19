@@ -72,7 +72,7 @@ type config struct {
 	SpicedbPreSharedKey string        `env:"MG_SPICEDB_PRE_SHARED_KEY"       envDefault:"12345678"`
 	TraceRatio          float64       `env:"MG_JAEGER_TRACE_RATIO"           envDefault:"1.0"`
 	LokiURL             string        `env:"GOPHERCON_LOKI_URL"            envDefault:""`
-	PyroScopeURL        string        `env:"GOPHERCON_PYROSCOPE_URL"       envDefault:""`
+	PyroScopeURL        string        `env:"GOPHERCON_PYROSCOPE_URL"       envDefault:"http://pyroscope:4040"`
 }
 
 func main() {

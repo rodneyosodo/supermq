@@ -69,7 +69,7 @@ type config struct {
 	ESURL                 string        `env:"MG_ES_URL"                                    envDefault:"nats://localhost:4222"`
 	TraceRatio            float64       `env:"MG_JAEGER_TRACE_RATIO"                        envDefault:"1.0"`
 	LokiURL               string        `env:"GOPHERCON_LOKI_URL"            envDefault:""`
-	PyroScopeURL          string        `env:"GOPHERCON_PYROSCOPE_URL"       envDefault:""`
+	PyroScopeURL          string        `env:"GOPHERCON_PYROSCOPE_URL"       envDefault:"http://pyroscope:4040"`
 }
 
 func main() {

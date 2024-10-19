@@ -55,7 +55,7 @@ type config struct {
 	InstanceID    string  `env:"MG_WS_ADAPTER_INSTANCE_ID"  envDefault:""`
 	TraceRatio    float64 `env:"MG_JAEGER_TRACE_RATIO"      envDefault:"1.0"`
 	LokiURL       string  `env:"GOPHERCON_LOKI_URL"            envDefault:""`
-	PyroScopeURL  string  `env:"GOPHERCON_PYROSCOPE_URL"       envDefault:""`
+	PyroScopeURL  string  `env:"GOPHERCON_PYROSCOPE_URL"       envDefault:"http://pyroscope:4040"`
 }
 
 func main() {

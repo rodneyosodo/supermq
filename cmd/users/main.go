@@ -77,7 +77,7 @@ type config struct {
 	TraceRatio    float64 `env:"MG_JAEGER_TRACE_RATIO"           envDefault:"1.0"`
 	SelfRegister  bool    `env:"MG_USERS_ALLOW_SELF_REGISTER"    envDefault:"false"`
 	LokiURL       string  `env:"GOPHERCON_LOKI_URL"            envDefault:""`
-	PyroScopeURL  string  `env:"GOPHERCON_PYROSCOPE_URL"       envDefault:""`
+	PyroScopeURL  string  `env:"GOPHERCON_PYROSCOPE_URL"       envDefault:"http://pyroscope:4040"`
 	PassRegex     *regexp.Regexp
 }
 
