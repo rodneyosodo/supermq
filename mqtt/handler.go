@@ -62,6 +62,7 @@ var (
 
 // Event implements events.Event interface.
 type handler struct {
+	pubsub    messaging.PubSub
 	publisher messaging.Publisher
 	clients   grpcClientsV1.ClientsServiceClient
 	channels  grpcChannelsV1.ChannelsServiceClient
@@ -69,9 +70,10 @@ type handler struct {
 }
 
 // NewHandler creates new Handler entity.
-func NewHandler(publisher messaging.Publisher, logger *slog.Logger, clients grpcClientsV1.ClientsServiceClient, channels grpcChannelsV1.ChannelsServiceClient) session.Handler {
+func NewHandler(pubsub messaging.PubSub, publisher messaging.Publisher, logger *slog.Logger, clients grpcClientsV1.ClientsServiceClient, channels grpcChannelsV1.ChannelsServiceClient) session.Handler {
 	return &handler{
 		logger:    logger,
+		pubsub:    pubsub,
 		publisher: publisher,
 		clients:   clients,
 		channels:  channels,
@@ -183,7 +185,7 @@ func (h *handler) Publish(ctx context.Context, topic *string, payload *[]byte) e
 		Created:   time.Now().UnixNano(),
 	}
 
-	if err := h.publisher.Publish(ctx, msg.GetChannel(), &msg); err != nil {
+	if err := h.pubsub.Publish(ctx, msg.GetChannel(), &msg); err != nil {
 		return errors.Wrap(ErrFailedPublishToMsgBroker, err)
 	}
 
@@ -196,6 +198,28 @@ func (h *handler) Subscribe(ctx context.Context, topics *[]string) error {
 	if !ok {
 		return errors.Wrap(ErrFailedSubscribe, ErrClientNotInitialized)
 	}
+
+	if topics == nil || *topics == nil {
+		return ErrMissingTopicSub
+	}
+
+	for _, topic := range *topics {
+		topic := strings.ReplaceAll(topic, "/", ".")
+		topic = strings.ReplaceAll(topic, ".messages", "")
+		subCfg := messaging.SubscriberConfig{
+			ID:    s.Username,
+			Topic: topic,
+			Handler: forwarder{
+				topic:     topic,
+				publisher: h.publisher,
+			},
+		}
+		fmt.Printf("Subscriber config %+v\n", subCfg)
+		if err := h.pubsub.Subscribe(ctx, subCfg); err != nil {
+			return errors.Wrap(ErrFailedSubscribe, err)
+		}
+	}
+
 	h.logger.Info(fmt.Sprintf(LogInfoSubscribed, s.ID, strings.Join(*topics, ",")))
 
 	return nil
@@ -206,7 +230,15 @@ func (h *handler) Unsubscribe(ctx context.Context, topics *[]string) error {
 	s, ok := session.FromContext(ctx)
 	if !ok {
 		return errors.Wrap(ErrFailedUnsubscribe, ErrClientNotInitialized)
+
 	}
+
+	for _, topic := range *topics {
+		if err := h.pubsub.Unsubscribe(ctx, s.Username, topic); err != nil {
+			return errors.Wrap(ErrFailedUnsubscribe, err)
+		}
+	}
+
 	h.logger.Info(fmt.Sprintf(LogInfoUnsubscribed, s.ID, strings.Join(*topics, ",")))
 
 	return nil
@@ -281,4 +313,35 @@ func parseSubtopic(subtopic string) (string, error) {
 
 	subtopic = strings.Join(filteredElems, ".")
 	return subtopic, nil
+}
+
+type forwarder struct {
+	topic     string
+	logger    *slog.Logger
+	publisher messaging.Publisher
+}
+
+func (f forwarder) Handle(msg *messaging.Message) error {
+	fmt.Printf("supposed to handle message %+v\n", msg)
+
+	if msg.GetProtocol() == protocol {
+		return nil
+	}
+
+	topic := "channels/" + msg.GetChannel() + "/messages"
+	if msg.GetSubtopic() != "" {
+		topic = topic + "/" + strings.ReplaceAll(msg.GetSubtopic(), ".", "/")
+	}
+
+	go func() {
+		if err := f.publisher.Publish(context.Background(), topic, msg); err != nil {
+			f.logger.Warn(fmt.Sprintf("Failed to forward message: %s", err))
+		}
+	}()
+
+	return nil
+}
+
+func (p forwarder) Cancel() error {
+	return p.publisher.Close()
 }

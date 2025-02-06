@@ -111,16 +111,8 @@ func (h *handler) AuthSubscribe(ctx context.Context, topics *[]string) error {
 		return errMissingTopicSub
 	}
 
-	var token string
-	switch {
-	case strings.HasPrefix(string(s.Password), "Client"):
-		token = strings.ReplaceAll(string(s.Password), "Client ", "")
-	default:
-		token = string(s.Password)
-	}
-
 	for _, topic := range *topics {
-		if err := h.authAccess(ctx, token, topic, connections.Subscribe); err != nil {
+		if err := h.authAccess(ctx, string(s.Password), topic, connections.Subscribe); err != nil {
 			return err
 		}
 	}
@@ -139,7 +131,6 @@ func (h *handler) Publish(ctx context.Context, topic *string, payload *[]byte) e
 	if !ok {
 		return errors.Wrap(errFailedPublish, errClientNotInitialized)
 	}
-	h.logger.Info(fmt.Sprintf(LogInfoPublished, s.ID, *topic))
 
 	if len(*payload) == 0 {
 		return errFailedMessagePublish
@@ -213,6 +204,8 @@ func (h *handler) Publish(ctx context.Context, topic *string, payload *[]byte) e
 		return errors.Wrap(errFailedPublishToMsgBroker, err)
 	}
 
+	h.logger.Info(fmt.Sprintf(LogInfoPublished, s.ID, *topic))
+
 	return nil
 }
 
@@ -245,6 +238,13 @@ func (h *handler) Disconnect(ctx context.Context) error {
 func (h *handler) authAccess(ctx context.Context, token, topic string, msgType connections.ConnType) error {
 	var clientID, clientType string
 	switch {
+	case strings.HasPrefix(token, "Bearer"):
+		authnSession, err := h.authn.Authenticate(ctx, token)
+		if err != nil {
+			return err
+		}
+		clientType = policies.UserType
+		clientID = authnSession.DomainUserID
 	case strings.HasPrefix(token, "Client"):
 		clientKey := extractClientSecret(token)
 		authnRes, err := h.clients.Authenticate(ctx, &grpcClientsV1.AuthnReq{ClientSecret: clientKey})
@@ -257,12 +257,15 @@ func (h *handler) authAccess(ctx context.Context, token, topic string, msgType c
 		clientType = policies.ClientType
 		clientID = authnRes.GetId()
 	default:
-		authnSession, err := h.authn.Authenticate(ctx, extractBearerToken(token))
+		authnRes, err := h.clients.Authenticate(ctx, &grpcClientsV1.AuthnReq{ClientSecret: token})
 		if err != nil {
-			return err
+			return errors.Wrap(svcerr.ErrAuthentication, err)
 		}
-		clientType = policies.UserType
-		clientID = authnSession.DomainUserID
+		if !authnRes.Authenticated {
+			return svcerr.ErrAuthentication
+		}
+		clientType = policies.ClientType
+		clientID = authnRes.GetId()
 	}
 
 	// Topics are in the format:
@@ -325,12 +328,12 @@ func parseSubtopic(subtopic string) (string, error) {
 }
 
 // extractClientSecret returns value of the client secret. If there is no client key - an empty value is returned.
-func extractClientSecret(topic string) string {
-	if !strings.HasPrefix(topic, apiutil.ClientPrefix) {
+func extractClientSecret(token string) string {
+	if !strings.HasPrefix(token, apiutil.ClientPrefix) {
 		return ""
 	}
 
-	return strings.TrimPrefix(topic, apiutil.ClientPrefix)
+	return strings.TrimPrefix(token, apiutil.ClientPrefix)
 }
 
 // extractBearerToken returns value of the bearer token. If there is no bearer token - an empty value is returned.

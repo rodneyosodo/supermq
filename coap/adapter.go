@@ -126,6 +126,8 @@ func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic 
 		Topic:    subject,
 		Handler:  authzc,
 	}
+	fmt.Printf("Subscriber config %+v\n", subCfg)
+
 	return svc.pubsub.Subscribe(ctx, subCfg)
 }
 
@@ -192,6 +194,8 @@ func newAuthzClient(clientID, channelID, subTopic string, channels grpcChannelsV
 }
 
 func (a ac) Handle(m *messaging.Message) error {
+	fmt.Printf("supposed to handle message %+v\n", m)
+
 	res, err := a.channels.Authorize(context.Background(), &grpcChannelsV1.AuthzReq{ClientId: a.clientID, ClientType: policies.ClientType, ChannelId: a.channelID, Type: uint32(connections.Subscribe)})
 	if err != nil {
 		if disErr := a.Cancel(); disErr != nil {

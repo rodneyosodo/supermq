@@ -80,6 +80,8 @@ func (svc *adapterService) Subscribe(ctx context.Context, clientKey, chanID, sub
 		Topic:    subject,
 		Handler:  c,
 	}
+	fmt.Printf("Subscriber config %+v\n", subCfg)
+
 	if err := svc.pubsub.Subscribe(ctx, subCfg); err != nil {
 		return ErrFailedSubscription
 	}

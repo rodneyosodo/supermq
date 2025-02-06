@@ -9,17 +9,25 @@ import (
 	"github.com/absmach/supermq/pkg/messaging"
 )
 
-type MockPublisher struct{}
+type MockPubSub struct{}
 
-// NewPublisher returns mock message publisher.
-func NewPublisher() messaging.Publisher {
-	return MockPublisher{}
+// NewPubSub returns mock message PubSub.
+func NewPubSub() messaging.PubSub {
+	return MockPubSub{}
 }
 
-func (pub MockPublisher) Publish(ctx context.Context, topic string, msg *messaging.Message) error {
+func (pub MockPubSub) Publish(ctx context.Context, topic string, msg *messaging.Message) error {
 	return nil
 }
 
-func (pub MockPublisher) Close() error {
+func (pub MockPubSub) Subscribe(ctx context.Context, cfg messaging.SubscriberConfig) error {
+	return nil
+}
+
+func (pub MockPubSub) Unsubscribe(ctx context.Context, id, topic string) error {
+	return nil
+}
+
+func (pub MockPubSub) Close() error {
 	return nil
 }
