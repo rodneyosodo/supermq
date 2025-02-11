@@ -4,6 +4,8 @@
 package ws
 
 import (
+	"fmt"
+
 	"github.com/absmach/supermq/pkg/messaging"
 	"github.com/gorilla/websocket"
 )
@@ -33,9 +35,14 @@ func (c *Client) Cancel() error {
 // Handle handles the sending and receiving of messages via the broker.
 func (c *Client) Handle(msg *messaging.Message) error {
 	// To prevent publisher from receiving its own published message
-	if msg.GetPublisher() == c.id {
-		return nil
+	// if msg.GetPublisher() == c.id {
+	// 	return nil
+	// }
+	fmt.Printf("supposed to handle message %+v\n", msg)
+
+	if err := c.conn.WriteMessage(websocket.TextMessage, msg.GetPayload()); err != nil {
+		return err
 	}
 
-	return c.conn.WriteMessage(websocket.TextMessage, msg.GetPayload())
+	return nil
 }
