@@ -79,7 +79,7 @@ type config struct {
 	SpicedbSchemaFile   string        `env:"SMQ_SPICEDB_SCHEMA_FILE"          envDefault:"schema.zed"`
 	SpicedbPreSharedKey string        `env:"SMQ_SPICEDB_PRE_SHARED_KEY"       envDefault:"12345678"`
 	TraceRatio          float64       `env:"SMQ_JAEGER_TRACE_RATIO"           envDefault:"1.0"`
-	ESURL               string        `env:"SMQ_ES_URL"                       envDefault:"nats://localhost:4222"`
+	ESURL               string        `env:"SMQ_ES_URL"                       envDefault:"amqp://guest:guest@rabbitmq:5672/"`
 }
 
 func main() {
@@ -159,7 +159,7 @@ func main() {
 	logger.Info("Authn successfully connected to auth gRPC server " + authnHandler.Secure())
 
 	database := postgres.NewDatabase(db, dbConfig, tracer)
-	domainsRepo := dpostgres.New(database)
+	domainsRepo := dpostgres.NewRepository(database)
 
 	cacheclient, err := redisclient.Connect(cfg.CacheURL)
 	if err != nil {
