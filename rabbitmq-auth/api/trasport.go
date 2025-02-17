@@ -28,25 +28,25 @@ func MakeHandler(svc rabbitmqauth.Service, logger *slog.Logger, instanceID strin
 
 	mux.Route("/auth", func(r chi.Router) {
 		r.HandleFunc("/user", otelhttp.NewHandler(kithttp.NewServer(
-			authenticateEndpoint(svc),
+			userEndpoint(svc),
 			decodeAuthenticateReq,
 			encodeResponse,
 			opts...,
 		), "authenticate-user").ServeHTTP)
 		r.HandleFunc("/vhost", otelhttp.NewHandler(kithttp.NewServer(
-			authenticateEndpoint(svc),
+			resourceEndpoint(svc),
 			decodeAuthenticateReq,
 			encodeResponse,
 			opts...,
 		), "authenticate-vhost").ServeHTTP)
 		r.HandleFunc("/resource", otelhttp.NewHandler(kithttp.NewServer(
-			authenticateEndpoint(svc),
+			resourceEndpoint(svc),
 			decodeAuthenticateReq,
 			encodeResponse,
 			opts...,
 		), "authenticate-resource").ServeHTTP)
 		r.HandleFunc("/topic", otelhttp.NewHandler(kithttp.NewServer(
-			authenticateEndpoint(svc),
+			authorizeEndpoint(svc),
 			decodeAuthenticateReq,
 			encodeResponse,
 			opts...,
@@ -81,8 +81,22 @@ func decodeAuthenticateReq(_ context.Context, r *http.Request) (interface{}, err
 		if err != nil {
 			return nil, errors.Wrap(apiutil.ErrValidation, err)
 		}
+		topic, err := apiutil.ReadStringQuery(r, "routing_key", "")
+		if err != nil {
+			return nil, errors.Wrap(apiutil.ErrValidation, err)
+		}
+		permission, err := apiutil.ReadStringQuery(r, "permission", "")
+		if err != nil {
+			return nil, errors.Wrap(apiutil.ErrValidation, err)
+		}
 
-		return authRequest{Username: username, Password: password, Vhost: vhost}, nil
+		return authRequest{
+			Username:   username,
+			Password:   password,
+			Vhost:      vhost,
+			Topic:      topic,
+			Permission: permission,
+		}, nil
 	default:
 		return nil, errors.New("invalid method")
 	}

@@ -26,10 +26,11 @@ import (
 )
 
 const (
-	svcName          = "rabbitmq-auth"
-	envPrefixClients = "SMQ_CLIENTS_AUTH_GRPC_"
-	envPrefixHTTP    = "SMQ_RABBITMQ_AUTH_HTTP_"
-	defSvcHTTPPort   = "9011"
+	svcName           = "rabbitmq-auth"
+	envPrefixClients  = "SMQ_CLIENTS_AUTH_GRPC_"
+	envPrefixChannels = "SMQ_CHANNELS_GRPC_"
+	envPrefixHTTP     = "SMQ_RABBITMQ_AUTH_HTTP_"
+	defSvcHTTPPort    = "9011"
 )
 
 type config struct {
@@ -94,6 +95,22 @@ func main() {
 	defer clientsHandler.Close()
 	logger.Info("clients service gRPC client successfully connected to clients gRPC server " + clientsHandler.Secure())
 
+	channelsClientCfg := grpcclient.Config{}
+	if err := env.ParseWithOptions(&channelsClientCfg, env.Options{Prefix: envPrefixChannels}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load channels gRPC client configuration : %s", err))
+		exitCode = 1
+		return
+	}
+
+	channelsClient, channelsHandler, err := grpcclient.SetupChannelsClient(ctx, channelsClientCfg)
+	if err != nil {
+		logger.Error(err.Error())
+		exitCode = 1
+		return
+	}
+	defer channelsHandler.Close()
+	logger.Info("Channels service gRPC client successfully connected to channels gRPC server " + channelsHandler.Secure())
+
 	if cfg.SendTelemetry {
 		chc := chclient.New(svcName, supermq.Version, logger, cancel)
 		go chc.CallHome(ctx)
@@ -106,7 +123,7 @@ func main() {
 		return
 	}
 
-	svc := rabbitmqauth.NewService(clientsClient, cfg.VHost)
+	svc := rabbitmqauth.NewService(clientsClient, channelsClient, cfg.VHost)
 
 	httpSrv := httpserver.NewServer(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(svc, logger, cfg.InstanceID), logger)
 

@@ -10,9 +10,11 @@ import (
 )
 
 type authRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Vhost    string `json:"vhost"`
+	Username   string `json:"username"`
+	Password   string `json:"password"`
+	Vhost      string `json:"vhost"`
+	Topic      string `json:"topic"`
+	Permission string `json:"permission"`
 }
 
 func (r *authRequest) Validate() error {

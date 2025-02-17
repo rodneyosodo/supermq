@@ -12,7 +12,7 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func authenticateEndpoint(svc rabbitmqauth.Service) endpoint.Endpoint {
+func userEndpoint(svc rabbitmqauth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req, ok := request.(authRequest)
 		if !ok {
@@ -23,7 +23,45 @@ func authenticateEndpoint(svc rabbitmqauth.Service) endpoint.Endpoint {
 			return authResponse{authenticated: false}, errors.Wrap(apiutil.ErrValidation, err)
 		}
 
-		if ok := svc.Authenticate(ctx, req.Username, req.Password, req.Vhost); !ok {
+		if ok := svc.AuthenticateUser(ctx, req.Username, req.Password, req.Vhost); !ok {
+			return authResponse{authenticated: false}, errors.ErrAuthentication
+		}
+
+		return authResponse{authenticated: true}, nil
+	}
+}
+
+func resourceEndpoint(svc rabbitmqauth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req, ok := request.(authRequest)
+		if !ok {
+			return authResponse{authenticated: false}, errors.New("invalid request type")
+		}
+
+		if err := req.Validate(); err != nil {
+			return authResponse{authenticated: false}, errors.Wrap(apiutil.ErrValidation, err)
+		}
+
+		if ok := svc.AuthenticateResource(ctx, req.Username, req.Vhost); !ok {
+			return authResponse{authenticated: false}, errors.ErrAuthentication
+		}
+
+		return authResponse{authenticated: true}, nil
+	}
+}
+
+func authorizeEndpoint(svc rabbitmqauth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req, ok := request.(authRequest)
+		if !ok {
+			return authResponse{authenticated: false}, errors.New("invalid request type")
+		}
+
+		if err := req.Validate(); err != nil {
+			return authResponse{authenticated: false}, errors.Wrap(apiutil.ErrValidation, err)
+		}
+
+		if ok := svc.AuthorizePubSub(ctx, req.Username, req.Topic, req.Permission); !ok {
 			return authResponse{authenticated: false}, errors.ErrAuthentication
 		}
 
