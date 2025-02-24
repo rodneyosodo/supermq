@@ -23,14 +23,14 @@ type callback struct {
 	method     string
 }
 
-// CallBack send auth request to an external service
+// CallBack send auth request to an external service.
 //
 //go:generate mockery --name CallBack --output=./mocks --filename callback.go --quiet --note "Copyright (c) Abstract Machines"
 type CallBack interface {
 	Authorize(ctx context.Context, pr policies.Policy) error
 }
 
-// NewCallback creates a new instance of CallBack
+// NewCallback creates a new instance of CallBack.
 func NewCallback(httpClient *http.Client, method string, urls []string) CallBack {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
@@ -88,9 +88,9 @@ func (c *callback) makeRequest(ctx context.Context, method, urlStr string, param
 		req, err = http.NewRequestWithContext(ctx, method, urlStr+"?"+query.Encode(), nil)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	} else {
-		data, err := json.Marshal(params)
-		if err != nil {
-			return err
+		data, jsonErr := json.Marshal(params)
+		if jsonErr != nil {
+			return jsonErr
 		}
 		req, err = http.NewRequestWithContext(ctx, method, urlStr, bytes.NewReader(data))
 		req.Header.Set("Content-Type", "application/json")
