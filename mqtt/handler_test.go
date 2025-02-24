@@ -527,5 +527,5 @@ func newHandler() session.Handler {
 	}
 	clients = new(climocks.ClientsServiceClient)
 	channels = new(chmocks.ChannelsServiceClient)
-	return mqtt.NewHandler(mocks.NewPublisher(), logger, clients, channels)
+	return mqtt.NewHandler(mocks.NewPubSub(), nil, logger, clients, channels)
 }

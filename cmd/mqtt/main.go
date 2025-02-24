@@ -33,6 +33,7 @@ import (
 	brokerstracing "github.com/absmach/supermq/pkg/messaging/brokers/tracing"
 	msgevents "github.com/absmach/supermq/pkg/messaging/events"
 	"github.com/absmach/supermq/pkg/messaging/handler"
+	mqttpub "github.com/absmach/supermq/pkg/messaging/mqtt"
 	"github.com/absmach/supermq/pkg/server"
 	"github.com/absmach/supermq/pkg/uuid"
 	"github.com/caarlos0/env/v11"
@@ -48,21 +49,23 @@ const (
 )
 
 type config struct {
-	LogLevel              string  `env:"SMQ_MQTT_ADAPTER_LOG_LEVEL"                    envDefault:"info"`
-	MQTTPort              string  `env:"SMQ_MQTT_ADAPTER_MQTT_PORT"                    envDefault:"1883"`
-	MQTTTargetHost        string  `env:"SMQ_MQTT_ADAPTER_MQTT_TARGET_HOST"             envDefault:"localhost"`
-	MQTTTargetPort        string  `env:"SMQ_MQTT_ADAPTER_MQTT_TARGET_PORT"             envDefault:"1883"`
-	MQTTTargetHealthCheck string  `env:"SMQ_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK"     envDefault:""`
-	HTTPPort              string  `env:"SMQ_MQTT_ADAPTER_WS_PORT"                      envDefault:"8080"`
-	HTTPTargetHost        string  `env:"SMQ_MQTT_ADAPTER_WS_TARGET_HOST"               envDefault:"localhost"`
-	HTTPTargetPort        string  `env:"SMQ_MQTT_ADAPTER_WS_TARGET_PORT"               envDefault:"8080"`
-	Instance              string  `env:"SMQ_MQTT_ADAPTER_INSTANCE"                     envDefault:""`
-	JaegerURL             url.URL `env:"SMQ_JAEGER_URL"                                envDefault:"http://localhost:4318/v1/traces"`
-	BrokerURL             string  `env:"SMQ_MESSAGE_BROKER_URL"                        envDefault:"nats://localhost:4222"`
-	SendTelemetry         bool    `env:"SMQ_SEND_TELEMETRY"                            envDefault:"true"`
-	InstanceID            string  `env:"SMQ_MQTT_ADAPTER_INSTANCE_ID"                  envDefault:""`
-	ESURL                 string  `env:"SMQ_ES_URL"                                    envDefault:"nats://localhost:4222"`
-	TraceRatio            float64 `env:"SMQ_JAEGER_TRACE_RATIO"                        envDefault:"1.0"`
+	LogLevel              string        `env:"SMQ_MQTT_ADAPTER_LOG_LEVEL"                    envDefault:"info"`
+	MQTTPort              string        `env:"SMQ_MQTT_ADAPTER_MQTT_PORT"                    envDefault:"1883"`
+	MQTTTargetHost        string        `env:"SMQ_MQTT_ADAPTER_MQTT_TARGET_HOST"             envDefault:"localhost"`
+	MQTTTargetPort        string        `env:"SMQ_MQTT_ADAPTER_MQTT_TARGET_PORT"             envDefault:"1883"`
+	MQTTTargetHealthCheck string        `env:"SMQ_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK"     envDefault:""`
+	MQTTForwarderTimeout  time.Duration `env:"SMQ_MQTT_ADAPTER_FORWARDER_TIMEOUT"            envDefault:"30s"`
+	MQTTQoS               uint8         `env:"SMQ_MQTT_ADAPTER_MQTT_QOS"                     envDefault:"1"`
+	HTTPPort              string        `env:"SMQ_MQTT_ADAPTER_WS_PORT"                      envDefault:"8080"`
+	HTTPTargetHost        string        `env:"SMQ_MQTT_ADAPTER_WS_TARGET_HOST"               envDefault:"localhost"`
+	HTTPTargetPort        string        `env:"SMQ_MQTT_ADAPTER_WS_TARGET_PORT"               envDefault:"8080"`
+	Instance              string        `env:"SMQ_MQTT_ADAPTER_INSTANCE"                     envDefault:""`
+	JaegerURL             url.URL       `env:"SMQ_JAEGER_URL"                                envDefault:"http://localhost:4318/v1/traces"`
+	BrokerURL             string        `env:"SMQ_MESSAGE_BROKER_URL"                        envDefault:"nats://localhost:4222"`
+	SendTelemetry         bool          `env:"SMQ_SEND_TELEMETRY"                            envDefault:"true"`
+	InstanceID            string        `env:"SMQ_MQTT_ADAPTER_INSTANCE_ID"                  envDefault:""`
+	ESURL                 string        `env:"SMQ_ES_URL"                                    envDefault:"nats://localhost:4222"`
+	TraceRatio            float64       `env:"SMQ_JAEGER_TRACE_RATIO"                        envDefault:"1.0"`
 }
 
 func main() {
@@ -121,16 +124,16 @@ func main() {
 	}()
 	tracer := tp.Tracer(svcName)
 
-	np, err := brokers.NewPublisher(ctx, cfg.BrokerURL)
+	pubsub, err := brokers.NewPubSub(ctx, cfg.BrokerURL, logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to connect to message broker: %s", err))
 		exitCode = 1
 		return
 	}
-	defer np.Close()
-	np = brokerstracing.NewPublisher(serverConfig, tracer, np)
+	defer pubsub.Close()
+	pubsub = brokerstracing.NewPubSub(serverConfig, tracer, pubsub)
 
-	np, err = msgevents.NewPublisherMiddleware(ctx, np, cfg.ESURL)
+	pubsub, err = msgevents.NewPubSubMiddleware(ctx, pubsub, cfg.ESURL)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to create event store middleware: %s", err))
 		exitCode = 1
@@ -169,7 +172,15 @@ func main() {
 	defer channelsHandler.Close()
 	logger.Info("Channels service gRPC client successfully connected to channels gRPC server " + channelsHandler.Secure())
 
-	h := mqtt.NewHandler(np, logger, clientsClient, channelsClient)
+	mpub, err := mqttpub.NewPublisher(fmt.Sprintf("mqtt://%s:%s", cfg.MQTTTargetHost, cfg.MQTTTargetPort), cfg.MQTTQoS, cfg.MQTTForwarderTimeout)
+	if err != nil {
+		logger.Error(fmt.Sprintf("failed to create MQTT publisher: %s", err))
+		exitCode = 1
+		return
+	}
+	defer mpub.Close()
+
+	h := mqtt.NewHandler(pubsub, mpub, logger, clientsClient, channelsClient)
 
 	h, err = events.NewEventStoreMiddleware(ctx, h, cfg.ESURL, cfg.Instance)
 	if err != nil {
