@@ -79,12 +79,14 @@ func (c *callback) makeRequest(ctx context.Context, method, urlStr string, param
 			query.Set(key, value)
 		}
 		req, err = http.NewRequestWithContext(ctx, method, urlStr+"?"+query.Encode(), nil)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	} else {
 		data, err := json.Marshal(params)
 		if err != nil {
 			return err
 		}
 		req, err = http.NewRequestWithContext(ctx, method, urlStr, bytes.NewReader(data))
+		req.Header.Set("Content-Type", "application/json")
 	}
 
 	if err != nil {
