@@ -41,8 +41,6 @@ func NewCallback(httpClient *http.Client, method string, urls []string) CallBack
 }
 
 func (c *callback) Authorize(ctx context.Context, pr policies.Policy) error {
-	g, ctx := errgroup.WithContext(ctx)
-
 	payload := map[string]string{
 		"domain":           pr.Domain,
 		"subject":          pr.Subject,
@@ -55,6 +53,16 @@ func (c *callback) Authorize(ctx context.Context, pr policies.Policy) error {
 		"relation":         pr.Relation,
 		"permission":       pr.Permission,
 	}
+
+	if len(c.urls) == 0 {
+		return nil
+	}
+
+	if len(c.urls) == 1 {
+		return c.makeRequest(ctx, c.method, c.urls[0], payload)
+	}
+
+	g, ctx := errgroup.WithContext(ctx)
 	for i := range c.urls {
 		url := c.urls[i]
 		g.Go(func() error {
@@ -66,10 +74,6 @@ func (c *callback) Authorize(ctx context.Context, pr policies.Policy) error {
 }
 
 func (c *callback) makeRequest(ctx context.Context, method, urlStr string, params map[string]string) error {
-	if len(c.urls) == 0 {
-		return nil
-	}
-
 	var req *http.Request
 	var err error
 
