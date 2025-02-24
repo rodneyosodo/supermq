@@ -156,7 +156,12 @@ func main() {
 	}
 	defer bClient.Close()
 
-	svc := newService(ctx, db, tracer, cfg, dbConfig, logger, spicedbclient, bClient, boltDBConfig)
+	svc, err := newService(ctx, db, tracer, cfg, dbConfig, logger, spicedbclient, bClient, boltDBConfig)
+	if err != nil {
+		logger.Error(fmt.Sprintf("failed to create service : %s\n", err.Error()))
+		exitCode = 1
+		return
+	}
 
 	grpcServerConfig := server.Config{Port: defSvcGRPCPort}
 	if err := env.ParseWithOptions(&grpcServerConfig, env.Options{Prefix: envPrefixGrpc}); err != nil {
@@ -236,7 +241,7 @@ func initSchema(ctx context.Context, client *authzed.ClientWithExperimental, sch
 	return nil
 }
 
-func newService(_ context.Context, db *sqlx.DB, tracer trace.Tracer, cfg config, dbConfig pgclient.Config, logger *slog.Logger, spicedbClient *authzed.ClientWithExperimental, bClient *bbolt.DB, bConfig boltclient.Config) auth.Service {
+func newService(_ context.Context, db *sqlx.DB, tracer trace.Tracer, cfg config, dbConfig pgclient.Config, logger *slog.Logger, spicedbClient *authzed.ClientWithExperimental, bClient *bbolt.DB, bConfig boltclient.Config) (auth.Service, error) {
 	database := pgclient.NewDatabase(db, dbConfig, tracer)
 	keysRepo := apostgres.New(database)
 	patsRepo := bolt.NewPATSRepository(bClient, bConfig.Bucket)
@@ -255,7 +260,10 @@ func newService(_ context.Context, db *sqlx.DB, tracer trace.Tracer, cfg config,
 			},
 		},
 	}
-	callback := auth.NewCallback(httpClient, cfg.AuthCalloutMethod, cfg.AuthCalloutURLs)
+	callback, err := auth.NewCallback(httpClient, cfg.AuthCalloutMethod, cfg.AuthCalloutURLs)
+	if err != nil {
+		return nil, err
+	}
 
 	svc := auth.New(keysRepo, patsRepo, hasher, idProvider, t, pEvaluator, pService, cfg.AccessDuration, cfg.RefreshDuration, cfg.InvitationDuration, callback)
 	svc = api.LoggingMiddleware(svc, logger)
@@ -263,5 +271,5 @@ func newService(_ context.Context, db *sqlx.DB, tracer trace.Tracer, cfg config,
 	svc = api.MetricsMiddleware(svc, counter, latency)
 	svc = tracing.New(svc, tracer)
 
-	return svc
+	return svc, nil
 }

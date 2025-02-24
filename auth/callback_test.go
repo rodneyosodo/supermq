@@ -71,8 +71,9 @@ func TestCallback_Authorize(t *testing.T) {
 			}))
 			defer ts.Close()
 
-			cb := auth.NewCallback(http.DefaultClient, tc.method, []string{ts.URL})
-			err := cb.Authorize(context.Background(), policy)
+			cb, err := auth.NewCallback(http.DefaultClient, tc.method, []string{ts.URL})
+			assert.NoError(t, err)
+			err = cb.Authorize(context.Background(), policy)
 
 			if tc.expectError {
 				assert.Error(t, err)
@@ -95,14 +96,21 @@ func TestCallback_MultipleURLs(t *testing.T) {
 	}))
 	defer ts2.Close()
 
-	cb := auth.NewCallback(http.DefaultClient, http.MethodPost, []string{ts1.URL, ts2.URL})
-	err := cb.Authorize(context.Background(), policies.Policy{})
+	cb, err := auth.NewCallback(http.DefaultClient, http.MethodPost, []string{ts1.URL, ts2.URL})
+	assert.NoError(t, err)
+	err = cb.Authorize(context.Background(), policies.Policy{})
 	assert.NoError(t, err)
 }
 
 func TestCallback_InvalidURL(t *testing.T) {
-	cb := auth.NewCallback(http.DefaultClient, http.MethodPost, []string{"http://invalid-url"})
-	err := cb.Authorize(context.Background(), policies.Policy{})
+	cb, err := auth.NewCallback(http.DefaultClient, http.MethodPost, []string{"http://invalid-url"})
+	assert.NoError(t, err)
+	err = cb.Authorize(context.Background(), policies.Policy{})
+	assert.Error(t, err)
+}
+
+func TestCallback_InvalidMethod(t *testing.T) {
+	_, err := auth.NewCallback(http.DefaultClient, "invalid-method", []string{"http://example.com"})
 	assert.Error(t, err)
 }
 
@@ -115,18 +123,21 @@ func TestCallback_CancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	cb := auth.NewCallback(http.DefaultClient, http.MethodPost, []string{ts.URL})
-	err := cb.Authorize(ctx, policies.Policy{})
+	cb, err := auth.NewCallback(http.DefaultClient, http.MethodPost, []string{ts.URL})
+	assert.NoError(t, err)
+	err = cb.Authorize(ctx, policies.Policy{})
 	assert.Error(t, err)
 }
 
 func TestNewCallback_NilClient(t *testing.T) {
-	cb := auth.NewCallback(nil, http.MethodPost, []string{"test"})
+	cb, err := auth.NewCallback(nil, http.MethodPost, []string{"test"})
+	assert.NoError(t, err)
 	assert.NotNil(t, cb)
 }
 
 func TestCallback_NoURL(t *testing.T) {
-	cb := auth.NewCallback(http.DefaultClient, http.MethodPost, []string{})
-	err := cb.Authorize(context.Background(), policies.Policy{})
+	cb, err := auth.NewCallback(http.DefaultClient, http.MethodPost, []string{})
+	assert.NoError(t, err)
+	err = cb.Authorize(context.Background(), policies.Policy{})
 	assert.NoError(t, err)
 }
