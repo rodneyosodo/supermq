@@ -86,7 +86,6 @@ func (c *callback) makeRequest(ctx context.Context, method, urlStr string, param
 			query.Set(key, value)
 		}
 		req, err = http.NewRequestWithContext(ctx, method, urlStr+"?"+query.Encode(), nil)
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	} else {
 		data, jsonErr := json.Marshal(params)
 		if jsonErr != nil {
