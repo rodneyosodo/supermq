@@ -14,7 +14,6 @@ import (
 	"github.com/absmach/supermq/pkg/errors"
 	svcerr "github.com/absmach/supermq/pkg/errors/service"
 	"github.com/absmach/supermq/pkg/policies"
-	"golang.org/x/sync/errgroup"
 )
 
 type callback struct {
@@ -47,6 +46,10 @@ func NewCallback(httpClient *http.Client, method string, urls []string) (CallBac
 }
 
 func (c *callback) Authorize(ctx context.Context, pr policies.Policy) error {
+	if len(c.urls) == 0 {
+		return nil
+	}
+
 	payload := map[string]string{
 		"domain":           pr.Domain,
 		"subject":          pr.Subject,
@@ -60,23 +63,14 @@ func (c *callback) Authorize(ctx context.Context, pr policies.Policy) error {
 		"permission":       pr.Permission,
 	}
 
-	if len(c.urls) == 0 {
-		return nil
-	}
-
-	if len(c.urls) == 1 {
-		return c.makeRequest(ctx, c.method, c.urls[0], payload)
-	}
-
-	g, ctx := errgroup.WithContext(ctx)
+	var err error
 	for i := range c.urls {
-		url := c.urls[i]
-		g.Go(func() error {
-			return c.makeRequest(ctx, c.method, url, payload)
-		})
+		if err = c.makeRequest(ctx, c.method, c.urls[i], payload); err == nil {
+			return nil
+		}
 	}
 
-	return g.Wait()
+	return err
 }
 
 func (c *callback) makeRequest(ctx context.Context, method, urlStr string, params map[string]string) error {
