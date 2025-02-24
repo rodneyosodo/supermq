@@ -104,7 +104,7 @@ func (c *callback) makeRequest(ctx context.Context, method, urlStr string, param
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Wrap(svcerr.ErrAuthorization, fmt.Errorf("status code %d", resp.StatusCode))
+		return errors.NewSDKErrorWithStatus(svcerr.ErrAuthorization, resp.StatusCode)
 	}
 
 	return nil
