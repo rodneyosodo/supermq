@@ -44,7 +44,7 @@ import (
 	"github.com/caarlos0/env/v11"
 	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
-	"go.opentelemetry.io/otel/trace"
+	"go.opencensus.io/trace"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -150,7 +150,12 @@ func main() {
 		return
 	}
 
-	svc := newService(ctx, db, tracer, cfg, dbConfig, logger, spicedbclient, cacheclient, cfg.CacheKeyDuration)
+	svc, err := newService(ctx, db, tracer, cfg, dbConfig, logger, spicedbclient, cacheclient, cfg.CacheKeyDuration)
+	if err != nil {
+		logger.Error(fmt.Sprintf("failed to create service : %s\n", err.Error()))
+		exitCode = 1
+		return
+	}
 
 	grpcServerConfig := server.Config{Port: defSvcGRPCPort}
 	if err := env.ParseWithOptions(&grpcServerConfig, env.Options{Prefix: envPrefixGrpc}); err != nil {
@@ -230,7 +235,7 @@ func initSchema(ctx context.Context, client *authzed.ClientWithExperimental, sch
 	return nil
 }
 
-func newService(_ context.Context, db *sqlx.DB, tracer trace.Tracer, cfg config, dbConfig pgclient.Config, logger *slog.Logger, spicedbClient *authzed.ClientWithExperimental, cacheClient *redis.Client, keyDuration time.Duration) auth.Service {
+func newService(_ context.Context, db *sqlx.DB, tracer trace.Tracer, cfg config, dbConfig pgclient.Config, logger *slog.Logger, spicedbClient *authzed.ClientWithExperimental, cacheClient *redis.Client, keyDuration time.Duration) (auth.Service, error) {
 	cache := cache.NewPatsCache(cacheClient, keyDuration)
 
 	database := pgclient.NewDatabase(db, dbConfig, tracer)
@@ -251,7 +256,10 @@ func newService(_ context.Context, db *sqlx.DB, tracer trace.Tracer, cfg config,
 			},
 		},
 	}
-	callback := auth.NewCallback(httpClient, cfg.AuthCalloutMethod, cfg.AuthCalloutURLs)
+	callback, err := auth.NewCallback(httpClient, cfg.AuthCalloutMethod, cfg.AuthCalloutURLs)
+	if err != nil {
+		return nil, err
+	}
 
 	svc := auth.New(keysRepo, patsRepo, nil, hasher, idProvider, t, pEvaluator, pService, cfg.AccessDuration, cfg.RefreshDuration, cfg.InvitationDuration, callback)
 	svc = api.LoggingMiddleware(svc, logger)
@@ -259,5 +267,5 @@ func newService(_ context.Context, db *sqlx.DB, tracer trace.Tracer, cfg config,
 	svc = api.MetricsMiddleware(svc, counter, latency)
 	svc = tracing.New(svc, tracer)
 
-	return svc
+	return svc, nil
 }

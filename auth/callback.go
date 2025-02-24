@@ -31,16 +31,19 @@ type CallBack interface {
 }
 
 // NewCallback creates a new instance of CallBack.
-func NewCallback(httpClient *http.Client, method string, urls []string) CallBack {
+func NewCallback(httpClient *http.Client, method string, urls []string) (CallBack, error) {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
+	}
+	if method != http.MethodPost && method != http.MethodGet {
+		return nil, fmt.Errorf("unsupported auth callback method: %s", method)
 	}
 
 	return &callback{
 		httpClient: httpClient,
 		urls:       urls,
 		method:     method,
-	}
+	}, nil
 }
 
 func (c *callback) Authorize(ctx context.Context, pr policies.Policy) error {
@@ -80,13 +83,14 @@ func (c *callback) makeRequest(ctx context.Context, method, urlStr string, param
 	var req *http.Request
 	var err error
 
-	if method == http.MethodGet {
+	switch method {
+	case http.MethodGet:
 		query := url.Values{}
 		for key, value := range params {
 			query.Set(key, value)
 		}
 		req, err = http.NewRequestWithContext(ctx, method, urlStr+"?"+query.Encode(), nil)
-	} else {
+	case http.MethodPost:
 		data, jsonErr := json.Marshal(params)
 		if jsonErr != nil {
 			return jsonErr
