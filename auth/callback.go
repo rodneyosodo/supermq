@@ -65,7 +65,7 @@ func (c *callback) Authorize(ctx context.Context, pr policies.Policy) error {
 
 	var err error
 	for i := range c.urls {
-		if err = c.makeRequest(ctx, c.method, c.urls[i], payload); err == nil {
+		if err = c.makeRequest(ctx, c.urls[i], payload); err == nil {
 			return nil
 		}
 	}
@@ -73,23 +73,23 @@ func (c *callback) Authorize(ctx context.Context, pr policies.Policy) error {
 	return err
 }
 
-func (c *callback) makeRequest(ctx context.Context, method, urlStr string, params map[string]string) error {
+func (c *callback) makeRequest(ctx context.Context, urlStr string, params map[string]string) error {
 	var req *http.Request
 	var err error
 
-	switch method {
+	switch c.method {
 	case http.MethodGet:
 		query := url.Values{}
 		for key, value := range params {
 			query.Set(key, value)
 		}
-		req, err = http.NewRequestWithContext(ctx, method, urlStr+"?"+query.Encode(), nil)
+		req, err = http.NewRequestWithContext(ctx, c.method, urlStr+"?"+query.Encode(), nil)
 	case http.MethodPost:
 		data, jsonErr := json.Marshal(params)
 		if jsonErr != nil {
 			return jsonErr
 		}
-		req, err = http.NewRequestWithContext(ctx, method, urlStr, bytes.NewReader(data))
+		req, err = http.NewRequestWithContext(ctx, c.method, urlStr, bytes.NewReader(data))
 		req.Header.Set("Content-Type", "application/json")
 	}
 
