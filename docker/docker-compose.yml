@@ -14,6 +14,7 @@ volumes:
   supermq-channels-db-volume:
   supermq-clients-redis-volume:
   supermq-broker-volume:
+  supermq-mqtt-broker-volume:
   supermq-spicedb-db-volume:
   supermq-auth-db-volume:
   supermq-pat-db-volume:
@@ -240,11 +241,11 @@ services:
       SMQ_CHANNELS_GRPC_CLIENT_CERT: ${SMQ_CHANNELS_GRPC_CLIENT_CERT:+/channels-grpc-client.crt}
       SMQ_CHANNELS_GRPC_CLIENT_KEY: ${SMQ_CHANNELS_GRPC_CLIENT_KEY:+/channels-grpc-client.key}
       SMQ_CHANNELS_GRPC_SERVER_CA_CERTS: ${SMQ_CHANNELS_GRPC_SERVER_CA_CERTS:+/channels-grpc-server-ca.crt}
-      SMQ_CLIENTS_AUTH_GRPC_URL: ${SMQ_CLIENTS_AUTH_GRPC_URL}
-      SMQ_CLIENTS_AUTH_GRPC_TIMEOUT: ${SMQ_CLIENTS_AUTH_GRPC_TIMEOUT}
-      SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT:+/clients-grpc-client.crt}
-      SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY:+/clients-grpc-client.key}
-      SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:+/clients-grpc-server-ca.crt}
+      SMQ_CLIENTS_GRPC_URL: ${SMQ_CLIENTS_GRPC_URL}
+      SMQ_CLIENTS_GRPC_TIMEOUT: ${SMQ_CLIENTS_GRPC_TIMEOUT}
+      SMQ_CLIENTS_GRPC_CLIENT_CERT: ${SMQ_CLIENTS_GRPC_CLIENT_CERT:+/clients-grpc-client.crt}
+      SMQ_CLIENTS_GRPC_CLIENT_KEY: ${SMQ_CLIENTS_GRPC_CLIENT_KEY:+/clients-grpc-client.key}
+      SMQ_CLIENTS_GRPC_R_CA_CERTS: ${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:+/clients-grpc-server-ca.crt}
       SMQ_JAEGER_URL: ${SMQ_JAEGER_URL}
       SMQ_JAEGER_TRACE_RATIO: ${SMQ_JAEGER_TRACE_RATIO}
       SMQ_SEND_TELEMETRY: ${SMQ_SEND_TELEMETRY}
@@ -373,15 +374,15 @@ services:
       SMQ_CLIENTS_CACHE_KEY_DURATION: ${SMQ_CLIENTS_CACHE_KEY_DURATION}
       SMQ_CLIENTS_HTTP_HOST: ${SMQ_CLIENTS_HTTP_HOST}
       SMQ_CLIENTS_HTTP_PORT: ${SMQ_CLIENTS_HTTP_PORT}
-      SMQ_CLIENTS_AUTH_GRPC_HOST: ${SMQ_CLIENTS_AUTH_GRPC_HOST}
-      SMQ_CLIENTS_AUTH_GRPC_PORT: ${SMQ_CLIENTS_AUTH_GRPC_PORT}
+      SMQ_CLIENTS_GRPC_HOST: ${SMQ_CLIENTS_GRPC_HOST}
+      SMQ_CLIENTS_GRPC_PORT: ${SMQ_CLIENTS_GRPC_PORT}
       ## Compose supports parameter expansion in environment,
       ## Eg: ${VAR:+replacement} or ${VAR+replacement} -> replacement if VAR is set and non-empty, otherwise empty
       ## Eg :${VAR:-default} or ${VAR-default}  -> value of VAR if set and non-empty, otherwise default
-      SMQ_CLIENTS_AUTH_GRPC_SERVER_CERT: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_CERT:+/clients-grpc-server.crt}
-      SMQ_CLIENTS_AUTH_GRPC_SERVER_KEY: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_KEY:+/clients-grpc-server.key}
-      SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:+/clients-grpc-server-ca.crt}
-      SMQ_CLIENTS_AUTH_GRPC_CLIENT_CA_CERTS: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CA_CERTS:+/clients-grpc-client-ca.crt}
+      SMQ_CLIENTS_GRPC_SERVER_CERT: ${SMQ_CLIENTS_GRPC_SERVER_CERT:+/clients-grpc-server.crt}
+      SMQ_CLIENTS_GRPC_R_KEY: ${SMQ_CLIENTS_GRPC_SERVER_KEY:+/clients-grpc-server.key}
+      SMQ_CLIENTS_GRPC_R_CA_CERTS: ${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:+/clients-grpc-server-ca.crt}
+      SMQ_CLIENTS_GRPC_CLIENT_CA_CERTS: ${SMQ_CLIENTS_GRPC_CLIENT_CA_CERTS:+/clients-grpc-client-ca.crt}
       SMQ_ES_URL: ${SMQ_ES_URL}
       SMQ_CLIENTS_CACHE_URL: ${SMQ_CLIENTS_CACHE_URL}
       SMQ_CLIENTS_DB_HOST: ${SMQ_CLIENTS_DB_HOST}
@@ -424,30 +425,30 @@ services:
       SMQ_SPICEDB_SCHEMA_FILE: ${SMQ_SPICEDB_SCHEMA_FILE}
     ports:
       - ${SMQ_CLIENTS_HTTP_PORT}:${SMQ_CLIENTS_HTTP_PORT}
-      - ${SMQ_CLIENTS_AUTH_GRPC_PORT}:${SMQ_CLIENTS_AUTH_GRPC_PORT}
+      - ${SMQ_CLIENTS_GRPC_PORT}:${SMQ_CLIENTS_GRPC_PORT}
     networks:
       - supermq-base-net
     volumes:
       - ./spicedb/schema.zed:${SMQ_SPICEDB_SCHEMA_FILE}
       # Clients gRPC server certificates
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_CERT:-ssl/certs/dummy/server_cert}
-        target: /clients-grpc-server${SMQ_CLIENTS_AUTH_GRPC_SERVER_CERT:+.crt}
+        source: ${SMQ_CLIENTS_GRPC_SERVER_CERT:-ssl/certs/dummy/server_cert}
+        target: /clients-grpc-server${SMQ_CLIENTS_GRPC_SERVER_CERT:+.crt}
         bind:
           create_host_path: true
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_KEY:-ssl/certs/dummy/server_key}
-        target: /clients-grpc-server${SMQ_CLIENTS_AUTH_GRPC_SERVER_KEY:+.key}
+        source: ${SMQ_CLIENTS_GRPC_SERVER_KEY:-ssl/certs/dummy/server_key}
+        target: /clients-grpc-server${SMQ_CLIENTS_GRPC_SERVER_KEY:+.key}
         bind:
           create_host_path: true
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:-ssl/certs/dummy/server_ca_certs}
-        target: /clients-grpc-server-ca${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:+.crt}
+        source: ${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:-ssl/certs/dummy/server_ca_certs}
+        target: /clients-grpc-server-ca${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:+.crt}
         bind:
           create_host_path: true
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CA_CERTS:-ssl/certs/dummy/client_ca_certs}
-        target: /clients-grpc-client-ca${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CA_CERTS:+.crt}
+        source: ${SMQ_CLIENTS_GRPC_CLIENT_CA_CERTS:-ssl/certs/dummy/client_ca_certs}
+        target: /clients-grpc-client-ca${SMQ_CLIENTS_GRPC_CLIENT_CA_CERTS:+.crt}
         bind:
           create_host_path: true
       # Auth gRPC client certificates
@@ -553,11 +554,11 @@ services:
       SMQ_AUTH_GRPC_CLIENT_CERT: ${SMQ_AUTH_GRPC_CLIENT_CERT:+/auth-grpc-client.crt}
       SMQ_AUTH_GRPC_CLIENT_KEY: ${SMQ_AUTH_GRPC_CLIENT_KEY:+/auth-grpc-client.key}
       SMQ_AUTH_GRPC_SERVER_CA_CERTS: ${SMQ_AUTH_GRPC_SERVER_CA_CERTS:+/auth-grpc-server-ca.crt}
-      SMQ_CLIENTS_AUTH_GRPC_URL: ${SMQ_CLIENTS_AUTH_GRPC_URL}
-      SMQ_CLIENTS_AUTH_GRPC_TIMEOUT: ${SMQ_CLIENTS_AUTH_GRPC_TIMEOUT}
-      SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT:+/clients-grpc-client.crt}
-      SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY:+/clients-grpc-client.key}
-      SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:+/clients-grpc-server-ca.crt}
+      SMQ_CLIENTS_GRPC_URL: ${SMQ_CLIENTS_GRPC_URL}
+      SMQ_CLIENTS_GRPC_TIMEOUT: ${SMQ_CLIENTS_GRPC_TIMEOUT}
+      SMQ_CLIENTS_GRPC_CLIENT_CERT: ${SMQ_CLIENTS_GRPC_CLIENT_CERT:+/clients-grpc-client.crt}
+      SMQ_CLIENTS_GRPC_CLIENT_KEY: ${SMQ_CLIENTS_GRPC_CLIENT_KEY:+/clients-grpc-client.key}
+      SMQ_CLIENTS_GRPC_SERVER_CA_CERTS: ${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:+/clients-grpc-server-ca.crt}
       SMQ_GROUPS_GRPC_URL: ${SMQ_GROUPS_GRPC_URL}
       SMQ_GROUPS_GRPC_TIMEOUT: ${SMQ_GROUPS_GRPC_TIMEOUT}
       SMQ_GROUPS_GRPC_CLIENT_CERT: ${SMQ_GROUPS_GRPC_CLIENT_CERT:+/groups-grpc-client.crt}
@@ -600,18 +601,18 @@ services:
         bind:
           create_host_path: true
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT:-ssl/certs/dummy/client_cert}
-        target: /clients-grpc-client${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT:+.crt}
+        source: ${SMQ_CLIENTS_GRPC_CLIENT_CERT:-ssl/certs/dummy/client_cert}
+        target: /clients-grpc-client${SMQ_CLIENTS_GRPC_CLIENT_CERT:+.crt}
         bind:
           create_host_path: true
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY:-ssl/certs/dummy/client_key}
-        target: /clients-grpc-client${SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY:+.key}
+        source: ${SMQ_CLIENTS_GRPC_CLIENT_KEY:-ssl/certs/dummy/client_key}
+        target: /clients-grpc-client${SMQ_CLIENTS_GRPC_CLIENT_KEY:+.key}
         bind:
           create_host_path: true
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_CERT:-ssl/certs/dummy/server_ca}
-        target: /clients-grpc-server-ca${SMQ_CLIENTS_AUTH_GRPC_SERVER_CERT:+.crt}
+        source: ${SMQ_CLIENTS_GRPC_SERVER_CERT:-ssl/certs/dummy/server_ca}
+        target: /clients-grpc-server-ca${SMQ_CLIENTS_GRPC_SERVER_CERT:+.crt}
         bind:
           create_host_path: true
       - type: bind
@@ -821,11 +822,11 @@ services:
       SMQ_CHANNELS_GRPC_CLIENT_CERT: ${SMQ_CHANNELS_GRPC_CLIENT_CERT:+/channels-grpc-client.crt}
       SMQ_CHANNELS_GRPC_CLIENT_KEY: ${SMQ_CHANNELS_GRPC_CLIENT_KEY:+/channels-grpc-client.key}
       SMQ_CHANNELS_GRPC_SERVER_CA_CERTS: ${SMQ_CHANNELS_GRPC_SERVER_CA_CERTS:+/channels-grpc-server-ca.crt}
-      SMQ_CLIENTS_AUTH_GRPC_URL: ${SMQ_CLIENTS_AUTH_GRPC_URL}
-      SMQ_CLIENTS_AUTH_GRPC_TIMEOUT: ${SMQ_CLIENTS_AUTH_GRPC_TIMEOUT}
-      SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT:+/clients-grpc-client.crt}
-      SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY:+/clients-grpc-client.key}
-      SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:+/clients-grpc-server-ca.crt}
+      SMQ_CLIENTS_GRPC_URL: ${SMQ_CLIENTS_GRPC_URL}
+      SMQ_CLIENTS_GRPC_TIMEOUT: ${SMQ_CLIENTS_GRPC_TIMEOUT}
+      SMQ_CLIENTS_GRPC_CLIENT_CERT: ${SMQ_CLIENTS_GRPC_CLIENT_CERT:+/clients-grpc-client.crt}
+      SMQ_CLIENTS_GRPC_CLIENT_KEY: ${SMQ_CLIENTS_GRPC_CLIENT_KEY:+/clients-grpc-client.key}
+      SMQ_CLIENTS_GRPC_SERVER_CA_CERTS: ${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:+/clients-grpc-server-ca.crt}
       SMQ_DOMAINS_GRPC_URL: ${SMQ_DOMAINS_GRPC_URL}
       SMQ_DOMAINS_GRPC_TIMEOUT: ${SMQ_DOMAINS_GRPC_TIMEOUT}
       SMQ_DOMAINS_GRPC_CLIENT_CERT: ${SMQ_DOMAINS_GRPC_CLIENT_CERT:+/domains-grpc-client.crt}
@@ -869,7 +870,7 @@ services:
           create_host_path: true
 
   jaeger:
-    image: jaegertracing/all-in-one:1.60
+    image: jaegertracing/all-in-one:1.66.0
     container_name: supermq-jaeger
     environment:
       COLLECTOR_OTLP_ENABLED: ${SMQ_JAEGER_COLLECTOR_OTLP_ENABLED}
@@ -885,6 +886,7 @@ services:
     container_name: supermq-mqtt
     depends_on:
       - clients
+      - rabbitmq
       - nats
     restart: on-failure
     environment:
@@ -892,18 +894,23 @@ services:
       SMQ_MQTT_ADAPTER_MQTT_PORT: ${SMQ_MQTT_ADAPTER_MQTT_PORT}
       SMQ_MQTT_ADAPTER_MQTT_TARGET_HOST: ${SMQ_MQTT_ADAPTER_MQTT_TARGET_HOST}
       SMQ_MQTT_ADAPTER_MQTT_TARGET_PORT: ${SMQ_MQTT_ADAPTER_MQTT_TARGET_PORT}
+      SMQ_MQTT_ADAPTER_MQTT_TARGET_USERNAME: ${SMQ_MQTT_ADAPTER_MQTT_TARGET_USERNAME}
+      SMQ_MQTT_ADAPTER_MQTT_TARGET_PASSWORD: ${SMQ_MQTT_ADAPTER_MQTT_TARGET_PASSWORD}
+      SMQ_MQTT_ADAPTER_FORWARDER_TIMEOUT: ${SMQ_MQTT_ADAPTER_FORWARDER_TIMEOUT}
       SMQ_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK: ${SMQ_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK}
+      SMQ_MQTT_ADAPTER_MQTT_QOS: ${SMQ_MQTT_ADAPTER_MQTT_QOS}
       SMQ_MQTT_ADAPTER_WS_PORT: ${SMQ_MQTT_ADAPTER_WS_PORT}
       SMQ_MQTT_ADAPTER_INSTANCE_ID: ${SMQ_MQTT_ADAPTER_INSTANCE_ID}
       SMQ_MQTT_ADAPTER_WS_TARGET_HOST: ${SMQ_MQTT_ADAPTER_WS_TARGET_HOST}
       SMQ_MQTT_ADAPTER_WS_TARGET_PORT: ${SMQ_MQTT_ADAPTER_WS_TARGET_PORT}
+      SMQ_MQTT_ADAPTER_WS_TARGET_PATH: ${SMQ_MQTT_ADAPTER_WS_TARGET_PATH}
       SMQ_MQTT_ADAPTER_INSTANCE: ${SMQ_MQTT_ADAPTER_INSTANCE}
       SMQ_ES_URL: ${SMQ_ES_URL}
-      SMQ_CLIENTS_AUTH_GRPC_URL: ${SMQ_CLIENTS_AUTH_GRPC_URL}
-      SMQ_CLIENTS_AUTH_GRPC_TIMEOUT: ${SMQ_CLIENTS_AUTH_GRPC_TIMEOUT}
-      SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT:+/clients-grpc-client.crt}
-      SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY:+/clients-grpc-client.key}
-      SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:+/clients-grpc-server-ca.crt}
+      SMQ_CLIENTS_GRPC_URL: ${SMQ_CLIENTS_GRPC_URL}
+      SMQ_CLIENTS_GRPC_TIMEOUT: ${SMQ_CLIENTS_GRPC_TIMEOUT}
+      SMQ_CLIENTS_GRPC_CLIENT_CERT: ${SMQ_CLIENTS_GRPC_CLIENT_CERT:+/clients-grpc-client.crt}
+      SMQ_CLIENTS_GRPC_CLIENT_KEY: ${SMQ_CLIENTS_GRPC_T_KEY:+/clients-grpc-client.key}
+      SMQ_CLIENTS_GRPC_SERVER_CA_CERTS: ${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:+/clients-grpc-server-ca.crt}
       SMQ_CHANNELS_GRPC_URL: ${SMQ_CHANNELS_GRPC_URL}
       SMQ_CHANNELS_GRPC_TIMEOUT: ${SMQ_CHANNELS_GRPC_TIMEOUT}
       SMQ_CHANNELS_GRPC_CLIENT_CERT: ${SMQ_CHANNELS_GRPC_CLIENT_CERT:+/channels-grpc-client.crt}
@@ -918,18 +925,18 @@ services:
     volumes:
       # Clients gRPC mTLS client certificates
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT:-ssl/certs/dummy/client_cert}
-        target: /clients-grpc-client${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT:+.crt}
+        source: ${SMQ_CLIENTS_GRPC_CLIENT_CERT:-ssl/certs/dummy/client_cert}
+        target: /clients-grpc-client${SMQ_CLIENTS_GRPC_CLIENT_CERT:+.crt}
         bind:
           create_host_path: true
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY:-ssl/certs/dummy/client_key}
-        target: /clients-grpc-client${SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY:+.key}
+        source: ${SMQ_CLIENTS_GRPC_CLIENT_KEY:-ssl/certs/dummy/client_key}
+        target: /clients-grpc-client${SMQ_CLIENTS_GRPC_CLIENT_KEY:+.key}
         bind:
           create_host_path: true
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:-ssl/certs/dummy/server_ca}
-        target: /clients-grpc-server-ca${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:+.crt}
+        source: ${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:-ssl/certs/dummy/server_ca}
+        target: /clients-grpc-server-ca${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:+.crt}
         bind:
           create_host_path: true
       # Channels gRPC mTLS client certificates
@@ -962,11 +969,11 @@ services:
       SMQ_HTTP_ADAPTER_PORT: ${SMQ_HTTP_ADAPTER_PORT}
       SMQ_HTTP_ADAPTER_SERVER_CERT: ${SMQ_HTTP_ADAPTER_SERVER_CERT}
       SMQ_HTTP_ADAPTER_SERVER_KEY: ${SMQ_HTTP_ADAPTER_SERVER_KEY}
-      SMQ_CLIENTS_AUTH_GRPC_URL: ${SMQ_CLIENTS_AUTH_GRPC_URL}
-      SMQ_CLIENTS_AUTH_GRPC_TIMEOUT: ${SMQ_CLIENTS_AUTH_GRPC_TIMEOUT}
-      SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT:+/clients-grpc-client.crt}
-      SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY:+/clients-grpc-client.key}
-      SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:+/clients-grpc-server-ca.crt}
+      SMQ_CLIENTS_GRPC_URL: ${SMQ_CLIENTS_GRPC_URL}
+      SMQ_CLIENTS_GRPC_TIMEOUT: ${SMQ_CLIENTS_GRPC_TIMEOUT}
+      SMQ_CLIENTS_GRPC_CLIENT_CERT: ${SMQ_CLIENTS_GRPC_CLIENT_CERT:+/clients-grpc-client.crt}
+      SMQ_CLIENTS_GRPC_T_KEY: ${SMQ_CLIENTS_GRPC_CLIENT_KEY:+/clients-grpc-client.key}
+      SMQ_CLIENTS_GRPC_SERVER_CA_CERTS: ${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:+/clients-grpc-server-ca.crt}
       SMQ_CHANNELS_GRPC_URL: ${SMQ_CHANNELS_GRPC_URL}
       SMQ_CHANNELS_GRPC_TIMEOUT: ${SMQ_CHANNELS_GRPC_TIMEOUT}
       SMQ_CHANNELS_GRPC_CLIENT_CERT: ${SMQ_CHANNELS_GRPC_CLIENT_CERT:+/channels-grpc-client.crt}
@@ -990,18 +997,18 @@ services:
     volumes:
       # Clients gRPC mTLS client certificates
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT:-ssl/certs/dummy/client_cert}
-        target: /clients-grpc-client${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT:+.crt}
+        source: ${SMQ_CLIENTS_GRPC_CLIENT_CERT:-ssl/certs/dummy/client_cert}
+        target: /clients-grpc-client${SMQ_CLIENTS_GRPC_CLIENT_CERT:+.crt}
         bind:
           create_host_path: true
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY:-ssl/certs/dummy/client_key}
-        target: /clients-grpc-client${SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY:+.key}
+        source: ${SMQ_CLIENTS_GRPC_CLIENT_KEY:-ssl/certs/dummy/client_key}
+        target: /clients-grpc-client${SMQ_CLIENTS_GRPC_CLIENT_KEY:+.key}
         bind:
           create_host_path: true
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:-ssl/certs/dummy/server_ca}
-        target: /clients-grpc-server-ca${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:+.crt}
+        source: ${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:-ssl/certs/dummy/server_ca}
+        target: /clients-grpc-server-ca${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:+.crt}
         bind:
           create_host_path: true
       # Channels gRPC mTLS client certificates
@@ -1054,11 +1061,11 @@ services:
       SMQ_COAP_ADAPTER_HTTP_PORT: ${SMQ_COAP_ADAPTER_HTTP_PORT}
       SMQ_COAP_ADAPTER_HTTP_SERVER_CERT: ${SMQ_COAP_ADAPTER_HTTP_SERVER_CERT}
       SMQ_COAP_ADAPTER_HTTP_SERVER_KEY: ${SMQ_COAP_ADAPTER_HTTP_SERVER_KEY}
-      SMQ_CLIENTS_AUTH_GRPC_URL: ${SMQ_CLIENTS_AUTH_GRPC_URL}
-      SMQ_CLIENTS_AUTH_GRPC_TIMEOUT: ${SMQ_CLIENTS_AUTH_GRPC_TIMEOUT}
-      SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT:+/clients-grpc-client.crt}
-      SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY:+/clients-grpc-client.key}
-      SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:+/clients-grpc-server-ca.crt}
+      SMQ_CLIENTS_GRPC_URL: ${SMQ_CLIENTS_GRPC_URL}
+      SMQ_CLIENTS_GRPC_TIMEOUT: ${SMQ_CLIENTS_GRPC_TIMEOUT}
+      SMQ_CLIENTS_GRPC_CLIENT_CERT: ${SMQ_CLIENTS_GRPC_CLIENT_CERT:+/clients-grpc-client.crt}
+      SMQ_CLIENTS_GRPC_CLIENT_KEY: ${SMQ_CLIENTS_GRPC_CLIENT_KEY:+/clients-grpc-client.key}
+      SMQ_CLIENTS_GRPC_SERVER_CA_CERTS: ${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:+/clients-grpc-server-ca.crt}
       SMQ_CHANNELS_GRPC_URL: ${SMQ_CHANNELS_GRPC_URL}
       SMQ_CHANNELS_GRPC_TIMEOUT: ${SMQ_CHANNELS_GRPC_TIMEOUT}
       SMQ_CHANNELS_GRPC_CLIENT_CERT: ${SMQ_CHANNELS_GRPC_CLIENT_CERT:+/channels-grpc-client.crt}
@@ -1078,18 +1085,18 @@ services:
     volumes:
       # Clients gRPC mTLS client certificates
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT:-ssl/certs/dummy/client_cert}
-        target: /clients-grpc-client${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT:+.crt}
+        source: ${SMQ_CLIENTS_GRPC_CLIENT_CERT:-ssl/certs/dummy/client_cert}
+        target: /clients-grpc-client${SMQ_CLIENTS_GRPC_CLIENT_CERT:+.crt}
         bind:
           create_host_path: true
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY:-ssl/certs/dummy/client_key}
-        target: /clients-grpc-client${SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY:+.key}
+        source: ${SMQ_CLIENTS_GRPC_CLIENT_KEY:-ssl/certs/dummy/client_key}
+        target: /clients-grpc-client${SMQ_CLIENTS_GRPC_CLIENT_KEY:+.key}
         bind:
           create_host_path: true
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:-ssl/certs/dummy/server_ca}
-        target: /clients-grpc-server-ca${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:+.crt}
+        source: ${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:-ssl/certs/dummy/server_ca}
+        target: /clients-grpc-server-ca${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:+.crt}
         bind:
           create_host_path: true
       # Channels gRPC mTLS client certificates
@@ -1127,11 +1134,11 @@ services:
       SMQ_WS_ADAPTER_HTTP_PORT: ${SMQ_WS_ADAPTER_HTTP_PORT}
       SMQ_WS_ADAPTER_HTTP_SERVER_CERT: ${SMQ_WS_ADAPTER_HTTP_SERVER_CERT}
       SMQ_WS_ADAPTER_HTTP_SERVER_KEY: ${SMQ_WS_ADAPTER_HTTP_SERVER_KEY}
-      SMQ_CLIENTS_AUTH_GRPC_URL: ${SMQ_CLIENTS_AUTH_GRPC_URL}
-      SMQ_CLIENTS_AUTH_GRPC_TIMEOUT: ${SMQ_CLIENTS_AUTH_GRPC_TIMEOUT}
-      SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT:+/clients-grpc-client.crt}
-      SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY:+/clients-grpc-client.key}
-      SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:+/clients-grpc-server-ca.crt}
+      SMQ_CLIENTS_GRPC_URL: ${SMQ_CLIENTS_GRPC_URL}
+      SMQ_CLIENTS_GRPC_TIMEOUT: ${SMQ_CLIENTS_GRPC_TIMEOUT}
+      SMQ_CLIENTS_GRPC_CLIENT_CERT: ${SMQ_CLIENTS_GRPC_CLIENT_CERT:+/clients-grpc-client.crt}
+      SMQ_CLIENTS_GRPC_CLIENT_KEY: ${SMQ_CLIENTS_GRPC_CLIENT_KEY:+/clients-grpc-client.key}
+      SMQ_CLIENTS_GRPC_SERVER_CA_CERTS: ${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:+/clients-grpc-server-ca.crt}
       SMQ_CHANNELS_GRPC_URL: ${SMQ_CHANNELS_GRPC_URL}
       SMQ_CHANNELS_GRPC_TIMEOUT: ${SMQ_CHANNELS_GRPC_TIMEOUT}
       SMQ_CHANNELS_GRPC_CLIENT_CERT: ${SMQ_CHANNELS_GRPC_CLIENT_CERT:+/channels-grpc-client.crt}
@@ -1155,18 +1162,18 @@ services:
     volumes:
       # Clients gRPC mTLS client certificates
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT:-ssl/certs/dummy/client_cert}
-        target: /clients-grpc-client${SMQ_CLIENTS_AUTH_GRPC_CLIENT_CERT:+.crt}
+        source: ${SMQ_CLIENTS_GRPC_CLIENT_CERT:-ssl/certs/dummy/client_cert}
+        target: /clients-grpc-client${SMQ_CLIENTS_GRPC_CLIENT_CERT:+.crt}
         bind:
           create_host_path: true
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY:-ssl/certs/dummy/client_key}
-        target: /clients-grpc-client${SMQ_CLIENTS_AUTH_GRPC_CLIENT_KEY:+.key}
+        source: ${SMQ_CLIENTS_GRPC_CLIENT_KEY:-ssl/certs/dummy/client_key}
+        target: /clients-grpc-client${SMQ_CLIENTS_GRPC_CLIENT_KEY:+.key}
         bind:
           create_host_path: true
       - type: bind
-        source: ${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:-ssl/certs/dummy/server_ca}
-        target: /clients-grpc-server-ca${SMQ_CLIENTS_AUTH_GRPC_SERVER_CA_CERTS:+.crt}
+        source: ${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:-ssl/certs/dummy/server_ca}
+        target: /clients-grpc-server-ca${SMQ_CLIENTS_GRPC_SERVER_CA_CERTS:+.crt}
         bind:
           create_host_path: true
       # Channels gRPC mTLS client certificates
@@ -1202,8 +1209,28 @@ services:
         bind:
           create_host_path: true
 
+  rabbitmq:
+    image: rabbitmq:4.0.5-alpine
+    container_name: supermq-rabbitmq
+    restart: on-failure
+    environment:
+      RABBITMQ_ERLANG_COOKIE: ${SMQ_RABBITMQ_COOKIE}
+      RABBITMQ_DEFAULT_USER: ${SMQ_RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${SMQ_RABBITMQ_PASS}
+      RABBITMQ_DEFAULT_VHOST: ${SMQ_RABBITMQ_VHOST}
+      RABBITMQ_CONFIG_FILES: /etc/rabbitmq/conf.d/
+    ports:
+      - ${SMQ_RABBITMQ_PORT}:${SMQ_RABBITMQ_PORT}
+      - ${SMQ_RABBITMQ_HTTP_PORT}:${SMQ_RABBITMQ_HTTP_PORT}
+    volumes:
+      - ./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/10-defaults.conf
+      - supermq-mqtt-broker-volume:/var/lib/rabbitmq
+    networks:
+      - supermq-base-net
+
   nats:
-    image: nats:2.10.9-alpine
+    image: nats:2.10.25-alpine
     container_name: supermq-nats
     restart: on-failure
     command: "--config=/etc/nats/nats.conf"
