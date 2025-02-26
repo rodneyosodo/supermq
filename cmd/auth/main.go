@@ -44,7 +44,7 @@ import (
 	"github.com/caarlos0/env/v11"
 	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -150,7 +150,7 @@ func main() {
 		return
 	}
 
-	svc, err := newService(ctx, db, tracer, cfg, dbConfig, logger, spicedbclient, cacheclient, cfg.CacheKeyDuration)
+	svc, err := newService(db, tracer, cfg, dbConfig, logger, spicedbclient, cacheclient, cfg.CacheKeyDuration)
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to create service : %s\n", err.Error()))
 		exitCode = 1
@@ -235,7 +235,7 @@ func initSchema(ctx context.Context, client *authzed.ClientWithExperimental, sch
 	return nil
 }
 
-func newService(_ context.Context, db *sqlx.DB, tracer trace.Tracer, cfg config, dbConfig pgclient.Config, logger *slog.Logger, spicedbClient *authzed.ClientWithExperimental, cacheClient *redis.Client, keyDuration time.Duration) (auth.Service, error) {
+func newService(db *sqlx.DB, tracer trace.Tracer, cfg config, dbConfig pgclient.Config, logger *slog.Logger, spicedbClient *authzed.ClientWithExperimental, cacheClient *redis.Client, keyDuration time.Duration) (auth.Service, error) {
 	cache := cache.NewPatsCache(cacheClient, keyDuration)
 
 	database := pgclient.NewDatabase(db, dbConfig, tracer)
