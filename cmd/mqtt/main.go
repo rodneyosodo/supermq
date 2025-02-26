@@ -330,6 +330,8 @@ type interceptor struct {
 	password string
 }
 
+// This interceptor adds the correct credentials to upstream MQTT broker since the downstream clients
+// are authenticated to the MQTT adapter but not upstream MQTT broker.
 func (ic interceptor) Intercept(ctx context.Context, pkt packets.ControlPacket, dir session.Direction) (packets.ControlPacket, error) {
 	if connectPkt, ok := pkt.(*packets.ConnectPacket); ok {
 		if ic.username != "" {
