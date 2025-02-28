@@ -98,6 +98,7 @@ The service is configured using the environment variables presented in the follo
 | SMQ_AUTH_CALLOUT_URLS             | Comma-separated list of callout URLs                                    | ""                             |
 | SMQ_AUTH_CALLOUT_METHOD           | Callout method                                                          | POST                           |
 | SMQ_AUTH_CALLOUT_TLS_VERIFICATION | Enable TLS verification for callouts                                    | true                           |
+| SMQ_AUTH_CALLOUT_TIMEOUT          | Callout timeout                                                         | 10s                            |
 
 ## Deployment
 
