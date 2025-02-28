@@ -99,6 +99,9 @@ The service is configured using the environment variables presented in the follo
 | SMQ_AUTH_CALLOUT_METHOD           | Callout method                                                          | POST                           |
 | SMQ_AUTH_CALLOUT_TLS_VERIFICATION | Enable TLS verification for callouts                                    | true                           |
 | SMQ_AUTH_CALLOUT_TIMEOUT          | Callout timeout                                                         | 10s                            |
+| SMQ_AUTH_CALLOUT_CA_CERT          | Path to CA certificate file                                             | ""                             |
+| SMQ_AUTH_CALLOUT_CERT             | Path to client certificate file                                         | ""                             |
+| SMQ_AUTH_CALLOUT_KEY              | Path to client key file                                                 | ""                             |
 
 ## Deployment
 
