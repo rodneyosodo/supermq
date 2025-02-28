@@ -5,7 +5,7 @@ go 1.23.4
 require (
 	github.com/0x6flab/namegenerator v1.4.0
 	github.com/absmach/callhome v0.14.0
-	github.com/absmach/certs v0.0.0-20250218103329-9fee99849118
+	github.com/absmach/certs v0.0.0-20250226124728-fa26b7d3aa28
 	github.com/absmach/mgate v0.4.5
 	github.com/absmach/senml v1.0.6
 	github.com/authzed/authzed-go v1.3.0
@@ -51,7 +51,7 @@ require (
 	golang.org/x/crypto v0.35.0
 	golang.org/x/oauth2 v0.27.0
 	golang.org/x/sync v0.11.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250224174004-546df14abb99
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250227231956-55c901821b1e
 	google.golang.org/grpc v1.70.0
 	google.golang.org/protobuf v1.36.5
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
@@ -160,7 +160,7 @@ require (
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.10.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250224174004-546df14abb99 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250227231956-55c901821b1e // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
