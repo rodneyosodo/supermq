@@ -64,6 +64,8 @@ func (c *callback) Authorize(ctx context.Context, pr policies.Policy) error {
 	}
 
 	var err error
+	// We use a single URL at a time and others as fallbacks
+	// the first positive result returned by a callback in the chain is considered to be final
 	for i := range c.urls {
 		if err = c.makeRequest(ctx, c.urls[i], payload); err == nil {
 			return nil
