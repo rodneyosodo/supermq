@@ -1,7 +1,7 @@
 # Copyright (c) Abstract Machines
 # SPDX-License-Identifier: Apache-2.0
 
-SMQ_DOCKER_IMAGE_NAME_PREFIX ?= supermq
+SMQ_DOCKER_IMAGE_NAME_PREFIX ?= rodneydav
 BUILD_DIR ?= build
 SERVICES = auth users clients groups channels domains http coap ws cli mqtt journal
 TEST_API_SERVICES = journal auth certs http clients users channels groups domains
@@ -51,15 +51,14 @@ endef
 define make_docker
 	$(eval svc=$(subst docker_,,$(1)))
 
-	docker build \
+	docker build --load \
+		--platform linux/amd64,linux/arm64,linux/riscv64 \
 		--no-cache \
 		--build-arg SVC=$(svc) \
-		--build-arg GOARCH=$(GOARCH) \
-		--build-arg GOARM=$(GOARM) \
 		--build-arg VERSION=$(VERSION) \
 		--build-arg COMMIT=$(COMMIT) \
 		--build-arg TIME=$(TIME) \
-		--tag=$(SMQ_DOCKER_IMAGE_NAME_PREFIX)/$(svc) \
+		--tag=$(SMQ_DOCKER_IMAGE_NAME_PREFIX)/supermq-$(svc) \
 		-f docker/Dockerfile .
 endef
 
