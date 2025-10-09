@@ -3,17 +3,17 @@
 
 openapi: 3.0.1
 info:
-  title: Magistrala http adapter
+  title: SuperMQ http adapter
   description: |
     HTTP API for sending messages through communication channels.
     Some useful links:
-    - [The Magistrala repository](https://github.com/absmach/magistrala)
+    - [The SuperMQ repository](https://github.com/absmach/supermq)
   contact:
     email: info@abstractmachines.fr
   license:
     name: Apache 2.0
-    url: https://github.com/absmach/magistrala/blob/main/LICENSE
-  version: 0.14.0
+    url: https://github.com/absmach/supermq/blob/main/LICENSE
+  version: 0.18.0
 
 servers:
   - url: http://localhost:8008
@@ -24,10 +24,10 @@ tags:
     description: Everything about your Messages
     externalDocs:
       description: Find out more about messages
-      url: https://docs.magistrala.abstractmachines.fr/
+      url: https://docs.supermq.abstractmachines.fr/
 
 paths:
-  /channels/{id}/messages:
+  /m/{domainPrefix}/c/{channelPrefix}:
     post:
       summary: Sends message to the communication channel
       description: |
@@ -36,7 +36,8 @@ paths:
       tags:
         - messages
       parameters:
-        - $ref: "#/components/parameters/ID"
+        - $ref: "#/components/parameters/domainPrefix"
+        - $ref: "#/components/parameters/channelPrefix"
       requestBody:
         $ref: "#/components/requestBodies/MessageReq"
       responses:
@@ -57,6 +58,7 @@ paths:
       summary: Retrieves service health check info.
       tags:
         - health
+      security: []
       responses:
         "200":
           $ref: "#/components/responses/HealthRes"
@@ -128,13 +130,21 @@ components:
         $ref: "#/components/schemas/SenMLRecord"
 
   parameters:
-    ID:
-      name: id
-      description: Unique channel identifier.
+    domainPrefix:
+      name: domainPrefix
+      description: ID or route of the domain associated with the channel and client.
       in: path
       schema:
         type: string
-        format: uuid
+      example: mydomain
+      required: true
+    channelPrefix:
+      name: channelPrefix
+      description: ID or route of the channel connected to the client.
+      in: path
+      schema:
+        type: string
+      example: mychannel
       required: true
 
   requestBodies:
@@ -160,7 +170,7 @@ components:
       content:
         application/health+json:
           schema:
-            $ref: "./schemas/HealthInfo.yml"
+            $ref: "./schemas/health_info.yaml"
 
   securitySchemes:
     bearerAuth:
@@ -168,13 +178,13 @@ components:
       scheme: bearer
       bearerFormat: uuid
       description: |
-        * Thing access: "Authorization: Thing <thing_key>"
+        * Client access: "Authorization: Client <client_key>"
 
     basicAuth:
       type: http
       scheme: basic
       description: |
-        * Things access: "Authorization: Basic <base64-encoded_credentials>"
+        * Clients access: "Authorization: Basic <base64-encoded_credentials>"
 
 security:
   - bearerAuth: []
