@@ -57,7 +57,7 @@ services:
       - spicedb-db
 
   spicedb-db:
-    image: docker.io/postgres:16.2-alpine
+    image: docker.io/postgres:18.0-alpine3.22
     container_name: supermq-spicedb-db
     networks:
       - supermq-base-net
@@ -72,7 +72,7 @@ services:
     command: ["postgres", "-c", "track_commit_timestamp=on"]
 
   auth-db:
-    image: docker.io/postgres:16.2-alpine
+    image: docker.io/postgres:18.0-alpine3.22
     container_name: supermq-auth-db
     restart: on-failure
     ports:
@@ -189,7 +189,7 @@ services:
           create_host_path: true
 
   domains-db:
-    image: docker.io/postgres:16.2-alpine
+    image: docker.io/postgres:18.0-alpine3.22
     container_name: supermq-domains-db
     restart: on-failure
     ports:
@@ -423,7 +423,7 @@ services:
         hard: 65536
 
   clients-db:
-    image: docker.io/postgres:16.2-alpine
+    image: docker.io/postgres:18.0-alpine3.22
     container_name: supermq-clients-db
     restart: on-failure
     command: postgres -c "max_connections=${SMQ_POSTGRES_MAX_CONNECTIONS}"
@@ -616,7 +616,7 @@ services:
           create_host_path: true
 
   channels-db:
-    image: docker.io/postgres:16.2-alpine
+    image: docker.io/postgres:18.0-alpine3.22
     container_name: supermq-channels-db
     restart: on-failure
     command: postgres -c "max_connections=${SMQ_POSTGRES_MAX_CONNECTIONS}"
@@ -807,7 +807,7 @@ services:
           create_host_path: true
 
   users-db:
-    image: docker.io/postgres:16.2-alpine
+    image: docker.io/postgres:18.0-alpine3.22
     container_name: supermq-users-db
     restart: on-failure
     command: postgres -c "max_connections=${SMQ_POSTGRES_MAX_CONNECTIONS}"
@@ -933,7 +933,7 @@ services:
           create_host_path: true
 
   groups-db:
-    image: docker.io/postgres:16.2-alpine
+    image: docker.io/postgres:18.0-alpine3.22
     container_name: supermq-groups-db
     restart: on-failure
     command: postgres -c "max_connections=${SMQ_POSTGRES_MAX_CONNECTIONS}"
