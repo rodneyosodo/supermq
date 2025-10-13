@@ -48,16 +48,16 @@ jobs:
       - name: Add GOBIN to PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      # - name: Run tests
-      #   run: |
-      #     make test
+      - name: Run tests
+        run: |
+          make test
 
-      # - name: Upload coverage
-      #   uses: codecov/codecov-action@v5
-      #   with:
-      #     token: ${{ secrets.CODECOV }}
-      #     files: ./coverage/*.out
-      #     verbose: true
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV }}
+          files: ./coverage/*.out
+          verbose: true
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
