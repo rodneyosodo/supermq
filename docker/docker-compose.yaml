@@ -1113,7 +1113,7 @@ services:
           create_host_path: true
 
   jaeger:
-    image: docker.io/jaegertracing/all-in-one:1.66.0
+    image: docker.io/jaegertracing/all-in-one:1.74.0
     container_name: supermq-jaeger
     environment:
       COLLECTOR_OTLP_ENABLED: ${SMQ_JAEGER_COLLECTOR_OTLP_ENABLED}
