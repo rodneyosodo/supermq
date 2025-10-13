@@ -51,7 +51,7 @@ endef
 define make_docker
 	$(eval svc=$(subst docker_,,$(1)))
 
-	docker build \
+	docker buildx build --load \
 		--platform linux/amd64,linux/arm64,linux/riscv64 \
 		--no-cache \
 		--build-arg SVC=$(svc) \
@@ -65,7 +65,7 @@ endef
 define make_docker_dev
 	$(eval svc=$(subst docker_dev_,,$(1)))
 
-	docker build \
+	docker buildx build --load \
 		--no-cache \
 		--build-arg SVC=$(svc) \
 		--tag=$(SMQ_DOCKER_IMAGE_NAME_PREFIX)/$(svc) \
