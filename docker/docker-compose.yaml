@@ -87,7 +87,7 @@ services:
       - supermq-auth-db-volume:/var/lib/postgresql/data
 
   auth-redis:
-    image: docker.io/redis:7.2.4-alpine
+    image: docker.io/redis:8.2.2-alpine3.22
     container_name: supermq-auth-redis
     restart: on-failure
     networks:
@@ -204,7 +204,7 @@ services:
       - supermq-domains-db-volume:/var/lib/postgresql/data
 
   domains-redis:
-    image: docker.io/redis:7.2.4-alpine
+    image: docker.io/redis:8.2.2-alpine3.22
     container_name: supermq-domains-redis
     restart: on-failure
     networks:
@@ -436,7 +436,7 @@ services:
       - supermq-clients-db-volume:/var/lib/postgresql/data
 
   clients-redis:
-    image: docker.io/redis:7.2.4-alpine
+    image: docker.io/redis:8.2.2-alpine3.22
     container_name: supermq-clients-redis
     restart: on-failure
     networks:
@@ -629,7 +629,7 @@ services:
       - supermq-channels-db-volume:/var/lib/postgresql/data
 
   channels-redis:
-    image: docker.io/redis:7.2.4-alpine
+    image: docker.io/redis:8.2.2-alpine3.22
     container_name: supermq-channels-redis
     restart: on-failure
     networks:
