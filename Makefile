@@ -52,7 +52,7 @@ define make_docker
 	$(eval svc=$(subst docker_,,$(1)))
 
 	docker buildx build --load \
-		--platform linux/amd64,linux/arm64,linux/riscv64 \
+		--platform linux/amd64 \
 		--no-cache \
 		--build-arg SVC=$(svc) \
 		--build-arg VERSION=$(VERSION) \
