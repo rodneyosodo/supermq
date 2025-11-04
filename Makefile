@@ -10,7 +10,6 @@ DOCKERS = $(addprefix docker_,$(SERVICES))
 DOCKERS_DEV = $(addprefix docker_dev_,$(SERVICES))
 CGO_ENABLED ?= 0
 GOARCH ?= amd64
-PLATFORMS ?= linux/amd64
 VERSION ?= $(shell git describe --abbrev=0 --tags 2>/dev/null || echo 'unknown')
 COMMIT ?= $(shell git rev-parse HEAD)
 TIME ?= $(shell date +%F_%T)
@@ -52,10 +51,11 @@ endef
 define make_docker
 	$(eval svc=$(subst docker_,,$(1)))
 
-	docker buildx build --load \
-		--platform $(PLATFORMS) \
+	docker build \
 		--no-cache \
 		--build-arg SVC=$(svc) \
+		--build-arg GOARCH=$(GOARCH) \
+		--build-arg GOARM=$(GOARM) \
 		--build-arg VERSION=$(VERSION) \
 		--build-arg COMMIT=$(COMMIT) \
 		--build-arg TIME=$(TIME) \
@@ -66,7 +66,7 @@ endef
 define make_docker_dev
 	$(eval svc=$(subst docker_dev_,,$(1)))
 
-	docker buildx build --load \
+	docker build \
 		--no-cache \
 		--build-arg SVC=$(svc) \
 		--tag=$(SMQ_DOCKER_IMAGE_NAME_PREFIX)/$(svc) \

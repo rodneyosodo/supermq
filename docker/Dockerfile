@@ -1,10 +1,10 @@
 # Copyright (c) Abstract Machines
 # SPDX-License-Identifier: Apache-2.0
 
-FROM --platform=$BUILDPLATFORM golang:1.25.3-alpine3.22 AS builder
-ARG TARGETOS
-ARG TARGETARCH
+FROM golang:1.25.3-alpine3.22 AS builder
 ARG SVC
+ARG GOARCH
+ARG GOARM
 ARG VERSION
 ARG COMMIT
 ARG TIME
@@ -13,8 +13,8 @@ WORKDIR /go/src/github.com/absmach/supermq
 COPY . .
 RUN apk update \
     && apk add make upx\
-    && GOOS=${TARGETOS} GOARCH=${TARGETARCH} make $SVC\
-    && if [ "$TARGETARCH" != "riscv64" ] && [ "$TARGETOS" != "windows" ] && [ "$TARGETOS" != "darwin" ]; then upx build/$SVC; else echo "Skipping UPX for $TARGETOS/$TARGETARCH"; fi\
+    && make $SVC \
+    && upx build/$SVC \
     && mv build/$SVC /exe
 
 FROM scratch
