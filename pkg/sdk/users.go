@@ -36,6 +36,7 @@ type User struct {
 	Credentials    Credentials `json:"credentials"`
 	Tags           []string    `json:"tags,omitempty"`
 	Metadata       Metadata    `json:"metadata,omitempty"`
+	PublicMetadata Metadata    `json:"public_metadata,omitempty"`
 	CreatedAt      time.Time   `json:"created_at,omitempty"`
 	UpdatedAt      time.Time   `json:"updated_at,omitempty"`
 	Status         string      `json:"status,omitempty"`

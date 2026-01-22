@@ -20,6 +20,7 @@ type User struct {
 	LastName       string      `json:"last_name,omitempty"`
 	Tags           []string    `json:"tags,omitempty"`
 	Metadata       Metadata    `json:"metadata,omitempty"`
+	PublicMetadata Metadata    `json:"public_metadata,omitempty"`
 	Status         Status      `json:"status"`                    // 0 for enabled, 1 for disabled
 	Role           Role        `json:"role"`                      // 0 for normal user, 1 for admin
 	ProfilePicture string      `json:"profile_picture,omitempty"` // profile picture URL
@@ -50,6 +51,7 @@ type UserReq struct {
 	FirstName      *string    `json:"first_name,omitempty"`
 	LastName       *string    `json:"last_name,omitempty"`
 	Metadata       *Metadata  `json:"metadata,omitempty"`
+	PublicMetadata *Metadata  `json:"public_metadata,omitempty"`
 	Tags           *[]string  `json:"tags,omitempty"`
 	ProfilePicture *string    `json:"profile_picture,omitempty"`
 	UpdatedBy      *string    `json:"updated_by,omitempty"`

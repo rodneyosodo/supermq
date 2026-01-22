@@ -110,6 +110,10 @@ func userFromProto(u *grpcUsersV1.User) (users.User, error) {
 	if u.GetMetadata() != nil {
 		metadata = users.Metadata(u.GetMetadata().AsMap())
 	}
+	publicMetadata := users.Metadata(nil)
+	if u.GetPublicMetadata() != nil {
+		publicMetadata = users.Metadata(u.GetPublicMetadata().AsMap())
+	}
 
 	user := users.User{
 		ID:             u.GetId(),
@@ -117,6 +121,7 @@ func userFromProto(u *grpcUsersV1.User) (users.User, error) {
 		LastName:       u.GetLastName(),
 		Tags:           u.GetTags(),
 		Metadata:       metadata,
+		PublicMetadata: publicMetadata,
 		Status:         users.Status(u.GetStatus()),
 		Role:           users.Role(u.GetRole()),
 		ProfilePicture: u.GetProfilePicture(),

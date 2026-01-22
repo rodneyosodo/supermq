@@ -28,6 +28,8 @@ var (
 	relation = "administrator"
 	all      = "all"
 	conntype = `["publish","subscribe"]`
+
+	errEndJSONInput = errors.New("unexpected end of JSON input")
 )
 
 var client = smqsdk.Client{
@@ -295,6 +297,8 @@ func TestUpdateClientCmd(t *testing.T) {
 	newTagsJson := "[\"tag1\", \"tag2\"]"
 	newTagString := []string{"tag1", "tag2"}
 	newNameandMeta := "{\"name\": \"clientName\", \"metadata\": {\"role\": \"general\"}}"
+	newMetadata := "{\"metadata\": {\"role\": \"general\"}}"
+	newPublicMeta := "{\"public_metadata\": {\"role\": \"general\"}}"
 	newSecret := "secret"
 
 	cases := []struct {
@@ -305,6 +309,26 @@ func TestUpdateClientCmd(t *testing.T) {
 		client        smqsdk.Client
 		logType       outputLog
 	}{
+		{
+			desc: "update client name and public metadata successfully",
+			args: []string{
+				client.ID,
+				updateCmd,
+				newNameandMeta,
+				domainID,
+				token,
+			},
+			client: smqsdk.Client{
+				Name: "clientName",
+				PublicMetadata: map[string]any{
+					"role": "general",
+				},
+				ID:       client.ID,
+				DomainID: client.DomainID,
+				Status:   client.Status,
+			},
+			logType: entityLog,
+		},
 		{
 			desc: "update client name and metadata successfully",
 			args: []string{
@@ -317,15 +341,77 @@ func TestUpdateClientCmd(t *testing.T) {
 			client: smqsdk.Client{
 				Name: "clientName",
 				Metadata: map[string]any{
-					"metadata": map[string]any{
-						"role": "general",
-					},
+					"role": "general",
 				},
 				ID:       client.ID,
 				DomainID: client.DomainID,
 				Status:   client.Status,
 			},
 			logType: entityLog,
+		},
+		{
+			desc: "update client public metadata successfully",
+			args: []string{
+				client.ID,
+				updateCmd,
+				newPublicMeta,
+				domainID,
+				token,
+			},
+			client: smqsdk.Client{
+				PublicMetadata: map[string]any{
+					"role": "general",
+				},
+				ID:       client.ID,
+				DomainID: client.DomainID,
+				Status:   client.Status,
+			},
+			logType: entityLog,
+		},
+		{
+			desc: "update client metadata successfully",
+			args: []string{
+				client.ID,
+				updateCmd,
+				newMetadata,
+				domainID,
+				token,
+			},
+			client: smqsdk.Client{
+				Metadata: map[string]any{
+					"role": "general",
+				},
+				ID:       client.ID,
+				DomainID: client.DomainID,
+				Status:   client.Status,
+			},
+			logType: entityLog,
+		},
+		{
+			desc: "update client public metadata with invalid json",
+			args: []string{
+				client.ID,
+				updateCmd,
+				"{\"public_metadata\": {\"role\": \"general\"}",
+				domainID,
+				token,
+			},
+			sdkErr:        errors.NewSDKError(errEndJSONInput),
+			errLogMessage: fmt.Sprintf("\nerror: %s\n\n", errEndJSONInput),
+			logType:       errLog,
+		},
+		{
+			desc: "update client metadata with invalid json",
+			args: []string{
+				client.ID,
+				updateCmd,
+				"{\"metadata\": {\"role\": \"general\"}",
+				domainID,
+				token,
+			},
+			sdkErr:        errors.NewSDKError(errEndJSONInput),
+			errLogMessage: fmt.Sprintf("\nerror: %s\n\n", errEndJSONInput),
+			logType:       errLog,
 		},
 		{
 			desc: "update client name and metadata with invalid json",
@@ -336,8 +422,8 @@ func TestUpdateClientCmd(t *testing.T) {
 				domainID,
 				token,
 			},
-			sdkErr:        errors.NewSDKError(errors.New("unexpected end of JSON input")),
-			errLogMessage: fmt.Sprintf("\nerror: %s\n\n", errors.New("unexpected end of JSON input")),
+			sdkErr:        errors.NewSDKError(errEndJSONInput),
+			errLogMessage: fmt.Sprintf("\nerror: %s\n\n", errEndJSONInput),
 			logType:       errLog,
 		},
 		{
@@ -383,8 +469,8 @@ func TestUpdateClientCmd(t *testing.T) {
 				token,
 			},
 			logType:       errLog,
-			sdkErr:        errors.NewSDKError(errors.New("unexpected end of JSON input")),
-			errLogMessage: fmt.Sprintf("\nerror: %s\n\n", errors.New("unexpected end of JSON input")),
+			sdkErr:        errors.NewSDKError(errEndJSONInput),
+			errLogMessage: fmt.Sprintf("\nerror: %s\n\n", errEndJSONInput),
 		},
 		{
 			desc: "update client tags with invalid client id",

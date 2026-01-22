@@ -32,9 +32,7 @@ const (
 	viewProfileStream       = supermqPrefix + profileView
 	listStream              = supermqPrefix + userList
 	searchStream            = supermqPrefix + userSearch
-	listByGroupStream       = supermqPrefix + userListByGroup
 	identifyStream          = supermqPrefix + userIdentify
-	resetTokenStream        = supermqPrefix + generateResetToken
 	issueTokenStream        = supermqPrefix + issueToken
 	refreshTokenStream      = supermqPrefix + refreshToken
 	resetSecretStream       = supermqPrefix + resetSecret

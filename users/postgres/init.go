@@ -136,6 +136,15 @@ func Migration() *migrate.MemoryMigrationSource {
 					`ALTER TABLE users DROP COLUMN auth_provider`,
 				},
 			},
+			{
+				Id: "clients_10",
+				Up: []string{
+					`ALTER TABLE users ADD COLUMN public_metadata JSONB;`,
+				},
+				Down: []string{
+					`ALTER TABLE users DROP COLUMN public_metadata;`,
+				},
+			},
 		},
 	}
 }

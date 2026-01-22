@@ -82,10 +82,16 @@ func toProtoUsers(us []users.User) ([]*grpcUsersV1.User, error) {
 }
 
 func toProtoUser(u users.User) (*grpcUsersV1.User, error) {
-	var md *structpb.Struct
+	var metadata, publicMetadata *structpb.Struct
 	var err error
 	if u.Metadata != nil {
-		md, err = structpb.NewStruct(u.Metadata)
+		metadata, err = structpb.NewStruct(u.Metadata)
+		if err != nil {
+			return nil, errors.Wrap(svcerr.ErrViewEntity, err)
+		}
+	}
+	if u.PublicMetadata != nil {
+		publicMetadata, err = structpb.NewStruct(u.PublicMetadata)
 		if err != nil {
 			return nil, errors.Wrap(svcerr.ErrViewEntity, err)
 		}
@@ -96,7 +102,8 @@ func toProtoUser(u users.User) (*grpcUsersV1.User, error) {
 		FirstName:      u.FirstName,
 		LastName:       u.LastName,
 		Tags:           u.Tags,
-		Metadata:       md,
+		Metadata:       metadata,
+		PublicMetadata: publicMetadata,
 		Status:         uint32(u.Status),
 		Role:           uint32(u.Role),
 		ProfilePicture: u.ProfilePicture,

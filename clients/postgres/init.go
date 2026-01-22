@@ -76,6 +76,15 @@ func Migration() (*migrate.MemoryMigrationSource, error) {
 					`ALTER TABLE clients ALTER COLUMN updated_at TYPE TIMESTAMP;`,
 				},
 			},
+			{
+				Id: "clients_04",
+				Up: []string{
+					`ALTER TABLE clients ADD COLUMN public_metadata JSONB;`,
+				},
+				Down: []string{
+					`ALTER TABLE clients DROP COLUMN public_metadata;`,
+				},
+			},
 		},
 	}
 

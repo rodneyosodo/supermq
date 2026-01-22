@@ -519,6 +519,8 @@ func TestUpdateUserCmd(t *testing.T) {
 	newRole := "administrator"
 	newTagsJSON := "[\"tag1\", \"tag2\"]"
 	newNameMetadataJSON := "{\"name\":\"new name\", \"metadata\":{\"key\": \"value\"}}"
+	newMetadataJSON := "{\"metadata\":{\"key\": \"value\"}}"
+	newPublicMetadataJSON := "{\"public_metadata\":{\"key\": \"value\"}}"
 
 	cases := []struct {
 		desc          string
@@ -550,8 +552,8 @@ func TestUpdateUserCmd(t *testing.T) {
 				"[\"tag1\", \"tag2\"",
 				validToken,
 			},
-			sdkErr:        errors.NewSDKError(errors.New("unexpected end of JSON input")),
-			errLogMessage: fmt.Sprintf("\nerror: %s\n\n", errors.New("unexpected end of JSON input")),
+			sdkErr:        errors.NewSDKError(errEndJSONInput),
+			errLogMessage: fmt.Sprintf("\nerror: %s\n\n", errEndJSONInput),
 			logType:       errLog,
 		},
 		{
@@ -566,6 +568,52 @@ func TestUpdateUserCmd(t *testing.T) {
 			logType:       errLog,
 			sdkErr:        errors.NewSDKErrorWithStatus(svcerr.ErrAuthorization, http.StatusForbidden),
 			errLogMessage: fmt.Sprintf("\nerror: %s\n\n", errors.NewSDKErrorWithStatus(svcerr.ErrAuthorization, http.StatusForbidden)),
+		},
+		{
+			desc: "update user public metadata successfully",
+			args: []string{
+				userID,
+				updateCmd,
+				newPublicMetadataJSON,
+				validToken,
+			},
+			logType: entityLog,
+			user:    user,
+		},
+		{
+			desc: "update user public metadata with invalid json",
+			args: []string{
+				userID,
+				updateCmd,
+				"{\"public_metadata\":{\"key\": \"value\"",
+				validToken,
+			},
+			sdkErr:        errors.NewSDKError(errEndJSONInput),
+			errLogMessage: fmt.Sprintf("\nerror: %s\n\n", errEndJSONInput),
+			logType:       errLog,
+		},
+		{
+			desc: "update user metadata successfully",
+			args: []string{
+				userID,
+				updateCmd,
+				newMetadataJSON,
+				validToken,
+			},
+			logType: entityLog,
+			user:    user,
+		},
+		{
+			desc: "update user metadata with invalid json",
+			args: []string{
+				userID,
+				updateCmd,
+				"{\"metadata\":{\"key\": \"value\"",
+				validToken,
+			},
+			sdkErr:        errors.NewSDKError(errEndJSONInput),
+			errLogMessage: fmt.Sprintf("\nerror: %s\n\n", errEndJSONInput),
+			logType:       errLog,
 		},
 		{
 			desc: "update user email successfully",
@@ -623,8 +671,8 @@ func TestUpdateUserCmd(t *testing.T) {
 				"{\"name\":\"new name\", \"metadata\":{\"key\": \"value\"}",
 				validToken,
 			},
-			sdkErr:        errors.NewSDKError(errors.New("unexpected end of JSON input")),
-			errLogMessage: fmt.Sprintf("\nerror: %s\n\n", errors.New("unexpected end of JSON input")),
+			sdkErr:        errors.NewSDKError(errEndJSONInput),
+			errLogMessage: fmt.Sprintf("\nerror: %s\n\n", errEndJSONInput),
 			logType:       errLog,
 		},
 		{
@@ -708,7 +756,7 @@ Available update options:
 			case len(tc.args) == 4: // Basic user update
 				sdkCall = sdkMock.On("UpdateUser", mock.Anything, mgsdk.User{
 					FirstName: "new name",
-					Metadata: mgsdk.Metadata{
+					PublicMetadata: mgsdk.Metadata{
 						"key": "value",
 					},
 				}, tc.args[3]).Return(tc.user, tc.sdkErr)
