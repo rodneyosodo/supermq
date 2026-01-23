@@ -92,8 +92,8 @@ func (uce createUserEvent) Encode() (map[string]any, error) {
 	if uce.Metadata != nil {
 		val["metadata"] = uce.Metadata
 	}
-	if uce.PublicMetadata != nil {
-		val["public_metadata"] = uce.PublicMetadata
+	if uce.PrivateMetadata != nil {
+		val["private_metadata"] = uce.PrivateMetadata
 	}
 	if uce.Credentials.Username != "" {
 		val["username"] = uce.Credentials.Username
@@ -174,8 +174,8 @@ func (uce updateUserEvent) Encode() (map[string]any, error) {
 	if uce.Metadata != nil {
 		val["metadata"] = uce.Metadata
 	}
-	if uce.PublicMetadata != nil {
-		val["public_metadata"] = uce.PublicMetadata
+	if uce.PrivateMetadata != nil {
+		val["private_metadata"] = uce.PrivateMetadata
 	}
 	if !uce.CreatedAt.IsZero() {
 		val["created_at"] = uce.CreatedAt
@@ -301,8 +301,8 @@ func (vue viewUserEvent) Encode() (map[string]any, error) {
 	if vue.Metadata != nil {
 		val["metadata"] = vue.Metadata
 	}
-	if vue.PublicMetadata != nil {
-		val["public_metadata"] = vue.PublicMetadata
+	if vue.PrivateMetadata != nil {
+		val["private_metadata"] = vue.PrivateMetadata
 	}
 	if !vue.CreatedAt.IsZero() {
 		val["created_at"] = vue.CreatedAt
@@ -347,8 +347,8 @@ func (vpe viewProfileEvent) Encode() (map[string]any, error) {
 	if vpe.Metadata != nil {
 		val["metadata"] = vpe.Metadata
 	}
-	if vpe.PublicMetadata != nil {
-		val["public_metadata"] = vpe.PublicMetadata
+	if vpe.PrivateMetadata != nil {
+		val["private_metadata"] = vpe.PrivateMetadata
 	}
 	if !vpe.CreatedAt.IsZero() {
 		val["created_at"] = vpe.CreatedAt

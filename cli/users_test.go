@@ -520,7 +520,7 @@ func TestUpdateUserCmd(t *testing.T) {
 	newTagsJSON := "[\"tag1\", \"tag2\"]"
 	newNameMetadataJSON := "{\"name\":\"new name\", \"metadata\":{\"key\": \"value\"}}"
 	newMetadataJSON := "{\"metadata\":{\"key\": \"value\"}}"
-	newPublicMetadataJSON := "{\"public_metadata\":{\"key\": \"value\"}}"
+	newPrivateMetadataJSON := "{\"private_metadata\":{\"key\": \"value\"}}"
 
 	cases := []struct {
 		desc          string
@@ -574,7 +574,7 @@ func TestUpdateUserCmd(t *testing.T) {
 			args: []string{
 				userID,
 				updateCmd,
-				newPublicMetadataJSON,
+				newPrivateMetadataJSON,
 				validToken,
 			},
 			logType: entityLog,
@@ -585,7 +585,7 @@ func TestUpdateUserCmd(t *testing.T) {
 			args: []string{
 				userID,
 				updateCmd,
-				"{\"public_metadata\":{\"key\": \"value\"",
+				"{\"private_metadata\":{\"key\": \"value\"",
 				validToken,
 			},
 			sdkErr:        errors.NewSDKError(errEndJSONInput),
@@ -756,7 +756,7 @@ Available update options:
 			case len(tc.args) == 4: // Basic user update
 				sdkCall = sdkMock.On("UpdateUser", mock.Anything, mgsdk.User{
 					FirstName: "new name",
-					PublicMetadata: mgsdk.Metadata{
+					PrivateMetadata: mgsdk.Metadata{
 						"key": "value",
 					},
 				}, tc.args[3]).Return(tc.user, tc.sdkErr)

@@ -82,7 +82,7 @@ func toProtoUsers(us []users.User) ([]*grpcUsersV1.User, error) {
 }
 
 func toProtoUser(u users.User) (*grpcUsersV1.User, error) {
-	var metadata, publicMetadata *structpb.Struct
+	var metadata, privateMetadata *structpb.Struct
 	var err error
 	if u.Metadata != nil {
 		metadata, err = structpb.NewStruct(u.Metadata)
@@ -90,28 +90,28 @@ func toProtoUser(u users.User) (*grpcUsersV1.User, error) {
 			return nil, errors.Wrap(svcerr.ErrViewEntity, err)
 		}
 	}
-	if u.PublicMetadata != nil {
-		publicMetadata, err = structpb.NewStruct(u.PublicMetadata)
+	if u.PrivateMetadata != nil {
+		privateMetadata, err = structpb.NewStruct(u.PrivateMetadata)
 		if err != nil {
 			return nil, errors.Wrap(svcerr.ErrViewEntity, err)
 		}
 	}
 
 	pu := &grpcUsersV1.User{
-		Id:             u.ID,
-		FirstName:      u.FirstName,
-		LastName:       u.LastName,
-		Tags:           u.Tags,
-		Metadata:       metadata,
-		PublicMetadata: publicMetadata,
-		Status:         uint32(u.Status),
-		Role:           uint32(u.Role),
-		ProfilePicture: u.ProfilePicture,
-		Username:       u.Credentials.Username,
-		Email:          u.Email,
-		UpdatedBy:      u.UpdatedBy,
-		AuthProvider:   u.AuthProvider,
-		Permissions:    u.Permissions,
+		Id:              u.ID,
+		FirstName:       u.FirstName,
+		LastName:        u.LastName,
+		Tags:            u.Tags,
+		Metadata:        metadata,
+		PrivateMetadata: privateMetadata,
+		Status:          uint32(u.Status),
+		Role:            uint32(u.Role),
+		ProfilePicture:  u.ProfilePicture,
+		Username:        u.Credentials.Username,
+		Email:           u.Email,
+		UpdatedBy:       u.UpdatedBy,
+		AuthProvider:    u.AuthProvider,
+		Permissions:     u.Permissions,
 	}
 
 	if !u.CreatedAt.IsZero() {

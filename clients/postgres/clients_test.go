@@ -44,13 +44,13 @@ var (
 	namegen         = namegenerator.NewGenerator()
 	validTimestamp  = time.Now().UTC().Truncate(time.Millisecond)
 	validClient     = clients.Client{
-		ID:             testsutil.GenerateUUID(&testing.T{}),
-		Domain:         testsutil.GenerateUUID(&testing.T{}),
-		Name:           namegen.Generate(),
-		PublicMetadata: map[string]any{"key": "value"},
-		Metadata:       map[string]any{"key": "value"},
-		CreatedAt:      time.Now().UTC().Truncate(time.Microsecond),
-		Status:         clients.EnabledStatus,
+		ID:              testsutil.GenerateUUID(&testing.T{}),
+		Domain:          testsutil.GenerateUUID(&testing.T{}),
+		Name:            namegen.Generate(),
+		Metadata:        map[string]any{"key": "value"},
+		PrivateMetadata: map[string]any{"key": "value"},
+		CreatedAt:       time.Now().UTC().Truncate(time.Microsecond),
+		Status:          clients.EnabledStatus,
 	}
 	invalidID         = strings.Repeat("a", 37)
 	directAccess      = "direct"
@@ -135,9 +135,9 @@ func TestClientsSave(t *testing.T) {
 						Identity: clientIdentity,
 						Secret:   secret,
 					},
-					PublicMetadata: map[string]any{"key": "value"},
-					Metadata:       map[string]any{"key": "value"},
-					Status:         clients.EnabledStatus,
+					PrivateMetadata: map[string]any{"key": "value"},
+					Metadata:        map[string]any{"key": "value"},
+					Status:          clients.EnabledStatus,
 				},
 			},
 			err: nil,
@@ -152,9 +152,9 @@ func TestClientsSave(t *testing.T) {
 					Credentials: clients.Credentials{
 						Secret: testsutil.GenerateUUID(t),
 					},
-					PublicMetadata: map[string]any{"key": "value"},
-					Metadata:       map[string]any{"key": "value"},
-					Status:         clients.EnabledStatus,
+					PrivateMetadata: map[string]any{"key": "value"},
+					Metadata:        map[string]any{"key": "value"},
+					Status:          clients.EnabledStatus,
 				},
 				{
 					ID:     testsutil.GenerateUUID(t),
@@ -163,9 +163,9 @@ func TestClientsSave(t *testing.T) {
 					Credentials: clients.Credentials{
 						Secret: testsutil.GenerateUUID(t),
 					},
-					PublicMetadata: map[string]any{"key": "value"},
-					Metadata:       map[string]any{"key": "value"},
-					Status:         clients.EnabledStatus,
+					PrivateMetadata: map[string]any{"key": "value"},
+					Metadata:        map[string]any{"key": "value"},
+					Status:          clients.EnabledStatus,
 				},
 				{
 					ID:     testsutil.GenerateUUID(t),
@@ -174,9 +174,9 @@ func TestClientsSave(t *testing.T) {
 					Credentials: clients.Credentials{
 						Secret: testsutil.GenerateUUID(t),
 					},
-					PublicMetadata: map[string]any{"key": "value"},
-					Metadata:       map[string]any{"key": "value"},
-					Status:         clients.EnabledStatus,
+					PrivateMetadata: map[string]any{"key": "value"},
+					Metadata:        map[string]any{"key": "value"},
+					Status:          clients.EnabledStatus,
 				},
 			},
 			err: nil,
@@ -192,9 +192,9 @@ func TestClientsSave(t *testing.T) {
 						Identity: clientIdentity,
 						Secret:   secret,
 					},
-					PublicMetadata: map[string]any{"key": "value"},
-					Metadata:       map[string]any{"key": "value"},
-					Status:         clients.EnabledStatus,
+					PrivateMetadata: map[string]any{"key": "value"},
+					Metadata:        map[string]any{"key": "value"},
+					Status:          clients.EnabledStatus,
 				},
 			},
 			err: errClientSecretNotAvailable,
@@ -209,9 +209,9 @@ func TestClientsSave(t *testing.T) {
 					Credentials: clients.Credentials{
 						Secret: testsutil.GenerateUUID(t),
 					},
-					PublicMetadata: map[string]any{"key": "value"},
-					Metadata:       map[string]any{"key": "value"},
-					Status:         clients.EnabledStatus,
+					PrivateMetadata: map[string]any{"key": "value"},
+					Metadata:        map[string]any{"key": "value"},
+					Status:          clients.EnabledStatus,
 				},
 				{
 					ID:     testsutil.GenerateUUID(t),
@@ -221,9 +221,9 @@ func TestClientsSave(t *testing.T) {
 						Identity: clientIdentity,
 						Secret:   secret,
 					},
-					PublicMetadata: map[string]any{"key": "value"},
-					Metadata:       map[string]any{"key": "value"},
-					Status:         clients.EnabledStatus,
+					PrivateMetadata: map[string]any{"key": "value"},
+					Metadata:        map[string]any{"key": "value"},
+					Status:          clients.EnabledStatus,
 				},
 			},
 			err: errClientSecretNotAvailable,
@@ -238,9 +238,9 @@ func TestClientsSave(t *testing.T) {
 						Identity: "withoutdomain-client@example.com",
 						Secret:   testsutil.GenerateUUID(t),
 					},
-					PublicMetadata: map[string]any{"key": "value"},
-					Metadata:       map[string]any{"key": "value"},
-					Status:         clients.EnabledStatus,
+					PrivateMetadata: map[string]any{"key": "value"},
+					Metadata:        map[string]any{"key": "value"},
+					Status:          clients.EnabledStatus,
 				},
 			},
 			err: nil,
@@ -256,9 +256,9 @@ func TestClientsSave(t *testing.T) {
 						Identity: "invalidid-client@example.com",
 						Secret:   testsutil.GenerateUUID(t),
 					},
-					PublicMetadata: map[string]any{"key": "value"},
-					Metadata:       map[string]any{"key": "value"},
-					Status:         clients.EnabledStatus,
+					PrivateMetadata: map[string]any{"key": "value"},
+					Metadata:        map[string]any{"key": "value"},
+					Status:          clients.EnabledStatus,
 				},
 			},
 			err: repoerr.ErrCreateEntity,
@@ -273,9 +273,9 @@ func TestClientsSave(t *testing.T) {
 					Credentials: clients.Credentials{
 						Secret: testsutil.GenerateUUID(t),
 					},
-					PublicMetadata: map[string]any{"key": "value"},
-					Metadata:       map[string]any{"key": "value"},
-					Status:         clients.EnabledStatus,
+					PrivateMetadata: map[string]any{"key": "value"},
+					Metadata:        map[string]any{"key": "value"},
+					Status:          clients.EnabledStatus,
 				},
 				{
 					ID:     invalidName,
@@ -284,9 +284,9 @@ func TestClientsSave(t *testing.T) {
 					Credentials: clients.Credentials{
 						Secret: testsutil.GenerateUUID(t),
 					},
-					PublicMetadata: map[string]any{"key": "value"},
-					Metadata:       map[string]any{"key": "value"},
-					Status:         clients.EnabledStatus,
+					PrivateMetadata: map[string]any{"key": "value"},
+					Metadata:        map[string]any{"key": "value"},
+					Status:          clients.EnabledStatus,
 				},
 			},
 			err: repoerr.ErrCreateEntity,
@@ -302,9 +302,9 @@ func TestClientsSave(t *testing.T) {
 						Identity: "invalidname-client@example.com",
 						Secret:   testsutil.GenerateUUID(t),
 					},
-					PublicMetadata: map[string]any{"key": "value"},
-					Metadata:       map[string]any{"key": "value"},
-					Status:         clients.EnabledStatus,
+					PrivateMetadata: map[string]any{"key": "value"},
+					Metadata:        map[string]any{"key": "value"},
+					Status:          clients.EnabledStatus,
 				},
 			},
 			err: repoerr.ErrCreateEntity,
@@ -319,9 +319,9 @@ func TestClientsSave(t *testing.T) {
 						Identity: "invaliddomainid-client@example.com",
 						Secret:   testsutil.GenerateUUID(t),
 					},
-					PublicMetadata: map[string]any{"key": "value"},
-					Metadata:       map[string]any{"key": "value"},
-					Status:         clients.EnabledStatus,
+					PrivateMetadata: map[string]any{"key": "value"},
+					Metadata:        map[string]any{"key": "value"},
+					Status:          clients.EnabledStatus,
 				},
 			},
 			err: repoerr.ErrCreateEntity,
@@ -336,9 +336,9 @@ func TestClientsSave(t *testing.T) {
 						Identity: invalidName,
 						Secret:   testsutil.GenerateUUID(t),
 					},
-					PublicMetadata: map[string]any{"key": "value"},
-					Metadata:       map[string]any{"key": "value"},
-					Status:         clients.EnabledStatus,
+					PrivateMetadata: map[string]any{"key": "value"},
+					Metadata:        map[string]any{"key": "value"},
+					Status:          clients.EnabledStatus,
 				},
 			},
 			err: repoerr.ErrCreateEntity,
@@ -354,8 +354,8 @@ func TestClientsSave(t *testing.T) {
 						Identity: "",
 						Secret:   testsutil.GenerateUUID(t),
 					},
-					PublicMetadata: map[string]any{"key": "value"},
-					Metadata:       map[string]any{"key": "value"},
+					PrivateMetadata: map[string]any{"key": "value"},
+					Metadata:        map[string]any{"key": "value"},
 				},
 			},
 			err: nil,
@@ -370,14 +370,14 @@ func TestClientsSave(t *testing.T) {
 						Identity: "missing-client-secret@example.com",
 						Secret:   "",
 					},
-					PublicMetadata: map[string]any{"key": "value"},
-					Metadata:       map[string]any{"key": "value"},
+					PrivateMetadata: map[string]any{"key": "value"},
+					Metadata:        map[string]any{"key": "value"},
 				},
 			},
 			err: nil,
 		},
 		{
-			desc: "add a client with invalid public metadata",
+			desc: "add a client with invalid private metadata",
 			clients: []clients.Client{
 				{
 					ID:   testsutil.GenerateUUID(t),
@@ -386,7 +386,7 @@ func TestClientsSave(t *testing.T) {
 						Identity: fmt.Sprintf("%s@example.com", namegen.Generate()),
 						Secret:   testsutil.GenerateUUID(t),
 					},
-					PublicMetadata: map[string]any{
+					PrivateMetadata: map[string]any{
 						"key": make(chan int),
 					},
 				},
@@ -403,7 +403,7 @@ func TestClientsSave(t *testing.T) {
 						Identity: fmt.Sprintf("%s@example.com", namegen.Generate()),
 						Secret:   testsutil.GenerateUUID(t),
 					},
-					PublicMetadata: map[string]any{
+					PrivateMetadata: map[string]any{
 						"key": make(chan int),
 					},
 				},
@@ -414,13 +414,13 @@ func TestClientsSave(t *testing.T) {
 			desc: "add client with duplicate name",
 			clients: []clients.Client{
 				{
-					ID:             duplicateClientID,
-					Domain:         validClient.Domain,
-					Name:           validClient.Name,
-					PublicMetadata: map[string]any{"key": "different_value"},
-					Metadata:       map[string]any{},
-					CreatedAt:      validTimestamp,
-					Status:         clients.EnabledStatus,
+					ID:              duplicateClientID,
+					Domain:          validClient.Domain,
+					Name:            validClient.Name,
+					PrivateMetadata: map[string]any{"key": "different_value"},
+					Metadata:        map[string]any{},
+					CreatedAt:       validTimestamp,
+					Status:          clients.EnabledStatus,
 				},
 			},
 			err: nil,
@@ -454,10 +454,10 @@ func TestClientsRetrieveBySecret(t *testing.T) {
 			Identity: clientIdentity,
 			Secret:   testsutil.GenerateUUID(t),
 		},
-		Domain:         testsutil.GenerateUUID(t),
-		PublicMetadata: clients.Metadata{},
-		Metadata:       clients.Metadata{},
-		Status:         clients.EnabledStatus,
+		Domain:          testsutil.GenerateUUID(t),
+		Metadata:        clients.Metadata{},
+		PrivateMetadata: clients.Metadata{},
+		Status:          clients.EnabledStatus,
 	}
 
 	_, err := repo.Save(context.Background(), client)
@@ -546,7 +546,7 @@ func TestRetrieveByID(t *testing.T) {
 			Identity: clientIdentity,
 			Secret:   testsutil.GenerateUUID(t),
 		},
-		PublicMetadata: clients.Metadata{
+		PrivateMetadata: clients.Metadata{
 			"key": "value",
 		},
 		Metadata: clients.Metadata{
@@ -590,7 +590,7 @@ func TestRetrieveByID(t *testing.T) {
 			if err == nil {
 				assert.Equal(t, client.ID, cli.ID)
 				assert.Equal(t, client.Name, cli.Name)
-				assert.Equal(t, client.PublicMetadata, cli.PublicMetadata)
+				assert.Equal(t, client.PrivateMetadata, cli.PrivateMetadata)
 				assert.Equal(t, client.Metadata, cli.Metadata)
 				assert.Equal(t, client.Credentials.Identity, cli.Credentials.Identity)
 				assert.Equal(t, client.Credentials.Secret, cli.Credentials.Secret)
@@ -621,12 +621,12 @@ func TestUpdate(t *testing.T) {
 			desc:   "update client successfully",
 			update: "all",
 			client: clients.Client{
-				ID:             validClient.ID,
-				Name:           namegen.Generate(),
-				PublicMetadata: map[string]any{"key": "value"},
-				Metadata:       map[string]any{"key": "value"},
-				UpdatedAt:      validTimestamp,
-				UpdatedBy:      testsutil.GenerateUUID(t),
+				ID:              validClient.ID,
+				Name:            namegen.Generate(),
+				PrivateMetadata: map[string]any{"key": "value"},
+				Metadata:        map[string]any{"key": "value"},
+				UpdatedAt:       validTimestamp,
+				UpdatedBy:       testsutil.GenerateUUID(t),
 			},
 			err: nil,
 		},
@@ -642,13 +642,13 @@ func TestUpdate(t *testing.T) {
 			err: nil,
 		},
 		{
-			desc:   "update client public metadata",
-			update: "public_metadata",
+			desc:   "update client private metadata",
+			update: "private_metadata",
 			client: clients.Client{
-				ID:             validClient.ID,
-				PublicMetadata: map[string]any{"key1": "value1"},
-				UpdatedAt:      validTimestamp,
-				UpdatedBy:      testsutil.GenerateUUID(t),
+				ID:              validClient.ID,
+				PrivateMetadata: map[string]any{"key1": "value1"},
+				UpdatedAt:       validTimestamp,
+				UpdatedBy:       testsutil.GenerateUUID(t),
 			},
 			err: nil,
 		},
@@ -667,12 +667,12 @@ func TestUpdate(t *testing.T) {
 			desc:   "update client with invalid ID",
 			update: "all",
 			client: clients.Client{
-				ID:             testsutil.GenerateUUID(t),
-				Name:           namegen.Generate(),
-				PublicMetadata: map[string]any{"key": "value"},
-				Metadata:       map[string]any{"key": "value"},
-				UpdatedAt:      validTimestamp,
-				UpdatedBy:      testsutil.GenerateUUID(t),
+				ID:              testsutil.GenerateUUID(t),
+				Name:            namegen.Generate(),
+				PrivateMetadata: map[string]any{"key": "value"},
+				Metadata:        map[string]any{"key": "value"},
+				UpdatedAt:       validTimestamp,
+				UpdatedBy:       testsutil.GenerateUUID(t),
 			},
 			err: repoerr.ErrNotFound,
 		},
@@ -680,11 +680,11 @@ func TestUpdate(t *testing.T) {
 			desc:   "update client with empty ID",
 			update: "all",
 			client: clients.Client{
-				Name:           namegen.Generate(),
-				PublicMetadata: map[string]any{"key": "value"},
-				Metadata:       map[string]any{"key": "value"},
-				UpdatedAt:      validTimestamp,
-				UpdatedBy:      testsutil.GenerateUUID(t),
+				Name:            namegen.Generate(),
+				PrivateMetadata: map[string]any{"key": "value"},
+				Metadata:        map[string]any{"key": "value"},
+				UpdatedAt:       validTimestamp,
+				UpdatedBy:       testsutil.GenerateUUID(t),
 			},
 			err: repoerr.ErrNotFound,
 		},
@@ -701,12 +701,12 @@ func TestUpdate(t *testing.T) {
 				switch tc.update {
 				case "all":
 					assert.Equal(t, tc.client.Name, client.Name, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.client.Name, client.Name))
-					assert.Equal(t, tc.client.PublicMetadata, client.PublicMetadata, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.client.PublicMetadata, client.PublicMetadata))
+					assert.Equal(t, tc.client.PrivateMetadata, client.PrivateMetadata, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.client.PrivateMetadata, client.PrivateMetadata))
 					assert.Equal(t, tc.client.Metadata, client.Metadata, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.client.Metadata, client.Metadata))
 				case "name":
 					assert.Equal(t, tc.client.Name, client.Name, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.client.Name, client.Name))
-				case "public_metadata":
-					assert.Equal(t, tc.client.PublicMetadata, client.PublicMetadata, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.client.PublicMetadata, client.PublicMetadata))
+				case "private_metadata":
+					assert.Equal(t, tc.client.PrivateMetadata, client.PrivateMetadata, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.client.PrivateMetadata, client.PrivateMetadata))
 				case "metadata":
 					assert.Equal(t, tc.client.Metadata, client.Metadata, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.client.Metadata, client.Metadata))
 				}
@@ -997,7 +997,7 @@ func TestRetrieveByIDsWithRoles(t *testing.T) {
 				Secret:   testsutil.GenerateUUID(t),
 			},
 			Tags: namegen.GenerateMultiple(5),
-			PublicMetadata: clients.Metadata{
+			Metadata: clients.Metadata{
 				"department": namegen.Generate(),
 			},
 			Status:    clients.EnabledStatus,
@@ -1120,7 +1120,7 @@ func TestRetrieveAll(t *testing.T) {
 				Secret:   testsutil.GenerateUUID(t),
 			},
 			Tags: namegen.GenerateMultiple(5),
-			PublicMetadata: clients.Metadata{
+			Metadata: clients.Metadata{
 				"department": namegen.Generate(),
 			},
 			Status:    clients.EnabledStatus,
@@ -1279,11 +1279,11 @@ func TestRetrieveAll(t *testing.T) {
 			},
 		},
 		{
-			desc: "with public metadata",
+			desc: "with metadata",
 			pm: clients.Page{
 				Offset:   0,
 				Limit:    nClients,
-				Metadata: expectedClients[0].PublicMetadata,
+				Metadata: expectedClients[0].Metadata,
 				Status:   clients.AllStatus,
 				Order:    defOrder,
 				Dir:      ascDir,
@@ -1563,7 +1563,7 @@ func TestRetrieveAll(t *testing.T) {
 			pm: clients.Page{
 				Offset:   0,
 				Limit:    nClients,
-				Metadata: expectedClients[0].PublicMetadata,
+				Metadata: expectedClients[0].Metadata,
 				Name:     expectedClients[0].Name,
 				Tag:      expectedClients[0].Tags[0],
 				Identity: expectedClients[0].Credentials.Identity,
@@ -1829,7 +1829,7 @@ func TestRetrieveUserClients(t *testing.T) {
 				Secret:   testsutil.GenerateUUID(t),
 			},
 			Tags: namegen.GenerateMultiple(5),
-			PublicMetadata: clients.Metadata{
+			Metadata: clients.Metadata{
 				"department": namegen.Generate(),
 			},
 			Status:    clients.EnabledStatus,
@@ -2036,7 +2036,7 @@ func TestRetrieveUserClients(t *testing.T) {
 			pm: clients.Page{
 				Offset:   0,
 				Limit:    nClients,
-				Metadata: directClients[0].PublicMetadata,
+				Metadata: directClients[0].Metadata,
 				Status:   clients.AllStatus,
 				Order:    defOrder,
 				Dir:      ascDir,
@@ -2230,7 +2230,7 @@ func TestRetrieveUserClients(t *testing.T) {
 			pm: clients.Page{
 				Offset:   0,
 				Limit:    nClients,
-				Metadata: directClients[0].PublicMetadata,
+				Metadata: directClients[0].Metadata,
 				Name:     directClients[0].Name,
 				Tag:      directClients[0].Tags[0],
 				Identity: directClients[0].Credentials.Identity,
@@ -2693,21 +2693,21 @@ func TestSearchClients(t *testing.T) {
 				Identity: username,
 				Secret:   testsutil.GenerateUUID(t),
 			},
-			PublicMetadata: clients.Metadata{
+			Metadata: clients.Metadata{
 				"department": namegen.Generate(),
 			},
-			Metadata:  clients.Metadata{},
-			Status:    clients.EnabledStatus,
-			CreatedAt: baseTime.Add(time.Duration(i) * time.Microsecond),
+			PrivateMetadata: clients.Metadata{},
+			Status:          clients.EnabledStatus,
+			CreatedAt:       baseTime.Add(time.Duration(i) * time.Microsecond),
 		}
 		_, err := repo.Save(context.Background(), client)
 		require.Nil(t, err, fmt.Sprintf("save client unexpected error: %s", err))
 
 		expectedClients = append(expectedClients, clients.Client{
-			ID:             client.ID,
-			Name:           client.Name,
-			PublicMetadata: client.PublicMetadata,
-			CreatedAt:      client.CreatedAt,
+			ID:        client.ID,
+			Name:      client.Name,
+			Metadata:  client.Metadata,
+			CreatedAt: client.CreatedAt,
 		})
 	}
 
@@ -3078,10 +3078,10 @@ func TestRetrieveByIDs(t *testing.T) {
 				Identity: name + emailSuffix,
 				Secret:   testsutil.GenerateUUID(t),
 			},
-			Tags:           namegen.GenerateMultiple(5),
-			PublicMetadata: map[string]any{"name": name},
-			CreatedAt:      baseTime.Add(time.Duration(i) * time.Microsecond),
-			Status:         clients.EnabledStatus,
+			Tags:      namegen.GenerateMultiple(5),
+			Metadata:  map[string]any{"name": name},
+			CreatedAt: baseTime.Add(time.Duration(i) * time.Microsecond),
+			Status:    clients.EnabledStatus,
 		}
 		_, err := repo.Save(context.Background(), client)
 		require.Nil(t, err, fmt.Sprintf("add new client: expected nil got %s\n", err))
@@ -3706,13 +3706,13 @@ func TestRetrieveParentGroupClients(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		name := namegen.Generate()
 		client := clients.Client{
-			ID:             testsutil.GenerateUUID(t),
-			Domain:         testsutil.GenerateUUID(t),
-			ParentGroup:    parentID,
-			Name:           name,
-			PublicMetadata: map[string]any{"name": name},
-			CreatedAt:      baseTime.Add(time.Duration(i) * time.Microsecond),
-			Status:         clients.EnabledStatus,
+			ID:          testsutil.GenerateUUID(t),
+			Domain:      testsutil.GenerateUUID(t),
+			ParentGroup: parentID,
+			Name:        name,
+			Metadata:    map[string]any{"name": name},
+			CreatedAt:   baseTime.Add(time.Duration(i) * time.Microsecond),
+			Status:      clients.EnabledStatus,
 		}
 		items = append(items, client)
 	}
@@ -3774,13 +3774,13 @@ func TestUnsetParentGroupFromClients(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		name := namegen.Generate()
 		client := clients.Client{
-			ID:             testsutil.GenerateUUID(t),
-			Domain:         testsutil.GenerateUUID(t),
-			ParentGroup:    parentID,
-			Name:           name,
-			PublicMetadata: map[string]any{"name": name},
-			CreatedAt:      baseTime.Add(time.Duration(i) * time.Microsecond),
-			Status:         clients.EnabledStatus,
+			ID:          testsutil.GenerateUUID(t),
+			Domain:      testsutil.GenerateUUID(t),
+			ParentGroup: parentID,
+			Name:        name,
+			Metadata:    map[string]any{"name": name},
+			CreatedAt:   baseTime.Add(time.Duration(i) * time.Microsecond),
+			Status:      clients.EnabledStatus,
 		}
 		items = append(items, client)
 	}
@@ -3827,7 +3827,7 @@ func generateClient(t *testing.T, status clients.Status, repo clients.Repository
 			Secret:   testsutil.GenerateUUID(t),
 		},
 		Tags: namegen.GenerateMultiple(5),
-		PublicMetadata: clients.Metadata{
+		PrivateMetadata: clients.Metadata{
 			"name": namegen.Generate(),
 		},
 		Metadata: clients.Metadata{

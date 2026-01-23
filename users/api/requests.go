@@ -147,11 +147,11 @@ func (req searchUsersReq) validate() error {
 }
 
 type updateUserReq struct {
-	id             string
-	FirstName      *string         `json:"first_name,omitempty"`
-	LastName       *string         `json:"last_name,omitempty"`
-	Metadata       *users.Metadata `json:"metadata,omitempty"`
-	PublicMetadata *users.Metadata `json:"public_metadata,omitempty"`
+	id              string
+	FirstName       *string         `json:"first_name,omitempty"`
+	LastName        *string         `json:"last_name,omitempty"`
+	Metadata        *users.Metadata `json:"metadata,omitempty"`
+	PrivateMetadata *users.Metadata `json:"private_metadata,omitempty"`
 }
 
 func (req updateUserReq) validate() error {

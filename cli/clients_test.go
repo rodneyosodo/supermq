@@ -298,7 +298,7 @@ func TestUpdateClientCmd(t *testing.T) {
 	newTagString := []string{"tag1", "tag2"}
 	newNameandMeta := "{\"name\": \"clientName\", \"metadata\": {\"role\": \"general\"}}"
 	newMetadata := "{\"metadata\": {\"role\": \"general\"}}"
-	newPublicMeta := "{\"public_metadata\": {\"role\": \"general\"}}"
+	newPrivateMeta := "{\"private_metadata\": {\"role\": \"general\"}}"
 	newSecret := "secret"
 
 	cases := []struct {
@@ -310,7 +310,7 @@ func TestUpdateClientCmd(t *testing.T) {
 		logType       outputLog
 	}{
 		{
-			desc: "update client name and public metadata successfully",
+			desc: "update client name and metadata successfully",
 			args: []string{
 				client.ID,
 				updateCmd,
@@ -320,7 +320,7 @@ func TestUpdateClientCmd(t *testing.T) {
 			},
 			client: smqsdk.Client{
 				Name: "clientName",
-				PublicMetadata: map[string]any{
+				Metadata: map[string]any{
 					"role": "general",
 				},
 				ID:       client.ID,
@@ -350,16 +350,16 @@ func TestUpdateClientCmd(t *testing.T) {
 			logType: entityLog,
 		},
 		{
-			desc: "update client public metadata successfully",
+			desc: "update client private metadata successfully",
 			args: []string{
 				client.ID,
 				updateCmd,
-				newPublicMeta,
+				newPrivateMeta,
 				domainID,
 				token,
 			},
 			client: smqsdk.Client{
-				PublicMetadata: map[string]any{
+				PrivateMetadata: map[string]any{
 					"role": "general",
 				},
 				ID:       client.ID,
@@ -388,11 +388,11 @@ func TestUpdateClientCmd(t *testing.T) {
 			logType: entityLog,
 		},
 		{
-			desc: "update client public metadata with invalid json",
+			desc: "update client private metadata with invalid json",
 			args: []string{
 				client.ID,
 				updateCmd,
-				"{\"public_metadata\": {\"role\": \"general\"}",
+				"{\"private_metadata\": {\"role\": \"general\"}",
 				domainID,
 				token,
 			},

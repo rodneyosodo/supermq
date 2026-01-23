@@ -79,10 +79,10 @@ func Migration() (*migrate.MemoryMigrationSource, error) {
 			{
 				Id: "clients_04",
 				Up: []string{
-					`ALTER TABLE clients ADD COLUMN public_metadata JSONB;`,
+					`ALTER TABLE clients ADD COLUMN private_metadata JSONB;`,
 				},
 				Down: []string{
-					`ALTER TABLE clients DROP COLUMN public_metadata;`,
+					`ALTER TABLE clients DROP COLUMN private_metadata;`,
 				},
 			},
 		},

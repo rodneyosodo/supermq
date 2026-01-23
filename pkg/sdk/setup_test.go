@@ -165,19 +165,19 @@ func convertUser(c sdk.User) users.User {
 		return users.User{}
 	}
 	return users.User{
-		ID:             c.ID,
-		FirstName:      c.FirstName,
-		LastName:       c.LastName,
-		Tags:           c.Tags,
-		Email:          c.Email,
-		Credentials:    users.Credentials(c.Credentials),
-		Metadata:       users.Metadata(c.Metadata),
-		PublicMetadata: users.Metadata(c.PublicMetadata),
-		CreatedAt:      c.CreatedAt,
-		UpdatedAt:      c.UpdatedAt,
-		Status:         status,
-		Role:           role,
-		ProfilePicture: c.ProfilePicture,
+		ID:              c.ID,
+		FirstName:       c.FirstName,
+		LastName:        c.LastName,
+		Tags:            c.Tags,
+		Email:           c.Email,
+		Credentials:     users.Credentials(c.Credentials),
+		Metadata:        users.Metadata(c.Metadata),
+		PrivateMetadata: users.Metadata(c.PrivateMetadata),
+		CreatedAt:       c.CreatedAt,
+		UpdatedAt:       c.UpdatedAt,
+		Status:          status,
+		Role:            role,
+		ProfilePicture:  c.ProfilePicture,
 	}
 }
 
@@ -190,19 +190,19 @@ func convertClient(c sdk.Client) clients.Client {
 		return clients.Client{}
 	}
 	return clients.Client{
-		ID:             c.ID,
-		Name:           c.Name,
-		Tags:           c.Tags,
-		Domain:         c.DomainID,
-		ParentGroup:    c.ParentGroup,
-		Credentials:    clients.Credentials(c.Credentials),
-		Metadata:       clients.Metadata(c.Metadata),
-		PublicMetadata: clients.Metadata(c.PublicMetadata),
-		CreatedAt:      c.CreatedAt,
-		UpdatedAt:      c.UpdatedAt,
-		UpdatedBy:      c.UpdatedBy,
-		Status:         status,
-		Roles:          c.Roles,
+		ID:              c.ID,
+		Name:            c.Name,
+		Tags:            c.Tags,
+		Domain:          c.DomainID,
+		ParentGroup:     c.ParentGroup,
+		Credentials:     clients.Credentials(c.Credentials),
+		Metadata:        clients.Metadata(c.Metadata),
+		PrivateMetadata: clients.Metadata(c.PrivateMetadata),
+		CreatedAt:       c.CreatedAt,
+		UpdatedAt:       c.UpdatedAt,
+		UpdatedBy:       c.UpdatedBy,
+		Status:          status,
+		Roles:           c.Roles,
 	}
 }
 
@@ -267,13 +267,13 @@ func generateTestUser(t *testing.T) sdk.User {
 			Username: "username",
 			Secret:   secret,
 		},
-		Tags:           []string{"tag1", "tag2"},
-		Metadata:       validMetadata,
-		PublicMetadata: validMetadata,
-		CreatedAt:      createdAt,
-		UpdatedAt:      createdAt,
-		Status:         users.EnabledStatus.String(),
-		Role:           users.UserRole.String(),
+		Tags:            []string{"tag1", "tag2"},
+		Metadata:        validMetadata,
+		PrivateMetadata: validMetadata,
+		CreatedAt:       createdAt,
+		UpdatedAt:       createdAt,
+		Status:          users.EnabledStatus.String(),
+		Role:            users.UserRole.String(),
 	}
 }
 

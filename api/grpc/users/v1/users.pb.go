@@ -155,26 +155,26 @@ func (x *RetrieveUsersRes) GetUsers() []*User {
 }
 
 type User struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	FirstName      string                 `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
-	LastName       string                 `protobuf:"bytes,3,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
-	Tags           []string               `protobuf:"bytes,4,rep,name=tags,proto3" json:"tags,omitempty"`
-	Metadata       *structpb.Struct       `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata,omitempty"`
-	PublicMetadata *structpb.Struct       `protobuf:"bytes,6,opt,name=public_metadata,json=publicMetadata,proto3" json:"public_metadata,omitempty"`
-	Status         uint32                 `protobuf:"varint,7,opt,name=status,proto3" json:"status,omitempty"`
-	Role           uint32                 `protobuf:"varint,8,opt,name=role,proto3" json:"role,omitempty"`
-	ProfilePicture string                 `protobuf:"bytes,9,opt,name=profile_picture,json=profilePicture,proto3" json:"profile_picture,omitempty"`
-	Username       string                 `protobuf:"bytes,10,opt,name=username,proto3" json:"username,omitempty"`
-	Email          string                 `protobuf:"bytes,11,opt,name=email,proto3" json:"email,omitempty"`
-	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt      *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	UpdatedBy      string                 `protobuf:"bytes,14,opt,name=updated_by,json=updatedBy,proto3" json:"updated_by,omitempty"`
-	VerifiedAt     *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=verified_at,json=verifiedAt,proto3" json:"verified_at,omitempty"`
-	AuthProvider   string                 `protobuf:"bytes,16,opt,name=auth_provider,json=authProvider,proto3" json:"auth_provider,omitempty"`
-	Permissions    []string               `protobuf:"bytes,17,rep,name=permissions,proto3" json:"permissions,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	FirstName       string                 `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	LastName        string                 `protobuf:"bytes,3,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
+	Tags            []string               `protobuf:"bytes,4,rep,name=tags,proto3" json:"tags,omitempty"`
+	Metadata        *structpb.Struct       `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	PrivateMetadata *structpb.Struct       `protobuf:"bytes,6,opt,name=private_metadata,json=privateMetadata,proto3" json:"private_metadata,omitempty"`
+	Status          uint32                 `protobuf:"varint,7,opt,name=status,proto3" json:"status,omitempty"`
+	Role            uint32                 `protobuf:"varint,8,opt,name=role,proto3" json:"role,omitempty"`
+	ProfilePicture  string                 `protobuf:"bytes,9,opt,name=profile_picture,json=profilePicture,proto3" json:"profile_picture,omitempty"`
+	Username        string                 `protobuf:"bytes,10,opt,name=username,proto3" json:"username,omitempty"`
+	Email           string                 `protobuf:"bytes,11,opt,name=email,proto3" json:"email,omitempty"`
+	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt       *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	UpdatedBy       string                 `protobuf:"bytes,14,opt,name=updated_by,json=updatedBy,proto3" json:"updated_by,omitempty"`
+	VerifiedAt      *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=verified_at,json=verifiedAt,proto3" json:"verified_at,omitempty"`
+	AuthProvider    string                 `protobuf:"bytes,16,opt,name=auth_provider,json=authProvider,proto3" json:"auth_provider,omitempty"`
+	Permissions     []string               `protobuf:"bytes,17,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *User) Reset() {
@@ -242,9 +242,9 @@ func (x *User) GetMetadata() *structpb.Struct {
 	return nil
 }
 
-func (x *User) GetPublicMetadata() *structpb.Struct {
+func (x *User) GetPrivateMetadata() *structpb.Struct {
 	if x != nil {
-		return x.PublicMetadata
+		return x.PrivateMetadata
 	}
 	return nil
 }
@@ -339,15 +339,15 @@ const file_users_v1_users_proto_rawDesc = "" +
 	"\x05total\x18\x01 \x01(\x04R\x05total\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\x04R\x05limit\x12\x16\n" +
 	"\x06offset\x18\x03 \x01(\x04R\x06offset\x12$\n" +
-	"\x05users\x18\x04 \x03(\v2\x0e.users.v1.UserR\x05users\"\xfd\x04\n" +
+	"\x05users\x18\x04 \x03(\v2\x0e.users.v1.UserR\x05users\"\xff\x04\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
 	"first_name\x18\x02 \x01(\tR\tfirstName\x12\x1b\n" +
 	"\tlast_name\x18\x03 \x01(\tR\blastName\x12\x12\n" +
 	"\x04tags\x18\x04 \x03(\tR\x04tags\x123\n" +
-	"\bmetadata\x18\x05 \x01(\v2\x17.google.protobuf.StructR\bmetadata\x12@\n" +
-	"\x0fpublic_metadata\x18\x06 \x01(\v2\x17.google.protobuf.StructR\x0epublicMetadata\x12\x16\n" +
+	"\bmetadata\x18\x05 \x01(\v2\x17.google.protobuf.StructR\bmetadata\x12B\n" +
+	"\x10private_metadata\x18\x06 \x01(\v2\x17.google.protobuf.StructR\x0fprivateMetadata\x12\x16\n" +
 	"\x06status\x18\a \x01(\rR\x06status\x12\x12\n" +
 	"\x04role\x18\b \x01(\rR\x04role\x12'\n" +
 	"\x0fprofile_picture\x18\t \x01(\tR\x0eprofilePicture\x12\x1a\n" +
@@ -390,7 +390,7 @@ var file_users_v1_users_proto_goTypes = []any{
 var file_users_v1_users_proto_depIdxs = []int32{
 	2, // 0: users.v1.RetrieveUsersRes.users:type_name -> users.v1.User
 	3, // 1: users.v1.User.metadata:type_name -> google.protobuf.Struct
-	3, // 2: users.v1.User.public_metadata:type_name -> google.protobuf.Struct
+	3, // 2: users.v1.User.private_metadata:type_name -> google.protobuf.Struct
 	4, // 3: users.v1.User.created_at:type_name -> google.protobuf.Timestamp
 	4, // 4: users.v1.User.updated_at:type_name -> google.protobuf.Timestamp
 	4, // 5: users.v1.User.verified_at:type_name -> google.protobuf.Timestamp

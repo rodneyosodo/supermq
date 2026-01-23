@@ -31,6 +31,9 @@ var (
 	// ErrFailedOpDB indicates a failure in a database operation.
 	ErrFailedOpDB = errors.New("operation on db element failed")
 
+	// ErrRetrieveAllUsers failed to retrieve users.
+	ErrRetrieveAllUsers = errors.New("failed to retrieve all users")
+
 	// ErrFailedToRetrieveAllGroups failed to retrieve groups.
 	ErrFailedToRetrieveAllGroups = errors.New("failed to retrieve all groups")
 

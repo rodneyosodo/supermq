@@ -1157,7 +1157,7 @@ func generateTestUser(t *testing.T) users.User {
 			Secret:   "secret",
 		},
 		Tags: []string{"tag1", "tag2"},
-		PublicMetadata: users.Metadata{
+		PrivateMetadata: users.Metadata{
 			"key1": "value1",
 			"key2": "value2",
 		},

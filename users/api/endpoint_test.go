@@ -37,15 +37,15 @@ var (
 	secret         = "strongsecret"
 	validCMetadata = users.Metadata{"role": "user"}
 	user           = users.User{
-		ID:             testsutil.GenerateUUID(&testing.T{}),
-		LastName:       "doe",
-		FirstName:      "jane",
-		Tags:           []string{"foo", "bar"},
-		Email:          "useremail@example.com",
-		Credentials:    users.Credentials{Username: "username", Secret: secret},
-		PublicMetadata: validCMetadata,
-		Metadata:       validCMetadata,
-		Status:         users.EnabledStatus,
+		ID:              testsutil.GenerateUUID(&testing.T{}),
+		LastName:        "doe",
+		FirstName:       "jane",
+		Tags:            []string{"foo", "bar"},
+		Email:           "useremail@example.com",
+		Credentials:     users.Credentials{Username: "username", Secret: secret},
+		Metadata:        validCMetadata,
+		PrivateMetadata: validCMetadata,
+		Status:          users.EnabledStatus,
 	}
 	validToken      = "valid"
 	inValidToken    = "invalid"
@@ -146,7 +146,7 @@ func TestRegister(t *testing.T) {
 				Credentials: users.Credentials{
 					Secret: "12345678",
 				},
-				PublicMetadata: map[string]any{
+				PrivateMetadata: map[string]any{
 					"test": make(chan int),
 				},
 			},
@@ -918,14 +918,15 @@ func TestUpdate(t *testing.T) {
 		{
 			desc:        "update as admin user with valid token",
 			id:          user.ID,
-			data:        fmt.Sprintf(`{"name":"%s","public_metadata":%s}`, newName, toJSON(newMetadata)),
+			data:        fmt.Sprintf(`{"name":"%s","metadata":%s, "private_metadata":%s}`, newName, toJSON(newMetadata), toJSON(newMetadata)),
 			token:       validToken,
 			authnRes:    verifiedSession,
 			contentType: contentType,
 			userResponse: users.User{
-				ID:             user.ID,
-				FirstName:      newName,
-				PublicMetadata: newMetadata,
+				ID:              user.ID,
+				FirstName:       newName,
+				Metadata:        newMetadata,
+				PrivateMetadata: newMetadata,
 			},
 			status: http.StatusOK,
 			err:    nil,
@@ -933,14 +934,14 @@ func TestUpdate(t *testing.T) {
 		{
 			desc:        "update as normal user with valid token",
 			id:          user.ID,
-			data:        fmt.Sprintf(`{"name":"%s","public_metadata":%s}`, newName, toJSON(newMetadata)),
+			data:        fmt.Sprintf(`{"name":"%s","metadata":%s}`, newName, toJSON(newMetadata)),
 			token:       validToken,
 			authnRes:    verifiedSession,
 			contentType: contentType,
 			userResponse: users.User{
-				ID:             user.ID,
-				FirstName:      newName,
-				PublicMetadata: newMetadata,
+				ID:        user.ID,
+				FirstName: newName,
+				Metadata:  newMetadata,
 			},
 			status: http.StatusOK,
 			err:    nil,
@@ -948,7 +949,7 @@ func TestUpdate(t *testing.T) {
 		{
 			desc:        "update user with invalid token",
 			id:          user.ID,
-			data:        fmt.Sprintf(`{"name":"%s","public_metadata":%s}`, newName, toJSON(newMetadata)),
+			data:        fmt.Sprintf(`{"name":"%s","metadata":%s}`, newName, toJSON(newMetadata)),
 			token:       inValidToken,
 			authnRes:    smqauthn.Session{UserID: validID, DomainID: validID, Verified: true},
 			contentType: contentType,
@@ -959,7 +960,7 @@ func TestUpdate(t *testing.T) {
 		{
 			desc:        "update user with empty token",
 			id:          user.ID,
-			data:        fmt.Sprintf(`{"name":"%s","public_metadata":%s}`, newName, toJSON(newMetadata)),
+			data:        fmt.Sprintf(`{"name":"%s","metadata":%s}`, newName, toJSON(newMetadata)),
 			token:       "",
 			authnRes:    smqauthn.Session{UserID: validID, DomainID: validID, Verified: true},
 			contentType: contentType,
@@ -970,7 +971,7 @@ func TestUpdate(t *testing.T) {
 		{
 			desc:        "update user with invalid id",
 			id:          inValid,
-			data:        fmt.Sprintf(`{"name":"%s","public_metadata":%s}`, newName, toJSON(newMetadata)),
+			data:        fmt.Sprintf(`{"name":"%s","metadata":%s}`, newName, toJSON(newMetadata)),
 			token:       validToken,
 			authnRes:    verifiedSession,
 			contentType: contentType,
@@ -980,7 +981,7 @@ func TestUpdate(t *testing.T) {
 		{
 			desc:        "update user with invalid contentype",
 			id:          user.ID,
-			data:        fmt.Sprintf(`{"name":"%s","public_metadata":%s}`, newName, toJSON(newMetadata)),
+			data:        fmt.Sprintf(`{"name":"%s","metadata":%s}`, newName, toJSON(newMetadata)),
 			token:       validToken,
 			authnRes:    verifiedSession,
 			contentType: "application/xml",
@@ -1000,7 +1001,7 @@ func TestUpdate(t *testing.T) {
 		{
 			desc:        "update user with empty id",
 			id:          " ",
-			data:        fmt.Sprintf(`{"name":"%s","public_metadata":%s}`, newName, toJSON(newMetadata)),
+			data:        fmt.Sprintf(`{"name":"%s","metadata":%s}`, newName, toJSON(newMetadata)),
 			token:       validToken,
 			authnRes:    verifiedSession,
 			contentType: contentType,

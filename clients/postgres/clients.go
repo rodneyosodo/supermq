@@ -64,9 +64,9 @@ func (repo *clientRepo) Save(ctx context.Context, cls ...clients.Client) ([]clie
 		}
 		dbClients = append(dbClients, dbcli)
 	}
-	q := `INSERT INTO clients (id, name, tags, domain_id, parent_group_id, identity, secret, metadata, public_metadata, created_at, updated_at, updated_by, status)
-	VALUES (:id, :name, :tags, :domain_id, :parent_group_id, :identity, :secret, :metadata, :public_metadata, :created_at, :updated_at, :updated_by, :status)
-	RETURNING id, name, tags, identity, secret, metadata, public_metadata, COALESCE(domain_id, '') AS domain_id, COALESCE(parent_group_id, '') AS  parent_group_id, status, created_at, updated_at, updated_by`
+	q := `INSERT INTO clients (id, name, tags, domain_id, parent_group_id, identity, secret, metadata, private_metadata, created_at, updated_at, updated_by, status)
+	VALUES (:id, :name, :tags, :domain_id, :parent_group_id, :identity, :secret, :metadata, :private_metadata, :created_at, :updated_at, :updated_by, :status)
+	RETURNING id, name, tags, identity, secret, metadata, private_metadata, COALESCE(domain_id, '') AS domain_id, COALESCE(parent_group_id, '') AS  parent_group_id, status, created_at, updated_at, updated_by`
 
 	row, err := repo.DB.NamedQueryContext(ctx, q, dbClients)
 	if err != nil {
@@ -92,7 +92,7 @@ func (repo *clientRepo) Save(ctx context.Context, cls ...clients.Client) ([]clie
 }
 
 func (repo *clientRepo) RetrieveBySecret(ctx context.Context, key, id string, prefix authn.AuthPrefix) (clients.Client, error) {
-	q := fmt.Sprintf(`SELECT id, name, tags, COALESCE(domain_id, '') AS domain_id,  COALESCE(parent_group_id, '') AS parent_group_id, identity, secret, metadata, public_metadata, created_at, updated_at, updated_by, status
+	q := fmt.Sprintf(`SELECT id, name, tags, COALESCE(domain_id, '') AS domain_id,  COALESCE(parent_group_id, '') AS parent_group_id, identity, secret, metadata, private_metadata, created_at, updated_at, updated_by, status
         FROM clients
         WHERE secret = :secret AND status = %d`, clients.EnabledStatus)
 	switch prefix {
@@ -139,11 +139,11 @@ func (repo *clientRepo) Update(ctx context.Context, client clients.Client) (clie
 	if client.Name != "" {
 		query = append(query, "name = :name,")
 	}
-	if client.PublicMetadata != nil {
-		query = append(query, "public_metadata = :public_metadata,")
-	}
 	if client.Metadata != nil {
 		query = append(query, "metadata = :metadata,")
+	}
+	if client.PrivateMetadata != nil {
+		query = append(query, "private_metadata = :private_metadata,")
 	}
 	if len(query) > 0 {
 		upq = strings.Join(query, " ")
@@ -151,7 +151,7 @@ func (repo *clientRepo) Update(ctx context.Context, client clients.Client) (clie
 
 	q := fmt.Sprintf(`UPDATE clients SET %s updated_at = :updated_at, updated_by = :updated_by
         WHERE id = :id AND status = :status
-        RETURNING id, name, tags, identity, secret, metadata, public_metadata, COALESCE(domain_id, '') AS domain_id, COALESCE(parent_group_id, '') AS parent_group_id, status, created_at, updated_at, updated_by`,
+        RETURNING id, name, tags, identity, secret, metadata, private_metadata, COALESCE(domain_id, '') AS domain_id, COALESCE(parent_group_id, '') AS parent_group_id, status, created_at, updated_at, updated_by`,
 		upq)
 	client.Status = clients.EnabledStatus
 	return repo.update(ctx, client, q)
@@ -160,7 +160,7 @@ func (repo *clientRepo) Update(ctx context.Context, client clients.Client) (clie
 func (repo *clientRepo) UpdateTags(ctx context.Context, client clients.Client) (clients.Client, error) {
 	q := `UPDATE clients SET tags = :tags, updated_at = :updated_at, updated_by = :updated_by
         WHERE id = :id AND status = :status
-        RETURNING id, name, tags, identity, metadata, public_metadata, COALESCE(domain_id, '') AS domain_id, COALESCE(parent_group_id, '') AS parent_group_id, status, created_at, updated_at, updated_by`
+        RETURNING id, name, tags, identity, metadata, private_metadata, COALESCE(domain_id, '') AS domain_id, COALESCE(parent_group_id, '') AS parent_group_id, status, created_at, updated_at, updated_by`
 	client.Status = clients.EnabledStatus
 	return repo.update(ctx, client, q)
 }
@@ -168,7 +168,7 @@ func (repo *clientRepo) UpdateTags(ctx context.Context, client clients.Client) (
 func (repo *clientRepo) UpdateIdentity(ctx context.Context, client clients.Client) (clients.Client, error) {
 	q := `UPDATE clients SET identity = :identity, updated_at = :updated_at, updated_by = :updated_by
         WHERE id = :id AND status = :status
-        RETURNING id, name, tags, identity, metadata, public_metadata, COALESCE(domain_id, '') AS domain_id, status, COALESCE(parent_group_id, '') AS parent_group_id, created_at, updated_at, updated_by`
+        RETURNING id, name, tags, identity, metadata, private_metadata, COALESCE(domain_id, '') AS domain_id, status, COALESCE(parent_group_id, '') AS parent_group_id, created_at, updated_at, updated_by`
 	client.Status = clients.EnabledStatus
 	return repo.update(ctx, client, q)
 }
@@ -176,7 +176,7 @@ func (repo *clientRepo) UpdateIdentity(ctx context.Context, client clients.Clien
 func (repo *clientRepo) UpdateSecret(ctx context.Context, client clients.Client) (clients.Client, error) {
 	q := `UPDATE clients SET secret = :secret, updated_at = :updated_at, updated_by = :updated_by
         WHERE id = :id AND status = :status
-        RETURNING id, name, tags, identity, metadata, public_metadata, COALESCE(domain_id, '') AS domain_id, COALESCE(parent_group_id, '') AS parent_group_id, status, created_at, updated_at, updated_by`
+        RETURNING id, name, tags, identity, metadata, private_metadata, COALESCE(domain_id, '') AS domain_id, COALESCE(parent_group_id, '') AS parent_group_id, status, created_at, updated_at, updated_by`
 	client.Status = clients.EnabledStatus
 	return repo.update(ctx, client, q)
 }
@@ -184,7 +184,7 @@ func (repo *clientRepo) UpdateSecret(ctx context.Context, client clients.Client)
 func (repo *clientRepo) ChangeStatus(ctx context.Context, client clients.Client) (clients.Client, error) {
 	q := `UPDATE clients SET status = :status, updated_at = :updated_at, updated_by = :updated_by
 		WHERE id = :id
-        RETURNING id, name, tags, identity, metadata, public_metadata, COALESCE(domain_id, '') AS domain_id, COALESCE(parent_group_id, '') AS parent_group_id, status, created_at, updated_at, updated_by`
+        RETURNING id, name, tags, identity, metadata, private_metadata, COALESCE(domain_id, '') AS domain_id, COALESCE(parent_group_id, '') AS parent_group_id, status, created_at, updated_at, updated_by`
 
 	return repo.update(ctx, client, q)
 }
@@ -356,7 +356,7 @@ func (repo *clientRepo) RetrieveByIDWithRoles(ctx context.Context, id, memberID 
 		COALESCE(c2.parent_group_id, '') AS parent_group_id,
 		c2."identity",
 		c2.secret,
-		c2.public_metadata,
+		c2.metadata,
 		c2.created_at,
 		c2.updated_at,
 		c2.updated_by,
@@ -389,7 +389,7 @@ func (repo *clientRepo) RetrieveByIDWithRoles(ctx context.Context, id, memberID 
 }
 
 func (repo *clientRepo) RetrieveByID(ctx context.Context, id string) (clients.Client, error) {
-	q := `SELECT id, name, tags, COALESCE(domain_id, '') AS domain_id, COALESCE(parent_group_id, '') AS parent_group_id, identity, secret, metadata, public_metadata, created_at, updated_at, updated_by, status
+	q := `SELECT id, name, tags, COALESCE(domain_id, '') AS domain_id, COALESCE(parent_group_id, '') AS parent_group_id, identity, secret, metadata, private_metadata, created_at, updated_at, updated_by, status
         FROM clients WHERE id = :id`
 
 	dbc := DBClient{
@@ -449,7 +449,7 @@ func (repo *clientRepo) RetrieveAll(ctx context.Context, pm clients.Page) (clien
 					c.name,
 					c.tags,
 					c.identity,
-					c.public_metadata,
+					c.metadata,
 					COALESCE(c.domain_id, '') AS domain_id,
 					COALESCE(parent_group_id, '') AS parent_group_id,
 					COALESCE((SELECT path FROM groups WHERE id = c.parent_group_id), ''::::ltree) AS parent_group_path,
@@ -564,7 +564,7 @@ func (repo *clientRepo) retrieveClients(ctx context.Context, domainID, userID st
 					c.identity,
 					c.secret,
 					c.tags,
-					c.public_metadata,
+					c.metadata,
 					c.created_at,
 					c.updated_at,
 					c.updated_by,
@@ -625,7 +625,7 @@ func (repo *clientRepo) retrieveClients(ctx context.Context, domainID, userID st
 								c.identity,
 								c.secret,
 								c.tags,
-								c.public_metadata,
+								c.metadata,
 								c.created_at,
 								c.updated_at,
 								c.updated_by,
@@ -670,7 +670,7 @@ func (repo *clientRepo) userClientBaseQuery(domainID, userID string) string {
 			c.domain_id,
 			c.parent_group_id,
 			c.tags,
-			c.public_metadata,
+			c.metadata,
 			c.identity,
 			c.secret,
 			c.created_at,
@@ -835,7 +835,7 @@ func (repo *clientRepo) userClientBaseQuery(domainID, userID string) string {
 			c.domain_id,
 			c.parent_group_id,
 			c.tags,
-			c.public_metadata,
+			c.metadata,
 			c.identity,
 			c.secret,
 			c.created_at,
@@ -867,7 +867,7 @@ func (repo *clientRepo) userClientBaseQuery(domainID, userID string) string {
 			gc.domain_id,
 			gc.parent_group_id,
 			gc.tags,
-			gc.public_metadata,
+			gc.metadata,
 			gc.identity,
 			gc.secret,
 			gc.created_at,
@@ -892,7 +892,7 @@ func (repo *clientRepo) userClientBaseQuery(domainID, userID string) string {
 			dc.domain_id,
 			dc.parent_group_id,
 			dc.tags,
-			dc.public_metadata,
+			dc.metadata,
 			dc.identity,
 			dc.secret,
 			dc.created_at,
@@ -943,7 +943,7 @@ func (repo *clientRepo) SearchClients(ctx context.Context, pm clients.Page) (cli
 	tq := query
 	query = applyOrdering(query, pm)
 
-	q := fmt.Sprintf(`SELECT c.id, c.name, c.public_metadata, c.created_at, c.updated_at FROM clients c %s LIMIT :limit OFFSET :offset;`, query)
+	q := fmt.Sprintf(`SELECT c.id, c.name, c.metadata, c.created_at, c.updated_at FROM clients c %s LIMIT :limit OFFSET :offset;`, query)
 
 	dbPage, err := ToDBClientsPage(pm)
 	if err != nil {
@@ -1039,7 +1039,7 @@ type DBClient struct {
 	ParentGroup               sql.NullString   `db:"parent_group_id,omitempty"`
 	Secret                    string           `db:"secret"`
 	Metadata                  []byte           `db:"metadata,omitempty"`
-	PublicMetadata            []byte           `db:"public_metadata,omitempty"`
+	PrivateMetadata           []byte           `db:"private_metadata,omitempty"`
 	CreatedAt                 time.Time        `db:"created_at,omitempty"`
 	UpdatedAt                 sql.NullTime     `db:"updated_at,omitempty"`
 	UpdatedBy                 *string          `db:"updated_by,omitempty"`
@@ -1059,13 +1059,13 @@ type DBClient struct {
 }
 
 func ToDBClient(c clients.Client) (DBClient, error) {
-	publicMetadata := []byte("{}")
-	if len(c.PublicMetadata) > 0 {
-		b, err := json.Marshal(c.PublicMetadata)
+	privateMetadata := []byte("{}")
+	if len(c.PrivateMetadata) > 0 {
+		b, err := json.Marshal(c.PrivateMetadata)
 		if err != nil {
 			return DBClient{}, errors.Wrap(repoerr.ErrMalformedEntity, err)
 		}
-		publicMetadata = b
+		privateMetadata = b
 	}
 	metadata := []byte("{}")
 	if len(c.Metadata) > 0 {
@@ -1089,26 +1089,26 @@ func ToDBClient(c clients.Client) (DBClient, error) {
 	}
 
 	return DBClient{
-		ID:             c.ID,
-		Name:           c.Name,
-		Tags:           tags,
-		Domain:         c.Domain,
-		ParentGroup:    toNullString(c.ParentGroup),
-		Identity:       c.Credentials.Identity,
-		Secret:         c.Credentials.Secret,
-		Metadata:       metadata,
-		PublicMetadata: publicMetadata,
-		CreatedAt:      c.CreatedAt,
-		UpdatedAt:      updatedAt,
-		UpdatedBy:      updatedBy,
-		Status:         c.Status,
+		ID:              c.ID,
+		Name:            c.Name,
+		Tags:            tags,
+		Domain:          c.Domain,
+		ParentGroup:     toNullString(c.ParentGroup),
+		Identity:        c.Credentials.Identity,
+		Secret:          c.Credentials.Secret,
+		Metadata:        metadata,
+		PrivateMetadata: privateMetadata,
+		CreatedAt:       c.CreatedAt,
+		UpdatedAt:       updatedAt,
+		UpdatedBy:       updatedBy,
+		Status:          c.Status,
 	}, nil
 }
 
 func ToClient(t DBClient) (clients.Client, error) {
-	var publicMetadata, metadata clients.Metadata
-	if t.PublicMetadata != nil {
-		if err := json.Unmarshal([]byte(t.PublicMetadata), &publicMetadata); err != nil {
+	var privateMetadata, metadata clients.Metadata
+	if t.PrivateMetadata != nil {
+		if err := json.Unmarshal([]byte(t.PrivateMetadata), &privateMetadata); err != nil {
 			return clients.Client{}, errors.Wrap(repoerr.ErrMalformedEntity, err)
 		}
 	}
@@ -1160,7 +1160,7 @@ func ToClient(t DBClient) (clients.Client, error) {
 			Secret:   t.Secret,
 		},
 		Metadata:                  metadata,
-		PublicMetadata:            publicMetadata,
+		PrivateMetadata:           privateMetadata,
 		CreatedAt:                 t.CreatedAt.UTC(),
 		UpdatedAt:                 updatedAt,
 		UpdatedBy:                 updatedBy,
@@ -1278,7 +1278,7 @@ func PageQuery(pm clients.Page) (string, error) {
 		query = append(query, "c.actions @> :actions")
 	}
 	if len(pm.Metadata) > 0 {
-		query = append(query, "c.public_metadata @> :metadata")
+		query = append(query, "c.metadata @> :metadata")
 	}
 
 	var emq string
@@ -1343,7 +1343,7 @@ func (repo *clientRepo) RetrieveByIds(ctx context.Context, ids []string) (client
 		return clients.ClientsPage{}, errors.Wrap(repoerr.ErrViewEntity, err)
 	}
 
-	q := fmt.Sprintf(`SELECT c.id, c.name, c.tags, c.identity, c.public_metadata, COALESCE(c.domain_id, '') AS domain_id,  COALESCE(parent_group_id, '') AS parent_group_id, c.status,
+	q := fmt.Sprintf(`SELECT c.id, c.name, c.tags, c.identity, c.metadata, COALESCE(c.domain_id, '') AS domain_id,  COALESCE(parent_group_id, '') AS parent_group_id, c.status,
 					c.created_at, c.updated_at, COALESCE(c.updated_by, '') AS updated_by FROM clients c %s ORDER BY c.created_at`, query)
 
 	dbPage, err := ToDBClientsPage(pm)
@@ -1508,7 +1508,7 @@ func (repo *clientRepo) RemoveClientConnections(ctx context.Context, clientID st
 }
 
 func (repo *clientRepo) RetrieveParentGroupClients(ctx context.Context, parentGroupID string) ([]clients.Client, error) {
-	query := `SELECT c.id, c.name, c.tags,  c.public_metadata, COALESCE(c.domain_id, '') AS domain_id, COALESCE(parent_group_id, '') AS parent_group_id, c.status,
+	query := `SELECT c.id, c.name, c.tags,  c.metadata, COALESCE(c.domain_id, '') AS domain_id, COALESCE(parent_group_id, '') AS parent_group_id, c.status,
 					c.created_at, c.updated_at, COALESCE(c.updated_by, '') AS updated_by FROM clients c WHERE c.parent_group_id = :parent_group_id ;`
 
 	rows, err := repo.DB.NamedQueryContext(ctx, query, DBClient{ParentGroup: toNullString(parentGroupID)})

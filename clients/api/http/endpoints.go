@@ -143,10 +143,10 @@ func updateClientEndpoint(svc clients.Service) endpoint.Endpoint {
 		}
 
 		cli := clients.Client{
-			ID:             req.id,
-			Name:           req.Name,
-			Metadata:       req.Metadata,
-			PublicMetadata: req.PublicMetadata,
+			ID:              req.id,
+			Name:            req.Name,
+			Metadata:        req.Metadata,
+			PrivateMetadata: req.PrivateMetadata,
 		}
 		client, err := svc.Update(ctx, session, cli)
 		if err != nil {
